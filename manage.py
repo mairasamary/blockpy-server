@@ -8,8 +8,7 @@ from scripts.db_commands import ResetDB, PopulateDB, DisplayDB
 context = SSL.Context(SSL.SSLv23_METHOD)
 context.use_privatekey_file('certs/foobar.key')
 context.use_certificate_file('certs/foobar.crt')'''
-context = (r"C:\Users\acbart\Projects\blockpy\server\certs\server.crt", 
-           r"C:\Users\acbart\Projects\blockpy\server\certs\server.key")
+context = (r"certs\server.crt", r"certs\server.key")
 
 manager = Manager(app)
 

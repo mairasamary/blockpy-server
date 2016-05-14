@@ -18,7 +18,7 @@ class Config(object):
     TESTING = False
     CSRF_ENABLED = True
     WTF_CSRF_ENABLED = True
-    SITE_NAME = 'BlockPy'
+    SITE_NAME = 'Think/CT'
     SYS_ADMINS = ['acbart@vt.edu']
     ROOT_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
     STATIC_DIRECTORY = os.path.join(ROOT_DIRECTORY, 'static')
@@ -40,9 +40,9 @@ class Config(object):
     MAIL_SERVER = 'smtp.gmail.com'
     MAIL_PORT = 465
     MAIL_USE_SSL = True
-    MAIL_USERNAME = 'vt.blockpy@gmail.com'
+    MAIL_USERNAME = 'think.cs.vt.edu@gmail.com'
     MAIL_PASSWORD = secrets.get("EMAIL_PASSWORD")
-    DEFAULT_MAIL_SENDER = 'BlockPy Admin'
+    DEFAULT_MAIL_SENDER = 'Think/CT Admin'
     
     SECURITY_CONFIRMABLE = True
     SECURITY_REGISTERABLE = True
@@ -64,4 +64,4 @@ class TestingConfig(Config):
     PORT = 5001
     HOST = 'localhost'
     SITE_ROOT_URL = 'localhost:5001'
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///test.db'
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///main.db'

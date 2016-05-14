@@ -88,19 +88,7 @@ class SubmissionView(RegularView):
                    'code', 'status', 
                    'correct', 'version', 'assignment_version'
                    )
-'''class ScheduleView(RegularView):
-    column_display_pk = False
-    column_searchable_list = ('title', 'calendar')
-    column_formatters = { 'course_id': _id(Course)}
-    column_default_sort = 'day'
-class SubmissionView(RegularView):
-    column_formatters = { 'student_id': _id(User),
-                          'course_id': _id(Course)}
-class FeedbackView(RegularView):
-    column_formatters = { 'student_id': _id(User),
-                          'course_id': _id(Course),
-                          'last_editor': _id(User)}
-                          '''
+
 admin.add_view(UserView(User, db.session, category='Tables'))
 admin.add_view(ModelIdView(Course, db.session, category='Tables'))
 admin.add_view(SubmissionView(Submission, db.session, category='Tables'))
