@@ -38,8 +38,13 @@ class PopulateDB(Command):
             db.session.add(User(first_name=first, last_name=last, email=email))
             
         print("Adding default course")
-        default_course = Course(name="Default Course", owner_id=admin.id, service="blockpy")
+        default_course = Course(name="Default Course", owner_id=admin.id, service="native")
         db.session.add(default_course)
+        db.session.flush()
+        
+        print("Adding public course")
+        public_course = Course(name="Public Course", owner_id=admin.id, service="native", visibility='public')
+        db.session.add(public_course)
         db.session.flush()
         
         print("Adding some assignments")

@@ -1,5 +1,8 @@
 static/.webassets-cache/
 static/gen/
+static/corgis/
+
+templates/corgis/
 
 main.db
 test.db

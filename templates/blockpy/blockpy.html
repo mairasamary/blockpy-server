@@ -1,0 +1,146 @@
+{% set navbar_invisible = true %}
+{% extends 'layout.html' %}
+
+{% block title %}
+Assignment
+{% endblock %}
+
+{% block statusbar %}
+{% endblock %}
+
+{% block extrahead %}
+
+{% assets "blockpy_js" %}
+    <script type="text/javascript" src="{{ ASSET_URL }}"></script>
+{% endassets %}
+{% assets "blockpy_css" %}
+    <link rel="stylesheet" href="{{ ASSET_URL }}" />
+{% endassets %}
+
+<style>
+.embedded-data {
+    display: none;
+}
+</style>
+
+{% endblock %}
+
+{% block body %}
+
+<div id="blockpy-div" style='height:100%'></div>
+
+<div>
+</div>
+
+<span class='delete-on-load'>Loading! Please wait.</span>
+
+{% if not group %}
+<script>
+    k = {{ "Thsi si a st\nasjd ajos idjfosij& asdoifasdofj<a sdofajsd oij> asdoisdjf"|tojson}};
+    $(document).ready(function() {
+        blockpy = new BlockPy(
+            // settings
+            {
+                'editor': 'Blocks',
+                'blocklyPath': {{ url_for('static', filename='blockly/')|tojson }},
+                'attachmentPoint': document.getElementById('blockpy-div'),
+                'instructor': false
+            },
+            // assignment
+            {
+                'introduction': "Welcome to BlockPy. Try running the code below.",
+                'name': "Scratch Canvas",
+                'give_feedback': '',
+                'starting_code': 'x = 0'
+            },
+            // submission
+            {},
+            // programs
+            {
+                '__main__': "x = 0\nprint(x)"
+                //$("#default-body").html()
+            }
+        )
+    });
+    </script>
+{% endif %}
+
+{% for assignment, submission in group %}
+
+<!-- Main BlockPy canvas -->
+<div id="blockpy-div-{{loop.index}}" style='height:100%'></div>
+
+<script>
+/*
+Tracking code - safe to delete
+*/
+localStorage.setItem('user_id', "{{ user_id }}");
+
+$(document).ready(function() {
+    blockpy = new BlockPy(
+    // settings
+            {
+                'editor': "{{ 'Text' if assignment.mode|lower == 'text' else 'Blocks' }}",
+                'blocklyPath': {{ url_for('static', filename='blockly/')|tojson }},
+                'attachmentPoint': document.getElementById('blockpy-div-{{loop.index}}'),
+                'instructor': {{ 'true' if instructor_mode else 'false'}},
+                'urls': {
+                    'save_code': {{ url_for('blockpy.save_code')|tojson }},
+                    'log_event': {{ url_for('blockpy.save_events')|tojson }},
+                    'save_assignment': {{ url_for('blockpy.save_presentation')|tojson }},
+                    'save_success': {{ url_for('blockpy.save_correct')|tojson }},
+                }
+            },
+            // assignment
+            {
+                'assignment_id': {{ assignment.id|tojson }},
+                'course_id': {{ assignment.course_id|tojson }},
+                'student_id': {{ g.user.id|tojson }},
+                'introduction': {{ assignment.body|tojson}},
+                'name': {{ assignment.name|tojson}},
+                'give_feedback': {{ assignment.give_feedback|tojson}},
+                'parsons': {{ 'true' if assignment.type == 'parsons' else 'false' }}, 
+                'starting_code': {{ assignment.starting_code|tojson }},
+            },
+            // submission
+            {},
+            // programs
+            {
+                '__main__': {{ submission.code|tojson }},
+                'starting_code': {{ assignment.starting_code|tojson }},
+                'give_feedback': {{ assignment.give_feedback|tojson }},
+            }
+        );
+    /*
+    blockpy = new Kennel(
+                        
+                        {'parsons': 
+                         'text_first': {{ 'true' if assignment.type == 'text' else 'false' }}, 
+                         'read_only': false},
+                        { 'save_code': '{{ url_for("blockpy.save_code")}}',
+                          'load_code': false,
+                          'save_success': '{{ url_for("blockpy.save_correct")}}',
+                          'load_success': {{ "true" if submission.correct else "false" }},
+                          'log_event': '{{ url_for("blockpy.save_events") }}',
+                          'save_presentation': '{{ url_for("blockpy.save_presentation")}}'},
+                        { 'question_id': {{ assignment.id }},
+                          'student_id': 1,
+                          'book_id': 'compthink',
+                          'version': {{ assignment.version }},
+                          'lis_result_sourcedid': "{{ session['lis_result_sourcedid'] if 'lis_result_sourcedid' in session else ""}}",
+                          'name': '{{ assignment.name }}' });
+    $(".embedded-data-{{loop.index}}").remove();
+    */
+});
+
+</script>
+
+{% endfor %}
+
+<script>
+$(document).ready(function() {
+    $('.delete-on-load').remove();
+});
+</script>
+
+{% endblock %}

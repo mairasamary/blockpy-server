@@ -61,6 +61,17 @@ class User(Base, UserMixin):
     roles = relationship("Role", backref='user', lazy='dynamic')
     authentications = relationship("Authentication", backref='user', lazy='dynamic')
     assignments = relationship("Assignment",  backref='user', lazy='dynamic')
+    
+    def get_roles(self):
+        return Role.query.filter_by(user_id=self.id).all()
+        
+    def get_courses(self):
+        return (db.session.query(Course, Role)
+                          .filter(Role.user_id == self.id,
+                                  Role.course_id == Course.id)
+                          .order_by(Role.name)
+                          .all())
+    
     def __str__(self):
         return '<User {} ({})>'.format(self.id, self.email)
         
@@ -68,10 +79,26 @@ class User(Base, UserMixin):
         return ' '.join((self.first_name, self.last_name))
         
     def is_admin(self):
-        return 'admin' in {role.name.lower() for role in self.roles}
+        return 'admin' in {role.name.lower() for role in self.roles.all()}
     
-    def is_instructor(self):
-        return 'instructor' in {role.name.lower() for role in self.roles}
+    def is_instructor(self, course_id=None):
+        if course_id is not None:
+            return 'instructor' in {role.name.lower() for role in self.roles.all()
+                                    if role.course_id == course_id}
+        return 'instructor' in {role.name.lower() for role in self.roles.all()}
+        
+    def update_roles(self, new_roles, course_id):
+        old_roles = [role for role in self.roles.all() if role.course_id == course_id]
+        new_role_names = set(new_role_name.lower() for new_role_name in new_roles)
+        for old_role in old_roles:
+            if old_role.name.lower() not in new_role_names:
+                Role.query.filter(Role.id == old_role.id).delete()
+        old_role_names = set(role.name.lower() for role in old_roles)
+        for new_role_name in new_roles:
+            if new_role_name.lower() not in old_role_names:
+                new_role = Role(name=new_role_name.lower(), user_id=self.id, course_id=course_id)
+                db.session.add(new_role)
+        db.session.commit()
         
     @staticmethod
     def is_lti_instructor(given_roles):
@@ -84,7 +111,7 @@ class User(Base, UserMixin):
     @staticmethod
     def new_lti_user(service, lti_user_id, lti_email, lti_first_name, lti_last_name):
         new_user = User(first_name=lti_first_name, last_name=lti_last_name, email=lti_email, 
-                        password="", active=False, confirmed_at=None)
+                        password="", active=True, confirmed_at=None)
         db.session.add(new_user)
         db.session.flush()
         new_authentication = Authentication(type=service, 
@@ -122,11 +149,43 @@ class User(Base, UserMixin):
 class Course(Base):
     name = Column(String(255))
     owner_id = Column(Integer(), ForeignKey('user.id'))
-    service = Column(String(80), default="")
+    service = Column(String(80), default="native")
     external_id = Column(String(255), default="")
+    visibility = Column(String(80), default="private")
     
     def __str__(self):
         return '<Course {}>'.format(self.id)
+        
+    @staticmethod
+    def get_public():
+        return Course.query.filter_by(visibility='public').all()
+        
+    @staticmethod    
+    def remove(course_id):
+        Course.query.filter_by(id=course_id).delete()
+        db.session.commit()
+
+    @staticmethod
+    def rename(course_id, name=None):
+        course = Course.by_id(course_id)
+        if name is not None:
+            course.name = name
+        db.session.commit()
+        return course
+    
+    @staticmethod    
+    def new(name, owner_id, visibility):
+        if visibility == 'public':
+            visibility = 'public'
+        else:
+            visibility = 'private'
+        new_course = Course(name=name, owner_id=owner_id, visibility=visibility)
+        db.session.add(new_course)
+        db.session.flush()
+        new_role = Role(name='instructor', user_id=owner_id, course_id=new_course.id)
+        db.session.add(new_role)
+        db.session.commit()
+        return new_course
         
     @staticmethod
     def new_lti_course(service, external_id, name, user_id):
@@ -135,6 +194,10 @@ class Course(Base):
         db.session.add(new_course)
         db.session.commit()
         return new_course
+        
+    @staticmethod
+    def by_id(course_id):
+        return Course.query.get(course_id)
         
     @staticmethod
     def from_lti(service, lti_context_id, name, user_id):
@@ -152,7 +215,10 @@ class Role(Base, RoleMixin):
     user_id = Column(Integer(), ForeignKey('user.id'))
     course_id = Column(Integer(), ForeignKey('course.id'), default=None)
     
-    NAMES = ['teacher', 'admin', 'student']
+    NAMES = ['instructor', 'admin', 'student']
+    
+    def update_role(self, new_role):
+        pass
     
     def __str__(self):
         return '<User {} is {}>'.format(self.user_id, self.name)
@@ -165,7 +231,29 @@ class Authentication(Base):
     TYPES = ['local', 'canvas']
     
     def __str__(self):
-        return '<{} is {}>'.format(self.name, self.user_id)
+        return '<{} is {}>'.format(self.type, self.user_id)
+        
+class Log(Base):
+    event = Column(String(255), default="")
+    action = Column(String(255), default="")
+    assignment_id = Column(Integer(), ForeignKey('assignment.id'))
+    user_id = Column(Integer(), ForeignKey('user.id'))
+    
+    @staticmethod    
+    def new(event, action, assignment_id, user_id):
+        # Database logging
+        log = Log(event=event, action=action, assignment_id=assignment_id, user_id=user_id)
+        db.session.add(log)
+        db.session.commit()
+        # Single-file logging
+        student_interactions_logger = logging.getLogger('StudentInteractions')
+        student_interactions_logger.info(
+            StructuredEvent(user_id, assignment_id, event, action, '')
+        )
+        return log
+    
+    def __str__(self):
+        return '<Log {} for {}>'.format(self.event, self.action)
         
 class Settings(Base):
     mode = Column(String(80))
@@ -183,21 +271,22 @@ class Submission(Base):
     user_id = Column(Integer(), ForeignKey('user.id'))
     assignment_version = Column(Integer(), default=0)
     version = Column(Integer(), default=0)
+    url = Column(Text(), default="")
     
     def __str__(self):
         return '<Submission {} for {}>'.format(self.id, self.user_id)
         
     @staticmethod
-    def load(user_id, assignment_id):
+    def load(user_id, assignment_id, submission_url=""):
         submission = Submission.query.filter_by(assignment_id=assignment_id, 
                                                 user_id=user_id).first()
         if not submission:
-            submission = Submission(assignment_id=assignment_id, user_id=user_id)
+            submission = Submission(assignment_id=assignment_id, user_id=user_id, url=submission_url)
             assignment = Assignment.by_id(assignment_id)
             if assignment.mode == 'explain':
                 submission.code = json.dumps(Submission.default_explanation(''))
             else:
-                submission.code = assignment.on_start
+                submission.code = assignment.starting_code
             db.session.add(submission)
             db.session.commit()
         return submission
@@ -268,6 +357,9 @@ class Submission(Base):
         return ''.join([l[0] for l in element_type.split("_")])
     
     def load_explanation(self, max_questions):
+        if not self.code:
+            self.code = json.dumps(Submission.default_explanation(''))
+            db.session.commit()
         submission_destructured = json.loads(self.code)
         code = submission_destructured['code']
         # Find the first FIVE
@@ -342,27 +434,32 @@ class Submission(Base):
         student_interactions_logger.info(
             StructuredEvent(self.user_id, self.assignment_id, 'code', 'set', self.code)
         )
-
     
 class Assignment(Base):
     url = Column(String(255), default="")
     name = Column(String(255), default="Untitled")
     body = Column(Text(), default="")
-    on_run = Column(Text(), default="def on_run(code, output, properties):\n    return True")
-    on_step = Column(Text(), default="def on_step(code, output, properties):\n    return True")
-    on_start = Column(Text(), default="")
+    give_feedback = Column(Text(), default="set_success()")
+    on_step = Column(Text(), default="")
+    starting_code = Column(Text(), default="")
     answer = Column(Text(), default="")
     due = Column(DateTime(), default=None)
+    # Type of assignment
+    # "blockpy", "maze", "explain"
     type = Column(String(10), default="normal")
     visibility = Column(String(10), default="visible")
     disabled = Column(String(10), default="enabled")
+    # View mode within interface
+    # "blocks", "text", "parsons", "upload"
     mode = Column(String(10), default="blocks")
     owner_id = Column(Integer(), ForeignKey('user.id'))
     course_id = Column(Integer(), ForeignKey('course.id'))
     version = Column(Integer(), default=0)
+    position = Column(Integer(), default=0)
     
     @staticmethod
-    def edit(assignment_id, presentation=None, name=None, on_run=None, on_step=None, on_start=None, parsons=None, text_first=None):
+    def edit(assignment_id, presentation=None, name=None, 
+             on_run=None, on_step=None, on_start=None, parsons=None, text_first=None):
         assignment = Assignment.by_id(assignment_id)
         if name is not None:
             assignment.name = name
@@ -403,18 +500,22 @@ class Assignment(Base):
     def title(self):
         return self.name if self.name != "Untitled" else "Untitled ({})".format(self.id)
     
-    @staticmethod    
-    def new(owner_id, course_id):
-        assignment = Assignment(owner_id=owner_id, course_id=course_id)
+    @staticmethod
+    def new(owner_id, course_id, type="normal"):
+        assignment = Assignment(owner_id=owner_id, course_id=course_id, type=type)
         db.session.add(assignment)
         db.session.commit()
         return assignment
     
-    @staticmethod    
+    @staticmethod
     def remove(assignment_id):
         Assignment.query.filter_by(id=assignment_id).delete()
         db.session.commit()
         
+    @staticmethod
+    def is_in_course(assignment_id, course_id):
+        return Assignment.query.get(assignment_id).course_id == course_id
+    
     @staticmethod
     def by_course(course_id, exclude_builtins=True):
         if exclude_builtins:
@@ -455,34 +556,56 @@ class Assignment(Base):
             return course.external_id == context_id
         return False
     
-    def get_submission(self, user_id):
-        return Submission.load(user_id, self.id)
+    def get_submission(self, user_id, submission_url=""):
+        return Submission.load(user_id, self.id, submission_url=submission_url)
         
 class AssignmentGroup(Base):
     name = Column(String(255), default="Untitled")
     owner_id = Column(Integer(), ForeignKey('user.id'))
     course_id = Column(Integer(), ForeignKey('course.id'))
+    position = Column(Integer(), default=0)
     
     @staticmethod    
     def new(owner_id, course_id):
-        assignment_group = AssignmentGroup(owner_id=owner_id, course_id=course_id)
+        last = (db.session.query(func.max(AssignmentGroup.position).label("last_position"))
+                               .filter_by(course_id=course_id).one()).last_position
+        assignment_group = AssignmentGroup(owner_id=owner_id, course_id=course_id,
+                                           position=last+1 if last else 1)
         db.session.add(assignment_group)
         db.session.commit()
         return assignment_group
         
     @staticmethod    
     def remove(assignment_group_id):
+        # Reorder existing
+        group = AssignmentGroup.query.filter_by(id=assignment_group_id).one()
+        position = group.position
+        all_groups = (AssignmentGroup.query
+                                     .filter(AssignmentGroup.course_id==group.course_id,
+                                             AssignmentGroup.position>position)
+                                     .update({"position": (AssignmentGroup.position-1)}))
+        # Delete target
         AssignmentGroup.query.filter_by(id=assignment_group_id).delete()
         AssignmentGroupMembership.query.filter_by(assignment_group_id=assignment_group_id).delete()
         db.session.commit()
         
     @staticmethod
-    def edit(assignment_group_id, name=None):
+    def edit(assignment_group_id, name=None, move=0):
         assignment_group = AssignmentGroup.by_id(assignment_group_id)
         if name is not None:
             assignment_group.name = name
+        if move == 1 or move == -1:
+            adjacent_group = (AssignmentGroup.query.filter_by(course_id=assignment_group.course_id,
+                                                          position=assignment_group.position+move).first())
+            if adjacent_group:
+                adjacent_group.position -= move
+                assignment_group.position += move
         db.session.commit()
         return assignment_group
+        
+    @staticmethod
+    def is_in_course(assignment_group_id, course_id):
+        return AssignmentGroup.query.get(assignment_group_id).course_id == course_id
     
     @staticmethod
     def by_id(assignment_group_id):
@@ -529,25 +652,8 @@ class AssignmentGroupMembership(Base):
             membership.assignment_group_id = new_group_id
         db.session.commit()
         return membership
-
-class Log(Base):
-    event = Column(String(255), default="")
-    action = Column(String(255), default="")
+        
+class Question(Base):
     assignment_id = Column(Integer(), ForeignKey('assignment.id'))
-    user_id = Column(Integer(), ForeignKey('user.id'))
-    
-    @staticmethod    
-    def new(event, action, assignment_id, user_id):
-        # Database logging
-        log = Log(event=event, action=action, assignment_id=assignment_id, user_id=user_id)
-        db.session.add(log)
-        db.session.commit()
-        # Single-file logging
-        student_interactions_logger = logging.getLogger('StudentInteractions')
-        student_interactions_logger.info(
-            StructuredEvent(user_id, assignment_id, event, action, '')
-        )
-        return log
-    
-    def __str__(self):
-        return '<Log {} for {}>'.format(self.event, self.action)
+    body = Column(Text(), default="")
+

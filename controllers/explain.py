@@ -1,6 +1,4 @@
 from pprint import pprint
-from lxml import etree
-from urllib import quote as url_quote
 import json
 
 # Pygments, for reporting nicely formatted Python snippets
@@ -8,62 +6,38 @@ from pygments import highlight
 from pygments.lexers import PythonLexer
 from pygments.formatters import HtmlFormatter
 
-from flask.ext.wtf import Form
-from wtforms import IntegerField, BooleanField
-
-from pylti.flask import lti
-
 from flask import Blueprint, send_from_directory
 from flask import Flask, redirect, url_for, session, request, jsonify, g,\
                   make_response, Response, render_template
 from werkzeug.utils import secure_filename
-                  
-from sqlalchemy import Date, cast, func, desc, or_
 
-from controllers.helpers import instructor_required
+from controllers.helpers import lti
 
 from main import app
 from models.models import (User, Course, Assignment, AssignmentGroup, 
                            Submission, Log)
-                           
-from lti import lti_assignments, ensure_canvas_arguments
 
 from ast_finder.ast_finder import find_elements
 
-@lti_assignments.route('/explain_upload/', methods=['GET', 'POST'])
-@lti_assignments.route('/explain_upload', methods=['GET', 'POST'])
-@lti(request='session', app=app)
-def explain_upload(lti=lti):
-    assignment_id = request.form.get('question_id', None)
-    if assignment_id is None:
-        return jsonify(success=False, message="No Assignment ID given!")
-    user, roles, course = ensure_canvas_arguments()
-    
-    
-'''
-Student enters page
-Student uploads a python script
-Python script is parsed, lines are chosen and returned
-Student annotates the line, stored on server
+blueprint_explain = Blueprint('explain', __name__, url_prefix='/explain')
 
-Student uploads new file (is warned that existing progress may be lost)
-Existing annotations attempt to map to existing elements, other annotations are put in "stray"
+@blueprint_explain.route('/', methods=['GET', 'POST'])
+@blueprint_explain.route('/load', methods=['GET', 'POST'])
+@lti(request='initial')
+def load(lti=lti, lti_exception=None, assignments=None, submissions=None):
+    if assignments is None or submissions is None:
+        assignments, submissions = get_assignments_from_request()
+    MAX_QUESTIONS = 5
+    code, elements = submissions[0].load_explanation(MAX_QUESTIONS)
+    return render_template('explain/explain.html',
+                           assignment= assignments[0], 
+                           submission= submissions[0],
+                           code = code,
+                           elements=elements,
+                           user_id=g.user.id)
 
-When student is satisfied, clicks "submit". 
-
-Log student_interactions, changes
-
-Annotations:
-    for loop
-    dictionary access
-    assignment statement (particularly creating an empty list)
-    corgis import
-    corgis access
-
-'''
-
-@lti_assignments.route('/explain/download/', methods=['GET', 'POST'])
-@lti_assignments.route('/explain/download', methods=['GET', 'POST'])
+@blueprint_explain.route('/download/', methods=['GET', 'POST'])
+@blueprint_explain.route('/download', methods=['GET', 'POST'])
 def download():
     assignment_id = request.values.get('assignment_id', None)
     if assignment_id is None:
@@ -78,8 +52,8 @@ def download():
     
 #TODO: I wrote book_id instead of course_id all over the place for the uploading
     
-@lti_assignments.route('/explain/delete/', methods=['GET', 'POST'])
-@lti_assignments.route('/explain/delete', methods=['GET', 'POST'])
+@blueprint_explain.route('/explain/delete/', methods=['GET', 'POST'])
+@blueprint_explain.route('/explain/delete', methods=['GET', 'POST'])
 def delete():
     directive_id = request.values.get('directive_id', None)
     book_id = request.values.get('book_id', None)
@@ -109,8 +83,8 @@ def delete():
     
     return file_name
 
-@lti_assignments.route('/explain/upload/', methods=['POST'])
-@lti_assignments.route('/explain/upload', methods=['POST'])
+@blueprint_explain.route('/explain/upload/', methods=['POST'])
+@blueprint_explain.route('/explain/upload', methods=['POST'])
 @lti(request='session', app=app)
 def upload(lti=lti):
     assignment_id = request.values.get('assignment_id', None)
@@ -138,8 +112,8 @@ def upload(lti=lti):
     
     return jsonify(success=True, invalid=False, code=code, elements=elements)
     
-@lti_assignments.route('/explain/save/', methods=['POST'])
-@lti_assignments.route('/explain/save', methods=['POST'])
+@blueprint_explain.route('/explain/save/', methods=['POST'])
+@blueprint_explain.route('/explain/save', methods=['POST'])
 @lti(request='session', app=app)
 def save_explain(lti=lti):
     assignment_id = request.form.get('question_id', None)
@@ -155,8 +129,8 @@ def save_explain(lti=lti):
     Submission.save_explanation_answer(user.id, assignment_id, name, answer)
     return jsonify(success=True)
 
-@lti_assignments.route('/explain/submit/', methods=['POST'])
-@lti_assignments.route('/explain/submit', methods=['POST'])
+@blueprint_explain.route('/explain/submit/', methods=['POST'])
+@blueprint_explain.route('/explain/submit', methods=['POST'])
 @lti(request='session', app=app)
 def submit_explain(lti=lti):
     assignment_id = request.form.get('question_id', None)

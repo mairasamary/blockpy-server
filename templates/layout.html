@@ -4,22 +4,25 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="BlockPy!">
+    <meta name="description" content="Kennel">
     <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
     <title>{% block title %}{% endblock %}</title>
-    <meta property="og:title" content="Welcome to BlockPy" />
-    <meta property="og:site_name" content="BlockPy"/>
-    <meta property="og:url" content="http://think.cs.vt.edu/blockpy/" />
-    <meta property="og:description" content="BlockPy is a web-based Python environment that lets you work with blocks, text, or both. Designed for Data Science and equipped with powerful tools like the State Explorer and Guided Feedback, the goal of BlockPy is to let you solve authentic, real-world problems." />
+    <meta property="og:title" content="Welcome to the Kennel" />
+    <meta property="og:site_name" content="Kennel"/>
+    <meta property="og:url" content="http://think.cs.vt.edu/" />
+    <meta property="og:description" content="An organizational site for the CT@VT Project" />
     
     <link rel="shortcut icon" href="{{ url_for('static', filename='images/favicon.ico') }}">
 
     <!-- Bootstrap -->
     <link rel="stylesheet" href="{{ url_for('static', filename='libs/bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='libs/jquery-ui.css') }}">
     
     <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
     <script src="{{ url_for('static', filename='libs/jquery.js')}}"></script>
+    <script src="{{ url_for('static', filename='libs/jquery-ui.min.js')}}"></script>
     <script src="{{ url_for('static', filename='libs/bootstrap.min.js')}}"></script>
+    <script src="{{ url_for('static', filename='libs/knockout-3.4.0.js')}}"></script>
     
     <style>
     {% block extracss %}
@@ -48,7 +51,7 @@
   <div class="container">
     <div class="navbar-header">
       <a class="navbar-brand" href="{{ url_for('index') }}">
-        <img alt="BlockPy Brand" src="{{ url_for('static', filename='images/puppy-corgi-head.png')}}">
+        <img alt="Kennel Brand" src="{{ url_for('static', filename='images/puppy-corgi-head.png')}}">
       </a>
       <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
         <span class="sr-only">Toggle navigation</span>
@@ -56,24 +59,36 @@
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
       </button>
-      <a class="navbar-brand" href="{{ url_for('index') }}">BlockPy</a>
+      <a class="navbar-brand" href="{{ url_for('index') }}">Kennel</a>
     </div>
     <div id="navbar" class="collapse navbar-collapse">
       <ul class="nav navbar-nav">
         <li><a id='index' href="{{ url_for('index') }}">Home</a></li>
         {% if g.user %}
-        <li><a href="{{ url_for('lti_assignments.config') }}">LTI</a></li>
-        <!--<li><a href="{{ url_for('courses.index') }}">Courses</a></li>-->
-        {% else %}
+        <li><a href="{{ url_for('courses.index') }}">Courses</a></li>
+        {% endif %}
+        <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Tools <span class="caret"></span></a>
+            <ul class="dropdown-menu">
+                <li><a href="{{ url_for('blockpy.index') }}">BlockPy</a></li>
+                <li><a href="{{ url_for('corgis.index') }}">CORGIS Datasets</a></li>
+                <li><a href="#">Code Explainer</a></li>
+                <li><a href="#">Maze</a></li>
+                <li><a href="#">Book</a></li>
+                <li><a href="#">Curriculum</a></li>
+            </ul>
+        </li>
+        {% if g.user and g.user.is_admin() %}
+        <li><a href="{{ url_for('admin.index') }}">Admin</a></li>
         {% endif %}
         <li><a href="{{ url_for('about') }}">About</a></li>
-        <li><a id='survey-link' 
+        <!--<li><a id='survey-link' 
                target='_blank' 
                href="https://virginiatech.qualtrics.com/SE/?SID=SV_0UMPv09Ci7gdRCB"
                data-toggle="tooltip"
                title="Take our survey!" 
                data-placement="bottom"
-               ><b>Take our survey!</b></a></li>
+               ><b>Take our survey!</b></a></li>-->
         <li><a href="https://groups.google.com/forum/#!forum/blockpy">Contact</a></li>
       </ul>
       {% if g.user %}
@@ -89,6 +104,23 @@
 </nav>
 
 <div class="container">
+{% with messages = get_flashed_messages() %}
+  {% if messages|length == 1 %}
+    <div class='alert alert-warning'>
+    {% for message in messages %}
+      <span>{{ message }}</span>
+    {% endfor %}
+    </div>
+  {% elif messages %}
+    <div class='alert alert-warning'>
+    <ul class=flashes>
+    {% for message in messages %}
+      <li>{{ message }}</li>
+    {% endfor %}
+    </ul>
+    </div>
+  {% endif %}
+{% endwith %}
 {% block body %}
 {% endblock %}
 </div>
@@ -105,7 +137,7 @@
         {% endif %}
       </p>
       <p>
-        &copy; Copyright 2015 Austin Cory Bart, Javier Tibau, Eli Tilevich, Clifford A. Shaffer, Dennis Kafura.
+        &copy; Copyright 2016 Austin Cory Bart, Javier Tibau, Eli Tilevich, Clifford A. Shaffer, Dennis Kafura.
       </p>
     </div>
   </footer>

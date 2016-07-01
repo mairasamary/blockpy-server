@@ -7,7 +7,7 @@ from functools import wraps
 import logging
 import json
 
-from flask import session, current_app, Flask
+from flask import session, current_app, Flask, g
 from flask import request as flask_request
 
 from .common import (
@@ -256,7 +256,7 @@ class LTI(object):
             for prop in LTI_PROPERTY_LIST:
                 if session.get(prop, None):
                     del session[prop]
-            if session.get('user_id', None):
+            if session.get('pylti_user_id', None):
                 del session['pylti_user_id']
             
             session[LTI_SESSION_KEY] = False
@@ -331,6 +331,8 @@ class LTI(object):
         for prop in LTI_PROPERTY_LIST:
             if session.get(prop, None):
                 del session[prop]
+        if session.get('pylti_user_id', None):
+            del session['pylti_user_id']
         session[LTI_SESSION_KEY] = False
 
 

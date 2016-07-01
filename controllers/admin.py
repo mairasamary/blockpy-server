@@ -28,9 +28,9 @@ class RegularView(ModelView):
         
 class UserView(RegularView):
     def _list_roles(view, context, model, name):
-        return 'some roles'
+        return ', '.join(model.roles.all())
     def _list_thumbnail(view, context, model, name):
-        if model.picture.startswith('http'):
+        if model.picture is not None and model.picture.startswith('http'):
             return Markup('<img style="width:50px" src="{}">'.format(model.picture))
         else:
             return Markup('<img src="{}">'.format(url_for('static', filename='anon.jpg')))
@@ -63,16 +63,16 @@ class RoleView(RegularView):
     form_columns = ('name', 'user_id', 'course_id')
 class AssignmentView(RegularView):
     column_list = ('id', 'date_modified', 
-                   'owner_id', 'course_id',
+                   'owner_id', 'course_id', 'type',
                    'name', 'body', 
-                   'on_run', 'on_start', 'answer', 
-                   'type', 'visibility', 'disabled', 'mode',
+                   'give_feedback', 'starting_code',
+                   'visibility', 'disabled', 'mode',
                    'version'
                    )
 class AssignmentGroupView(RegularView):
     column_list = ('id', 'date_modified', 
                    'owner_id', 'course_id',
-                   'name'
+                   'name', 'position'
                    )
 class AssignmentGroupMembershipView(RegularView):
     column_list = ('id', 'date_modified', 

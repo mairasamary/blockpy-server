@@ -2,7 +2,7 @@ import os
 
 from main import app
 
-from models.models import db, User, Role
+from models.models import db, User, Role, Course
 from flask import session, g, send_from_directory, request, jsonify, render_template
 from flask import redirect, url_for
 from flask_security.core import current_user
@@ -13,6 +13,8 @@ from controllers.helpers import admin_required
 def load_user():
     if current_user.is_authenticated():
         g.user = current_user
+        if 'lti_course' in session:
+            g.course = Course.by_id(session['lti_course'])
     else:
         g.user = None
 
@@ -26,14 +28,29 @@ app.register_blueprint(users)
 from courses import courses
 app.register_blueprint(courses)
 
+from assignments import blueprint_assignments
+app.register_blueprint(blueprint_assignments)
+
+from assignment_groups import blueprint_assignment_group
+app.register_blueprint(blueprint_assignment_group)
+
 from lti import lti_assignments
 app.register_blueprint(lti_assignments)
 
 from services import services
 app.register_blueprint(services)
 
-from blockpy import blockpy
-app.register_blueprint(blockpy)
+from blockpy import blueprint_blockpy
+app.register_blueprint(blueprint_blockpy)
+
+from maze import blueprint_maze
+app.register_blueprint(blueprint_maze)
+
+from explain import blueprint_explain
+app.register_blueprint(blueprint_explain)
+
+from corgis import blueprint_corgis
+app.register_blueprint(blueprint_corgis)
 
 @app.route('/', methods=['GET', 'POST'])
 def index():

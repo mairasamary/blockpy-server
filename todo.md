@@ -1,3 +1,26 @@
+Add student(s)
+    Add Directly
+    Invite student
+Edit assignment
+    Edit maze
+    Edit explain priorities
+View Assignments as student
+Show public courses
+Instructor tab to the right
+More sophisticated code storage for students via assignment_id in LocalStorage
+Move capture into right click menu, make capture create PNGs
+Upload block image on mark success
+Hide frame if loaded from Canvas (check session parameters?)
+Finish parking menus
+Extract visualizer
+Fix select menu
+Instructor api
+    set_highlight
+    set_success
+    give_feedback
+    popup
+    ast_has()
+    ast_get()
 
 
 blockpy/
@@ -85,3 +108,21 @@ think.cs.vt.edu/
         index
         assignments
         cohort model
+        
+Add in app by closure
+Only add in lti=lti if needed
+        
+@blockpy.route('/assignment/<id>', methods=['GET', 'POST'])
+@lti(request='session')
+def index(id, lti=lti):
+    if g.lti_exception:
+        # flash exception
+    if not g.lti:
+        # set status to not lti
+    if not g.user:
+        # Scratch canvas
+    if not g.course:
+        # Suggest course
+        # Otherwise, scratch canvas
+    # Provide the assignment
+    

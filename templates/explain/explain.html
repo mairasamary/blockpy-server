@@ -164,11 +164,11 @@ mainModel = {
 URL_ROOT = "{{ url_for('static', filename='') }}";
 URL_MAP = { 
     'lis_result_sourcedid': "{{ session['lis_result_sourcedid'] if 'lis_result_sourcedid' in session else 'NOT IN SESSION'}}",
-    'save_explain': '{{ url_for("lti_assignments.save_explain")}}',
-    'submit_explain': '{{ url_for("lti_assignments.submit_explain")}}',
-    'save_success': '{{ url_for("lti_assignments.save_correct")}}',
+    'save_explain': '{{ url_for("explain.save_explain")}}',
+    'submit_explain': '{{ url_for("explain.submit_explain")}}',
+    'save_success': '{{ url_for("blockpy.save_correct")}}',
     'load_success': {{ "true" if submission.correct else "false" }},
-    'log_event': '{{ url_for("lti_assignments.save_events") }}',
+    'log_event': '{{ url_for("blockpy.save_events") }}',
 };
 
 function refreshAnnotationDescription() {
@@ -191,7 +191,7 @@ $(document).ready(function() {
     $('#fileupload').fileupload({
         // Uncomment the following to send cross-domain cookies:
         //xhrFields: {withCredentials: true},
-        url: '{{ url_for("lti_assignments.upload") }}',
+        url: '{{ url_for("explain.upload") }}',
         dataType: 'json',
         formData: {
             'assignment_id': '{{ assignment.id }}'

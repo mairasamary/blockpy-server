@@ -17,7 +17,7 @@ LTI_PROPERTY_LIST = [
     'launch_presentation_return_url',
     'launch_presentation_width',
     'launch_presentation_height',
-    'user_id',
+    #'user_id',
     'oauth_nonce',
     'context_label',
     'context_id',

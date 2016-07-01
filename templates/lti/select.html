@@ -25,7 +25,7 @@ ko.bindingHandlers.editableText = {
         var value = ko.utils.unwrapObservable(valueAccessor());
         $(element).text(value);
         console.log(element);
-        /*$.post("{{ url_for('lti_assignments.edit_group') }}", {
+        /*$.post("{{ url_for('assignment_group.edit_group') }}", {
                 'new_group_id': new_group.id,
                 'assignment_group_id': assignment.id
            }, function(data) {
@@ -37,7 +37,7 @@ $(document).ready(function() {
     $(".maze-selected").click(function() {
         var maze_id = $(this).data('maze');
         // TODO: This does not work with shared
-        $.get("{{ url_for('lti_assignments.select_builtin_assignment') }}", 
+        $.get("{{ url_for('assignments.select_builtin_assignment') }}", 
             {'assignment_id': maze_id, 
              'assignment_type': 'maze'},
             function(data) {
@@ -61,8 +61,8 @@ function MainModel() {
                 'name': ko.observable("{{ assignment.name }}"),
                 'group_id': -1,
                 'title': ko.observable("{{assignment.title()}}"),
-                'select': "{{ return_url }}?url={{url_for('lti_assignments.index' if menu != 'share' else 'lti_assignments.shared', assignment_id=assignment.id, _external=True) | urlencode}}&return_type={{ 'lti_launch_url' if menu != 'share' else 'iframe' }}&title={{ assignment.title()|urlencode }}&text=BlockPy%20Exercise&width=100%25&height=600", 
-                'edit': "{{ url_for('lti_assignments.edit_assignment', assignment_id=assignment.id ) }}",
+                'select': "{{ return_url }}?url={{url_for('assignments.load' if menu != 'share' else 'assignments.shared', assignment_id=assignment.id, _external=True) | urlencode}}&return_type={{ 'lti_launch_url' if menu != 'share' else 'iframe' }}&title={{ assignment.title()|urlencode }}&text=BlockPy%20Exercise&width=100%25&height=600", 
+                'edit': "{{ url_for('assignments.edit_assignment', assignment_id=assignment.id ) }}",
                 'modified': ko.observable('{{ assignment.date_modified.strftime(" %I:%M%p on %a %d, %b %Y").replace(" 0", " ") }}'),
                 'body': ko.observable("{{ assignment.body|striptags|truncate(255) }}")
             }{{ "," if not loop.last }}
@@ -80,8 +80,8 @@ function MainModel() {
                 'id': {{ assignment.id }},
                 'group_id': {{ group.id }},
                 'title': ko.observable("{{assignment.title()}}"),
-                'select': "{{ return_url }}?url={{url_for('lti_assignments.index' if menu != 'share' else 'lti_assignments.shared', assignment_id=assignment.id, _external=True) | urlencode}}&return_type={{ 'lti_launch_url' if menu != 'share' else 'iframe' }}&title={{ assignment.title()|urlencode }}&text=BlockPy%20Exercise&width=100%25&height=600", 
-                'edit': "{{ url_for('lti_assignments.edit_assignment', assignment_id=assignment.id ) }}",
+                'select': "{{ return_url }}?url={{url_for('assignments.load' if menu != 'share' else 'assignments.shared', assignment_id=assignment.id, _external=True) | urlencode}}&return_type={{ 'lti_launch_url' if menu != 'share' else 'iframe' }}&title={{ assignment.title()|urlencode }}&text=BlockPy%20Exercise&width=100%25&height=600", 
+                'edit': "{{ url_for('assignments.edit_assignment', assignment_id=assignment.id ) }}",
                 'modified': ko.observable('{{ assignment.date_modified.strftime(" %I:%M%p on %a %d, %b %Y").replace(" 0", " ") }}'),
                 'body': ko.observable("{{ assignment.body|striptags|truncate(255) }}")
             }{{ "," if not loop.last }}
@@ -94,7 +94,7 @@ function MainModel() {
     self.strayGroup = self.groups()[0];
     
     self.moveGroup = function(assignment, old_group, new_group) {
-        $.post("{{ url_for('lti_assignments.move_group') }}", {
+        $.post("{{ url_for('assignment_group.move_membership') }}", {
                 'new_group_id': new_group.id,
                 'assignment_id': assignment.id
            }, function(data) {
@@ -120,7 +120,7 @@ function MainModel() {
     self.renameGroup = function(group) {
         new_name = window.prompt("Give a new name for this group:", group.name())
         if (new_name != null) {
-            $.post("{{ url_for('lti_assignments.edit_group') }}", {
+            $.post("{{ url_for('assignment_group.edit_group') }}", {
                 'new_name': new_name,
                 'assignment_group_id': group.id
             }, function(data) {
@@ -147,7 +147,7 @@ function MainModel() {
     };
     
     self.addGroup = function() {
-        $.post("{{ url_for('lti_assignments.add_group') }}", {
+        $.post("{{ url_for('assignment_group.add_group') }}", {
         }, function(data) {
             if (data.success) {
                 self.groups.unshift({
@@ -167,7 +167,7 @@ function MainModel() {
             // Can't delete the Stray group.
             return false;
         }
-        $.post("{{ url_for('lti_assignments.remove_group') }}", {
+        $.post("{{ url_for('assignment_group.remove_group') }}", {
             'assignment_group_id': that.id
         }, function(data) {
             if (data.success) {
@@ -181,7 +181,7 @@ function MainModel() {
     self.removeAssignment = function(parent_group, assignment) {
         var youSureHuh = confirm("Are you really sure you want to delete this assignment?");
         if (youSureHuh != null) {
-            $.post("{{ url_for('lti_assignments.remove_assignment') }}", {
+            $.post("{{ url_for('assignments.remove_assignment') }}", {
                 'assignment_id': assignment.id
             }, function(data) {
                 if (data.success) {
@@ -193,9 +193,14 @@ function MainModel() {
         }
     }
     
-    self.addAssignment = function() {
-        $.post("{{ url_for('lti_assignments.new_assignment') }}", {
-            'menu': "{{ menu }}"
+    self.addExplainer = function() {
+        self.addAssignment(true)
+    }
+    
+    self.addAssignment = function(explainer) {
+        $.post("{{ url_for('assignments.new_assignment') }}", {
+            'menu': "{{ menu }}",
+            'type': explainer ? "explain" : "normal"
         }, function(data) {
             if (data.success) {
                 self.strayGroup.assignments.unshift({
@@ -216,7 +221,7 @@ function MainModel() {
     };
     
     self.refreshAssignment = function(assignment) {
-        $.post("{{ url_for('lti_assignments.get_assignment') }}", {
+        $.post("{{ url_for('assignments.get_assignment') }}", {
             'assignment_id': assignment.id
         }, function(data) {
             if (data.success) {
@@ -274,7 +279,10 @@ tr.hover-remove-rows button.remove-button {
 <tbody>
     <tr id='new-row'>
         <td colspan='1'>
-            <a href="#" data-bind="click: $root.addAssignment" class="btn btn-default">Create new Assignment</a>
+            <a href="#" data-bind="click: $root.addExplainer" class="btn btn-default">Create new Assignment</a>
+        </td>
+        <td colspan='1'>
+            <a href="#" data-bind="click: $root.addExplainer" class="btn btn-default">Create new Code Explainer</a>
         </td>
         <td colspan='1'>
             <a href="#" data-bind="click: $root.addGroup " class="btn btn-default">Create new Group</a>

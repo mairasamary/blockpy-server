@@ -8,18 +8,68 @@ Courses: Index
 {% endblock %}
 
 {% block extrahead %}
+<script src='{{ url_for("static", filename="libs/knockout-3.4.0.js")}}'></script>
 <script type='text/javascript'>
+
+$().ready(function() {
+    var mainModel = {
+        'my_courses': ko.observableArray([]),
+        'public_courses': ko.observableArray([]),
+    };
+    {% for course, role in my_courses %}
+    mainModel.my_courses.push({
+        'id': ko.observable({{ course.id|tojson}}),
+        'name': ko.observable({{ course.name|tojson}}),
+        'service': ko.observable({{ course.service|tojson}}),
+        'role': ko.observable({{ role.name|title|tojson }}),
+        'url': ko.observable({{ url_for('courses.course', course_id=course.id)|tojson}})
+    })
+    {% endfor %}
+    {% for course in public_courses %}
+    mainModel.public_courses.push({
+        'id': ko.observable({{ course.id|tojson}}),
+        'name': ko.observable({{ course.name|tojson}}),
+        'service': ko.observable({{ course.service|tojson}}),
+        'url': ko.observable({{ url_for('courses.course', course_id=course.id)|tojson}})
+    })
+    {% endfor %}
+    
+    ko.applyBindings(mainModel);
+});
+
 </script>
 {% endblock %}
 
 {% block body %}
 
-<h3>Courses</h3>
+<h3>Tools</h3>
 
-<ul>
-{% for course, role in courses %}
-<li><a href="{{ url_for('courses.course', course_id=course.id)}}"><b>{{ course.name }} ({{ course.service }})</b>: {{ role.name|title }}</a></li>
-{% endfor %}
+<a href="{{ url_for('courses.add') }}" class='btn btn-default'>Create new course</a><br>
+<a href="{{ url_for('courses.add_canvas') }}" class='btn btn-default'>Create new Canvas course</a>
+
+<h3>My Courses</h3>
+
+You are enrolled in the following courses:
+
+<ul data-bind="foreach: my_courses">
+    <li>
+        <a data-bind="attr: {href: url}">
+            <b data-bind="text: name()"></b>
+            : <span data-bind="text: role"></span>
+        </a>
+    </li>
+</ul>
+
+<h3> Public Courses</h3>
+
+The following courses are availble for you
+
+<ul data-bind="foreach: public_courses">
+    <li>
+        <a data-bind="attr: {href: url}">
+            <b data-bind="text: name()"></b>
+        </a>
+    </li>
 </ul>
 
 {% endblock %}

@@ -1,3 +1,4 @@
+{% from "helpers/_formhelpers.html" import render_field %}
 {% extends 'layout.html' %}
 
 {% block title %}
@@ -14,16 +15,12 @@ Courses: Index
 
 {% block body %}
 
-
-<h3>Assignment List</h3>
-
-<ul>
-
-    <li><a href="{{ url_for('blockpy.blockpy_canvas', assignment_id=1) }}">Assignment #1</a></li>
-    <li><a href="{{ url_for('blockpy.blockpy_canvas', assignment_id=2) }}">Assignment #2</a></li>
-    <li><a href="{{ url_for('blockpy.blockpy_canvas', assignment_id=3) }}">Assignment #3</a></li>
-    <li><a href="{{ url_for('blockpy.blockpy_canvas', assignment_id=4) }}">Assignment #4</a></li>
-
-</ul>
+<form method=post action="{{ url_for('courses.add') }}">
+  <dl>
+    {{ render_field(add_form.name) }}
+    {{ render_field(add_form.visibility) }}
+  </dl>
+  <p><input type=submit value=Register>
+</form>
 
 {% endblock %}
