@@ -19,3 +19,8 @@ from models.models import db, Assignment
 from controllers.helpers import lti
 
 blueprint_curriculum = Blueprint('curriculum', __name__, url_prefix='/curriculum')
+
+
+@blueprint_curriculum.route('/', methods=['GET', 'POST'])
+def index():
+    return render_template('curriculum/index.html')

@@ -18,4 +18,10 @@ from models.models import db, Assignment
 
 from controllers.helpers import lti
 
+
+
 blueprint_book = Blueprint('book', __name__, url_prefix='/book')
+
+@blueprint_book.route('/', methods=['GET', 'POST'])
+def index():
+    return render_template('book/index.html')

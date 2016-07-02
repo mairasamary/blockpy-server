@@ -53,6 +53,12 @@ from corgis import blueprint_corgis,blueprint_datasets
 app.register_blueprint(blueprint_corgis)
 app.register_blueprint(blueprint_datasets)
 
+from book import blueprint_book
+app.register_blueprint(blueprint_book)
+
+from curriculum import blueprint_curriculum
+app.register_blueprint(blueprint_curriculum)
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
     """ initial access page to the lti provider.  This page provides

@@ -23,8 +23,12 @@ from controllers.helpers import lti
 blueprint_corgis = Blueprint('corgis', __name__, url_prefix='/corgis')
 
 @blueprint_corgis.route('/_images/<path:path>', methods=['GET', 'POST'])
-def corgis_static(path):
+def corgis_static_images(path):
     return app.send_static_file('images/'+path)
+    
+@blueprint_corgis.route('/_lib/<path:path>', methods=['GET', 'POST'])
+def corgis_static_libs(path):
+    return app.send_static_file('libs/'+path)
 
 @blueprint_corgis.route('/', methods=['GET', 'POST'])    
 def index():

@@ -72,10 +72,8 @@
             <ul class="dropdown-menu">
                 <li><a href="{{ url_for('blockpy.index') }}">BlockPy</a></li>
                 <li><a href="{{ url_for('corgis.index') }}">CORGIS Datasets</a></li>
-                <li><a href="#">Code Explainer</a></li>
-                <li><a href="#">Maze</a></li>
-                <li><a href="#">Book</a></li>
-                <li><a href="#">Curriculum</a></li>
+                <li><a href="{{ url_for('book.index') }}">Book</a></li>
+                <li><a href="{{ url_for('curriculum.index') }}">Curriculum</a></li>
             </ul>
         </li>
         {% if g.user and g.user.is_admin() %}
