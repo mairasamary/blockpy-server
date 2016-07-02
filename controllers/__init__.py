@@ -49,8 +49,9 @@ app.register_blueprint(blueprint_maze)
 from explain import blueprint_explain
 app.register_blueprint(blueprint_explain)
 
-from corgis import blueprint_corgis
+from corgis import blueprint_corgis,blueprint_datasets
 app.register_blueprint(blueprint_corgis)
+app.register_blueprint(blueprint_datasets)
 
 @app.route('/', methods=['GET', 'POST'])
 def index():

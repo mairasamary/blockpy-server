@@ -18,6 +18,8 @@ from models.models import db, Assignment
 
 from controllers.helpers import lti
 
+
+
 blueprint_corgis = Blueprint('corgis', __name__, url_prefix='/corgis')
 
 @blueprint_corgis.route('/_images/<path:path>', methods=['GET', 'POST'])
@@ -40,4 +42,19 @@ def language_dataset(language, dataset, path):
         return render_template('corgis/generic.html', name='corgis/{language}/{dataset}/{dataset}.html'.format(language=language, dataset=dataset))
     else:
         return app.send_static_file('corgis/{language}/{dataset}/{path}'.format(language=language, dataset=dataset, path=path))
+        
+blueprint_datasets = Blueprint('datasets', __name__, url_prefix='/datasets')
 
+@blueprint_datasets.route('/', methods=['GET', 'POST'])    
+def redirect_index():
+    return redirect(url_for('corgis.index'))
+    
+@blueprint_datasets.route('/<language>/', methods=['GET', 'POST'])    
+@blueprint_datasets.route('/<language>/index.html', methods=['GET', 'POST'])
+def redirect_language_index(language):
+    return redirect(url_for('corgis.language_index', language=language))
+
+@blueprint_datasets.route('/<language>/<dataset>/', methods=['GET', 'POST'])    
+@blueprint_datasets.route('/<language>/<dataset>/<path:path>', methods=['GET', 'POST'])
+def redirect_language_dataset(language, dataset, path):
+    return redirect(url_for('corgis.language_dataset', language=language, dataset=dataset, path=path))
