@@ -2167,6 +2167,26 @@ function newBlock(name) {
     block.render();
 }
 
+var DAYS = [
+    ["Monday", "MON"],
+    ["Tuesday", "TUE"],
+    ["Wednesday", "WED"],
+    ["Thursday", "THU"],
+    ["Friday", "FRI"],
+    ["Saturday", "SAT"],
+    ["Sunday", "SUN"]
+  ]
+
+var DAYS_MAP = {
+        'MON': 'dates.date("MON")',
+        'TUE': 'dates.tuesday()',
+        'WED': 'dates.wednesday()',
+        'THU': 'dates.thursday()',
+        'FRI': 'dates.friday()',
+        'SAT': 'dates.saturday()',
+        'TODAY': 'dates.today()'
+    };
+
 
 Blockly.Blocks['datetime_day'] = {
   /**
@@ -2180,16 +2200,7 @@ Blockly.Blocks['datetime_day'] = {
         {
           "type": "field_dropdown",
           "name": "DAY",
-          "options": [
-            ["Today", "TODAY"],
-            ["Monday", "MON"],
-            ["Tuesday", "TUE"],
-            ["Wednesday", "WED"],
-            ["Thursday", "THU"],
-            ["Friday", "FRI"],
-            ["Saturday", "SAT"],
-            ["Sunday", "SUN"]
-          ]
+          "options": [["Today", "TODAY"]].concat(DAYS)
         }
       ],
       "output": "DatetimeDay",
@@ -2201,108 +2212,128 @@ Blockly.Blocks['datetime_day'] = {
 };
 Blockly.Python['datetime_day'] = function(block) {
     Blockly.Python.definitions_['import_dates'] = 'import dates';
-    var OPERATORS = {
-        'MON': 'dates.monday',
-        'TUE': 'dates.tuesday',
-        'WED': 'dates.wednesday',
-        'THU': 'dates.thursday',
-        'FRI': 'dates.friday',
-        'SAT': 'dates.saturday',
-        'TODAY': 'dates.today'
-    };
-    var operator = OPERATORS[block.getFieldValue('DAY')];
+    var operator = DAYS_MAP[block.getFieldValue('DAY')];
     return [operator, Blockly.Python.ORDER_ATOMIC];
 };
+
+var HOURS = [["1", "1"], ["2", "2"], ["3", "3"],
+             ["4", "4"], ["5", "5"], ["6", "6"], ["7", "7"],
+             ["8", "8"], ["9", "9"], ["10", "10"], ["11", "11"],
+             ["12", "12"]];
+var MINUTES = [["00", "00"], ["30", "30"]];
+var MERIDIANS = [["am", "AM"], ["pm", "PM"]];
 
 Blockly.Blocks['datetime_time'] = {
   /**
    * Block for datetime day.
    * @this Blockly.Block
    */
-  init: function() {
-    this.jsonInit({
-      "message0": "%1:%2 %3",
-      "args0": [
-        {
-          "type": "field_dropdown",
-          "name": "HOUR",
-          "options": [
-            ["Now", "NOW"],
-            ["1", "1"],
-            ["2", "2"],
-            ["3", "3"],
-            ["4", "4"],
-            ["5", "5"],
-            ["6", "6"],
-            ["7", "7"],
-            ["8", "8"],
-            ["9", "9"],
-            ["10", "10"],
-            ["11", "11"],
-            ["12", "12"]
-          ]
-        },
-        {
-          "type": "field_dropdown",
-          "name": "MINUTE",
-          "options": [
-            ["00", "00"],
-            ["30", "30"],
-          ]
-        },
-        {
-          "type": "field_dropdown",
-          "name": "MERIDIAN",
-          "options": [
-            ["am", "AM"],
-            ["pm", "PM"],
-          ]
+    init: function() {
+        this.setColour(DATA_HUE);
+        var dropdown = new Blockly.FieldDropdown([["Now", "NOW"]].concat(HOURS), function(option) {
+            var isNow = (option == 'NOW');
+            this.sourceBlock_.updateShape_(isNow);
+        });
+        this.appendDummyInput()
+            .appendField(dropdown, 'HOUR');
+        this.setInputsInline(true);
+        this.setOutput(true, 'DatetimeTime');
+        this.setTooltip("Returns a time of day");
+    },
+    mutationToDom: function() {
+        var container = document.createElement('mutation');
+        var isNow = (this.getFieldValue('HOUR') == 'NOW');
+        container.setAttribute('isNow', isNow);
+        return container;
+    },
+    domToMutation: function(xmlElement) {
+        var isNow = (xmlElement.getAttribute('isNow') == 'true');
+        this.updateShape_(isNow);
+    },
+    updateShape_: function(isNow) {
+        // Add or remove a Value Input.
+        var inputExists = this.getInput('EXTENDED');
+        if (!isNow) {
+            if (!inputExists) {
+                var minuteMenu = new Blockly.FieldDropdown(MINUTES);
+                var meridianMenu = new Blockly.FieldDropdown(MERIDIANS);
+                this.appendDummyInput('EXTENDED')
+                    .appendField(':')
+                    .appendField(minuteMenu, 'MINUTE')
+                    .appendField(meridianMenu, 'MERIDIAN');
+            }
+        } else if (inputExists) {
+            this.removeInput('EXTENDED');
         }
-      ],
-      "output": "DatetimeTime",
-      "colour": DATA_HUE,
-      "tooltip": "Returns a time of day",
-      "helpUrl": ""
-    });
-  }
+    }
 };
+
+var HOURS_MAP = {
+    '1': 'dates.one()',
+    '2': 'dates.two()',
+    '3': 'dates.three()',
+    '4': 'dates.four()',
+    '5': 'dates.five()',
+    '6': 'dates.six()',
+    '7': 'dates.seven()',
+    '8': 'dates.eight()',
+    '9': 'dates.nine()',
+    '10': 'dates.ten()',
+    '11': 'dates.eleven()',
+    '12': 'dates.twelve()',
+    'NOW': 'dates.now()'
+};
+var MINUTES_MAP = {
+    '00': 'dates.exactly()',
+    '30': 'dates.half()'
+}
+var MERIDIANS_MAP = {
+    'AM': 'dates.am()',
+    'PM': 'dates.pm()'
+}
+
 Blockly.Python['datetime_time'] = function(block) {
     Blockly.Python.definitions_['import_dates'] = 'import dates';
-    var HOURS = {
-        '1': 'dates.one',
-        '2': 'dates.two',
-        '3': 'dates.three',
-        '4': 'dates.four',
-        '5': 'dates.five',
-        '6': 'dates.six',
-        '7': 'dates.seven',
-        '8': 'dates.eight',
-        '9': 'dates.nine',
-        '10': 'dates.ten',
-        '11': 'dates.eleven',
-        '12': 'dates.twelve',
-        'NOW': 'dates.now'
-    };
-    var MINUTES = {
-        '00': 'dates.exactly',
-        '30': 'dates.half'
-    }
-    var MERIDIANS = {
-        'AM': 'dates.am',
-        'PM': 'dates.pm'
-    }
-    var hour = HOURS[block.getFieldValue('HOUR')];
-    var minute = MINUTES[block.getFieldValue('MINUTE')];
-    var meridian = MERIDIANS[block.getFieldValue('MERIDIAN')];
+    var hour = HOURS_MAP[block.getFieldValue('HOUR')];
+    var minute = MINUTES_MAP[block.getFieldValue('MINUTE')];
+    var meridian = MERIDIANS_MAP[block.getFieldValue('MERIDIAN')];
     var code = 'dates.time('+hour+','+minute+','+meridian+')';
     return [code, Blockly.Python.ORDER_ATOMIC];
 };
 
 PythonToBlocks.KNOWN_MODULES['dates'] = {
-    "is_equal": ["datetime_check_day", 'LEFT', ['OP', 'IS'], 'VALUE'],
-    "is_before": ["datetime_check_day", 'LEFT', ['OP', 'BEFORE'], 'VALUE'],
-    "is_after": ["datetime_check_day", 'LEFT', ['OP', 'AFTER'], 'VALUE']
+    "equal_time": ["datetime_check_day", 'LEFT', ['OP', 'IS'], 'VALUE'],
+    "before_time": ["datetime_check_day", 'LEFT', ['OP', 'BEFORE'], 'VALUE'],
+    "after_time": ["datetime_check_day", 'LEFT', ['OP', 'AFTER'], 'VALUE'],
+    "before_equal_time": ["datetime_check_day", 'LEFT', ['OP', 'AFTER'], 'VALUE'],
+    "after_equal_time": ["datetime_check_day", 'LEFT', ['OP', 'AFTER'], 'VALUE'],
+    "not_equal_time": ["datetime_check_day", 'LEFT', ['OP', 'AFTER'], 'VALUE'],
+    "equal_day": ["datetime_check_day", 'LEFT', ['OP', 'IS'], 'VALUE'],
+    "before_day": ["datetime_check_day", 'LEFT', ['OP', 'BEFORE'], 'VALUE'],
+    "after_day": ["datetime_check_day", 'LEFT', ['OP', 'AFTER'], 'VALUE'],
+    "before_equal_day": ["datetime_check_day", 'LEFT', ['OP', 'AFTER'], 'VALUE'],
+    "after_equal_day": ["datetime_check_day", 'LEFT', ['OP', 'AFTER'], 'VALUE'],
+    "not_equal_day": ["datetime_check_day", 'LEFT', ['OP', 'AFTER'], 'VALUE'],
 };
+
+var equalityOperators = [
+    ["==", "IS"],
+    ["<", "BEFORE"],
+    [">", "AFTER"],
+    ["<=", "BEFORE_EQUAL"],
+    ["=>", "AFTER_EQUAL"],
+    ["!=", "IS_NOT"]
+];
+var equalityOperatorsConversions = {
+    "IS": "dates.equal",
+    "BEFORE": "dates.before",
+    "AFTER": "dates.after",
+    "BEFORE_EQUAL": "dates.before_equal",
+    "AFTER_EQUAL": "dates.after_equal",
+    "IS_NOT": "dates.not_equal",
+}
+// FINISH _time and _day
+// Add in numbers and days to KNOWN_MODULES
 
 Blockly.Blocks['datetime_check_day'] = {
   /**
@@ -2310,55 +2341,59 @@ Blockly.Blocks['datetime_check_day'] = {
    * @this Blockly.Block
    */
   init: function() {
-    var OPERATORS =
-        [["is", "IS"],
-         ["is before", 'BEFORE'],
-         ["is after", 'AFTER']];
-    var VALUES =
-        [["weekend", "WEEKEND"],
-         ["weekday", 'WEEKDAY'],
-         ["Monday", 'MON'],
-         ["Tuesday", 'TUE'],
-         ["Wednesday", 'WED'],
-         ["Thursday", 'THU'],
-         ["Friday", 'FRI'],
-         ["Saturday", 'SAT'],
-         ["Sunday", 'SUN'],
-         ];
     this.setColour(Blockly.Blocks.logic.HUE);
     this.setOutput(true, 'Boolean');
     this.appendValueInput('LEFT')
         .setCheck('DatetimeDay');
     this.appendDummyInput()
-        .appendField(new Blockly.FieldDropdown(OPERATORS), 'OP')
-        .appendField(new Blockly.FieldDropdown(VALUES), 'VALUE');
+        .appendField(new Blockly.FieldDropdown(equalityOperators), 'OP')
+        .appendField(new Blockly.FieldDropdown(DAYS), 'VALUE');
     this.setInputsInline(true);
   }
 };
 
 Blockly.Python['datetime_check_day'] = function(block) {
     Blockly.Python.definitions_['import_dates'] = 'import dates';
-    var OPERATORS = {
-        'IS': 'dates.is_equal',
-        'BEFORE': 'dates.is_before',
-        'AFTER': 'dates.is_after'
-    };
-    var VALUES = {
-        'MON': 'dates.monday',
-        'TUE': 'dates.tuesday',
-        'WED': 'dates.wednesday',
-        'THU': 'dates.thursday',
-        'FRI': 'dates.friday',
-        'SAT': 'dates.saturday',
-        'WEEKEND': 'dates.weekend',
-        'WEEKDAY': 'dates.weekday'
-    };
-    var value = VALUES[block.getFieldValue('VALUE')];
-    var operator = OPERATORS[block.getFieldValue('OP')];
+    var value = DAYS_MAP[block.getFieldValue('VALUE')];
+    var operator = equalityOperatorsConversions[block.getFieldValue('OP')];
     var left = Blockly.Python.valueToCode(block, 'LEFT', Blockly.Python.ORDER_ATOMIC)
     var code = operator + "(" + left + ',' + value + ")";
     return [code, Blockly.Python.ORDER_ATOMIC];
 };
+
+
+Blockly.Blocks['datetime_check_time'] = {
+  /**
+   * Block for testing if something contains something.
+   * @this Blockly.Block
+   */
+  init: function() {
+    this.setColour(Blockly.Blocks.logic.HUE);
+    this.setOutput(true, 'Boolean');
+    this.appendValueInput('LEFT')
+        .setCheck('DatetimeTime');
+    this.appendDummyInput()
+        .appendField(new Blockly.FieldDropdown(equalityOperators), 'OP')
+        .appendField(new Blockly.FieldDropdown(HOURS), 'HOURS')
+        .appendField(':')
+        .appendField(new Blockly.FieldDropdown(MINUTES), 'MINUTES')
+        .appendField(new Blockly.FieldDropdown(MERIDIANS), 'MERIDIANS');
+    this.setInputsInline(true);
+  }
+};
+
+Blockly.Python['datetime_check_time'] = function(block) {
+    Blockly.Python.definitions_['import_dates'] = 'import dates';
+    var hour = HOURS_MAP[block.getFieldValue('HOURS')];
+    var minute = MINUTES_MAP[block.getFieldValue('MINUTES')];
+    var meridian = MERIDIANS_MAP[block.getFieldValue('MERIDIANS')];
+    var operator = equalityOperatorsConversions[block.getFieldValue('OP')];
+    var left = Blockly.Python.valueToCode(block, 'LEFT', Blockly.Python.ORDER_ATOMIC)
+    var code = operator + "(" + left + ',' + hour + ',' + minute + ',' +meridian + ")";
+    return [code, Blockly.Python.ORDER_ATOMIC];
+};
+
+Sk.builtinFiles['files']['src/lib/dates.js'] = "var $builtinmodule = function(name){    var mod = {};        var STOCK_REPORTS = {        'FB':   [  1.1,   1.0,   0.7, 0.12,  -0.3, -0.34,  -0.1, -0.45, -0.74],        'AAPL': [ 0.47,  0.53,  0.42, 0.41,  0.30,  0.10, -0.46, -0.84, -1.13],        'MSFT': [ 0.75,  0.80,  0.71, 0.67,   0.5,  0.15,  0.09,  0.03,  0.31],        'GOOG': [-0.27, -0.15, -0.11, 0.12,   0.3,   0.1, -0.3,   -0.1, -0.09]};            function normalize_ticker(ticker) {        switch (ticker.toLowerCase()) {            case \"facebook\": case \"fb\":                return \"FB\";            case \"apple\": case \"aapl\":                return \"AAPL\";            case \"microsoft\": case \"msft\":                return \"MSFT\";            case \"google\": case \"goog\":                return \"GOOG\";            default: return null;        }    }    mod.get_current = new Sk.builtin.func(function(ticker) {        Sk.builtin.pyCheckArgs(\"get_current\", arguments, 1, 1);        Sk.builtin.pyCheckType(\"ticker\", \"string\", Sk.builtin.checkString(ticker));        ticker = normalize_ticker(ticker.v);        if (ticker === null) {            throw new Sk.builtin.ValueError(\"Stock data is only available for the following companies: Facebook, Apple, Microsoft, Google.\");        }        return Sk.ffi.remapToPy(STOCK_REPORTS[ticker][0]);    });        mod.get_past = new Sk.builtin.func(function(ticker) {        Sk.builtin.pyCheckArgs(\"get_past\", arguments, 1, 1);        Sk.builtin.pyCheckType(\"ticker\", \"string\", Sk.builtin.checkString(ticker));        ticker = normalize_ticker(ticker.v);        if (ticker === null) {            throw new Sk.builtin.ValueError(\"Stock data is only available for the following companies: Facebook, Apple, Microsoft, Google.\");        }        return Sk.ffi.remapToPy(STOCK_REPORTS[ticker]);    });    return mod;}";
 
 function randomInteger(min,max) {
     return Math.floor(Math.random()*(max-min+1)+min);
@@ -3425,6 +3460,7 @@ BlockPyEditor.prototype.CATEGORY_MAP = {
                     '<block type="datetime_day"></block>'+
                     '<block type="datetime_time"></block>'+
                     '<block type="datetime_check_day"></block>'+
+                    '<block type="datetime_check_time"></block>'+
                 '</category>',
     'Separator': '<sep></sep>'
 };
@@ -3918,7 +3954,7 @@ BlockPyEngine.prototype.check = function(student_code, traceTable, output, ast) 
     var engine = this;
     var server = this.server;
     var on_run = this.main.model.programs['give_feedback']();
-    if (on_run.trim() !== "") {
+    if (on_run !== undefined && on_run.trim() !== "") {
         var backupExecution = Sk.afterSingleExecution;
         Sk.afterSingleExecution = undefined;
         Sk.builtins.output = Sk.ffi.remapToPy(output);
