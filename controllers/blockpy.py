@@ -45,7 +45,7 @@ def load(lti=lti, assignments=None, submissions=None):
         instructor_mode = False
     return render_template('blockpy/blockpy.html',
                            group=zip(assignments, submissions),
-                           user_id=g.user.id,
+                           user_id=g.user.id if g.user is not None else -1,
                            instructor_mode=instructor_mode)
                                
 
