@@ -44,7 +44,7 @@ def new_assignment(lti=lti):
     if not g.user.is_instructor(int(course_id)):
         return jsonify(success=False, message="You are not an instructor in this course.")
     assignment = Assignment.new(owner_id=g.user.id, course_id=int(course_id), type=type, name=name)
-    launch_type = 'lti_launch_url' if menu != 'share' else 'iframe'
+    launch_type = 'lti_launch_url' if menu != 'embed' else 'iframe'
     endpoint = 'assignments.load'
     return jsonify(success=True,
                    redirect=url_for('assignments.load', assignment_id=assignment.id),
@@ -54,7 +54,7 @@ def new_assignment(lti=lti):
                    body= strip_tags(assignment.body)[:255],
                    title= assignment.title(),
                    view = url_for('assignments.load', assignment_id=assignment.id,  embed= menu == 'embed'),
-                   select = url_quote(url_for(endpoint, assignment_id=assignment.id, _external=True))+"&return_type="+launch_type+"&title="+url_quote(assignment.title())+"&text=BlockPy%20Exercise&width=100%25&height=600",
+                   select = url_quote(url_for(endpoint, assignment_id=assignment.id, _external=True, embed= menu == 'embed'))+"&return_type="+launch_type+"&title="+url_quote(assignment.title())+"&text=BlockPy%20Exercise&width=100%25&height=600",
                    edit= url_for('assignments.load', assignment_id=assignment.id),
                    date_modified = assignment.date_modified.strftime(" %I:%M%p on %a %d, %b %Y").replace(" 0", " "))
     
