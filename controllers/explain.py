@@ -24,7 +24,7 @@ blueprint_explain = Blueprint('explain', __name__, url_prefix='/explain')
 @blueprint_explain.route('/', methods=['GET', 'POST'])
 @blueprint_explain.route('/load', methods=['GET', 'POST'])
 @lti(request='initial')
-def load(lti=lti, lti_exception=None, assignments=None, submissions=None):
+def load(lti=lti, lti_exception=None, assignments=None, submissions=None, embed=False):
     if assignments is None or submissions is None:
         assignments, submissions = get_assignments_from_request()
     MAX_QUESTIONS = 5
@@ -34,6 +34,7 @@ def load(lti=lti, lti_exception=None, assignments=None, submissions=None):
                            submission= submissions[0],
                            code = code,
                            elements=elements,
+                           embed=embed,
                            user_id=g.user.id)
 
 @blueprint_explain.route('/download/', methods=['GET', 'POST'])

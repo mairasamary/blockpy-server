@@ -21,6 +21,10 @@ Instructor api
     popup
     ast_has()
     ast_get()
+Deleting an assignment should potentially delete linked submissions?
+Incorrect code can crash the back-and-forth
+    if 0: pass
+
 
 
 blockpy/

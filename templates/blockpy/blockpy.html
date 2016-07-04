@@ -1,4 +1,4 @@
-{% set navbar_invisible = true %}
+{% set reduced_layout = embed %}
 {% extends 'layout.html' %}
 
 {% block title %}
@@ -36,7 +36,6 @@ Assignment
 
 {% if not group %}
 <script>
-    k = {{ "Thsi si a st\nasjd ajos idjfosij& asdoifasdofj<a sdofajsd oij> asdoisdjf"|tojson}};
     $(document).ready(function() {
         blockpy = new BlockPy(
             // settings

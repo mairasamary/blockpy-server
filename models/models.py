@@ -501,8 +501,10 @@ class Assignment(Base):
         return self.name if self.name != "Untitled" else "Untitled ({})".format(self.id)
     
     @staticmethod
-    def new(owner_id, course_id, type="normal"):
-        assignment = Assignment(owner_id=owner_id, course_id=course_id, type=type)
+    def new(owner_id, course_id, type="normal", name=None):
+        if name is None:
+            name = 'Untitled'
+        assignment = Assignment(owner_id=owner_id, course_id=course_id, type=type, name=name)
         db.session.add(assignment)
         db.session.commit()
         return assignment

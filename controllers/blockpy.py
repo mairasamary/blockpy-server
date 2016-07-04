@@ -32,7 +32,7 @@ def index():
 
 @blueprint_blockpy.route('/', methods=['GET', 'POST'])
 @blueprint_blockpy.route('/load', methods=['GET', 'POST'])
-def load(lti=lti, assignments=None, submissions=None):
+def load(lti=lti, assignments=None, submissions=None, embed=False):
     """
     
     """
@@ -46,6 +46,7 @@ def load(lti=lti, assignments=None, submissions=None):
     return render_template('blockpy/blockpy.html',
                            group=zip(assignments, submissions),
                            user_id=g.user.id if g.user is not None else -1,
+                           embed=embed,
                            instructor_mode=instructor_mode)
                                
 

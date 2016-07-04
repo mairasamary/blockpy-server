@@ -22,13 +22,14 @@ def load(lti=lti, lti_exception=None):
     assignments, submissions = get_assignments_from_request()
     if not assignments:
         return "Assignment not found"
+    embed = request.values.get('embed', 'false') == 'True'
     # Use the proper template
     if assignments[0].mode == 'maze':
-        return maze.load(assignments=assignments, submissions=submissions, lti=lti)
+        return maze.load(assignments=assignments, submissions=submissions, lti=lti,embed=embed)
     elif assignments[0].type == 'explain':
-        return explain.load(assignments=assignments, submissions=submissions, lti=lti)
+        return explain.load(assignments=assignments, submissions=submissions, lti=lti, embed=embed)
     else:
-        return blockpy.load(assignments=assignments, submissions=submissions, lti=lti)
+        return blockpy.load(assignments=assignments, submissions=submissions, lti=lti, embed=embed)
 
 @blueprint_assignments.route('/new/', methods=['GET', 'POST'])
 @blueprint_assignments.route('/new', methods=['GET', 'POST'])
@@ -36,24 +37,25 @@ def new_assignment(lti=lti):
     course_id = request.values.get('course_id', None)
     if course_id is None:
         return jsonify(success=False, message="No course id")
+    name = request.values.get('name', None) or None
     menu = request.values.get('menu', "select")
     #TODO: change "normal" type to "blockpy"
     type = request.values.get('type', "normal")
     if not g.user.is_instructor(int(course_id)):
         return jsonify(success=False, message="You are not an instructor in this course.")
-    assignment = Assignment.new(owner_id=g.user.id, course_id=int(course_id), type=type)
+    assignment = Assignment.new(owner_id=g.user.id, course_id=int(course_id), type=type, name=name)
     launch_type = 'lti_launch_url' if menu != 'share' else 'iframe'
-    endpoint = 'assignments.load' if menu != 'share' else 'assignments.shared'
+    endpoint = 'assignments.load'
     return jsonify(success=True,
-                   redirect=url_for('assignments.edit_assignment', assignment_id=assignment.id),
+                   redirect=url_for('assignments.load', assignment_id=assignment.id),
                    id= assignment.id,
                    name= assignment.name,
                    type= type,
                    body= strip_tags(assignment.body)[:255],
                    title= assignment.title(),
-                   view = url_for('assignments.load', assignment_id=assignment.id),
+                   view = url_for('assignments.load', assignment_id=assignment.id,  embed= menu == 'embed'),
                    select = url_quote(url_for(endpoint, assignment_id=assignment.id, _external=True))+"&return_type="+launch_type+"&title="+url_quote(assignment.title())+"&text=BlockPy%20Exercise&width=100%25&height=600",
-                   edit= url_for('assignments.edit_assignment', assignment_id=assignment.id),
+                   edit= url_for('assignments.load', assignment_id=assignment.id),
                    date_modified = assignment.date_modified.strftime(" %I:%M%p on %a %d, %b %Y").replace(" 0", " "))
     
 @blueprint_assignments.route('/remove/', methods=['GET', 'POST'])
@@ -165,3 +167,18 @@ def select(lti=lti):
     return_url = session['launch_presentation_return_url']
     
     return render_template('lti/select.html', assignments=assignments, strays=strays, groups=groups, return_url=return_url, menu='select')
+
+@blueprint_assignments.route('/select_embed/', methods=['GET', 'POST'])
+@blueprint_assignments.route('/select_embed', methods=['GET', 'POST'])
+@lti()
+def select_embed(lti=lti):
+    """ Let's the user select from a list of assignments.
+    """
+    # Store current user_id and context_id
+    assignments = Assignment.by_course(g.course.id, exclude_builtins=True)
+    groups = [(group, group.get_assignments())
+              for group in AssignmentGroup.by_course(g.course.id)]
+    strays = AssignmentGroup.get_ungrouped_assignments(g.course.id)
+    return_url = session['launch_presentation_return_url']
+    
+    return render_template('lti/select.html', assignments=assignments, strays=strays, groups=groups, return_url=return_url, menu='embed')
