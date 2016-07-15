@@ -1,4 +1,4 @@
-{% set reduced_layout = embed %}
+{% set reduced_layout = embed or 'iframe' == request.form.get('launch_presentation_document_target') %}
 {% extends 'layout.html' %}
 
 {% block title %}
