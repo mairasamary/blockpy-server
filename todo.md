@@ -24,6 +24,14 @@ Instructor api
 Deleting an assignment should potentially delete linked submissions?
 Incorrect code can crash the back-and-forth
     if 0: pass
+Add new graphs
+Assignment adding is broken (doesn't return a URL)
+Student View is broken
+Generate feedback might be broken
+Visualizer is still creating phantom graphs
+Still breaks sometimes when it travels
+Parsons problems are not working
+Trashcan is broken
 
 
 

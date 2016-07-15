@@ -8,6 +8,7 @@ from main import app
 import maze
 import explain
 import blockpy
+import json
 
 from models.models import (db, Assignment, AssignmentGroup, User)
 
@@ -182,3 +183,53 @@ def select_embed(lti=lti):
     return_url = session['launch_presentation_return_url']
     
     return render_template('lti/select.html', assignments=assignments, strays=strays, groups=groups, return_url=return_url, menu='embed')
+    
+def process_assignments(assignments, user_id, course_id):
+    id_map = {}
+    for assignment in assignments:
+        id = assignment['id']
+        a = Assignment(name=assignment['name'],
+                   body=assignment['body'],
+                   give_feedback=assignment['on_run'],
+                   starting_code=assignment['on_start'],
+                   type='blockpy',
+                   visibility=assignment['visibility'],
+                   disabled=assignment['disabled'],
+                   mode=assignment['mode'],
+                   owner_id = user_id,
+                   course_id = course_id,
+                   version = assignment['version'],
+                   )
+        db.session.add(a)
+        db.session.commit()
+        id_map[id] = a.id
+    return id_map
+
+@blueprint_assignments.route('/bulk_upload/', methods=['GET', 'POST'])
+@blueprint_assignments.route('/bulk_upload', methods=['GET', 'POST'])
+def bulk_upload():
+    course_id = request.values.get('course_id', None)
+    if course_id is None:
+        return jsonify(success=False, message="No course id")
+    if not g.user.is_instructor(int(course_id)):
+        return jsonify(success=False, message="Not an instructor in this course")
+    if request.method == 'POST':
+        if 'file' not in request.files:
+            flash('No file part')
+            return redirect(request.url)
+        file = request.files['file']
+        if file.filename == '':
+            flash('No selected file')
+            return redirect(request.url)
+        if file:
+            return json.dumps(process_assignments(json.loads(file.read()), user_id=g.user.id, course_id=course_id))
+    else:
+        return '''
+    <!doctype html>
+    <title>Upload assignments (JSON)</title>
+    <h1>Upload assignments (JSON)</h1>
+    <form action="" method=post enctype=multipart/form-data>
+      <p><input type=file name=file>
+         <input type=submit value=Upload>
+    </form>
+    '''
