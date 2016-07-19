@@ -10,10 +10,9 @@ Instructor tab to the right
 More sophisticated code storage for students via assignment_id in LocalStorage
 Move capture into right click menu, make capture create PNGs
 Upload block image on mark success
-Hide frame if loaded from Canvas (check session parameters?)
 Finish parking menus
 Extract visualizer
-Fix select menu
+Fix select menu in Pages (also assignments, maybe?)
 Instructor api
     set_highlight
     set_success

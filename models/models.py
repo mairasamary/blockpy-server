@@ -439,7 +439,7 @@ class Assignment(Base):
     url = Column(String(255), default="")
     name = Column(String(255), default="Untitled")
     body = Column(Text(), default="")
-    give_feedback = Column(Text(), default="set_success()")
+    give_feedback = Column(Text(), default="def on_run(code, output, properties):\n    return True")
     on_step = Column(Text(), default="")
     starting_code = Column(Text(), default="")
     answer = Column(Text(), default="")
