@@ -31,7 +31,8 @@ Visualizer is still creating phantom graphs
 Still breaks sometimes when it travels
 Parsons problems are not working
 Trashcan is broken
-
+Figure out final toolbar - reset needs to be fixed, for sure
+"Starting code" doesn't seem to save.
 
 
 blockpy/

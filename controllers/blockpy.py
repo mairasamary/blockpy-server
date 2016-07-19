@@ -64,12 +64,12 @@ def save_code(lti=lti):
     if filename == "__main__":
         submission, is_version_correct = Submission.save_code(g.user.id, assignment_id, code, assignment_version)
     elif g.user.is_instructor(g.course.id):
-        if filename == "on_run":
-            Assignment.edit(assignment_id=assignment_id, on_run=code)
+        if filename == "give_feedback":
+            Assignment.edit(assignment_id=assignment_id, give_feedback=code)
         elif filename == "on_change":
             Assignment.edit(assignment_id=assignment_id, on_step=code)
         elif filename == "starting_code":
-            Assignment.edit(assignment_id=assignment_id, on_start=code)
+            Assignment.edit(assignment_id=assignment_id, starting_code=code)
     return jsonify(success=True, is_version_correct=is_version_correct)
     
 @blueprint_blockpy.route('/save_events/', methods=['GET', 'POST'])

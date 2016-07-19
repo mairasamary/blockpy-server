@@ -459,7 +459,7 @@ class Assignment(Base):
     
     @staticmethod
     def edit(assignment_id, presentation=None, name=None, 
-             on_run=None, on_step=None, on_start=None, parsons=None, text_first=None):
+             give_feedback=None, on_step=None, starting_code=None, parsons=None, text_first=None):
         assignment = Assignment.by_id(assignment_id)
         if name is not None:
             assignment.name = name
@@ -467,14 +467,14 @@ class Assignment(Base):
         if presentation is not None:
             assignment.body = presentation
             assignment.version += 1
-        if on_run is not None:
-            assignment.on_run = on_run
+        if give_feedback is not None:
+            assignment.give_feedback = give_feedback
             assignment.version += 1
         if on_step is not None:
             assignment.on_step = on_step
             assignment.version += 1
-        if on_start is not None:
-            assignment.on_start = on_start
+        if starting_code is not None:
+            assignment.starting_code = starting_code
             assignment.version += 1
         assignment.type = 'normal'
         if parsons is True:
