@@ -1,39 +1,46 @@
-Add student(s)
-    Add Directly
-    Invite student
-Edit assignment
-    Edit maze
-    Edit explain priorities
-View Assignments as student
-Show public courses
-Instructor tab to the right
-More sophisticated code storage for students via assignment_id in LocalStorage
-Move capture into right click menu, make capture create PNGs
-Upload block image on mark success
-Finish parking menus
-Extract visualizer
-Fix select menu in Pages (also assignments, maybe?)
-Instructor api
-    set_highlight
-    set_success
-    give_feedback
-    popup
-    ast_has()
-    ast_get()
-Deleting an assignment should potentially delete linked submissions?
-Incorrect code can crash the back-and-forth
-    if 0: pass
-Add new graphs
-Assignment adding is broken (doesn't return a URL)
-Student View is broken
-Generate feedback might be broken
-Visualizer is still creating phantom graphs
-Still breaks sometimes when it travels
-Parsons problems are not working
-Trashcan is broken
-Figure out final toolbar - reset needs to be fixed, for sure
-"Starting code" doesn't seem to save.
-
+Low
+    Add student(s)
+        Add Directly
+        Invite student
+    Edit assignment
+        Edit maze
+        Edit explain priorities
+    View Assignments as student
+    Show public courses
+    Instructor tab to the right
+    More sophisticated code storage for students via assignment_id in LocalStorage
+    Upload block image on mark success
+    Extract visualizer
+    Deleting an assignment should potentially delete linked submissions?
+    Add new graphs
+    Assignment adding is broken (doesn't return a URL)
+    Trashcan is broken
+    Enable "shift-select" to do multi-block select.
+High
+    Move capture into right click menu, make capture create PNGs
+    Finish parking menus
+    Instructor api
+        set_highlight
+        set_success
+        give_feedback
+        popup
+        ast_has()
+        ast_get()
+    Incorrect code can crash the back-and-forth
+        if 0: pass
+    Student View is broken
+    Generate feedback might be broken
+    Visualizer is still creating phantom graphs
+    Parsons problems are not working
+    Figure out final toolbar - reset needs to be fixed, for sure
+    Unit testing for the static analyzer
+        += is not correctly intrepetted
+        Doesn't recognize built-ins like sorted
+        
+SQL blocks
+Download this problem for offline (bundle javascript?)
+SQLite datasets:
+    Have flat and hiearchical
 
 blockpy/
     ->

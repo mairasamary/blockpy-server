@@ -37,11 +37,11 @@
     {% endblock %}
     
     $(document).ready(function () {
-        $("#{{request.endpoint}}").parent().addClass("active"); 
+        $("#{{request.endpoint}}").parent().addClass("active");
         setTimeout(function() {
             $("#survey-link").tooltip('show');
         }, 5000);
-    })
+    });
     </script>
     
   </head>
@@ -66,7 +66,7 @@
       <ul class="nav navbar-nav">
         <li><a id='index' href="{{ url_for('index') }}">Home</a></li>
         {% if g.user %}
-        <li><a href="{{ url_for('courses.index') }}">Courses</a></li>
+        <li><a id='courses.index' href="{{ url_for('courses.index') }}">Courses</a></li>
         {% endif %}
         <li class="dropdown">
             <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Tools <span class="caret"></span></a>
