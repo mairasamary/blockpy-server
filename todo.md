@@ -1,3 +1,28 @@
+Grading uploads image in block mode
+Blockly~Corgis integration
+Finalize parking
+Instructor API rewrite
+Superior error messages
+Upload mode
+Decouple Assignments from Courses
+Data explorer
+Fix undo/redo and copy/paste
+
+Submission
+    tied to a student/course/assignment
+Assignment
+    tied to nothing
+    Delete -> Removes this assignment completely
+        Only creators of the assignment can do this? And Admins
+        
+    Remove -> deletes its entry in the Course Assignments
+Assignment Group
+    tied to nothing
+    Delete -> 
+Course Assignments
+    Connects a course to its list of assignments
+Create a new assignment
+
 Low
     Add student(s)
         Add Directly
@@ -17,7 +42,7 @@ Low
     Trashcan is broken
     Enable "shift-select" to do multi-block select.
 High
-    Move capture into right click menu, make capture create PNGs
+    Upload mode
     Finish parking menus
     Instructor api
         set_highlight
@@ -26,16 +51,13 @@ High
         popup
         ast_has()
         ast_get()
-    Incorrect code can crash the back-and-forth
-        if 0: pass
     Student View is broken
     Generate feedback might be broken
-    Visualizer is still creating phantom graphs
-    Parsons problems are not working
-    Figure out final toolbar - reset needs to be fixed, for sure
     Unit testing for the static analyzer
         += is not correctly intrepetted
         Doesn't recognize built-ins like sorted
+    Screenshotter fails on blocks that have an unconnected left
+    
         
 SQL blocks
 Download this problem for offline (bundle javascript?)

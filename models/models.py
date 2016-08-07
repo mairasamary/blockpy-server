@@ -22,6 +22,12 @@ Model = db.Model
 relationship = db.relationship
 backref = db.backref
 
+def datetime_to_string(adatetime):
+    return adatetime.isoformat() + 'Z'
+
+def string_to_datetime(astring):
+    return datetime.strptime(astring, '%Y-%m-%dT%H:%M:%S.%fZ')
+
 def ensure_dirs(path):
     try: 
         os.makedirs(path)
@@ -152,6 +158,29 @@ class Course(Base):
     service = Column(String(80), default="native")
     external_id = Column(String(255), default="")
     visibility = Column(String(80), default="private")
+    
+    def encode_json(self):
+        user = User.query.get(self.owner_id)
+        return {'_schema_version': 1,
+                'name': self.name,
+                'owner_id': self.owner_id,
+                'owner_id__email': user.email if user else '',
+                'service': self.service,
+                'external_id': self.external_id,
+                'visibility': self.visibility,
+                'id': self.id,
+                'date_modified': datetime_to_string(self.date_modified),
+                'date_created': datetime_to_string(self.date_created)}
+    @staticmethod
+    def decode_json(self, data):
+        if data['_schema_version'] == 1:
+            data = dict(data) # shallow copy
+            del data['_schema_version']
+            del data['owner_id__email']
+            data['date_modified'] = string_to_datetime(data['date_modified'])
+            data['date_created'] = string_to_datetime(data['date_created'])
+            return Course(**data)
+        raise Exception("Unknown schema version: {}".format(data.get('_schema_version', "Unknown")))
     
     def __str__(self):
         return '<Course {}>'.format(self.id)
@@ -457,6 +486,39 @@ class Assignment(Base):
     version = Column(Integer(), default=0)
     position = Column(Integer(), default=0)
     
+    def encode_json(self):
+        user = User.query.get(self.owner_id)
+        return {'_schema_version': 1,
+                'url': self.url,
+                'name': self.name,
+                'body': self.body,
+                'give_feedback': self.give_feedback,
+                'on_step': self.on_step,
+                'starting_code': self.starting_code,
+                'answer': self.answer,
+                'type': self.type,
+                'disabled': self.disabled,
+                'mode': self.mode,
+                'owner_id': self.owner_id,
+                'course_id': self.course_id,
+                'owner_id__email': user.email if user else '',
+                'version': self.version,
+                'position': self.position,
+                'visibility': self.visibility,
+                'id': self.id,
+                'date_modified': datetime_to_string(self.date_modified),
+                'date_created': datetime_to_string(self.date_created)}
+    @staticmethod
+    def decode_json(self, data):
+        if data['_schema_version'] == 1:
+            data = dict(data) # shallow copy
+            del data['_schema_version']
+            del data['owner_id__email']
+            data['date_modified'] = string_to_datetime(data['date_modified'])
+            data['date_created'] = string_to_datetime(data['date_created'])
+            return Assignment(**data)
+        raise Exception("Unknown schema version: {}".format(data.get('_schema_version', "Unknown")))
+    
     @staticmethod
     def edit(assignment_id, presentation=None, name=None, 
              give_feedback=None, on_step=None, starting_code=None, parsons=None, text_first=None):
@@ -567,6 +629,28 @@ class AssignmentGroup(Base):
     course_id = Column(Integer(), ForeignKey('course.id'))
     position = Column(Integer(), default=0)
     
+    def encode_json(self):
+        user = User.query.get(self.owner_id)
+        return {'_schema_version': 1,
+                'name': self.name,
+                'owner_id': self.owner_id,
+                'owner_id__email': user.email if user else '',
+                'course_id': self.course_id,
+                'position': self.position,
+                'id': self.id,
+                'date_modified': datetime_to_string(self.date_modified),
+                'date_created': datetime_to_string(self.date_created)}
+    @staticmethod
+    def decode_json(self, data):
+        if data['_schema_version'] == 1:
+            data = dict(data) # shallow copy
+            del data['_schema_version']
+            del data['owner_id__email']
+            data['date_modified'] = string_to_datetime(data['date_modified'])
+            data['date_created'] = string_to_datetime(data['date_created'])
+            return AssignmentGroup(**data)
+        raise Exception("Unknown schema version: {}".format(data.get('_schema_version', "Unknown")))
+    
     @staticmethod    
     def new(owner_id, course_id):
         last = (db.session.query(func.max(AssignmentGroup.position).label("last_position"))
@@ -639,6 +723,24 @@ class AssignmentGroupMembership(Base):
     assignment_group_id = Column(Integer(), ForeignKey('assignmentgroup.id'))
     assignment_id = Column(Integer(), ForeignKey('assignment.id'))
     position = Column(Integer())
+    
+    def encode_json(self):
+        return {'_schema_version': 1,
+                'assignment_group_id': self.assignment_group_id,
+                'assignment_id': self.assignment_id,
+                'position': self.position,
+                'id': self.id,
+                'date_modified': datetime_to_string(self.date_modified),
+                'date_created': datetime_to_string(self.date_created)}
+    @staticmethod
+    def decode_json(self, data):
+        if data['_schema_version'] == 1:
+            data = dict(data) # shallow copy
+            del data['_schema_version']
+            data['date_modified'] = string_to_datetime(data['date_modified'])
+            data['date_created'] = string_to_datetime(data['date_created'])
+            return AssignmentGroupMembership(**data)
+        raise Exception("Unknown schema version: {}".format(data.get('_schema_version', "Unknown")))
     
     @staticmethod
     def move_assignment(assignment_id, new_group_id):

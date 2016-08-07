@@ -96,6 +96,7 @@ function MainModel() {
     self.moveGroup = function(assignment, old_group, new_group) {
         $.post("{{ url_for('assignment_group.move_membership') }}", {
                 'new_group_id': new_group.id,
+                "course_id": {{ g.course.id|tojson }},
                 'assignment_id': assignment.id
            }, function(data) {
             // We have the assignment (and its id)
@@ -122,6 +123,7 @@ function MainModel() {
         if (new_name != null) {
             $.post("{{ url_for('assignment_group.edit_group') }}", {
                 'new_name': new_name,
+                "course_id": {{ g.course.id|tojson }},
                 'assignment_group_id': group.id
             }, function(data) {
                 if (data.success) {
@@ -148,6 +150,7 @@ function MainModel() {
     
     self.addGroup = function() {
         $.post("{{ url_for('assignment_group.add_group') }}", {
+            "course_id": {{ g.course.id|tojson }}
         }, function(data) {
             if (data.success) {
                 self.groups.unshift({
@@ -168,7 +171,8 @@ function MainModel() {
             return false;
         }
         $.post("{{ url_for('assignment_group.remove_group') }}", {
-            'assignment_group_id': that.id
+            'assignment_group_id': that.id,
+            "course_id": {{ g.course.id|tojson }}
         }, function(data) {
             if (data.success) {
                 self.groups.remove(that);

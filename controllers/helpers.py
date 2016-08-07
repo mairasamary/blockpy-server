@@ -139,7 +139,7 @@ def crossdomain(origin=None, methods=None, headers=None,
 def get_assignments_from_request():
     assignment_id = request.args.get('assignment_id', None)
     assignment_group_id = request.args.get('assignment_group_id', None)
-    submission_url = session.get('lis_result_sourcedid', '')
+    submission_url = get_lti_property('lis_result_sourcedid', '')
     # Assignment group or individual assignment?
     if assignment_group_id is not None:
         group = AssignmentGroup.by_id(assignment_group_id)
@@ -166,3 +166,12 @@ def strip_tags(html):
     s = MLStripper()
     s.feed(html)
     return s.get_data()
+
+def get_lti_property(property_name, default_value=None):
+    if property_name in request.form:
+        return request.form[property_name]
+    elif property_name in session:
+        return session[property_name]
+    elif default_value is not None:
+        return default_value
+    raise KeyError('Property {0} not found in form or session.'.format(property_name))

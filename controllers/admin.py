@@ -86,7 +86,7 @@ class SubmissionView(RegularView):
     column_list = ('id', 'date_modified', 
                    'user_id', 'assignment_id',
                    'code', 'status', 
-                   'correct', 'version', 'assignment_version'
+                   'correct', 'version', 'assignment_version', 'url'
                    )
 
 admin.add_view(UserView(User, db.session, category='Tables'))

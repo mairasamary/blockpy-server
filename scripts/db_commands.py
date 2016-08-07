@@ -4,6 +4,8 @@ from models.models import db
 from main import app
 import datetime
 import random
+import json
+from pprint import pprint
 
 class ResetDB(Command):
     """Drops all tables and recreates them"""
@@ -70,3 +72,25 @@ class DisplayDB(Command):
             concentrate=False # Don't try to join the relation lines together
             )
         graph.write_png(filename) # write out the file
+
+class ExportCourse(Command):
+    option_list = (
+        Option('--file', '-f', dest='course_data_path', default='backups/current_course_data.json'),
+        Option('--course', '-c', dest='course_id', default='backups/current_course_data.json'),
+    )
+    
+    def run(self, course_id, course_data_path, **kwargs):
+        from models.models import Course, Assignment, AssignmentGroup, AssignmentGroupMembership
+        course = Course.query.get(int(course_id))
+        assignments = [a.encode_json() for a in Assignment.query.all()]
+        assignment_groups = [a.encode_json() for a in AssignmentGroup.query.all()]
+        assignment_memberships = [a.encode_json() for a in AssignmentGroupMembership.query.all()]
+        exported_data = {
+            'course': course.encode_json(),
+            'assignments': assignments,
+            'assignment_groups': assignment_groups,
+            'assignment_memberships': assignment_memberships
+        }
+        with open(course_data_path, 'w') as output_file:
+            json.dump(exported_data, output_file, indent=2)
+        pprint(exported_data)

@@ -2,7 +2,7 @@ import sys, os
 
 from main import app
 from flask.ext.script import Manager, Server
-from scripts.db_commands import ResetDB, PopulateDB, DisplayDB
+from scripts.db_commands import ResetDB, PopulateDB, DisplayDB, ExportCourse
 from scripts.external_commands import UpdateDatasets, UpdateBlockPy
 
 '''from OpenSSL import SSL
@@ -20,6 +20,7 @@ manager.add_command("secure", Server(ssl_context=context))
 manager.add_command("reset_db", ResetDB())
 manager.add_command("populate_db", PopulateDB())
 manager.add_command("display_db", DisplayDB())
+manager.add_command("export_course", ExportCourse())
 
 manager.add_command("update_datasets", UpdateDatasets())
 manager.add_command("update_blockpy", UpdateBlockPy())

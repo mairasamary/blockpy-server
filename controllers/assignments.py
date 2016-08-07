@@ -1,7 +1,7 @@
 from flask import Blueprint, g, session, render_template, url_for, request, jsonify
 from urllib import quote as url_quote
 
-from controllers.helpers import lti, get_assignments_from_request, strip_tags
+from controllers.helpers import lti, get_assignments_from_request, strip_tags, get_lti_property
 
 from main import app
 
@@ -165,7 +165,9 @@ def select(lti=lti):
     groups = [(group, group.get_assignments())
               for group in AssignmentGroup.by_course(g.course.id)]
     strays = AssignmentGroup.get_ungrouped_assignments(g.course.id)
-    return_url = session['launch_presentation_return_url']
+    return_url = get_lti_property('launch_presentation_return_url')
+    print(return_url)
+    print(request.form.get('launch_presentation_return_url'))
     
     return render_template('lti/select.html', assignments=assignments, strays=strays, groups=groups, return_url=return_url, menu='select')
 
@@ -180,7 +182,7 @@ def select_embed(lti=lti):
     groups = [(group, group.get_assignments())
               for group in AssignmentGroup.by_course(g.course.id)]
     strays = AssignmentGroup.get_ungrouped_assignments(g.course.id)
-    return_url = session['launch_presentation_return_url']
+    return_url = get_lti_property('launch_presentation_return_url')
     
     return render_template('lti/select.html', assignments=assignments, strays=strays, groups=groups, return_url=return_url, menu='embed')
     

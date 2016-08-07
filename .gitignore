@@ -9,6 +9,7 @@ test.db
 
 logs/
 queued_logs/
+backups/
 
 certs/
 secrets.json
