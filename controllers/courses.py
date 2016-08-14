@@ -10,10 +10,10 @@ from werkzeug.utils import secure_filename
                   
 from sqlalchemy import Date, cast, func, desc, or_
 
-from controllers.helpers import instructor_required, login_required
+from controllers.helpers import instructor_required, login_required, get_course_id
 
 from main import app
-from models.models import db, Assignment, AssignmentGroup, Course, Role
+from models.models import db, Assignment, AssignmentGroup, Course
 
 courses = Blueprint('courses', __name__, url_prefix='/courses')
 
@@ -39,50 +39,18 @@ def add():
     
 @courses.route('/remove/', methods=['GET', 'POST'])
 @courses.route('/remove', methods=['GET', 'POST'])
-def remove_course():
-    course_id = request.values.get('course_id', None)
-    if course_id is None:
-        if request.method == 'POST':
-            return jsonify(success=False, message="No course id")
-        else:
-            flash('No course ID')
-            return redirect(url_for('courses.index'))
-    if not g.user.is_instructor(int(course_id)):
-        if request.method == 'POST':
-            return jsonify(success=False, message="You are not an instructor in this course.")
-        else:
-            flash('You are not an instructor in this course.')
-            return redirect(url_for('courses.course', course_id=course_id))
+@get_course_id
+def remove_course(course_id):
     Course.remove(course_id)
-    if request.method == 'POST':
-        return jsonify(success=True)    
-    else:
-        flash('Course deleted.')
-        return redirect(url_for('courses.index'))
+    return jsonify(success=True)
         
 @courses.route('/rename/', methods=['GET', 'POST'])
 @courses.route('/rename', methods=['GET', 'POST'])
-def rename_course():
-    course_id = request.values.get('course_id', None)
+@get_course_id
+def rename_course(course_id):
     new_name = request.values.get('name', "Untitled Course")
-    if course_id is None:
-        if request.method == 'POST':
-            return jsonify(success=False, message="No course id")
-        else:
-            flash('No course ID')
-            return redirect(url_for('courses.index'))
-    if not g.user.is_instructor(int(course_id)):
-        if request.method == 'POST':
-            return jsonify(success=False, message="You are not an instructor in this course.")
-        else:
-            flash('You are not an instructor in this course.')
-            return redirect(url_for('courses.course', course_id=course_id))
     Course.rename(course_id, new_name)
-    if request.method == 'POST':
-        return jsonify(success=True)    
-    else:
-        flash('Course renamed.')
-        return redirect(url_for('courses.course', course_id=course_id))
+    return jsonify(success=True)
     
 @courses.route('/add_canvas/', methods=['GET', 'POST'])
 @courses.route('/add_canvas', methods=['GET', 'POST'])

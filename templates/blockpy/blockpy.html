@@ -50,7 +50,9 @@ Assignment
                 'introduction': "Welcome to BlockPy. Try running the code below.",
                 'name': "Scratch Canvas",
                 'give_feedback': '',
-                'starting_code': 'x = 0'
+                'starting_code': 'x = 0',
+                'initial_view': 'Blocks',
+                'modules': {}
             },
             // submission
             {},
@@ -97,9 +99,15 @@ $(document).ready(function() {
                 'student_id': {{ g.user.id|tojson }},
                 'introduction': {{ assignment.body|tojson}},
                 'name': {{ assignment.name|tojson}},
+                'initial_view': "{{ "Text" if assignment.mode.lower() == "text" else "Blocks" }}",
                 'give_feedback': {{ assignment.give_feedback|tojson}},
                 'parsons': {{ 'true' if assignment.type == 'parsons' else 'false' }}, 
                 'starting_code': {{ assignment.starting_code|tojson }},
+                {% set settings = assignment.settings|json_load %}
+                'modules': {
+                    'added': {{ settings.added|tojson if settings.added else "[]" }},
+                    'removed': {{ settings.removed|tojson if settings.removed else "[]"}},
+                },
             },
             // submission
             {},
@@ -110,26 +118,6 @@ $(document).ready(function() {
                 'give_feedback': {{ assignment.give_feedback|tojson }},
             }
         );
-    /*
-    blockpy = new Kennel(
-                        
-                        {'parsons': 
-                         'text_first': {{ 'true' if assignment.type == 'text' else 'false' }}, 
-                         'read_only': false},
-                        { 'save_code': '{{ url_for("blockpy.save_code")}}',
-                          'load_code': false,
-                          'save_success': '{{ url_for("blockpy.save_correct")}}',
-                          'load_success': {{ "true" if submission.correct else "false" }},
-                          'log_event': '{{ url_for("blockpy.save_events") }}',
-                          'save_presentation': '{{ url_for("blockpy.save_presentation")}}'},
-                        { 'question_id': {{ assignment.id }},
-                          'student_id': 1,
-                          'book_id': 'compthink',
-                          'version': {{ assignment.version }},
-                          'lis_result_sourcedid': "{{ session['lis_result_sourcedid'] if 'lis_result_sourcedid' in session else ""}}",
-                          'name': '{{ assignment.name }}' });
-    $(".embedded-data-{{loop.index}}").remove();
-    */
 });
 
 </script>

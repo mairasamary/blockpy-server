@@ -174,7 +174,6 @@ def _post_patched_request(consumers, lti_key, body,
     if lti_cert:
         client.add_certificate(key=lti_cert, cert=lti_cert, domain='')
         log.debug("cert %s", lti_cert)
-
     import httplib2
 
     http = httplib2.Http
@@ -201,6 +200,10 @@ def _post_patched_request(consumers, lti_key, body,
     http = httplib2.Http
     # pylint: disable=protected-access
     http._normalize_headers = monkey_patch_function
+    
+    print(body)
+    print(lti_key, secret)
+    print(content)
 
     log.debug("key %s", lti_key)
     log.debug("secret %s", secret)

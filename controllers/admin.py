@@ -14,9 +14,9 @@ from jinja2 import Markup
 # Import runestone
 from main import app
 from controllers.helpers import admin_required
-from models.models import (User, db, Course, Submission, Assignment, 
+from models.models import (User, db, Course, Submission, Assignment,
                            AssignmentGroup, AssignmentGroupMembership, Settings,
-                           Authentication, Log, Role)
+                           Authentication, Log, Role, CourseAssignment)
 
 admin = Admin(app)
 
@@ -74,6 +74,11 @@ class AssignmentGroupView(RegularView):
                    'owner_id', 'course_id',
                    'name', 'position'
                    )
+class LogView(RegularView):
+    column_list = ('id', 'date_modified', 
+                   'assignment_id', 'user_id',
+                   'event', 'action'
+                   )
 class AssignmentGroupMembershipView(RegularView):
     column_list = ('id', 'date_modified', 
                    'assignment_group_id', 'assignment_id',
@@ -93,12 +98,13 @@ admin.add_view(UserView(User, db.session, category='Tables'))
 admin.add_view(ModelIdView(Course, db.session, category='Tables'))
 admin.add_view(SubmissionView(Submission, db.session, category='Tables'))
 admin.add_view(AssignmentView(Assignment, db.session, category='Tables'))
+admin.add_view(ModelIdView(CourseAssignment, db.session, category='Tables'))
 admin.add_view(AssignmentGroupView(AssignmentGroup, db.session, category='Tables'))
 admin.add_view(AssignmentGroupMembershipView(AssignmentGroupMembership, db.session, category='Tables'))
 admin.add_view(ModelIdView(Settings, db.session, category='Tables'))
 admin.add_view(ModelIdView(Authentication, db.session, category='Tables'))
 admin.add_view(RoleView(Role, db.session, category='Tables'))
-admin.add_view(ModelIdView(Log, db.session, category='Tables'))
+admin.add_view(LogView(Log, db.session, category='Tables'))
 
 @app.route('/admin/shutdown', methods=['GET', 'POST'])
 @admin_required

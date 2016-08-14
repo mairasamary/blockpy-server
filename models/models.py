@@ -14,7 +14,7 @@ from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from flask.ext.security import UserMixin, RoleMixin, login_required
 from sqlalchemy import event, Integer, Date, ForeignKey, Column, Table,\
                        String, Boolean, DateTime, Text, ForeignKeyConstraint,\
-                       cast, func
+                       cast, func, and_, or_
 from sqlalchemy.ext.declarative import declared_attr
 
 db = SQLAlchemy(app)
@@ -70,6 +70,14 @@ class User(Base, UserMixin):
     
     def get_roles(self):
         return Role.query.filter_by(user_id=self.id).all()
+        
+    def get_editable_courses(self):
+        return (db.session.query(Course)
+                          .filter(Role.user_id == self.id,
+                                  Role.course_id == Course.id,
+                                  (Role.name == 'instructor') | (Role.name == 'admin'))
+                          .order_by(Course.name)
+                          .distinct())
         
     def get_courses(self):
         return (db.session.query(Course, Role)
@@ -193,6 +201,17 @@ class Course(Base):
     def remove(course_id):
         Course.query.filter_by(id=course_id).delete()
         db.session.commit()
+        
+    @staticmethod
+    def get_all_groups():
+        courses = Course.query.all()
+        return [{'id': course.id, 
+                 'name': course.name, 
+                 'groups': [{'id': group.id,
+                             'name': group.name}
+                            for group in AssignmentGroup.by_course(course.id)]
+                 } 
+                for course in courses]
 
     @staticmethod
     def rename(course_id, name=None):
@@ -297,6 +316,7 @@ class Submission(Base):
     status = Column(Integer(), default=0)
     correct = Column(Boolean(), default=False)
     assignment_id = Column(Integer(), ForeignKey('assignment.id'))
+    course_id = Column(Integer(), ForeignKey('course.id'))
     user_id = Column(Integer(), ForeignKey('user.id'))
     assignment_version = Column(Integer(), default=0)
     version = Column(Integer(), default=0)
@@ -317,6 +337,9 @@ class Submission(Base):
             else:
                 submission.code = assignment.starting_code
             db.session.add(submission)
+            db.session.commit()
+        elif submission_url:
+            submission.url = submission_url
             db.session.commit()
         return submission
         
@@ -473,9 +496,10 @@ class Assignment(Base):
     starting_code = Column(Text(), default="")
     answer = Column(Text(), default="")
     due = Column(DateTime(), default=None)
+    settings = Column(Text())
     # Type of assignment
     # "blockpy", "maze", "explain"
-    type = Column(String(10), default="normal")
+    type = Column(String(10), default="blockpy")
     visibility = Column(String(10), default="visible")
     disabled = Column(String(10), default="enabled")
     # View mode within interface
@@ -538,7 +562,7 @@ class Assignment(Base):
         if starting_code is not None:
             assignment.starting_code = starting_code
             assignment.version += 1
-        assignment.type = 'normal'
+        assignment.type = 'blockpy'
         if parsons is True:
             assignment.type = 'parsons'
             assignment.version += 1
@@ -561,15 +585,39 @@ class Assignment(Base):
         
     def title(self):
         return self.name if self.name != "Untitled" else "Untitled ({})".format(self.id)
+        
+    @staticmethod
+    def get_available():
+        assignments = Assignment.query.all()
+        return [(assignment, (AssignmentGroup.query
+                           .filter(AssignmentGroup.id == AssignmentGroupMembership.assignment_group_id,
+                                   assignment.id == AssignmentGroupMembership.assignment_id)
+                           .first()))
+                for assignment in assignments]
+        '''
+        return (db.session.query(Assignment, AssignmentGroup)
+                          .outerjoin(AssignmentGroup, AssignmentGroup.course_id == Course.id)
+                          .filter(Assignment.course_id == Course.id,
+                                  or_(AssignmentGroup.id == None,
+                                    and_(AssignmentGroupMembership.assignment_id == Assignment.id,
+                                         AssignmentGroupMembership.assignment_group_id == AssignmentGroup.id))
+                                  )
+                          .all())'''
     
     @staticmethod
-    def new(owner_id, course_id, type="normal", name=None):
+    def new(owner_id, course_id, type="blockpy", name=None, level=None):
         if name is None:
             name = 'Untitled'
-        assignment = Assignment(owner_id=owner_id, course_id=course_id, type=type, name=name)
+        assignment = Assignment(owner_id=owner_id, course_id=course_id, 
+                                type=type, name=level if type == 'maze' else name)
         db.session.add(assignment)
         db.session.commit()
         return assignment
+        
+    def move_course(self, new_course_id):
+        self.course_id = new_course_id
+        AssignmentGroupMembership.query.filter_by(assignment_id=self.id).delete()
+        db.session.commit()
     
     @staticmethod
     def remove(assignment_id):
@@ -623,11 +671,18 @@ class Assignment(Base):
     def get_submission(self, user_id, submission_url=""):
         return Submission.load(user_id, self.id, submission_url=submission_url)
         
+class CourseAssignment(Base):
+    assignment_id = Column(Integer(), ForeignKey('assignment.id'))
+    course_id = Column(Integer(), ForeignKey('course.id'))
+        
 class AssignmentGroup(Base):
     name = Column(String(255), default="Untitled")
     owner_id = Column(Integer(), ForeignKey('user.id'))
     course_id = Column(Integer(), ForeignKey('course.id'))
     position = Column(Integer(), default=0)
+    
+    def __str__(self):
+        return 'Group {} in {}'.format(self.name, self.course_id)
     
     def encode_json(self):
         user = User.query.get(self.owner_id)
@@ -652,10 +707,11 @@ class AssignmentGroup(Base):
         raise Exception("Unknown schema version: {}".format(data.get('_schema_version', "Unknown")))
     
     @staticmethod    
-    def new(owner_id, course_id):
+    def new(owner_id, course_id, name="Untitled Group"):
         last = (db.session.query(func.max(AssignmentGroup.position).label("last_position"))
                                .filter_by(course_id=course_id).one()).last_position
         assignment_group = AssignmentGroup(owner_id=owner_id, course_id=course_id,
+                                           name=name,
                                            position=last+1 if last else 1)
         db.session.add(assignment_group)
         db.session.commit()
@@ -724,6 +780,9 @@ class AssignmentGroupMembership(Base):
     assignment_id = Column(Integer(), ForeignKey('assignment.id'))
     position = Column(Integer())
     
+    def __str__(self):
+        return "<Membership {} in {}>".format(self.assignment_id, self.assignment_group_id)
+    
     def encode_json(self):
         return {'_schema_version': 1,
                 'assignment_group_id': self.assignment_group_id,
@@ -747,17 +806,21 @@ class AssignmentGroupMembership(Base):
         membership = (AssignmentGroupMembership.query
                                                .filter_by(assignment_id=assignment_id)
                                                .first())
-        if membership is None:
-            membership = AssignmentGroupMembership(assignment_group_id = new_group_id,
+        if membership is None and new_group_id != -1:
+            # -1 means delete
+            membership = AssignmentGroupMembership(assignment_group_id=new_group_id,
                                                    assignment_id=assignment_id,
                                                    position=0)
             db.session.add(membership)
+        elif new_group_id == -1:
+            db.session.remove(membership)
         else:
             membership.assignment_group_id = new_group_id
         db.session.commit()
         return membership
-        
+
+'''        
 class Question(Base):
     assignment_id = Column(Integer(), ForeignKey('assignment.id'))
     body = Column(Text(), default="")
-
+'''

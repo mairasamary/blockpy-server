@@ -1,6 +1,7 @@
 static/.webassets-cache/
 static/gen/
 static/corgis/
+static/uploads/
 
 templates/corgis/
 

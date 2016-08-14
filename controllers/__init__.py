@@ -2,7 +2,7 @@ import os
 
 from main import app
 
-from models.models import db, User, Role, Course
+from models.models import db, User, Course
 from flask import session, g, send_from_directory, request, jsonify, render_template
 from flask import redirect, url_for
 from flask_security.core import current_user
@@ -34,8 +34,10 @@ app.register_blueprint(blueprint_assignments)
 from assignment_groups import blueprint_assignment_group
 app.register_blueprint(blueprint_assignment_group)
 
+'''
 from lti import lti_assignments
 app.register_blueprint(lti_assignments)
+'''
 
 from services import services
 app.register_blueprint(services)
@@ -49,15 +51,15 @@ app.register_blueprint(blueprint_maze)
 from explain import blueprint_explain
 app.register_blueprint(blueprint_explain)
 
-from corgis import blueprint_corgis,blueprint_datasets
+from corgis import blueprint_corgis, blueprint_datasets
 app.register_blueprint(blueprint_corgis)
 app.register_blueprint(blueprint_datasets)
 
 from book import blueprint_book
 app.register_blueprint(blueprint_book)
 
-from curriculum import blueprint_curriculum
-app.register_blueprint(blueprint_curriculum)
+from course_materials import blueprint_course_materials
+app.register_blueprint(blueprint_course_materials)
 
 @app.route('/', methods=['GET', 'POST'])
 def index():

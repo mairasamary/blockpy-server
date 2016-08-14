@@ -55,6 +55,7 @@ def lti(request='any', *lti_args, **lti_kwargs):
                 if not old_user:
                     flask_security.utils.login_user(g.user, remember = True)
             except LTIException as lti_exception:
+                kwargs['lti'] = None
                 kwargs['lti_exception'] = dict()
                 kwargs['lti_exception']['exception'] = lti_exception
                 kwargs['lti_exception']['kwargs'] = kwargs
@@ -139,7 +140,8 @@ def crossdomain(origin=None, methods=None, headers=None,
 def get_assignments_from_request():
     assignment_id = request.args.get('assignment_id', None)
     assignment_group_id = request.args.get('assignment_group_id', None)
-    submission_url = get_lti_property('lis_result_sourcedid', '')
+    submission_url = request.form.get('lis_result_sourcedid', '')
+    print(submission_url)
     # Assignment group or individual assignment?
     if assignment_group_id is not None:
         group = AssignmentGroup.by_id(assignment_group_id)
@@ -175,3 +177,38 @@ def get_lti_property(property_name, default_value=None):
     elif default_value is not None:
         return default_value
     raise KeyError('Property {0} not found in form or session.'.format(property_name))
+
+def get_course_id(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        course_id = request.values.get('course_id', None)
+        # There is a course_id
+        if course_id is None:
+            return jsonify(success=False, message="No course id")
+        # It's an integer value
+        try:
+            course_id = int(course_id)
+        except ValueError:
+            return jsonify(success=False, message="Course ID wasn't an integer")
+        # The user is an instructor in the course
+        if not g.user.is_instructor(course_id):
+            return jsonify(success=False, message="You are not an instructor in this course.")
+        return f(*args, course_id=course_id, **kwargs)
+    return decorated_function
+
+def get_assignment_id(f):
+    @wraps(f)
+    def decorated_function(course_id, *args, **kwargs):
+        assignment_id = request.values.get('assignment_id', None)
+        # there is an assignment_id
+        if assignment_id is None:
+            return jsonify(success=False, message="No assignment id")
+        # It's an integer value
+        try:
+            assignment_id = int(assignment_id)
+        except ValueError:
+            return jsonify(success=False, message="Assignment ID wasn't an integer")
+        if not Assignment.is_in_course(assignment_id, course_id):
+            return jsonify(success=False, message="That assignment id does not belong to that course.")
+        return f(*args, course_id=course_id, **kwargs)
+    return decorated_function

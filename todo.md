@@ -1,23 +1,39 @@
-Grading uploads image in block mode
-Blockly~Corgis integration
+Fix broadway
+    None values
+    Reorganize
+    Document
+Construction spending
+    Document
+
 Finalize parking
 Instructor API rewrite
-Superior error messages
-Upload mode
+
+Explain and maze
 Decouple Assignments from Courses
+Blockly~Corgis integration
+
 Data explorer
 Fix undo/redo and copy/paste
 
+Grading uploads image in block mode
+
+Superior error messages
+Upload mode
+
+
 Submission
     tied to a student/course/assignment
+Course
+    Grouping of submissions
+Curriculum
+    Grouping of assignments
 Assignment
-    tied to nothing
+    tied to a Curriculum
     Delete -> Removes this assignment completely
         Only creators of the assignment can do this? And Admins
-        
     Remove -> deletes its entry in the Course Assignments
 Assignment Group
-    tied to nothing
+    tied to a Curriculum
     Delete -> 
 Course Assignments
     Connects a course to its list of assignments

@@ -5,6 +5,11 @@ from pprint import pprint
 from flask.ext.wtf import Form
 from wtforms import IntegerField, BooleanField
 
+# Pygments, for reporting nicely formatted Python snippets
+from pygments import highlight
+from pygments.lexers import PythonLexer
+from pygments.formatters import HtmlFormatter
+
 from flask import Blueprint, send_from_directory
 from flask import Flask, redirect, url_for, session, request, jsonify, g,\
                   make_response, Response, render_template
@@ -32,7 +37,7 @@ def index():
 
 @blueprint_blockpy.route('/', methods=['GET', 'POST'])
 @blueprint_blockpy.route('/load', methods=['GET', 'POST'])
-def load(lti=lti, assignments=None, submissions=None, embed=False):
+def load(lti=None, assignments=None, submissions=None, embed=False):
     """
     
     """
@@ -57,7 +62,6 @@ def save_code(lti=lti):
     assignment_version = int(request.form.get('version', -1))
     if assignment_id is None:
         return jsonify(success=False, message="No Assignment ID given!")
-    print(request.form)
     code = request.form.get('code', '')
     filename = request.form.get('filename', '__main__')
     is_version_correct = True
@@ -85,10 +89,12 @@ def save_events(lti=lti):
     
 @blueprint_blockpy.route('/save_correct/', methods=['GET', 'POST'])
 @blueprint_blockpy.route('/save_correct', methods=['GET', 'POST'])
-def save_correct(lti=lti):
+@lti()
+def save_correct(lti):
+    
     assignment_id = request.form.get('assignment_id', None)
     status = float(request.form.get('status', "0.0"))
-    lis_result_sourcedid = request.form.get('lis_result_sourcedid', None)
+    image = request.form.get('image', "")
     if assignment_id is None:
         return jsonify(success=False, message="No Assignment ID given!")
     assignment = Assignment.by_id(assignment_id)
@@ -100,13 +106,39 @@ def save_correct(lti=lti):
         message = "Success!"
     else:
         message = "Incomplete"
-    url = url_for('blueprint_blockpy.get_submission_code', submission_id=submission.id, _external=True)
+    sub_blocks_folder = os.path.join(app.config['UPLOADS_DIR'], 'submission_blocks')
+    image_path = os.path.join(sub_blocks_folder, str(submission.id)+'.png')
+    if image != "":
+        converted_image = image[22:].decode('base64')
+        with open(image_path, 'wb') as image_file:
+            image_file.write(converted_image);
+        image_url = url_for('blockpy.get_submission_image', submission_id=submission.id, _external=True)
+    elif os.path_exists(image_path):
+        try:
+            os.remove(image_path)
+        except Exception:
+            app.logger.info("Could not delete")
+    lis_result_sourcedid = request.form.get('lis_result_sourcedid', submission.url) or None
+    url = url_for('blockpy.get_submission_code', submission_id=submission.id, _external=True)
     if lis_result_sourcedid is None:
         return jsonify(success=False, message="Not in a grading context.")
+    else:
+        session['lis_result_sourcedid'] = lis_result_sourcedid
     if assignment.mode == 'maze':
         lti.post_grade(float(submission.correct), "<h1>{0}</h1>".format(message), endpoint=lis_result_sourcedid);
     else:
-        lti.post_grade(float(submission.correct), "<h1>{0}</h1>".format(message)+"<div>Latest work in progress: <a href='{0}' target='_blank'>View</a></div>".format(url)+"<div>Touches: {0}</div>".format(submission.version)+"Last ran code:<br>"+highlight(submission.code, PythonLexer(), HtmlFormatter()), endpoint=lis_result_sourcedid)
+        code = highlight(submission.code, PythonLexer(), HtmlFormatter())
+        potential_image = "Submitted Blocks:<br><img src='{0}'>".format(image_url) if image else ""
+        body = '''
+        <h1>{message}</h1>
+        <div>Latest work in progress: <a href='{url}' target='_blank'>View</a></div>
+        <div>Touches: {touches}</div>
+        {potential_image}
+        <br>
+        Submitted code:<br>
+        {code}
+        '''.format(message=message, url=url, touches=submission.version, code=code, potential_image=potential_image)
+        lti.post_grade(float(submission.correct), body, endpoint=lis_result_sourcedid)
     return jsonify(success=True)
     
 @blueprint_blockpy.route('/get_submission_code/', methods=['GET', 'POST'])
@@ -117,7 +149,20 @@ def get_submission_code(lti=lti):
         return "Sorry, no submission ID was given."
     submission = Submission.query.get(submission_id)
     if g.user.is_instructor(g.course.id) or submission.user_id == g.user.id:
-        return submission.code if submission.code else "#No code given!"
+        return '<pre>'+submission.code+"</pre>" if submission.code else "#No code given!"
+    else:
+        return "Sorry, you do not have sufficient permissions to spy!"
+        
+@blueprint_blockpy.route('/get_submission_image/', methods=['GET', 'POST'])
+@blueprint_blockpy.route('/get_submission_image', methods=['GET', 'POST'])
+def get_submission_image(lti=lti):
+    submission_id = request.values.get('submission_id', None)
+    if submission_id is None:
+        return "Sorry, no submission ID was given."
+    relative_image_path = 'uploads/submission_blocks/'+str(submission_id)+'.png'
+    submission = Submission.query.get(int(submission_id))
+    if g.user.is_instructor(g.course.id) or submission.user_id == g.user.id:
+        return app.send_static_file(relative_image_path)
     else:
         return "Sorry, you do not have sufficient permissions to spy!"
     
@@ -134,7 +179,7 @@ def save_presentation(lti=lti):
     parsons = request.form.get('parsons', "false") == "true"
     text_first = request.form.get('text_first', "false") == "true"
     name = request.form.get('name', "")
-    print(g.user.id, int(course_id))
+    modules = request.form.get('modules', "")
     if not g.user.is_instructor(int(course_id)):
         return jsonify(success=False, message="You are not an instructor in this course.")
     if not Assignment.is_in_course(int(assignment_id), int(course_id)):

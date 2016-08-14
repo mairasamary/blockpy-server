@@ -1,3 +1,4 @@
+import json
 import os, sys
 import logging
 from logging import handlers
@@ -21,6 +22,12 @@ root.addHandler(ch)
 
 # Modify Jinja2
 app.jinja_env.filters['zip'] = zip
+def attempt_json_load(data):
+    try:
+        return json.loads(data)
+    except:
+        return {}
+app.jinja_env.filters['json_load'] = attempt_json_load
 
 app.config.from_object('config.TestingConfig')
 

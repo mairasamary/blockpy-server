@@ -24,6 +24,7 @@ class Config(object):
     ROOT_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
     STATIC_DIRECTORY = os.path.join(ROOT_DIRECTORY, 'static')
     BLOCKLY_LOG_DIR = os.path.join(ROOT_DIRECTORY, 'logs')
+    UPLOADS_DIR = os.path.join(STATIC_DIRECTORY, 'uploads')
     
     BLOCKPY_SOURCE_DIR = secrets.get('BLOCKPY_SOURCE_DIR')
     DATASETS_SOURCE_DIR = secrets.get('DATASETS_SOURCE_DIR')
