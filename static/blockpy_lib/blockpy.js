@@ -111,6 +111,17 @@ NodeVisitor.prototype.generic_visit = function(node) {
     }
 }
 
+NodeVisitor.prototype.recursive_walk = function(node) {
+    var todo = [node];
+    var result = [];
+    while (todo.length > 0) {
+        node = todo.shift();
+        todo = todo.concat(iter_child_nodes(node))
+        result.push(node);
+    }
+    return result;
+}
+
 /*
 function CodeAnalyzer() {
     NodeVisitor.apply(this, Array.prototype.slice.call(arguments));
@@ -1712,20 +1723,42 @@ PythonToBlocks.prototype.CallAttribute = function(func, args, keywords, starargs
             }
             var fields = {};
             var mutations = {};
+            var values = {};
             for (var i = 0; i < args.length; i++) {
                 var argument = definition[1+i];
-                //console.log(argument);
+                console.log(argument);
+                var destination = fields;
                 if (typeof argument ==  "string") {
                     fields[argument] = this.Str_value(args[i]);
                 } else if (typeof argument == "object") {
+                    if (argument.mode == "value") {
+                        destination = values;
+                    }
+                    if (argument.add_mutation !== undefined) {
+                        mutations[argument.add_mutation.name] = argument.add_mutation.value;
+                    }
                     if (argument.type == 'mutation') {
                         if (argument.index == undefined) {
                             mutations[argument.name] = this.Str_value(args[i]);
                         } else {
                             mutations[argument.name] = this.Str_value(args[argument.index+1]);
                         }
+                    } else if (argument.type == "integer") {
+                        destination[argument.name] = this.Num_value(args[i]);
+                    } else if (argument.type == 'variable') {
+                        destination[argument.name] = this.convert(args[i]);
+                    } else if (argument.type == "integer_mapper") {
+                        // Okay we jumped the shark here
+                        var argumentName = argument.name;
+                        var argumentMapper = argument.method;
+                        destination[argumentName] = argumentMapper(this.Num_value(args[i]));
+                    } else if (argument.type == 'mapper') {
+                        var argumentName = argument.name;
+                        var argumentMapper = argument.method;
+                        destination[argumentName] = argumentMapper(this.Str_value(args[i]));
                     }
                 } else {
+                    console.log(typeof argument);
                     var argumentName = argument[0];
                     var argumentMapper = argument[1];
                     fields[argumentName] = argumentMapper(this.Str_value(args[i]));
@@ -1736,10 +1769,13 @@ PythonToBlocks.prototype.CallAttribute = function(func, args, keywords, starargs
                 var second = definition[i][1];
                 fields[first] = second;
             }
+            console.log(mutations);
             if (isExpression) {
-                return block(blockName, func.lineno, fields, [], [], mutations);
+                var k = block(blockName, func.lineno, fields, values, [], mutations);
+                console.log(k);
+                return k;
             } else {
-                return [block(blockName, func.lineno, fields, [], [], mutations)];
+                return [block(blockName, func.lineno, fields, values, [], mutations)];
             }
         }
     } 
@@ -1861,6 +1897,12 @@ PythonToBlocks.prototype.Num = function(node)
 {
     var n = node.n;
     return block("math_number", node.lineno, {"NUM": Sk.ffi.remapToJs(n)});
+}
+
+PythonToBlocks.prototype.Num_value = function(node)
+{
+    var n = node.n;
+    return Sk.ffi.remapToJs(n);
 }
 
 /*
@@ -2196,13 +2238,14 @@ var DAYS = [
   ]
 
 var DAYS_MAP = {
-        'MON': 'parking.date("MON")',
-        'TUE': 'parking.tuesday()',
-        'WED': 'parking.wednesday()',
-        'THU': 'parking.thursday()',
-        'FRI': 'parking.friday()',
-        'SAT': 'parking.saturday()',
-        'TODAY': 'parking.today()'
+        'mon': 'parking.Day("MON")',
+        'tue': 'parking.Day("TUE")',
+        'wed': 'parking.Day("WED")',
+        'thu': 'parking.Day("THU")',
+        'fri': 'parking.Day("FRI")',
+        'sat': 'parking.Day("SAT")',
+        'sun': 'parking.Day("SUN")',
+        'tod': 'parking.today()'
     };
 
 
@@ -2230,7 +2273,7 @@ Blockly.Blocks['datetime_day'] = {
 };
 Blockly.Python['datetime_day'] = function(block) {
     Blockly.Python.definitions_['import_parking'] = 'import parking';
-    var operator = DAYS_MAP[block.getFieldValue('DAY')];
+    var operator = DAYS_MAP[block.getFieldValue('DAY').slice(0, 3).toLowerCase()];
     return [operator, Blockly.Python.ORDER_ATOMIC];
 };
 
@@ -2312,26 +2355,54 @@ var MERIDIANS_MAP = {
 
 Blockly.Python['datetime_time'] = function(block) {
     Blockly.Python.definitions_['import_parking'] = 'import parking';
-    var hour = HOURS_MAP[block.getFieldValue('HOUR')];
-    var minute = MINUTES_MAP[block.getFieldValue('MINUTE')];
-    var meridian = MERIDIANS_MAP[block.getFieldValue('MERIDIAN')];
-    var code = 'parking.time('+hour+','+minute+','+meridian+')';
+    var hour = block.getFieldValue('HOUR');
+    var code;
+    if (hour == "NOW") {
+        code = "parking.now()";
+    } else {
+        var minute = parseInt(block.getFieldValue('MINUTE'));
+        var meridian = Blockly.Python.quote_(block.getFieldValue('MERIDIAN'));
+        code = 'parking.Time('+hour+','+minute+','+meridian+')';
+    }
     return [code, Blockly.Python.ORDER_ATOMIC];
 };
 
+var convertDate = function(date) {
+    date = date.slice(0, 3).toLowerCase();
+    switch (date) {
+        case "mon": return "Monday";
+        case "tue": return "Tuesday";
+        case "wed": return "Wednesday";
+        case "thu": return "Thursday";
+        case "fri": return "Friday";
+        case "sat": return "Saturday";
+        case "sun": return "Sunday";
+        default: return date;
+    }
+}
+var convertMinute = function(minute) {
+    if (minute < 10) {
+        return "0"+minute;
+    } else {
+        return ""+minute;
+    }
+}
+
 PythonToBlocks.KNOWN_MODULES['parking'] = {
-    "equal_time": ["datetime_check_day", 'LEFT', ['OP', 'IS'], 'VALUE'],
-    "before_time": ["datetime_check_day", 'LEFT', ['OP', 'BEFORE'], 'VALUE'],
-    "after_time": ["datetime_check_day", 'LEFT', ['OP', 'AFTER'], 'VALUE'],
-    "before_equal_time": ["datetime_check_day", 'LEFT', ['OP', 'AFTER'], 'VALUE'],
-    "after_equal_time": ["datetime_check_day", 'LEFT', ['OP', 'AFTER'], 'VALUE'],
-    "not_equal_time": ["datetime_check_day", 'LEFT', ['OP', 'AFTER'], 'VALUE'],
-    "equal_day": ["datetime_check_day", 'LEFT', ['OP', 'IS'], 'VALUE'],
-    "before_day": ["datetime_check_day", 'LEFT', ['OP', 'BEFORE'], 'VALUE'],
-    "after_day": ["datetime_check_day", 'LEFT', ['OP', 'AFTER'], 'VALUE'],
-    "before_equal_day": ["datetime_check_day", 'LEFT', ['OP', 'AFTER'], 'VALUE'],
-    "after_equal_day": ["datetime_check_day", 'LEFT', ['OP', 'AFTER'], 'VALUE'],
-    "not_equal_day": ["datetime_check_day", 'LEFT', ['OP', 'AFTER'], 'VALUE'],
+    "today": ["datetime_day", ["DAY", "TODAY"]],
+    "day_compare": ["datetime_check_day", "OP", 
+                            {"type": "variable", "mode": "value", "name": "LEFT"}, 
+                            {"type": "mapper", "name": "VALUE", "method": convertDate}],
+    "Day": ["datetime_day", {"type": "mapper", "name": "DAY", "method": convertDate}],
+    "now": ["datetime_time", ["HOUR", "NOW"]],
+    "Time": ["datetime_time", {"type": "integer", "name": "HOUR", "add_mutation": {"name": "@isnow", "value": "true"}}, 
+                             {"type": "integer_mapper", "name": "MINUTE", "method": convertMinute}, 
+                             "MERIDIAN"],
+    "time_compare": ["datetime_check_time", "OP",
+                            {"type": "variable", "mode": "value", "name": "LEFT"}, 
+                            {"type": "integer", "name": "HOURS"},
+                            {"type": "integer_mapper", "name": "MINUTES", "method": convertMinute},
+                            "MERIDIANS"]
 };
 
 var equalityOperators = [
@@ -2362,20 +2433,20 @@ Blockly.Blocks['datetime_check_day'] = {
     this.setColour(Blockly.Blocks.logic.HUE);
     this.setOutput(true, 'Boolean');
     this.appendValueInput('LEFT')
-        .setCheck('DatetimeDay');
-    this.appendDummyInput()
-        .appendField(new Blockly.FieldDropdown(equalityOperators), 'OP')
-        .appendField(new Blockly.FieldDropdown(DAYS), 'VALUE');
-    this.setInputsInline(true);
+        .setCheck('DatetimeDay')
+        .appendField(new Blockly.FieldDropdown(DAYS), 'VALUE')
+        .appendField(new Blockly.FieldDropdown(equalityOperators), 'OP');
+    
+    this.setInputsInline(false);
   }
 };
 
 Blockly.Python['datetime_check_day'] = function(block) {
     Blockly.Python.definitions_['import_parking'] = 'import parking';
-    var value = DAYS_MAP[block.getFieldValue('VALUE')];
-    var operator = equalityOperatorsConversions[block.getFieldValue('OP')];
-    var left = Blockly.Python.valueToCode(block, 'LEFT', Blockly.Python.ORDER_ATOMIC)
-    var code = operator + "(" + left + ',' + value + ")";
+    var value = Blockly.Python.quote_(block.getFieldValue('VALUE'));
+    var operator = Blockly.Python.quote_(block.getFieldValue('OP'));
+    var left = Blockly.Python.valueToCode(block, 'LEFT', Blockly.Python.ORDER_ATOMIC) || "___";
+    var code = "parking.day_compare(" + operator + ", " + left + ', ' + value + ")";
     return [code, Blockly.Python.ORDER_ATOMIC];
 };
 
@@ -2401,12 +2472,12 @@ Blockly.Blocks['datetime_check_time'] = {
 
 Blockly.Python['datetime_check_time'] = function(block) {
     Blockly.Python.definitions_['import_parking'] = 'import parking';
-    var hour = HOURS_MAP[block.getFieldValue('HOURS')];
-    var minute = MINUTES_MAP[block.getFieldValue('MINUTES')];
-    var meridian = MERIDIANS_MAP[block.getFieldValue('MERIDIANS')];
-    var operator = equalityOperatorsConversions[block.getFieldValue('OP')];
+    var hour = parseInt(block.getFieldValue('HOURS'));
+    var minute = parseInt(block.getFieldValue('MINUTES'));
+    var meridian = Blockly.Python.quote_(block.getFieldValue('MERIDIANS'));
+    var operator = Blockly.Python.quote_(block.getFieldValue('OP'));
     var left = Blockly.Python.valueToCode(block, 'LEFT', Blockly.Python.ORDER_ATOMIC)
-    var code = operator + "(" + left + ',' + hour + ',' + minute + ',' +meridian + ")";
+    var code = "parking.time_compare(" + operator+", "+left + ',' + hour + ',' + minute + ',' +meridian + ")";
     return [code, Blockly.Python.ORDER_ATOMIC];
 };
 
@@ -2533,6 +2604,7 @@ BlockPyPrinter.prototype.loadPrinter = function() {
 
 BlockPyPrinter.prototype.resetPrinter = function() {
     this.tag.empty();
+    this.main.model.execution.output.removeAll();
 }
 
 BlockPyPrinter.prototype.getConfiguration = function() {
@@ -2564,19 +2636,21 @@ BlockPyPrinter.prototype.print = function(lineText) {
     // Perform any necessary cleaning
     if (lineText !== "\n") {
         var encodedText = encodeHTML(lineText);
-        this.main.model.execution.output.push(encodedText);
-        var lineContainer = $("<div class='blockpy-printer-output' >");
-        var lineData = $("<samp></samp>", {
-            'data-toggle': 'tooltip',
-            'data-placement': 'left',
-            'data-step': stepNumber,
-            "html": encodedText,
-            'title': "Step "+stepNumber + ", Line "+lineNumber,
-        })
-        lineContainer.append(lineData);
-        // Append to the current text
-        this.tag.append(lineContainer);
-        lineData.tooltip();
+        this.main.model.execution.output.push(encodedText.trim());
+        if (!(this.main.model.settings.mute_printer())) {
+            var lineContainer = $("<div class='blockpy-printer-output' >");
+            var lineData = $("<samp></samp>", {
+                'data-toggle': 'tooltip',
+                'data-placement': 'left',
+                'data-step': stepNumber,
+                "html": encodedText,
+                'title': "Step "+stepNumber + ", Line "+lineNumber,
+            })
+            lineContainer.append(lineData);
+            // Append to the current text
+            this.tag.append(lineContainer);
+            lineData.tooltip();
+        }
     }
 }
 
@@ -2589,17 +2663,19 @@ BlockPyPrinter.prototype.printHtml = function(chart, value) {
     var step = this.main.model.execution.step();
     var line = this.main.model.execution.line_number();
     this.main.model.execution.output.push(value);
-    var outerDiv = $(chart[0]);//.parent();
-    outerDiv.parent().show();
-    outerDiv.attr({
-        "data-toggle": 'tooltip',
-        "data-placement": 'left',
-        //"data-container": '#'+chart.attr("id"),
-        "class": "blockpy-printer-output",
-        "data-step": step,
-        "title": "Step "+step+", Line "+line
-    });
-    outerDiv.tooltip();
+    if (!(this.main.model.settings.mute_printer())) {
+        var outerDiv = $(chart[0]);//.parent();
+        outerDiv.parent().show();
+        outerDiv.attr({
+            "data-toggle": 'tooltip',
+            "data-placement": 'left',
+            //"data-container": '#'+chart.attr("id"),
+            "class": "blockpy-printer-output",
+            "data-step": step,
+            "title": "Step "+step+", Line "+line
+        });
+        outerDiv.tooltip();
+    }
 }
 
 BlockPyInterface = "<div class='blockpy-content container-fluid' style='background-color :#fcf8e3; border: 1px solid #faebcc; '>    <div class='blockpy-popup modal fade' style='display:none'>        <div class='modal-dialog' style='width:750px'>            <div class='modal-content' id='modal-message' >                <div class='modal-header'>                    <button type='button' class='close' data-dismiss='modal' aria-hidden='true'>&times;</button>                    <h4 class='modal-title'>Dynamic Content</h4>                </div>                <div class='modal-body' style='width:100%; height:400px; white-space:pre-wrap'>                </div>                <div class='modal-footer'>                    <button type='button' class='btn btn-white' data-dismiss='modal'>Close</button>                </div>                </div>        </div>    </div>    <canvas id='capture-canvas' style='display:none'></canvas>    <div class='row' style='padding-bottom: 10px; border-bottom: 1px solid #faebcc; '>        <div class='blockpy-content-top col-md-9 col-sm-9'>            <span class='blockpy-alert pull-right text-muted' data-bind=\"visible: false, text: status.text\"></span>            <strong>BlockPy: </strong>             <span class='blockpy-presentation-name'                  data-bind='text: assignment.name'></span>            <div class='blockpy-presentation' data-bind=\"html: assignment.introduction\">            </div>        </div>        <div class='blockpy-content-topright col-md-3 col-sm-3'>            <span class='pull-right label label-default'                  data-bind=\"css: status_server_class()[0],                             text: status_server_class()[1]\">Loading</span>            <div class='pull-right'>                Disable Semantic Errors: <input type='checkbox' data-bind=\"checked: settings.disable_semantic_errors\">                <label class='blockpy-toolbar-auto-upload' data-bind=\"visible: settings.instructor\">                Auto-save:                <input type='checkbox' data-bind=\"checked:settings.auto_upload\">                </label>                                 <label class='blockpy-toolbar-instructor-mode' data-bind=\"visible: settings.instructor_initial\">                Instructor mode:                 <input type='checkbox' data-bind=\"checked:settings.instructor\">                </label>                                <label class='blockpy-toolbar-instructor-mode' data-bind=\"visible: settings.instructor_initial\">                Upload mode:                 <input type='checkbox' data-bind=\"checked:assignment.upload\">                </label>             </div>            <!--<img src=\"images/corgi.png\" class='img-responsive' />-->        </div>    </div>    <div class='row' style='margin-top: 5px border: 1px solid #bce8f1;'>        <div class='blockpy-content-left col-md-6 col-sm-6'             style='padding:10px'>            <strong>Printer</strong>            <div class='blockpy-printer blockpy-printer-default'>            </div>        </div>        <div class='blockpy-content-right col-md-6 col-sm-6 bubble'             style='padding:10px'>            <div class='blockpy-feedback'>                <strong>Feedback: </strong>                <span class='label blockpy-feedback-status' data-bind=\"css: status_feedback_class()[0], text: status_feedback_class()[1]\">Runtime Error</span>                <br>                <pre class='blockpy-feedback-original'></pre>                <strong class='blockpy-feedback-title'></strong>                <div class='blockpy-feedback-body'><i>Run your code to get feedback.</i></div>            </div>        </div>    </div>    <div class=\"row\"         style='background-color :#fcf8e3; padding-bottom: 10px; border: 1px solid #faebcc'>        <div class='col-md-12 col-sm-12 blockpy-toolbar btn-toolbar' role='toolbar'>                        <button type='button' class='btn blockpy-run' style='float:left',                data-bind='css: execution.status() == \"running\" ? \"btn-info\" :                                execution.status() == \"error\" ? \"btn-danger\" : \"btn-success\" ' >                <span class='glyphicon glyphicon-play'></span> Run            </button>                        <div class=\"btn-group\" data-toggle=\"buttons\" data-bind=\"visible: !assignment.upload()\">                <label class=\"btn btn-default blockpy-mode-set-blocks active\">                    <span class='glyphicon glyphicon-th-large'></span>                    <input type=\"radio\" name=\"blockpy-mode-set\" autocomplete=\"off\" checked> Blocks                </label>                <label class=\"btn btn-default blockpy-mode-set-instructor\"                       data-bind=\"visible: settings.instructor\">                    <span class='glyphicon glyphicon-list-alt'></span>                    <input type=\"radio\" name=\"blockpy-mode-set\" autocomplete=\"off\"> Instructor                </label>                <label class=\"btn btn-default blockpy-mode-set-text\">                    <span class='glyphicon glyphicon-pencil'></span>                    <input type=\"radio\" name=\"blockpy-mode-set\" autocomplete=\"off\"> Text                </label>            </div>            <button type='button' class='btn btn-default blockpy-toolbar-reset' data-bind=\"visible: !assignment.upload()\">                <span class='glyphicon glyphicon-refresh'></span> Reset            </button>            <!--<button type='button' class='btn btn-default blockpy-toolbar-capture'>                <span class='glyphicon glyphicon-picture'></span> Capture            </button>-->            <button type='button' class='btn btn-default blockpy-toolbar-import' data-bind=\"visible: !assignment.upload()\">                <span class='glyphicon glyphicon-list-alt'></span> Import Datasets            </button>                        <select data-bind=\"visible: settings.instructor() & !assignment.upload(), value: settings.filename\"                    class=\"blockpy-toolbar-filename-picker\">                <option value='__main__' selected>Student Code</option>                <option value='starting_code'>Starting Code</option>                <option value='give_feedback'>Generate Feedback</option>            </select>                        </div>    </div>    <div class='row blockpy-content-bottom'         style='padding-bottom: 10px; border: 1px solid #faebcc'>        <div class='blockpy-editor col-md-12 col-sm-12'>            <div class='blockpy-blocks blockpy-editor-menu'                  style='height:100%'>                <div class='blockly-div' style='height:450px; width: 100%' '></div>                <!-- <div class='blockly-area'></div> -->            </div>            <div class='blockpy-text blockpy-editor-menu'>                <div class='blockpy-text-sidebar' style='width:150px; height: 100%; float:left; background-color: #ddd'>                <!--                <button type='button' class='btn btn-default blockpy-text-insert-if'>Decision (If)</button>                <button type='button' class='btn btn-default blockpy-text-insert-if-else'>Decision (If/Else)</button>                -->                </div>                <textarea class='codemirror-div language-python'                           style='height:100%'></textarea>            </div>            <div class='blockpy-upload blockpy-editor-menu'>                <label class=\"btn btn-default btn-file\">                    Browse <input type=\"file\" style=\"display: none;\">                </label>            </div>            <div class='blockpy-instructor blockpy-editor-menu form-inline'>                <!-- Name -->                <form class=\"form-inline\" style='display:inline-block'>                <label>Name:</label>                <input type='text' class='blockpy-presentation-name-editor form-control'                       data-bind='textInput: assignment.name'>                 </form>                <br>                <br>                                <label>Introduction:</label>                <div class='blockpy-presentation-body-editor'>                 </div>                                <!-- Parsons -->                <label class='blockpy-presentation-parsons-check'>                Parsons:                <input type='checkbox' class='form-control' data-bind=\"checked:assignment.parsons\">                </label>                 <br>                                <!-- Initial mode -->                <label class='blockpy-presentation-text-first'>                Initial View:                <select data-bind=\"value: assignment.initial_view\">                    <option value=\"Blocks\" selected>Blocks</option>                    <option value=\"Text\">Text</option>                    <option value=\"Instructor\">Instructor</option>                    <option value=\"Upload\">Upload</option>                </select>                </label>                <br>                                <label>Available Modules</lable>                <select class='blockpy-available-modules' multiple='multiple'                        data-bind=\"selectedOptions: assignment.modules\">                    <option>Properties</option>                    <option>Decisions</option>                    <option>Iteration</option>                    <option>Functions</option>                    <option>Calculation</option>                    <option>Output</option>                    <option>Python</option>                    <option>Values</option>                    <option>Lists</option>                    <option>Dictionaries</option>                    <option>Data - Weather</option>                    <option>Data - Books</option>                    <option>Data - Stocks</option>                    <option>Data - Earthquakes</option>                    <option>Data - Crime</option>                            </div>            <div class='blockpy-upload blockpy-editor-menu'>            </div>        </div>    </div>    <div>        <div class='blockpy-content-right col-md-5 col-sm-5 alert alert-info'>            <div class='panel panel-default'>                <div class='panel-heading'>Data Explorer</div>                <div class='panel-body'>                <div class='blockpy-explorer'>                    <table><tr>                    <!-- Step: X of Y (Line: Z) -->                    <td colspan='4'>                        <div class='blockpy-explorer-run-hide'>                            <i>Run your code to explore it.</i>                        </div>                        <div class='blockpy-explorer-status'>                            <strong>Step: </strong>                            <span class='blockpy-explorer-step-span'>0</span> of                             <span class='blockpy-explorer-length-span'>0</span>                             (<strong>Line: </strong>                            <span class='blockpy-explorer-line-span'>0</span>)                        </div>                    </td>                    </tr><tr>                    <!-- First Previous Next Last -->                    <td style='width:25%'>                        <button type='button' class='btn btn-default blockpy-explorer-first'>                        <span class='glyphicon glyphicon-fast-backward'></span> First</button>                    </td><td style='width:25%'>                        <button type='button' class='btn btn-default blockpy-explorer-back'>                        <span class='glyphicon glyphicon-backward'></span> Back</button>                    </td><td style='width:25%'>                        <button type='button' class='btn btn-default blockpy-explorer-next'>                        Next <span class='glyphicon glyphicon-forward'></span></button>                    </td><td style='width:25%'>                        <button type='button' class='btn btn-default blockpy-explorer-last'>                        Last <span class='glyphicon glyphicon-fast-forward'></span> </button>                    </td>                    </tr></table>                    <!-- Printer -->                                        <!-- Modules -->                    <br><div>                        <strong>Loaded Modules: </strong>                        <i class='blockpy-explorer-modules'>None</i>                    </div>                    <!-- Actual Trace data -->                    <br><strong>Trace Table</strong>                    <br><table style='width: 100%'                            class='table table-condensed table-striped                                    table-bordered table-hover blockpy-explorer-table'>                        <!-- Property Type Value -->                        <tr>                            <th>Property</th>                            <th>Type</th>                            <th>Value</th>                        </tr>                    </table>                </div>                </div>            </div>        </div>    </div></div><!--<div class='blockpy-explorer-errors alert alert-danger alert-dismissible' role='alert'>                     <button type='button' class='blockpy-explorer-errors-hide close' aria-label='Close'><span  aria-hidden='true'>&times;</span></button>                     <div class='blockpy-explorer-errors-body'>                                     </div>-->";
@@ -3038,7 +3114,11 @@ BlockPyEditor.prototype.initBlockly = function() {
         editor.updateCodeFromBlocks();
     });
     //this.main.model.program.subscribe(function() {editor.updateBlocks()});
-    this.main.model.settings.filename.subscribe(function() {editor.updateBlocks()});
+    this.main.model.settings.filename.subscribe(function() {
+        if (editor.main.model.settings.editor() == "Blocks") {
+            editor.updateBlocks()
+        }
+    });
     this.main.model.assignment.modules.subscribe(function() {editor.updateToolbox(true)});
     // Force the proper window size
     this.blockly.resize();
@@ -3100,7 +3180,7 @@ BlockPyEditor.prototype.initInstructor = function() {
         toolbar: [
             ['style', ['bold', 'italic', 'underline', 'clear']],
             ['font', ['fontname', 'fontsize']],
-            ['insert', ['link', 'table', 'ul', 'ol']],
+            ['insert', ['link', 'table', 'ul', 'ol', 'image']],
             ['misc', ['codeview', 'help']]
         ]
     });
@@ -3291,6 +3371,7 @@ BlockPyEditor.prototype.updateBlocks = function() {
         try {
             this.setBlocksFromXml(blocklyXml);
         } catch (e) {
+            console.error(e);
             var error_code = this.converter.convertSourceToCodeBlock(python_code);
             var blocklyXml = Blockly.Xml.textToDom(error_code);
             this.setBlocksFromXml(blocklyXml);
@@ -3319,7 +3400,6 @@ BlockPyEditor.prototype.getBlocksFromXml = function() {
 BlockPyEditor.prototype.setBlocksFromXml = function(xml) {
     this.blockly.clear();
     Blockly.Xml.domToWorkspace(xml, this.blockly);
-    //console.log(xml);
     //console.log(this.blockly.getAllBlocks());
 }
 
@@ -4097,7 +4177,7 @@ BlockPyEngine.prototype.analyze = function() {
     // TODO: variables defined AFTER their use
     if (report["Undefined variables"].length >= 1) {
         var variable = report["Undefined variables"][0];
-        this.main.reportError('semantic', "Undefined Property", "The property <code>"+variable.name+"</code> was read on line "+variable.line.split("|")[0]+", but it was not defined on any previous lines. You cannot use a variable until it has been set.", variable.line.split("|")[0])
+        this.main.reportError('semantic', "Initialization Problem", "The property <code>"+variable.name+"</code> was read on line "+variable.line.split("|")[0]+", but it was not given a value on a previous line. You cannot use a property until it has been initialized.", variable.line.split("|")[0])
         return false;
     } else if (report["Unread variables"].length >= 1) {
         var variable = report["Unread variables"][0];
@@ -4112,6 +4192,8 @@ BlockPyEngine.prototype.analyze = function() {
     return true;
 }
 
+var GLOBAL_VALUE;
+
 /*
  * Runs the given python code, resetting the console and Trace Table.
  */
@@ -4125,6 +4207,13 @@ BlockPyEngine.prototype.run = function() {
             return;
         }
     }
+    
+    Sk.builtins.value = new Sk.builtin.func(function() {
+        return Sk.ffi.remapToPy(GLOBAL_VALUE === undefined ? 5 : GLOBAL_VALUE);
+    });
+    Sk.builtins.set_value = new Sk.builtin.func(function(v) {
+        GLOBAL_VALUE = v.v;
+    });
     
     this.main.model.execution.status("running");
     
@@ -4164,31 +4253,83 @@ BlockPyEngine.prototype.run = function() {
     );
 }
 
+function indent(str) {
+  return str.replace(/^(?=.)/gm, '    ');
+}
+
+var instructor_module = function(name) {
+    var mod = {};
+    Sk.builtin.Feedback = function (args) {
+        var o;
+        if (!(this instanceof Sk.builtin.Feedback)) {
+            o = Object.create(Sk.builtin.Feedback.prototype);
+            o.constructor.apply(o, arguments);
+            return o;
+        }
+        Sk.builtin.Exception.apply(this, arguments);
+    };
+    Sk.abstr.setUpInheritance("Feedback", Sk.builtin.Feedback, Sk.builtin.Exception);
+    Sk.builtin.Success = function (args) {
+        var o;
+        if (!(this instanceof Sk.builtin.Success)) {
+            o = Object.create(Sk.builtin.Success.prototype);
+            o.constructor.apply(o, arguments);
+            return o;
+        }
+        Sk.builtin.Exception.apply(this, arguments);
+    };
+    Sk.abstr.setUpInheritance("Success", Sk.builtin.Success, Sk.builtin.Exception);
+    mod.give_feedback = new Sk.builtin.func(function(message) {
+        Sk.builtin.pyCheckArgs("give_feedback", arguments, 1, 1);
+        Sk.builtin.pyCheckType("message", "string", Sk.builtin.checkString(message));
+        throw new Sk.builtin.Feedback(message.v);
+    });
+    mod.set_success = new Sk.builtin.func(function() {
+        Sk.builtin.pyCheckArgs("set_success", arguments, 0, 0);
+        throw new Sk.builtin.Success();
+    });
+    return mod;
+}
+
 BlockPyEngine.prototype.check = function(student_code, traceTable, output, ast) {
     var engine = this;
     var server = this.main.components.server;
-    var on_run = this.main.model.programs['give_feedback']();
+    var model = this.main.model;
+    var on_run = model.programs['give_feedback']();
     if (on_run !== undefined && on_run.trim() !== "") {
         var backupExecution = Sk.afterSingleExecution;
         Sk.afterSingleExecution = undefined;
         
         // Old code to handle lame checking
+        /*
         on_run += "\nresult = on_run('''"+student_code+"''', "+
                   JSON.stringify(output)+", "+
                   JSON.stringify(traceTable)+" "+
                   ")";
-        console.log(on_run);
+        console.log(on_run);*/
         
         // New code to handle sophisticated checking
-        /*
-        Sk.builtins.output = Sk.ffi.remapToPy(output);
+        
+        on_run = 'def run_code():\n'+indent(student_code)+'\n'+on_run;
+        
+        console.log(on_run);
+        
+        model.settings.mute_printer(true);
+        
+        var backup = Sk.builtins.print;
+        Sk.builtins.output = new Sk.builtin.func(function() { 
+            Sk.builtin.pyCheckArgs("output", arguments, 0, 0);
+            console.log(Sk.ffi.remapToPy(model.execution.output()));
+        });
+        Sk.builtins.reset_output = new Sk.builtin.func(function() { 
+            Sk.builtin.pyCheckArgs("output", arguments, 0, 0);
+            model.execution.output.removeAll();
+        });
         Sk.builtins.trace = Sk.ffi.remapToPy(traceTable);
         Sk.builtins.code = Sk.ffi.remapToPy(student_code);
         Sk.builtins.ast = Sk.ffi.remapToPy(ast);
-        Sk.builtins.give_feedback = new Sk.builtin.func(function(message) {
-            throw new Sk.builtin.SystemExit(message);
-        });
-        */
+        Sk.builtins.set_success = instructor_module('instructor').set_success;
+        Sk.builtins.give_feedback = instructor_module('instructor').give_feedback;
         
         var executionPromise = Sk.misceval.asyncToPromise(function() {
             return Sk.importMainWithBody("<stdin>", false, on_run, true);
@@ -4196,6 +4337,8 @@ BlockPyEngine.prototype.check = function(student_code, traceTable, output, ast) 
         executionPromise.then(
             function (module) {
                 Sk.afterSingleExecution = backupExecution;
+                GLOBAL_VALUE = undefined;
+                /*
                 var result = Sk.ffi.remapToJs(module.$d.result);
                 if (result === true) {  
                     server.markSuccess(1.0);
@@ -4204,24 +4347,30 @@ BlockPyEngine.prototype.check = function(student_code, traceTable, output, ast) 
                     server.markSuccess(0.0);
                     engine.main.components.feedback.instructorFeedback(result);
                 }
+                */
+                model.settings.mute_printer(false);
             }, function (error) {
                 Sk.afterSingleExecution = backupExecution;
-                /*
+                
                 Sk.builtins.output = undefined;
                 Sk.builtins.trace = undefined;
                 Sk.builtins.code = undefined;
                 Sk.builtins.ast = undefined;
                 Sk.builtins.give_feedback = undefined;
+                GLOBAL_VALUE = undefined;
                 
-                if (error.tp$name == "SystemExit") {
+                console.log(error.tp$name, error.tp$name == "Success");
+                if (error.tp$name == "Success") {
+                    server.markSuccess(1.0);
+                    engine.main.components.feedback.complete();
+                } else if (error.tp$name == "Feedback") {
+                    server.markSuccess(0.0);
                     engine.main.components.feedback.instructorFeedback("Incorrect Answer", error.args.v[0].v);
                 } else {
                     engine.main.components.feedback.error("Error in instructor's feedback. "+error);
                 }
-                */
-                engine.main.components.feedback.error("Error in instructor's feedback. "+error);
-                console.error("Instructor Feedback Error:", error);
                 //server.logEvent('blockly_instructor_error', error);
+                model.settings.mute_printer(false);
             });
     }
 }
@@ -4356,9 +4505,13 @@ function BlockPy(settings, assignment, submission, programs) {
             // string
             'level': ko.observable("level"),
             // boolean
-            'disable_semantic_errors': ko.observable(false),
+            'disable_semantic_errors': ko.observable(settings.disable_semantic_errors),
             // boolean
-            'auto_upload': ko.observable(true)
+            'auto_upload': ko.observable(true),
+            // boolean
+            'developer': ko.observable(settings.developer || false),
+            // boolean
+            'mute_printer': ko.observable(false)
         },
         'execution': {
             // 'waiting', 'running'
@@ -4463,6 +4616,9 @@ BlockPy.prototype.initMain = function() {
     this.initInterface();
     this.initModel();
     this.initComponents();
+    if (this.model.settings.developer()) {
+        this.initDevelopment();
+    }
 }
 
 BlockPy.prototype.initInterface = function(postCompletion) {
@@ -4490,6 +4646,12 @@ BlockPy.prototype.initComponents = function() {
     components.corgis = new BlockPyCorgis(main);
     components.editor.setMode();
     main.model.status.server('Loaded')
+}
+
+BlockPy.prototype.initDevelopment = function () {
+    /*$.get('src/skulpt_ast.js', function(data) {
+        Sk.builtinFiles['files']['src/lib/ast/__init__.js'] = data;
+    });*/
 }
 
 BlockPy.prototype.reportError = function(component, original, message, line) {

@@ -201,10 +201,6 @@ def _post_patched_request(consumers, lti_key, body,
     # pylint: disable=protected-access
     http._normalize_headers = monkey_patch_function
     
-    print(body)
-    print(lti_key, secret)
-    print(content)
-
     log.debug("key %s", lti_key)
     log.debug("secret %s", secret)
     log.debug("url %s", url)

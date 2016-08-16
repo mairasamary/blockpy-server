@@ -4,11 +4,13 @@ Fix broadway
     Document
 Construction spending
     Document
+Upload the new datasets
 
 Finalize parking
 Instructor API rewrite
 
 Explain and maze
+Scatter plots
 Decouple Assignments from Courses
 Blockly~Corgis integration
 

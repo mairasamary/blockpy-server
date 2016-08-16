@@ -26,7 +26,7 @@ def load(lti, lti_exception=None):
         return jsonify(success=False, message="Assignment not found")
     embed = request.values.get('embed', 'false') == 'True'
     # Use the proper template
-    if assignments[0].mode == 'maze':
+    if assignments[0].type == 'maze':
         return    maze.load(assignments=assignments, submissions=submissions, lti=lti,embed=embed)
     elif assignments[0].type == 'explain':
         return explain.load(assignments=assignments, submissions=submissions, lti=lti, embed=embed)

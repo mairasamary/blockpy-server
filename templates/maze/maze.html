@@ -37,7 +37,7 @@ function reportChange() {
 }
 function reportSuccess() {
     markSuccess();
-    var data = {'assignment_id': "{{ assignment.id }}"};
+    var data = {'assignment_id': "{{ assignment.id }}", 'status': '1'};
     $.post(URL_MAP.save_success, data, function(response) {
         if (response.success) {
             alertBox("Success reported").delay(200).fadeOut("slow");

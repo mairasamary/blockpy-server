@@ -93,6 +93,7 @@ def save_events(lti=lti):
 def save_correct(lti):
     
     assignment_id = request.form.get('assignment_id', None)
+    print(request.values)
     status = float(request.form.get('status', "0.0"))
     image = request.form.get('image', "")
     if assignment_id is None:
@@ -113,7 +114,7 @@ def save_correct(lti):
         with open(image_path, 'wb') as image_file:
             image_file.write(converted_image);
         image_url = url_for('blockpy.get_submission_image', submission_id=submission.id, _external=True)
-    elif os.path_exists(image_path):
+    elif os.path.exists(image_path):
         try:
             os.remove(image_path)
         except Exception:
