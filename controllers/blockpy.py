@@ -204,3 +204,7 @@ def grade(lti=lti):
     #session[''] = session['lis_outcome_service_url']
     lti.post_grade(1, "<h1>Success</h1>"+highlight(submission.code, PythonLexer(), HtmlFormatter()))
     return "Successful!"
+
+@blueprint_blockpy.route('/load_corgis/<path:path>', methods=['GET', 'POST'])
+def load_corgis(path):
+    return app.send_static_file('corgis/{path}'.format(path=path))

@@ -3707,7 +3707,7 @@ function BlockPyCorgis(main) {
     this.main.model.assignment.modules().forEach(function(name) {
         var post_prefix = name.substring(7).replace(/\s/g, '').toLowerCase();
         if (!(name in BlockPyEditor.CATEGORY_MAP)) {
-            imports.push.apply(imports, corgis.importDataset(post_prefix));
+            imports.push.apply(imports, corgis.importDataset(post_prefix, name));
         }
     });
     $.when.apply($, imports).done(function() {
@@ -3718,16 +3718,20 @@ function BlockPyCorgis(main) {
     });
 }
 
-BlockPyCorgis.prototype.importDataset = function(name) {
+BlockPyCorgis.prototype.importDataset = function(slug, name) {
     var url_retrievals = [];
     if (this.main.model.server_is_connected('import_datasets')) {
-        var root = this.main.model.constants.urls.import_datasets+'blockpy/'+name+'/'+name;
+        var root = this.main.model.constants.urls.import_datasets+'blockpy/'+slug+'/'+slug;
         var get_dataset = $.getScript(root+'_dataset.js');
         var get_skulpt = $.get(root+'_skulpt.js', function(data) {
-            Sk.builtinFiles['files']['src/lib/'+name+'/__init__.js'] = data;
+            Sk.builtinFiles['files']['src/lib/'+slug+'/__init__.js'] = data;
         });
         var get_blockly = $.getScript(root+'_blockly.js');
-        this.loadedDatasets.push(name);
+        var corgis = this;
+        $.when(get_dataset, get_skulpt, get_blockly).done(function() {
+            corgis.loadedDatasets.push(slug);
+            corgis.main.model.assignment.modules.push('Data - '+name);
+        });
         url_retrievals.push(get_dataset, get_skulpt, get_blockly);
     }
     return url_retrievals;
@@ -3735,26 +3739,30 @@ BlockPyCorgis.prototype.importDataset = function(name) {
 
 BlockPyCorgis.prototype.openDialog = function(name) {
     var corgis = this;
-    if (false && this.main.model.server_is_connected('import_datasets')) {
+    if (this.main.model.server_is_connected('import_datasets')) {
         var root = this.main.model.constants.urls.import_datasets;
         $.getJSON(root+'index.json', function(data) {
             var datasets = data.blockpy.datasets;
             var body = $('<table></table>', {'class': 'table-bordered table-condensed table-striped'});
-            for (var name in datasets) {
+            Object.keys(datasets).map(function(name) {
+                var title_name = name;
+                name = name.replace(/\s/g, '').toLowerCase();
                 var btn = $('<button type="button" class="btn btn-primary" data-toggle="button" aria-pressed="false" autocomplete="off">Load</button>');
-                if (this.loadedDatasets.indexOf(name) > -1) {
-                    btn;
+                if (corgis.loadedDatasets.indexOf(name) > -1) {
+                    set_button_loaded(btn);
+                } else {
+                    btn.click(function() {
+                        corgis.importDataset(name.toLowerCase(), title_name);
+                        set_button_loaded(btn);
+                    });
                 }
-                btn.click(function() {
-                    corgis.importDataset(item.toLowerCase());
-                });
                 $("<tr></tr>")
-                    .append($("<td>"+item+"</td>"))
+                    .append($("<td>"+title_name+"</td>"))
                     .append($("<td></td>").append(btn))
                     .appendTo(body);
-            };
-            var editor = this.main.components.editor;
-            this.main.components.dialog.show("Import Datasets", body, function() {
+            });
+            var editor = corgis.main.components.editor;
+            corgis.main.components.dialog.show("Import Datasets", body, function() {
                 editor.updateBlocks();
             });
         });
@@ -3767,21 +3775,11 @@ BlockPyCorgis.prototype.openDialog = function(name) {
             name = name.replace(/\s/g, '').toLowerCase();
             var btn = $('<button type="button" class="btn btn-primary" data-toggle="button" aria-pressed="false" autocomplete="off">Load</button>');
             if (loadedDatasets.indexOf(name) > -1) {
-                btn.addClass("active")
-                   .addClass('btn-success')
-                   .removeClass('btn-primary')
-                   .prop("disabled", true)
-                   .text("Loaded")
-                   .attr("aria-pressed", "true");
+                set_button_loaded(btn);
             } else {
                 btn.click(function() {
-                    corgis.importDataset(name.toLowerCase());
-                    btn.addClass("active")
-                       .addClass('btn-success')
-                       .removeClass('btn-primary')
-                       .prop("disabled", true)
-                       .text("Loaded")
-                       .attr("aria-pressed", "true");
+                    corgis.importDataset(name.toLowerCase(), title_name);
+                    set_button_loaded(btn);
                 });
             }
             $("<tr></tr>")
@@ -3795,6 +3793,15 @@ BlockPyCorgis.prototype.openDialog = function(name) {
         });
     }
 };
+
+var set_button_loaded = function(btn) {
+    btn.addClass("active")
+       .addClass('btn-success')
+       .removeClass('btn-primary')
+       .prop("disabled", true)
+       .text("Loaded")
+       .attr("aria-pressed", "true");
+}
 function BlockPyFeedback(main, tag) {
     this.main = main;
     this.tag = tag;

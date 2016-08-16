@@ -496,7 +496,7 @@ class Assignment(Base):
     starting_code = Column(Text(), default="")
     answer = Column(Text(), default="")
     due = Column(DateTime(), default=None)
-    settings = Column(Text())
+    settings = Column(Text(), default='{}')
     # Type of assignment
     # "blockpy", "maze", "explain"
     type = Column(String(10), default="blockpy")
