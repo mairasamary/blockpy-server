@@ -140,7 +140,12 @@ def crossdomain(origin=None, methods=None, headers=None,
 def get_assignments_from_request():
     assignment_id = request.args.get('assignment_id', None)
     assignment_group_id = request.args.get('assignment_group_id', None)
-    course_id = request.args.get('course_id', g.course.id)
+    if 'course_id' in request.args:
+        course_id = request.args.get('course_id')
+    if 'course' in g:
+        course_id = g.course.id
+    else:
+        course_id = None
     submission_url = request.form.get('lis_result_sourcedid', '')
     # Assignment group or individual assignment?
     if assignment_group_id is not None:
