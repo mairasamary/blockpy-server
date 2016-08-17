@@ -109,8 +109,8 @@ $(document).ready(function() {
                 'starting_code': {{ assignment.starting_code|tojson }},
                 {% set settings = assignment.settings|json_load %}
                 'modules': {
-                    'added': {{ settings.added|tojson if settings.added else "[]" }},
-                    'removed': {{ settings.removed|tojson if settings.removed else "[]"}},
+                    'added': {{ settings.modules.added|tojson if settings.modules else "[]" }},
+                    'removed': {{ settings.modules.removed|tojson if settings.modules else "[]"}},
                 },
             },
             // submission

@@ -326,11 +326,12 @@ class Submission(Base):
         return '<Submission {} for {}>'.format(self.id, self.user_id)
         
     @staticmethod
-    def load(user_id, assignment_id, submission_url=""):
+    def load(user_id, assignment_id, course_id, submission_url=""):
         submission = Submission.query.filter_by(assignment_id=assignment_id, 
+                                                course_id=course_id,
                                                 user_id=user_id).first()
         if not submission:
-            submission = Submission(assignment_id=assignment_id, user_id=user_id, url=submission_url)
+            submission = Submission(assignment_id=assignment_id, user_id=user_id, course_id=course_id, url=submission_url)
             assignment = Assignment.by_id(assignment_id)
             if assignment.mode == 'explain':
                 submission.code = json.dumps(Submission.default_explanation(''))
@@ -364,8 +365,9 @@ class Submission(Base):
         }
         
     @staticmethod
-    def save_explanation_answer(user_id, assignment_id, name, answer):
+    def save_explanation_answer(user_id, assignment_id, course_id, name, answer):
         submission = Submission.query.filter_by(user_id=user_id, 
+                                                course_id=course_id,
                                                 assignment_id=assignment_id).first()
         submission_destructured = json.loads(submission.code)
         elements = submission_destructured['elements']
@@ -434,8 +436,9 @@ class Submission(Base):
         return code, available_elements
         
     @staticmethod
-    def save_code(user_id, assignment_id, code, assignment_version):
+    def save_code(user_id, assignment_id, course_id, code, assignment_version):
         submission = Submission.query.filter_by(user_id=user_id, 
+                                                course_id=course_id,
                                                 assignment_id=assignment_id).first()
         is_version_correct = True
         if not submission:
@@ -454,12 +457,14 @@ class Submission(Base):
         return submission, is_version_correct
         
     @staticmethod
-    def save_correct(user_id, assignment_id):
+    def save_correct(user_id, assignment_id, course_id):
         submission = Submission.query.filter_by(user_id=user_id, 
-                                                assignment_id=assignment_id).first()
+                                                assignment_id=assignment_id,
+                                                course_id=course_id).first()
         if not submission:
             submission = Submission(assignment_id=self.id, 
                                     user_id=user_id,
+                                    course_id=course_id,
                                     correct=True)
             db.session.add(submission)
         else:
@@ -543,9 +548,12 @@ class Assignment(Base):
             return Assignment(**data)
         raise Exception("Unknown schema version: {}".format(data.get('_schema_version', "Unknown")))
     
+    BUILTIN_MODULES = 'Properties,Decisions,Iteration,Calculation,Output,Values,Lists,Dictionaries,Separator'.split(',')
     @staticmethod
     def edit(assignment_id, presentation=None, name=None, 
-             give_feedback=None, on_step=None, starting_code=None, parsons=None, text_first=None):
+             give_feedback=None, on_step=None, starting_code=None, 
+             parsons=None, text_first=None,
+             modules=None):
         assignment = Assignment.by_id(assignment_id)
         if name is not None:
             assignment.name = name
@@ -562,12 +570,27 @@ class Assignment(Base):
         if starting_code is not None:
             assignment.starting_code = starting_code
             assignment.version += 1
+        if modules is not None:
+            if not assignment.settings:
+                assignment.settings = "{}"
+            settings = json.loads(assignment.settings)
+            if 'modules' not in settings:
+                settings['modules'] = {'added': [], 'removed': []}
+            kept_modules = modules.split(",")
+            settings['modules']['added'] = [m for m in kept_modules 
+                                            if m not in Assignment.BUILTIN_MODULES]
+            settings['modules']['removed'] = [m for m in Assignment.BUILTIN_MODULES 
+                                              if m not in kept_modules and m != 'Separator']
+            assignment.settings = json.dumps(settings)
         assignment.type = 'blockpy'
         if parsons is True:
-            assignment.type = 'parsons'
+            assignment.mode = 'parsons'
+            assignment.version += 1
+        elif assignment.mode == "parsons":
+            assignment.mode = 'blocks'
             assignment.version += 1
         if text_first is True:
-            assignment.type = 'text'
+            assignment.mode = 'text'
             assignment.version += 1
         db.session.commit()
         return assignment
@@ -668,8 +691,8 @@ class Assignment(Base):
             return course.external_id == context_id
         return False
     
-    def get_submission(self, user_id, submission_url=""):
-        return Submission.load(user_id, self.id, submission_url=submission_url)
+    def get_submission(self, user_id, course_id, submission_url=""):
+        return Submission.load(user_id, self.id, course_id, submission_url=submission_url)
         
 class CourseAssignment(Base):
     assignment_id = Column(Integer(), ForeignKey('assignment.id'))

@@ -60,13 +60,15 @@ def load(lti=None, assignments=None, submissions=None, embed=False):
 def save_code(lti=lti):
     assignment_id = request.form.get('assignment_id', None)
     assignment_version = int(request.form.get('version', -1))
-    if assignment_id is None:
-        return jsonify(success=False, message="No Assignment ID given!")
+    course_id = request.values.get('course_id', g.course.id)
+    if None in (assignment_id, course_id):
+        return jsonify(success=False, message="No Assignment ID or Course ID given!")
     code = request.form.get('code', '')
+    print(code)
     filename = request.form.get('filename', '__main__')
     is_version_correct = True
     if filename == "__main__":
-        submission, is_version_correct = Submission.save_code(g.user.id, assignment_id, code, assignment_version)
+        submission, is_version_correct = Submission.save_code(g.user.id, assignment_id, int(course_id), code, assignment_version)
     elif g.user.is_instructor(g.course.id):
         if filename == "give_feedback":
             Assignment.edit(assignment_id=assignment_id, give_feedback=code)
@@ -90,19 +92,18 @@ def save_events(lti=lti):
 @blueprint_blockpy.route('/save_correct/', methods=['GET', 'POST'])
 @blueprint_blockpy.route('/save_correct', methods=['GET', 'POST'])
 @lti()
-def save_correct(lti):
-    
+def save_correct(lti, lti_exception=None):
     assignment_id = request.form.get('assignment_id', None)
-    print(request.values)
     status = float(request.form.get('status', "0.0"))
     image = request.form.get('image', "")
-    if assignment_id is None:
-        return jsonify(success=False, message="No Assignment ID given!")
+    course_id = request.values.get('course_id', g.course.id)
+    if None in (assignment_id, course_id):
+        return jsonify(success=False, message="No Assignment ID or Course ID given!")
     assignment = Assignment.by_id(assignment_id)
     if status == 1:
-        submission = Submission.save_correct(g.user.id, assignment_id)
+        submission = Submission.save_correct(g.user.id, assignment_id, course_id=int(course_id))
     else:
-        submission = assignment.get_submission(g.user.id)
+        submission = assignment.get_submission(g.user.id, course_id=course_id)
     if submission.correct:
         message = "Success!"
     else:
@@ -121,6 +122,7 @@ def save_correct(lti):
             app.logger.info("Could not delete")
     lis_result_sourcedid = request.form.get('lis_result_sourcedid', submission.url) or None
     url = url_for('blockpy.get_submission_code', submission_id=submission.id, _external=True)
+    print url
     if lis_result_sourcedid is None:
         return jsonify(success=False, message="Not in a grading context.")
     else:
@@ -185,25 +187,8 @@ def save_presentation(lti=lti):
         return jsonify(success=False, message="You are not an instructor in this course.")
     if not Assignment.is_in_course(int(assignment_id), int(course_id)):
         return jsonify(success=False, message="That assignment group does not belong to that course.")
-    Assignment.edit(assignment_id=assignment_id, presentation=presentation, name=name, parsons=parsons, text_first=text_first)
+    Assignment.edit(assignment_id=assignment_id, presentation=presentation, name=name, parsons=parsons, text_first=text_first, modules=modules)
     return jsonify(success=True)
-        
-@blueprint_blockpy.route('/grade', methods=['POST'])
-def grade(lti=lti):
-    """ post grade
-
-    :param lti: the `lti` object from `pylti`
-    :return: grade rendered by grade.html template
-    """
-    assignment_id = request.form.get('assignment_id', None)
-    if assignment_id is None:
-        return jsonify(success=False, message="No Assignment ID given!")
-    submission = Submission.save_correct(g.user.id, assignment_id)
-    if 'lis_result_sourcedid' not in session:
-        return "Failure"
-    #session[''] = session['lis_outcome_service_url']
-    lti.post_grade(1, "<h1>Success</h1>"+highlight(submission.code, PythonLexer(), HtmlFormatter()))
-    return "Successful!"
 
 @blueprint_blockpy.route('/load_corgis/<path:path>', methods=['GET', 'POST'])
 def load_corgis(path):

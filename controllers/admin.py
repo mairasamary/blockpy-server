@@ -52,6 +52,36 @@ def _id(table):
         return table.query.filter(table.id == getattr(model, name)).first()
     return _edit_id
     
+def _recurse_render_settings(item):
+    if isinstance(item, list):
+        return "[{}]".format(','.join("<code>{}</code>".format(s) for s in item))
+    elif isinstance(item, dict):
+        rows = "<ul>"
+        for name, setting in item.items():
+            rows += "<li><b>{name}</b>: ".format(name=name)
+            rows += _recurse_render_settings(setting)
+            rows += "</li>"
+        return rows+"</ul>"
+    else:
+        return "<code>{}</code>".format(item)
+        
+    
+def _render_settings(view, context, model, name):
+    body = "<pre>"
+    if model.settings:
+        try:
+            body += _recurse_render_settings(json.loads(model.settings))
+        except TypeError:
+            body += model.settings
+    body += "</pre>"
+    return Markup(body)
+    
+def _render_code(view, context, model, name):
+    return Markup("<pre>"+getattr(model, name)+"</pre>")
+    
+def _smaller(view, context, model, name):
+    return Markup("<small>"+getattr(model, name)+"</small>")
+    
 class RoleView(RegularView):
     column_list = ('id', 'date_created', 'name', 'user_id', 'course_id')
     column_labels = {'id': 'Role ID', 'date_created': 'Created',
@@ -63,12 +93,15 @@ class RoleView(RegularView):
     form_columns = ('name', 'user_id', 'course_id')
 class AssignmentView(RegularView):
     column_list = ('id', 'date_modified', 
-                   'owner_id', 'course_id', 'type',
-                   'name', 'body', 
-                   'give_feedback', 'starting_code',
-                   'visibility', 'disabled', 'mode',
-                   'version'
+                   'owner_id', 'course_id', 
+                   'name', 'type', 'body', 
+                   'give_feedback', 'starting_code', 'settings',
+                   #'visibility', 'disabled', 
+                   'mode', 'version'
                    )
+    column_formatters = { 'settings': _render_settings, 
+                          'give_feedback': _render_code,
+                          'starting_code': _render_code}
 class AssignmentGroupView(RegularView):
     column_list = ('id', 'date_modified', 
                    'owner_id', 'course_id',
@@ -89,10 +122,11 @@ class AssignmentGroupMembershipView(RegularView):
                           'course_id': _editable(Course, 'id')}
 class SubmissionView(RegularView):
     column_list = ('id', 'date_modified', 
-                   'user_id', 'assignment_id',
-                   'code', 'status', 
+                   'user_id', 'assignment_id', 'course_id',
+                   'code', #'status', 
                    'correct', 'version', 'assignment_version', 'url'
                    )
+    column_formatters = { 'code': _render_code, 'url': _smaller }
 
 admin.add_view(UserView(User, db.session, category='Tables'))
 admin.add_view(ModelIdView(Course, db.session, category='Tables'))

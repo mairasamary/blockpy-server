@@ -1,3 +1,17 @@
+Ready:
+    Broadway
+    Construction Spending
+    Weather    
+    Earthquakes
+    Tate
+    Classics
+    Global Development
+    State Crime
+    Airlines
+New text
+State Demographics
+
+
 Fix broadway
     None values
     Reorganize
@@ -6,19 +20,18 @@ Construction spending
     Document
 Upload the new datasets
 
-Finalize parking
+Imported datasets have the wrong name for (import)
+Imported modules are not recognized as defined variables by abstractinterpreter
+State crime is broken (can't seem to load properties)
+Visualizer index
+
 Instructor API rewrite
 
-Explain and maze
+Explain
 Scatter plots
-Decouple Assignments from Courses
-Blockly~Corgis integration
 
+"English" mode
 Data explorer
-Fix undo/redo and copy/paste
-
-Grading uploads image in block mode
-
 Superior error messages
 Upload mode
 

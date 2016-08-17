@@ -48,7 +48,7 @@ class UpdateDatasets(Command):
             index = json.load(index_file)
         for language, language_data in tqdm(index.items()):
             for dataset, dataset_data in language_data['datasets'].items():
-                dataset_name = dataset.replace(' ', '').lower()
+                dataset_name = dataset.replace(' ', '_').lower()
                 dataset_folder = '{language}/{dataset}/'.format(language=language, dataset=dataset_name)
                 final_source = os.path.join(source_directory, dataset_folder)
                 final_static_target = os.path.join(root_directory, 'static', 'corgis', dataset_folder)
