@@ -36,7 +36,8 @@ class UpdateDatasets(Command):
             '_images/corgis-logo-smaller.png': 'static/images/',
             'python/python.html': 'templates/corgis/python/',
             'visualizer/visualizer.html': 'templates/corgis/visualizer/',
-            'java/java.html': 'templates/corgis/java/'
+            'java/java.html': 'templates/corgis/java/',
+            'index.json': 'static/corgis/'
         }
         root_directory = app.config['ROOT_DIRECTORY']
         for source_file, target_directory in tqdm(source_files.items()):

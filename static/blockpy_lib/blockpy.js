@@ -3729,7 +3729,7 @@ function BlockPyCorgis(main) {
     var corgis = this;
     var imports = [];
     this.main.model.assignment.modules().forEach(function(name) {
-        var post_prefix = name.substring(7).replace(/\s/g, '').toLowerCase();
+        var post_prefix = name.substring(7).replace(/\s/g, '_').toLowerCase();
         if (!(name in BlockPyEditor.CATEGORY_MAP)) {
             imports.push.apply(imports, corgis.importDataset(post_prefix, name));
         }
@@ -3771,7 +3771,7 @@ BlockPyCorgis.prototype.openDialog = function(name) {
             var body = $('<table></table>', {'class': 'table-bordered table-condensed table-striped'});
             Object.keys(datasets).map(function(name) {
                 var title_name = name;
-                name = name.replace(/\s/g, '').toLowerCase();
+                name = name.replace(/\s/g, '_').toLowerCase();
                 var btn = $('<button type="button" class="btn btn-primary" data-toggle="button" aria-pressed="false" autocomplete="off">Load</button>');
                 if (corgis.loadedDatasets.indexOf(name) > -1) {
                     set_button_loaded(btn);
@@ -3797,7 +3797,7 @@ BlockPyCorgis.prototype.openDialog = function(name) {
         var loadedDatasets = this.loadedDatasets;
         Object.keys(datasets).map(function(name) {
             var title_name = name;
-            name = name.replace(/\s/g, '').toLowerCase();
+            name = name.replace(/\s/g, '_').toLowerCase();
             var btn = $('<button type="button" class="btn btn-primary" data-toggle="button" aria-pressed="false" autocomplete="off">Load</button>');
             if (loadedDatasets.indexOf(name) > -1) {
                 set_button_loaded(btn);
