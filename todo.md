@@ -1,3 +1,10 @@
+Screen is overflowed by datasets in Import Datasets
+Support == operators for the parking api
+State crime is still broken
+Flip weather and earthquake
+Sampling
+Get rid of groups printing at the top of the select.html page
+
 Ready:
     Broadway
     Construction Spending
@@ -8,17 +15,6 @@ Ready:
     Global Development
     State Crime
     Airlines
-New text
-State Demographics
-
-
-Fix broadway
-    None values
-    Reorganize
-    Document
-Construction spending
-    Document
-Upload the new datasets
 
 Imported datasets have the wrong name for (import)
 Imported modules are not recognized as defined variables by abstractinterpreter
@@ -35,24 +31,6 @@ Data explorer
 Superior error messages
 Upload mode
 
-
-Submission
-    tied to a student/course/assignment
-Course
-    Grouping of submissions
-Curriculum
-    Grouping of assignments
-Assignment
-    tied to a Curriculum
-    Delete -> Removes this assignment completely
-        Only creators of the assignment can do this? And Admins
-    Remove -> deletes its entry in the Course Assignments
-Assignment Group
-    tied to a Curriculum
-    Delete -> 
-Course Assignments
-    Connects a course to its list of assignments
-Create a new assignment
 
 Low
     Add student(s)
@@ -94,107 +72,7 @@ SQL blocks
 Download this problem for offline (bundle javascript?)
 SQLite datasets:
     Have flat and hiearchical
-
-blockpy/
-    ->
-    
-book/
-
-datasets/
-corgis/
-wiki/
-
-explain/
-
-maze/
-
-
-think.cs.vt.edu/
-    index
-    error
-    select
-    select_builtin_assignment
-    dashboard
-    user/
-        login
-        logout
-        register
-        etc.
-    course/
-        new
-        remove
-        load
-        edit
-        list
-    assignment/
-        new
-        remove
-        load
-        edit
-    group/
-        new
-        remove
-        load
-    -------
-    blockpy/
-        In guest mode, you encounter 
-        In regular user mode, you encounter assignments
-        In LTI mode, you encounter assignments
-        
-        Endpoints:
-            index
-                if assignment.id is given, and user is in course of assignment,
-                    load assignment
-                else
-                    scratch canvas (not tied to online database)
-            new
-            load
-            edit
-            dashboard
-            about
-            contact
-        AJAX
-            save_code
-            save_events
-            save_correct
-            get_submission_code
-            save_presentation_code
-    book/
-        index
-        
-    corgis/
-    datasets/
-        index
-        about
-        contact
-        python/
-        java/
-        sql/
-        visualizer/
-            <dataset>/
-    explain/
-        index
-    maze/
-        index
-    curriculum/ (ct)
-        index
-        assignments
-        cohort model
         
 Add in app by closure
 Only add in lti=lti if needed
         
-@blockpy.route('/assignment/<id>', methods=['GET', 'POST'])
-@lti(request='session')
-def index(id, lti=lti):
-    if g.lti_exception:
-        # flash exception
-    if not g.lti:
-        # set status to not lti
-    if not g.user:
-        # Scratch canvas
-    if not g.course:
-        # Suggest course
-        # Otherwise, scratch canvas
-    # Provide the assignment
-    
