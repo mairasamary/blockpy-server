@@ -1,21 +1,21 @@
 EXTENDED_ERROR_EXPLANATION = {
-	'ParseError': "<b>Extended Error Explanation: </b>A parse error means that Python does not understand the syntax on the line the error message points out.  Common examples are forgetting commas beteween arguments or forgetting a : (colon) on a for statement.      <br><b>Suggestion: </b>To fix a parse error you just need to look carefully at the line with the error and possibly the line before it.  Make sure it conforms to all of Python's rules.",
-	'TypeError': "<b>Extended Error Explanation: </b> Type errors most often occur when an expression tries to combine two objects with types that should not be combined.  Like using \"+\" to add a number to a list instead of \".append\", or dividing a string by a number.  <br><b>Suggestion: </b>To fix a type error you will most likely need to trace through your code and make sure the variables have the types you expect them to have. This is a great time to use the Data Explorer!",
-	'SyntaxError': "<b>Extended Error Explanation: </b> This message indicates that Python can't figure out the syntax of a particular statement.  Some examples are assigning to a literal, or a function call.      <br><b>Suggestion: </b>Check your assignment statements and make sure that the left hand side of the assignment is a variable, not a literal (e.g., 7 or \"hello\") or a function.",
-	'NameError': "<b>Extended Error Explanation: </b> A name error almost always means that you have used a variable before it has a value.  Often this may be a simple typo, so check the spelling carefully.  <br><b>Suggestion: </b>Check the right hand side of assignment statements and your function calls, this is the most likely place for a NameError to be found. It really helps to step through your code, one line at a time, mentally keeping track of your variables. You should also use the Data Explorer!",
-	'ValueError': "<b>Extended Error Explanation: </b> A ValueError most often occurs when you pass a parameter to a built-in function, and the function is expecting one type and you pass something  different. For instance, if you try to convert a non-numeric string to an int, you will get a ValueError:<br><pre>  int(\"Corgi\") # ValueError: invalid literal for int() with base 10</pre> <br><b>Suggestion: </b>The error message gives you a pretty good hint about the name of the function as well as the value that is incorrect.  Look at the error message closely and then trace back to the variable containing the problematic value. }",
-	'AttributeError': "<b>Extended Error Explanation: </b> This happens when you try to do something like  X.Y and something was off. This error message is telling you that the object on the left hand side of the dot, does not have the attribute or method on the right hand side.      <br><b>Suggestion: </b>The most common cause of this message is that the object undefined does not have attribute X. This might be because you had a typo in the thing on the right side. This tells you that the object on the left hand side of the dot is not what you think. Trace the variable back and print it out in various places until you discover where it becomes undefined.  Otherwise check the attribute on the right hand side of the dot for a typo. For example, make sure you didn't spell 'append' or get the wrong order.",
-	'TokenError': "<b>Extended Error Explanation: </b> Most of the time this error indicates that you have forgotten a right parenthesis or have forgotten to close a pair of quotes.  <br><b>Suggestion: </b>Check each line of your program and make sure that your parenthesis are balanced.",
-	'IndexError': "<b>Extended Error Explanation: </b> This message means that you are trying to index past the end of a string or a list.  For example, if your list has 3 things in it and you try to access the item at position 5.  <br><b>Suggestion: </b>Remember that the first item in a list or string is at index position 0, quite often this message comes about because you are off by one.  Remember in a list of length 3 the last legal index is 2.<br><pre>favorite_colors = [\"red\", \"blue\", \"green\"]\nfavorite_colors[2] # prints green favorite_color[3] # raises an IndexError</pre>",
-	'ImportError': "<b>Extended Error Explanation: </b> This error message indicates that you are trying to import a module that does not exist, or is not in the same directory as your python script.  <br><b>Suggestion: </b>One problem may simply be that you have a typo - remember, you must not capitalize the module name. Another common problem is that you have placed the module in a different directory. Finally, if you're using a special module, then it might not be installed. Come ask an instructor on how to install new modules if it's one that you must use!",
-	'ReferenceError': "<b>Extended Error Explanation: </b> This is a really hard error to get, so I'm not entirely sure what you did.  <br><b>Suggestion: </b>Bring this code to the instructor. ",
-	'ZeroDivisionError': "<b>Extended Error Explanation: </b> This tells you that you are trying to divide by 0. Typically this is because the value of the variable in the denominator of a division expression has the value 0.  <br><b>Suggestion: </b>You may need to protect against dividing by 0 with an if statment, or you may need to rexamine your assumptions about the legal values of variables, it could be an earlier statment that is unexpectedly assigning a value of zero to the variable in question.",
-	'IndentationError': "<b>Extended Error Explanation: </b> This error occurs when you have not indented your code properly.  This is most likely to happen as part of an if, for, while or def statement.  <br><b>Suggestion: </b>Check your if, def, for, and while statements to be sure the lines are properly indented beneath them (seriously, this happens ALL the time).  Another source of this error comes from copying and pasting code where you have accidentally left some bits of code lying around that don't belong there anymore. Finally, a very sinister but unlikely possibility is that you have some tab characters in your code, which look identical to four spaces. Never, ever use tabs, and carefully check code from the internet to make sure it doesn't have tabs.",
-	'EOFError': "<b>Extended Error Explanation: </b> If you are using input() or raw_input() commands, then this error happens when they don't get the right ending.  <br><b>Suggestion: </b>It's hard to protect against users. However, if you're using input(), you might be able to use raw_input() instead to avoid this problem. ",
-	'IOError': "<b>Extended Error Explanation: </b> This is a very easy error to get. The most common reason is that you were trying to open a file and it wasn't in the right place.   <br><b>Suggestion: </b>Make sure that the file is in the right place - print out the file path, and then check that it's definitely on your computer at that location. If you need help doing file processing, you should probably check with an instructor.",
-	'KeyError': "<b>Extended Error Explanation: </b> A dictionary has a bunch of keys, but until a key is defined, you cannot reference it. In fact, this is very similar to how a variable works. This error is caused by you trying to refer to a key that does not exist.  <br><b>Suggestion: </b>The most common reason you get this exception is that you have a typo in your dictionary access. It is also possible that the key does not exist yet but should. Use the data explorer to find out the current keys in a dictionary.",
-	'MemoryError': "<b>Extended Error Explanation: </b> Somehow, you have run out of memory. This is crazy hard to get, so consider yourself impressive!  <br><b>Suggestion: </b>Bring your code to an instructor. ",
-	'OSError': "<b>Extended Error Explanation: </b> It's hard to say what an OSError is without deep checking. Many things can cause it.  <br><b>Suggestion: </b>Bring your code to an instructor.      "
+	'ParseError': "A parse error means that Python does not understand the syntax on the line the error message points out.  Common examples are forgetting commas beteween arguments or forgetting a : (colon) on a for statement.      <br><b>Suggestion: </b>To fix a parse error you just need to look carefully at the line with the error and possibly the line before it.  Make sure it conforms to all of Python's rules.",
+	'TypeError': "Type errors most often occur when an expression tries to combine two objects with types that should not be combined.  Like using \"+\" to add a number to a list instead of \".append\", or dividing a string by a number.  <br><b>Suggestion: </b>To fix a type error you will most likely need to trace through your code and make sure the variables have the types you expect them to have. This is a great time to use the Data Explorer!",
+	'SyntaxError': "This message indicates that Python can't figure out the syntax of a particular statement.  Some examples are assigning to a literal, or a function call.      <br><b>Suggestion: </b>Check your assignment statements and make sure that the left hand side of the assignment is a variable, not a literal (e.g., 7 or \"hello\") or a function.",
+	'NameError': "A name error almost always means that you have used a variable before it has a value.  Often this may be a simple typo, so check the spelling carefully.  <br><b>Suggestion: </b>Check the right hand side of assignment statements and your function calls, this is the most likely place for a NameError to be found. It really helps to step through your code, one line at a time, mentally keeping track of your variables. You should also use the Data Explorer!",
+	'ValueError': "A ValueError most often occurs when you pass a parameter to a built-in function, and the function is expecting one type and you pass something  different. For instance, if you try to convert a non-numeric string to an int, you will get a ValueError:<br><pre>  int(\"Corgi\") # ValueError: invalid literal for int() with base 10</pre> <br><b>Suggestion: </b>The error message gives you a pretty good hint about the name of the function as well as the value that is incorrect.  Look at the error message closely and then trace back to the variable containing the problematic value. }",
+	'AttributeError': "This happens when you try to do SOMETHING.WHATEVER and either SOMETHING wasn't declared or WHATEVER isn't an attribute of SOMETHING. This error message is telling you that the object on the left hand side of the dot, does not have the attribute or method on the right hand side.      <br><b>Suggestion: </b>You were probably trying to either get access to some data (weather.get) or append (a_list.append). If it's the first one, you should make sure the module is imported and that you are called its function correctly. If it's the second one, you should make sure you spelled \"append\" right and that you are using a variable with a list for a value.",
+	'TokenError': "Most of the time this error indicates that you have forgotten a right parenthesis or have forgotten to close a pair of quotes.  <br><b>Suggestion: </b>Check each line of your program and make sure that your parenthesis are balanced.",
+	'IndexError': "This message means that you are trying to index past the end of a string or a list.  For example, if your list has 3 things in it and you try to access the item at position 5.  <br><b>Suggestion: </b>Remember that the first item in a list or string is at index position 0, quite often this message comes about because you are off by one.  Remember in a list of length 3 the last legal index is 2.<br><pre>favorite_colors = [\"red\", \"blue\", \"green\"]\nfavorite_colors[2] # prints green favorite_color[3] # raises an IndexError</pre>",
+	'ImportError': "This error message indicates that you are trying to import a module that does not exist, or is not in the same directory as your python script.  <br><b>Suggestion: </b>One problem may simply be that you have a typo - remember, you must not capitalize the module name. Another common problem is that you have placed the module in a different directory. Finally, if you're using a dataset module, then it might not be imported. Use the \"Import Datasets\" button below!",
+	'ReferenceError': "This is a really hard error to get, so I'm not entirely sure what you did.  <br><b>Suggestion: </b>Bring this code to the instructor. ",
+	'ZeroDivisionError': "This tells you that you are trying to divide by 0. Typically this is because the value of the variable in the denominator of a division expression has the value 0.  <br><b>Suggestion: </b>Are you sure you are dividing by the right variable? Are you sure that that variable has the value you expect - is it possible that you counted the number of elements in an empty list, for instance?",
+	'IndentationError': "This error occurs when you have not indented your code properly.  This is most likely to happen as part of an if, for, while or def statement.  <br><b>Suggestion: </b>Check your if, def, for, and while statements to be sure the lines are properly indented beneath them (seriously, this happens ALL the time).  Another source of this error comes from copying and pasting code where you have accidentally left some bits of code lying around that don't belong there anymore. Finally, a very sinister but unlikely possibility is that you have some tab characters in your code, which look identical to four spaces. Never, ever use tabs, and carefully check code from the internet to make sure it doesn't have tabs.",
+	'EOFError': "If you are using input() or raw_input() commands, then this error happens when they don't get the right ending.  <br><b>Suggestion: </b>It's hard to protect against users. However, if you're using input(), you might be able to use raw_input() instead to avoid this problem. ",
+	'IOError': "This is a very easy error to get. The most common reason is that you were trying to open a file and it wasn't in the right place.   <br><b>Suggestion: </b>Make sure that the file is in the right place - print out the file path, and then check that it's definitely on your computer at that location. If you need help doing file processing, you should probably check with an instructor.",
+	'KeyError': "A dictionary has a bunch of keys that you can use to get data. This error is caused by you trying to refer to a key that does not exist.  <br><b>Suggestion: </b>The most common reason you get this exception is that you have a typo in your dictionary access. Check your spelling. Also double check that the key definitely exists.",
+	'MemoryError': "Somehow, you have run out of memory. <br><b>Suggestion: </b>Make sure you are filtering your dataset! Alternatively, bring your code to an instructor.",
+	'OSError': "It's hard to say what an OSError is without deep checking. Many things can cause it.  <br><b>Suggestion: </b>Bring your code to an instructor.      "
 }
 /*
 var filename = '__main__.py';
@@ -165,6 +165,12 @@ function AbstractInterpreter(code, filename) {
 AbstractInterpreter.prototype = new NodeVisitor();
 
 AbstractInterpreter.prototype.BUILTINS = {'print': {"type": 'None'}, 
+                                'sum': {"type": "Num"},
+                                'round': {"type": "Num"},
+                                'range': {"type": "List"},
+                                'xrange': {"type": "List"},
+                                'reversed': {"type": "List"},
+                                'len': {"type": "Num"},
                                 'True': {"type": "Bool"}, 
                                 'False': {"type": "Bool"}, 
                                 'None': {"type": 'None'}}
@@ -664,7 +670,7 @@ AbstractInterpreter.prototype.visit_For = function(node) {
 
 /*
 var filename = '__main__.py';
-var python_source = 'total=0\ntotal=total+1\nimport weather\nimport matplotlib.pyplot as plt\ncelsius_temperatures = []\nexisting=weather.get_forecasts("Miami, FL")\nfor t in existing:\n    celsius = (t - 32) / 2\n    celsius_temperatures.append(celsius)\nplt.plot(celsius_temperatures)\nplt.title("Temperatures in Miami")\nplt.show()';
+var python_source = 'sum([1,2])/len([4,5,])\ntotal=0\ntotal=total+1\nimport weather\nimport matplotlib.pyplot as plt\ncelsius_temperatures = []\nexisting=weather.get_forecasts("Miami, FL")\nfor t in existing:\n    celsius = (t - 32) / 2\n    celsius_temperatures.append(celsius)\nplt.plot(celsius_temperatures)\nplt.title("Temperatures in Miami")\nplt.show()';
 var analyzer = new AbstractInterpreter(python_source);
 analyzer.analyze()
 console.log(python_source);
@@ -1692,6 +1698,11 @@ PythonToBlocks.KNOWN_MODULES = {
     },
     "plt": {
         "title": ["*plot_title", "TEXT"],
+        "xlabel": ["*plot_xlabel", "TEXT"],
+        "ylabel": ["*plot_ylabel", "TEXT"],
+        "hist": ["*plot_hist", {"type": "variable", "mode": "value", "name": "values"}],
+        "scatter": ["*plot_scatter", {"type": "variable", "mode": "value", "name": "x_values"},
+                                      {"type": "variable", "mode": "value", "name": "y_values"}],
         "show": ["*plot_show"]
     }
 };
@@ -1726,7 +1737,6 @@ PythonToBlocks.prototype.CallAttribute = function(func, args, keywords, starargs
             var values = {};
             for (var i = 0; i < args.length; i++) {
                 var argument = definition[1+i];
-                console.log(argument);
                 var destination = fields;
                 if (typeof argument ==  "string") {
                     fields[argument] = this.Str_value(args[i]);
@@ -1758,7 +1768,6 @@ PythonToBlocks.prototype.CallAttribute = function(func, args, keywords, starargs
                         destination[argumentName] = argumentMapper(this.Str_value(args[i]));
                     }
                 } else {
-                    console.log(typeof argument);
                     var argumentName = argument[0];
                     var argumentMapper = argument[1];
                     fields[argumentName] = argumentMapper(this.Str_value(args[i]));
@@ -1769,10 +1778,8 @@ PythonToBlocks.prototype.CallAttribute = function(func, args, keywords, starargs
                 var second = definition[i][1];
                 fields[first] = second;
             }
-            console.log(mutations);
             if (isExpression) {
                 var k = block(blockName, func.lineno, fields, values, [], mutations);
-                console.log(k);
                 return k;
             } else {
                 return [block(blockName, func.lineno, fields, values, [], mutations)];
@@ -2609,6 +2616,7 @@ BlockPyPrinter.prototype.getConfiguration = function() {
     return {
         'printHtml': function(html, value) { printer.printHtml(html, value);},
         'width': this.tag.width(),
+        'png_mode': true,
         'height': this.tag.height(),
         'console': this.tag[0]
     }
@@ -2661,7 +2669,7 @@ BlockPyPrinter.prototype.printHtml = function(chart, value) {
     var line = this.main.model.execution.line_number();
     this.main.model.execution.output.push(value);
     if (!(this.main.model.settings.mute_printer())) {
-        var outerDiv = $(chart[0]);//.parent();
+        var outerDiv = $(Sk.console.png_mode ? chart : chart[0]);//.parent();
         outerDiv.parent().show();
         outerDiv.attr({
             "data-toggle": 'tooltip',
@@ -2675,7 +2683,7 @@ BlockPyPrinter.prototype.printHtml = function(chart, value) {
     }
 }
 
-BlockPyInterface = "<div class='blockpy-content container-fluid' style='background-color :#fcf8e3; border: 1px solid #faebcc; '>    <div class='blockpy-popup modal fade' style='display:none'>        <div class='modal-dialog' style='width:750px'>            <div class='modal-content' id='modal-message' >                <div class='modal-header'>                    <button type='button' class='close' data-dismiss='modal' aria-hidden='true'>&times;</button>                    <h4 class='modal-title'>Dynamic Content</h4>                </div>                <div class='modal-body' style='width:100%; height:400px; white-space:pre-wrap'>                </div>                <div class='modal-footer'>                    <button type='button' class='btn btn-white' data-dismiss='modal'>Close</button>                </div>                </div>        </div>    </div>    <canvas id='capture-canvas' style='display:none'></canvas>    <div class='row' style='padding-bottom: 10px; border-bottom: 1px solid #faebcc; '>        <div class='blockpy-content-top col-md-9 col-sm-9'>            <span class='blockpy-alert pull-right text-muted' data-bind=\"visible: false, text: status.text\"></span>            <strong>BlockPy: </strong>             <span class='blockpy-presentation-name'                  data-bind='text: assignment.name'></span>            <div class='blockpy-presentation' data-bind=\"html: assignment.introduction\">            </div>        </div>        <div class='blockpy-content-topright col-md-3 col-sm-3'>            <span class='pull-right label label-default'                  data-bind=\"css: status_server_class()[0],                             text: status_server_class()[1]\">Loading</span>            <div class='pull-right'>                Disable Semantic Errors: <input type='checkbox' data-bind=\"checked: settings.disable_semantic_errors\">                <label class='blockpy-toolbar-auto-upload' data-bind=\"visible: settings.instructor\">                Auto-save:                <input type='checkbox' data-bind=\"checked:settings.auto_upload\">                </label>                                 <label class='blockpy-toolbar-instructor-mode' data-bind=\"visible: settings.instructor_initial\">                Instructor mode:                 <input type='checkbox' data-bind=\"checked:settings.instructor\">                </label>                                <label class='blockpy-toolbar-instructor-mode' data-bind=\"visible: settings.instructor_initial\">                Upload mode:                 <input type='checkbox' data-bind=\"checked:assignment.upload\">                </label>             </div>            <!--<img src=\"images/corgi.png\" class='img-responsive' />-->        </div>    </div>    <div class='row' style='margin-top: 5px border: 1px solid #bce8f1;'>        <div class='blockpy-content-left col-md-6 col-sm-6'             style='padding:10px'>            <strong>Printer</strong>            <div class='blockpy-printer blockpy-printer-default'>            </div>        </div>        <div class='blockpy-content-right col-md-6 col-sm-6 bubble'             style='padding:10px'>            <div class='blockpy-feedback'>                <strong>Feedback: </strong>                <span class='label blockpy-feedback-status' data-bind=\"css: status_feedback_class()[0], text: status_feedback_class()[1]\">Runtime Error</span>                <br>                <pre class='blockpy-feedback-original'></pre>                <strong class='blockpy-feedback-title'></strong>                <div class='blockpy-feedback-body'><i>Run your code to get feedback.</i></div>            </div>        </div>    </div>    <div class=\"row\"         style='background-color :#fcf8e3; padding-bottom: 10px; border: 1px solid #faebcc'>        <div class='col-md-12 col-sm-12 blockpy-toolbar btn-toolbar' role='toolbar'>                        <button type='button' class='btn blockpy-run' style='float:left',                data-bind='css: execution.status() == \"running\" ? \"btn-info\" :                                execution.status() == \"error\" ? \"btn-danger\" : \"btn-success\" ' >                <span class='glyphicon glyphicon-play'></span> Run            </button>                        <div class=\"btn-group\" data-toggle=\"buttons\" data-bind=\"visible: !assignment.upload()\">                <label class=\"btn btn-default blockpy-mode-set-blocks active\">                    <span class='glyphicon glyphicon-th-large'></span>                    <input type=\"radio\" name=\"blockpy-mode-set\" autocomplete=\"off\" checked> Blocks                </label>                <label class=\"btn btn-default blockpy-mode-set-instructor\"                       data-bind=\"visible: settings.instructor\">                    <span class='glyphicon glyphicon-list-alt'></span>                    <input type=\"radio\" name=\"blockpy-mode-set\" autocomplete=\"off\"> Instructor                </label>                <label class=\"btn btn-default blockpy-mode-set-text\">                    <span class='glyphicon glyphicon-pencil'></span>                    <input type=\"radio\" name=\"blockpy-mode-set\" autocomplete=\"off\"> Text                </label>            </div>            <button type='button' class='btn btn-default blockpy-toolbar-reset' data-bind=\"visible: !assignment.upload()\">                <span class='glyphicon glyphicon-refresh'></span> Reset            </button>            <!--<button type='button' class='btn btn-default blockpy-toolbar-capture'>                <span class='glyphicon glyphicon-picture'></span> Capture            </button>-->            <button type='button' class='btn btn-default blockpy-toolbar-import' data-bind=\"visible: !assignment.upload()\">                <span class='glyphicon glyphicon-list-alt'></span> Import Datasets            </button>                        <select data-bind=\"visible: settings.instructor() & !assignment.upload(), value: settings.filename\"                    class=\"blockpy-toolbar-filename-picker\">                <option value='__main__' selected>Student Code</option>                <option value='starting_code'>Starting Code</option>                <option value='give_feedback'>Generate Feedback</option>            </select>                        </div>    </div>    <div class='row blockpy-content-bottom'         style='padding-bottom: 10px; border: 1px solid #faebcc'>        <div class='blockpy-editor col-md-12 col-sm-12'>            <div class='blockpy-blocks blockpy-editor-menu'                  style='height:100%'>                <div class='blockly-div' style='height:450px; width: 100%' '></div>                <!-- <div class='blockly-area'></div> -->            </div>            <div class='blockpy-text blockpy-editor-menu'>                <div class='blockpy-text-sidebar' style='width:150px; height: 100%; float:left; background-color: #ddd'>                <!--                <button type='button' class='btn btn-default blockpy-text-insert-if'>Decision (If)</button>                <button type='button' class='btn btn-default blockpy-text-insert-if-else'>Decision (If/Else)</button>                -->                </div>                <textarea class='codemirror-div language-python'                           style='height:100%'></textarea>            </div>            <div class='blockpy-upload blockpy-editor-menu'>                <label class=\"btn btn-default btn-file\">                    Browse <input type=\"file\" style=\"display: none;\">                </label>            </div>            <div class='blockpy-instructor blockpy-editor-menu form-inline'>                <!-- Name -->                <form class=\"form-inline\" style='display:inline-block'>                <label>Name:</label>                <input type='text' class='blockpy-presentation-name-editor form-control'                       data-bind='textInput: assignment.name'>                 </form>                <br>                <br>                                <label>Introduction:</label>                <div class='blockpy-presentation-body-editor'>                 </div>                                <!-- Parsons -->                <label class='blockpy-presentation-parsons-check'>                Parsons:                <input type='checkbox' class='form-control' data-bind=\"checked:assignment.parsons\">                </label>                 <br>                                <!-- Initial mode -->                <label class='blockpy-presentation-text-first'>                Initial View:                <select data-bind=\"value: assignment.initial_view\">                    <option value=\"Blocks\" selected>Blocks</option>                    <option value=\"Text\">Text</option>                    <option value=\"Instructor\">Instructor</option>                    <option value=\"Upload\">Upload</option>                </select>                </label>                <br>                                <label>Available Modules</lable>                <select class='blockpy-available-modules' multiple='multiple'                        data-bind=\"selectedOptions: assignment.modules\">                    <option>Properties</option>                    <option>Decisions</option>                    <option>Iteration</option>                    <option>Functions</option>                    <option>Calculation</option>                    <option>Output</option>                    <option>Python</option>                    <option>Values</option>                    <option>Lists</option>                    <option>Dictionaries</option>                    <option>Data - Parking</option>                            </div>            <div class='blockpy-upload blockpy-editor-menu'>            </div>        </div>    </div>    <div>        <div class='blockpy-content-right col-md-5 col-sm-5 alert alert-info'>            <div class='panel panel-default'>                <div class='panel-heading'>Data Explorer</div>                <div class='panel-body'>                <div class='blockpy-explorer'>                    <table><tr>                    <!-- Step: X of Y (Line: Z) -->                    <td colspan='4'>                        <div class='blockpy-explorer-run-hide'>                            <i>Run your code to explore it.</i>                        </div>                        <div class='blockpy-explorer-status'>                            <strong>Step: </strong>                            <span class='blockpy-explorer-step-span'>0</span> of                             <span class='blockpy-explorer-length-span'>0</span>                             (<strong>Line: </strong>                            <span class='blockpy-explorer-line-span'>0</span>)                        </div>                    </td>                    </tr><tr>                    <!-- First Previous Next Last -->                    <td style='width:25%'>                        <button type='button' class='btn btn-default blockpy-explorer-first'>                        <span class='glyphicon glyphicon-fast-backward'></span> First</button>                    </td><td style='width:25%'>                        <button type='button' class='btn btn-default blockpy-explorer-back'>                        <span class='glyphicon glyphicon-backward'></span> Back</button>                    </td><td style='width:25%'>                        <button type='button' class='btn btn-default blockpy-explorer-next'>                        Next <span class='glyphicon glyphicon-forward'></span></button>                    </td><td style='width:25%'>                        <button type='button' class='btn btn-default blockpy-explorer-last'>                        Last <span class='glyphicon glyphicon-fast-forward'></span> </button>                    </td>                    </tr></table>                    <!-- Printer -->                                        <!-- Modules -->                    <br><div>                        <strong>Loaded Modules: </strong>                        <i class='blockpy-explorer-modules'>None</i>                    </div>                    <!-- Actual Trace data -->                    <br><strong>Trace Table</strong>                    <br><table style='width: 100%'                            class='table table-condensed table-striped                                    table-bordered table-hover blockpy-explorer-table'>                        <!-- Property Type Value -->                        <tr>                            <th>Property</th>                            <th>Type</th>                            <th>Value</th>                        </tr>                    </table>                </div>                </div>            </div>        </div>    </div></div><!--<div class='blockpy-explorer-errors alert alert-danger alert-dismissible' role='alert'>                     <button type='button' class='blockpy-explorer-errors-hide close' aria-label='Close'><span  aria-hidden='true'>&times;</span></button>                     <div class='blockpy-explorer-errors-body'>                                     </div>-->";
+BlockPyInterface = "<div class='blockpy-content container-fluid' style='background-color :#fcf8e3; border: 1px solid #faebcc; '>    <div class='blockpy-popup modal fade' style='display:none'>        <div class='modal-dialog' style='width:750px'>            <div class='modal-content' id='modal-message' >                <div class='modal-header'>                    <button type='button' class='close' data-dismiss='modal' aria-hidden='true'>&times;</button>                    <h4 class='modal-title'>Dynamic Content</h4>                </div>                <div class='modal-body' style='width:100%; height:400px; white-space:pre-wrap'>                </div>                <div class='modal-footer'>                    <button type='button' class='btn btn-white' data-dismiss='modal'>Close</button>                </div>                </div>        </div>    </div>    <canvas id='capture-canvas' style='display:none'></canvas>    <div class='row' style='padding-bottom: 10px; border-bottom: 1px solid #faebcc; '>        <div class='blockpy-content-top col-md-9 col-sm-9'>            <span class='blockpy-alert pull-right text-muted' data-bind=\"visible: false, text: status.text\"></span>            <strong>BlockPy: </strong>             <span class='blockpy-presentation-name'                  data-bind='text: assignment.name'></span>            <div class='blockpy-presentation' data-bind=\"html: assignment.introduction\">            </div>        </div>        <div class='blockpy-content-topright col-md-3 col-sm-3'>            <span class='pull-right label label-default'                  data-bind=\"css: status_server_class()[0],                             text: status_server_class()[1]\">Loading</span>            <div class='pull-right'>                Disable Semantic Errors: <input type='checkbox' data-bind=\"checked: settings.disable_semantic_errors\">                <label class='blockpy-toolbar-auto-upload' data-bind=\"visible: settings.instructor\">                Auto-save:                <input type='checkbox' data-bind=\"checked:settings.auto_upload\">                </label>                                 <label class='blockpy-toolbar-instructor-mode' data-bind=\"visible: settings.instructor_initial\">                Instructor mode:                 <input type='checkbox' data-bind=\"checked:settings.instructor\">                </label>                                <label class='blockpy-toolbar-instructor-mode' data-bind=\"visible: settings.instructor_initial\">                Upload mode:                 <input type='checkbox' data-bind=\"checked:assignment.upload\">                </label>             </div>            <!--<img src=\"images/corgi.png\" class='img-responsive' />-->        </div>    </div>    <div class='row' style='margin-top: 5px border: 1px solid #bce8f1;'>        <div class='blockpy-content-left col-md-6 col-sm-6'             style='padding:10px'>            <strong>Printer</strong>            <div class='blockpy-printer blockpy-printer-default'>            </div>        </div>        <div class='blockpy-content-right col-md-6 col-sm-6 bubble'             style='padding:10px'>            <div class='blockpy-feedback'>                <button type='button' class='btn btn-sm btn-default blockpy-feedback-trace pull-right'                         data-bind=\"visible: !execution.show_trace() && (status.error() == 'feedback' || status.error() == 'no errors')\">                    <span class='glyphicon glyphicon-circle-arrow-down'></span> Trace Variables                </button>                                <strong>Feedback: </strong>                <span class='label blockpy-feedback-status' data-bind=\"css: status_feedback_class()[0], text: status_feedback_class()[1]\">Runtime Error</span>                <br>                <pre class='blockpy-feedback-original'></pre>                <strong class='blockpy-feedback-title'></strong>                <div class='blockpy-feedback-body'><i>Run your code to get feedback.</i></div>                <div class='blockpy-code-trace'></div>                                <div class=\"blockpy-feedback-traces\"                      data-bind=\"visible: execution.show_trace, foreach: execution.trace\">                                <div data-bind=\"visible: $index()+1 == $root.execution.trace_step()\">                <div>                    <button type='button' class='btn btn-default' data-bind=\"click: $root.moveTraceFirst\">                        <span class='glyphicon glyphicon-step-backward'></span>                    </button>                    <button type='button' class='btn btn-default' data-bind=\"click: $root.moveTraceBackward\">                        <span class='glyphicon glyphicon-backward'></span>                    </button>                    Step <span data-bind='text: step'></span>                    / <span data-bind='text: $root.execution.last_step()-1'></span>                    (<span data-bind='text: line == -1 ? \"The end\" : \"Line \"+line'></span>)                    <button type='button' class='btn btn-default' data-bind=\"click: $root.moveTraceForward\">                        <span class='glyphicon glyphicon-forward'></span>                    </button>                    <button type='button' class='btn btn-default' data-bind=\"click: $root.moveTraceLast\">                        <span class='glyphicon glyphicon-step-forward'></span>                    </button>                </div>                                <table class='table table-condensed table-striped table-bordered table-hover'>                    <thead>                        <tr><th>Name</th><th>Type</th><th>Value</th></tr>                    </thead>                    <tbody data-bind=\"foreach: properties\">                        <tr data-bind=\"visible: name != '__file__' && name != '__path__'\">                            <td data-bind=\"text: name\"></td>                            <td data-bind=\"text: type\"></td>                            <td><code data-bind=\"html: value\"></code></td>                        </tr>                    </tbody>                </table>                </div>                                </div>            </div>        </div>    </div>    <div class=\"row\"         style='background-color :#fcf8e3; padding-bottom: 10px; border: 1px solid #faebcc'>        <div class='col-md-12 col-sm-12 blockpy-toolbar btn-toolbar' role='toolbar'>                        <button type='button' class='btn blockpy-run' style='float:left',                data-bind='css: execution.status() == \"running\" ? \"btn-info\" :                                execution.status() == \"error\" ? \"btn-danger\" : \"btn-success\" ' >                <span class='glyphicon glyphicon-play'></span> Run            </button>                        <div class=\"btn-group\" data-toggle=\"buttons\" data-bind=\"visible: !assignment.upload()\">                <label class=\"btn btn-default blockpy-mode-set-blocks\"                        data-bind=\"css: {active: settings.editor() == 'Blocks'}\">                    <span class='glyphicon glyphicon-th-large'></span>                    <input type=\"radio\" name=\"blockpy-mode-set\" autocomplete=\"off\" checked> Blocks                </label>                <label class=\"btn btn-default blockpy-mode-set-instructor\"                       data-bind=\"visible: settings.instructor,                                  css: {active: settings.editor() == 'Upload'}\">                    <span class='glyphicon glyphicon-list-alt'></span>                    <input type=\"radio\" name=\"blockpy-mode-set\" autocomplete=\"off\"> Instructor                </label>                <label class=\"btn btn-default blockpy-mode-set-text\"                        data-bind=\"css: {active: settings.editor() == 'Text'}\">                    <span class='glyphicon glyphicon-pencil'></span>                    <input type=\"radio\" name=\"blockpy-mode-set\" autocomplete=\"off\"> Text                </label>            </div>            <button type='button' class='btn btn-default blockpy-toolbar-reset' data-bind=\"visible: !assignment.upload()\">                <span class='glyphicon glyphicon-refresh'></span> Reset            </button>            <!--<button type='button' class='btn btn-default blockpy-toolbar-capture'>                <span class='glyphicon glyphicon-picture'></span> Capture            </button>-->            <button type='button' class='btn btn-default blockpy-toolbar-import' data-bind=\"visible: !assignment.upload()\">                <span class='glyphicon glyphicon-list-alt'></span> Import Datasets            </button>            <!--            <button type='button' class='btn btn-default blockpy-toolbar-english'>                <span class='glyphicon glyphicon-list-alt'></span> English            </button>            -->                        <select data-bind=\"visible: settings.instructor() & !assignment.upload(), value: settings.filename\"                    class=\"blockpy-toolbar-filename-picker\">                <option value='__main__' selected>Student Code</option>                <option value='starting_code'>Starting Code</option>                <option value='give_feedback'>Generate Feedback</option>            </select>                        </div>    </div>    <div class='row blockpy-content-bottom'         style='padding-bottom: 10px; border: 1px solid #faebcc'>        <div class='blockpy-editor col-md-12 col-sm-12'>            <div class='blockpy-blocks blockpy-editor-menu'                  style='height:100%'>                <div class='blockly-div' style='height:450px; width: 100%' '></div>                <!-- <div class='blockly-area'></div> -->            </div>            <div class='blockpy-text blockpy-editor-menu'>                <div class='blockpy-text-sidebar' style='width:150px; height: 100%; float:left; background-color: #ddd'>                <!--                <button type='button' class='btn btn-default blockpy-text-insert-if'>Decision (If)</button>                <button type='button' class='btn btn-default blockpy-text-insert-if-else'>Decision (If/Else)</button>                -->                </div>                <textarea class='codemirror-div language-python'                           style='height:100%'></textarea>            </div>            <div class='blockpy-upload blockpy-editor-menu'>                <label class=\"btn btn-default btn-file\">                    Browse <input type=\"file\" style=\"display: none;\">                </label>            </div>            <div class='blockpy-instructor blockpy-editor-menu form-inline'>                <!-- Name -->                <form class=\"form-inline\" style='display:inline-block'>                <label>Name:</label>                <input type='text' class='blockpy-presentation-name-editor form-control'                       data-bind='textInput: assignment.name'>                 </form>                <br>                <br>                                <label>Introduction:</label>                <div class='blockpy-presentation-body-editor'>                 </div>                                <!-- Parsons -->                <label class='blockpy-presentation-parsons-check'>                Parsons:                <input type='checkbox' class='form-control' data-bind=\"checked:assignment.parsons\">                </label>                 <br>                                <!-- Initial mode -->                <label class='blockpy-presentation-text-first'>                Initial View:                <select data-bind=\"value: assignment.initial_view\">                    <option value=\"Blocks\" selected>Blocks</option>                    <option value=\"Text\">Text</option>                    <option value=\"Instructor\">Instructor</option>                    <option value=\"Upload\">Upload</option>                </select>                </label>                <br>                                <label>Available Modules</lable>                <select class='blockpy-available-modules' multiple='multiple'                        data-bind=\"selectedOptions: assignment.modules\">                    <option>Properties</option>                    <option>Decisions</option>                    <option>Iteration</option>                    <option>Functions</option>                    <option>Calculation</option>                    <option>Output</option>                    <option>Python</option>                    <option>Values</option>                    <option>Lists</option>                    <option>Dictionaries</option>                    <option>Data - Parking</option>                            </div>            <div class='blockpy-upload blockpy-editor-menu'>            </div>        </div>    </div>    <div>        <div class='blockpy-content-right col-md-5 col-sm-5 alert alert-info'>            <div class='panel panel-default'>                <div class='panel-heading'>Data Explorer</div>                <div class='panel-body'>                <div class='blockpy-explorer'>                    <table><tr>                    <!-- Step: X of Y (Line: Z) -->                    <td colspan='4'>                        <div class='blockpy-explorer-run-hide'>                            <i>Run your code to explore it.</i>                        </div>                        <div class='blockpy-explorer-status'>                            <strong>Step: </strong>                            <span class='blockpy-explorer-step-span'>0</span> of                             <span class='blockpy-explorer-length-span'>0</span>                             (<strong>Line: </strong>                            <span class='blockpy-explorer-line-span'>0</span>)                        </div>                    </td>                    </tr><tr>                    <!-- First Previous Next Last -->                    <td style='width:25%'>                        <button type='button' class='btn btn-default blockpy-explorer-first'>                        <span class='glyphicon glyphicon-fast-backward'></span> First</button>                    </td><td style='width:25%'>                        <button type='button' class='btn btn-default blockpy-explorer-back'>                        <span class='glyphicon glyphicon-backward'></span> Back</button>                    </td><td style='width:25%'>                        <button type='button' class='btn btn-default blockpy-explorer-next'>                        Next <span class='glyphicon glyphicon-forward'></span></button>                    </td><td style='width:25%'>                        <button type='button' class='btn btn-default blockpy-explorer-last'>                        Last <span class='glyphicon glyphicon-fast-forward'></span> </button>                    </td>                    </tr></table>                    <!-- Printer -->                                        <!-- Modules -->                    <br><div>                        <strong>Loaded Modules: </strong>                        <i class='blockpy-explorer-modules'>None</i>                    </div>                    <!-- Actual Trace data -->                    <br><strong>Trace Table</strong>                    <br><table style='width: 100%'                            class='table table-condensed table-striped                                    table-bordered table-hover blockpy-explorer-table'>                        <!-- Property Type Value -->                        <tr>                            <th>Property</th>                            <th>Type</th>                            <th>Value</th>                        </tr>                    </table>                </div>                </div>            </div>        </div>    </div></div><!--<div class='blockpy-explorer-errors alert alert-danger alert-dismissible' role='alert'>                     <button type='button' class='blockpy-explorer-errors-hide close' aria-label='Close'><span  aria-hidden='true'>&times;</span></button>                     <div class='blockpy-explorer-errors-body'>                                     </div>-->";
 
 function BlockPyServer(main) {
     this.main = main;
@@ -3552,9 +3560,11 @@ BlockPyEditor.CATEGORY_MAP = {
                     '<block type="text_print"></block>'+
                     //'<block type="text_print_multiple"></block>'+
                     '<block type="plot_line"></block>'+
-                    //'<block type="plot_scatter"></block>'+
+                    '<block type="plot_scatter"></block>'+
                     '<block type="plot_show"></block>'+
                     '<block type="plot_title"></block>'+
+                    '<block type="plot_xlabel"></block>'+
+                    '<block type="plot_ylabel"></block>'+
                 '</category>',
     'Values':   '<category name="Values" colour="100">'+
                     '<block type="text"></block>'+
@@ -3732,7 +3742,9 @@ function BlockPyCorgis(main) {
         }
     });
     $.when.apply($, imports).done(function() {
-        main.components.editor.updateBlocks();
+        if (main.model.settings.editor() == "Blocks") {
+            main.components.editor.updateBlocks();
+        }
         main.components.editor.updateToolbox(true);
     }).fail(function(e) {
         console.error(e);
@@ -3785,7 +3797,9 @@ BlockPyCorgis.prototype.openDialog = function(name) {
             });
             var editor = corgis.main.components.editor;
             corgis.main.components.dialog.show("Import Datasets", body, function() {
-                editor.updateBlocks();
+                if (editor.main.model.settings.editor() == "Blocks") {
+                    editor.updateBlocks();
+                }
             });
         });
     } else {
@@ -3811,7 +3825,9 @@ BlockPyCorgis.prototype.openDialog = function(name) {
         });
         var editor = this.main.components.editor;
         this.main.components.dialog.show("Import Datasets", body, function() {
-            editor.updateBlocks();
+            if (editor.main.model.settings.editor() == "Blocks") {
+                editor.updateBlocks();
+            }
         });
     }
 };
@@ -3824,6 +3840,21 @@ var set_button_loaded = function(btn) {
        .text("Loaded")
        .attr("aria-pressed", "true");
 }
+function BlockPyEnglish(main) {
+    this.main = main;
+    
+    
+}
+
+BlockPyEnglish.prototype.openDialog = function() {
+    try {
+        body = Blockly.Pseudo.workspaceToCode();
+    } catch (e) {
+        console.error(e);
+        body = "I couldn't understand the code. Sorry!"
+    }
+    this.main.components.dialog.show("English", body, function() {});
+}
 function BlockPyFeedback(main, tag) {
     this.main = main;
     this.tag = tag;
@@ -3832,9 +3863,18 @@ function BlockPyFeedback(main, tag) {
     this.title = this.tag.find('.blockpy-feedback-title');
     this.original = this.tag.find('.blockpy-feedback-original');
     this.status = this.tag.find('.blockpy-feedback-status');
+    this.trace = this.tag.find('.blockpy-feedback-trace');
+    
+    this.trace.click(this.buildTraceTable.bind(this));
     
     this.original.hide();
 };
+
+BlockPyFeedback.prototype.buildTraceTable = function() {
+    var execution = this.main.model.execution;
+    execution.show_trace(true);
+    execution.trace_step(execution.last_step());
+}
 
 BlockPyFeedback.prototype.error = function(html) {
     this.tag.html(html);
@@ -3955,8 +3995,21 @@ BlockPyFeedback.prototype.printError = function(error) {
     original = this.prettyPrintError(error);
     this.title.html(error.tp$name);
     this.original.show().html(original);
-    this.body.html(error.enhanced);
+    if (error.tp$name == "ParseError") {
+        this.body.html("While attempting to convert the Python code into blocks, I found a syntax error. In other words, your Python code has a spelling or grammatical mistake. You should check to make sure that you have written all of your code correctly. To me, it looks like the problem is on line "+ error.args.v[2]+', where it says:<br><code>'+error.args.v[3][2]+'</code>', error.args.v[2]);
+    } else if (error.constructor == Sk.builtin.NameError
+                && error.args.v.length > 0
+                && error.args.v[0].v == "name '___' is not defined") {
+        this.body.html("You have incomplete blocks. Make sure that you do not have any dangling blocks or blocks that are connected incorrectly.<br><br>If you look at the text view of your Python code, you'll see <code>___</code> in the code. The converter will create these <code>___</code> to show that you have a block that's missing a piece.");
+    } else if (error.tp$name in EXTENDED_ERROR_EXPLANATION) {
+        this.body.html(EXTENDED_ERROR_EXPLANATION[error.tp$name]);
+    } else {
+        this.body.html(error.enhanced);
+    }
     console.error(error);
+    if (error.stack) {
+        console.error(error.stack);
+    }
     this.main.model.status.error("runtime");
     this.main.components.editor.highlightError(error.traceback[0].lineno-1);
     return;
@@ -3986,6 +4039,8 @@ BlockPyFeedback.prototype.printError = function(error) {
                 && error.args.v.length > 0
                 && error.args.v[0].v == "name '___' is not defined") {
                 error = "<b>Error: </b> You have incomplete blocks. Make sure that you do not have any dangling blocks.<br><br><b>Extended Error Explanation:</b> If you look at the text view of your Python code, you'll see <code>___</code> in the code. The converter will create these <code>___</code> to show that you have a block that's missing a piece.";
+            }  else if (error.tp$name == "ParseError") {
+                
             } else if (error.tp$name in EXTENDED_ERROR_EXPLANATION) {
                 error = "<b>Error: </b>"+error.tp$str().v + "<br><br>"+EXTENDED_ERROR_EXPLANATION[error.tp$name];
             } else {
@@ -4103,6 +4158,9 @@ BlockPyToolbar.prototype.activateToolbar = function() {
     this.tag.find('.blockpy-toolbar-import').click(function() {
         main.components.corgis.openDialog();
     });
+    this.tag.find('.blockpy-toolbar-english').click(function() {
+        main.components.english.openDialog();
+    });
 }
 /**
  * Printer
@@ -4157,8 +4215,10 @@ BlockPyEngine.prototype.readFile = function(filename) {
 BlockPyEngine.prototype.reset = function() {
     this.main.model.execution.trace.removeAll();
     this.main.model.execution.step(0);
+    this.main.model.execution.last_step(0);
     this.main.model.execution.line_number(0)
     this.main.components.printer.resetPrinter();
+    this.main.model.execution.show_trace(false);
 }
 
 BlockPyEngine.prototype.step = function(variables, lineNumber, 
@@ -4175,6 +4235,7 @@ BlockPyEngine.prototype.step = function(variables, lineNumber,
              'properties': globals.properties,
              'modules': globals.modules});
         this.main.model.execution.step(currentStep+1)
+        this.main.model.execution.last_step(currentStep+1);
         this.main.model.execution.line_number(lineNumber)
     }
 }
@@ -4208,7 +4269,7 @@ BlockPyEngine.prototype.analyze = function() {
     result = analyzer.analyze();
     // Syntax error
     if (result !== true) {
-        this.main.reportError('syntax', result.error, "While attempting to convert the Python code into blocks, I found a syntax error. In other words, your Python code has a spelling or grammatical mistake. You should check to make sure that you have written all of your code correctly. To me, it looks like the problem is on line "+ result.error.args.v[2]+', where it says:<br><code>'+result.error.args.v[3][2]+'</code>', result.error.args.v[2]);
+        this.main.reportError('editor', result.error, "While attempting to convert the Python code into blocks, I found a syntax error. In other words, your Python code has a spelling or grammatical mistake. You should check to make sure that you have written all of your code correctly. To me, it looks like the problem is on line "+ result.error.args.v[2]+', where it says:<br><code>'+result.error.args.v[3][2]+'</code>', result.error.args.v[2]);
         return false;
     }
     
@@ -4409,6 +4470,7 @@ BlockPyEngine.prototype.setupEnvironment = function(student_code, traceTable, ou
     Sk.builtins.set_feedback = this.instructor_module.set_feedback;
     Sk.builtins.count_components = this.instructor_module.count_components;
     Sk.builtins.calls_function = this.instructor_module.calls_function;
+    Sk.skip_drawing = true;
     model.settings.mute_printer(true);
 }
 
@@ -4423,6 +4485,7 @@ BlockPyEngine.prototype.disposeEnvironment = function() {
     Sk.builtins.set_feedback = undefined;
     Sk.builtins.count_components = undefined;
     Sk.builtins.calls_function = undefined;
+    Sk.skip_drawing = false;
     GLOBAL_VALUE = undefined;
     this.main.model.settings.mute_printer(false);
 }
@@ -4535,10 +4598,17 @@ BlockPyEngine.prototype.parseValue = function(property, value) {
                 "value": value.$r().v
             };
         case Sk.builtin.list:
-            return {'name': property,
-                'type': "List",
-                "value": value.$r().v
-            };
+            if (value.v.length <= 10) {
+                return {'name': property,
+                    'type': "List",
+                    "value": value.$r().v
+                };
+            } else {
+                return {'name': property,
+                    'type': "List",
+                    "value": "[... "+value.v.length+" elements ...]<code>"
+                };
+            }
         case Sk.builtin.dict:
             return {'name': property,
                 'type': "Dictionary",
@@ -4561,8 +4631,8 @@ BlockPyEngine.prototype.parseValue = function(property, value) {
                 };
         default:
             return {'name': property,
-                    'type': value.$r().v,
-                    "value": value.$r().v
+                    'type': value.$r == undefined ? value : value.$r().v,
+                    "value": value.$r == undefined ? value : value.$r().v
                     };
     }
 }
@@ -4606,20 +4676,26 @@ function BlockPy(settings, assignment, submission, programs) {
             'status': ko.observable('waiting'),
             // integer
             'step': ko.observable(0),
+            // integer
+            'last_step': ko.observable(0),
             // list of string/list of int
             'output': ko.observableArray([]),
             // integer
             'line_number': ko.observable(0),            
             // array of simple objects
             'trace': ko.observableArray([]),
+            // integer
+            'trace_step': ko.observable(0),
             // object
-            'ast': {}
+            'ast': {},
+            // boolean
+            'show_trace': ko.observable(false),
         },
         'status': {
             // boolean
             'loaded': ko.observable(false),
-            // 'none', 'runtime', 'syntax', 'semantic', 'feedback', 'complete', 'editor'
             'text': ko.observable("Loading"),
+            // 'none', 'runtime', 'syntax', 'semantic', 'feedback', 'complete', 'editor'
             'error': ko.observable('none'),
             // "Loading", "Saving", "Ready", "Disconnected", "Error"
             'server': ko.observable("Loading")
@@ -4691,6 +4767,18 @@ function BlockPy(settings, assignment, submission, programs) {
         }
     }, this.model);
     
+    var execution = this.model.execution;
+    this.model.moveTraceFirst = function(index) { 
+        execution.trace_step(1); };
+    this.model.moveTraceBackward = function(index) { 
+        var previous = Math.max(execution.trace_step()-1, 1);
+        execution.trace_step(previous); };
+    this.model.moveTraceForward = function(index) { 
+        var next = Math.min(execution.trace_step()+1, execution.last_step());
+        execution.trace_step(next); };
+    this.model.moveTraceLast = function(index) { 
+        execution.trace_step(execution.last_step()); };
+    
     this.initMain();
 }
 
@@ -4732,6 +4820,7 @@ BlockPy.prototype.initComponents = function() {
     components.engine = new BlockPyEngine(main);
     components.server = new BlockPyServer(main);
     components.corgis = new BlockPyCorgis(main);
+    components.english = new BlockPyEnglish(main);
     components.editor.setMode();
     main.model.status.server('Loaded')
 }

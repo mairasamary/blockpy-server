@@ -1,9 +1,7 @@
 Screen is overflowed by datasets in Import Datasets
-Support == operators for the parking api
-State crime is still broken
 Flip weather and earthquake
 Sampling
-Get rid of groups printing at the top of the select.html page
+Making two graphs is broken!
 
 Ready:
     Broadway
@@ -15,13 +13,6 @@ Ready:
     Global Development
     State Crime
     Airlines
-
-Imported datasets have the wrong name for (import)
-Imported modules are not recognized as defined variables by abstractinterpreter
-State crime is broken (can't seem to load properties)
-Visualizer index
-
-Instructor API rewrite
 
 Explain
 Scatter plots
@@ -50,22 +41,13 @@ Low
     Assignment adding is broken (doesn't return a URL)
     Trashcan is broken
     Enable "shift-select" to do multi-block select.
+    Student View is broken
 High
     Upload mode
     Finish parking menus
-    Instructor api
-        set_highlight
-        set_success
-        give_feedback
-        popup
-        ast_has()
-        ast_get()
-    Student View is broken
-    Generate feedback might be broken
     Unit testing for the static analyzer
         += is not correctly intrepetted
         Doesn't recognize built-ins like sorted
-    Screenshotter fails on blocks that have an unconnected left
     
         
 SQL blocks
