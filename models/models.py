@@ -444,6 +444,7 @@ class Submission(Base):
         if not submission:
             submission = Submission(assignment_id=assignment_id, 
                                     user_id=user_id,
+                                    course_id=course_id,
                                     code=code,
                                     assignment_version=assignment_version)
             db.session.add(submission)

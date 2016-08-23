@@ -4,6 +4,8 @@ Sampling
 Making two graphs is broken!
 LTI OAuth error
 Test code explanation
+Make sure that we are logging everything
+None is broken.
 
 Ready:
     Broadway
@@ -17,10 +19,7 @@ Ready:
     Airlines
 
 Explain
-Scatter plots
 
-"English" mode
-Data explorer
 Superior error messages
 Upload mode
 

@@ -64,12 +64,11 @@ def save_code(lti=lti):
     if None in (assignment_id, course_id):
         return jsonify(success=False, message="No Assignment ID or Course ID given!")
     code = request.form.get('code', '')
-    print(code)
     filename = request.form.get('filename', '__main__')
     is_version_correct = True
     if filename == "__main__":
         submission, is_version_correct = Submission.save_code(g.user.id, assignment_id, int(course_id), code, assignment_version)
-    elif g.user.is_instructor(g.course.id):
+    elif g.user.is_instructor(int(course_id)):
         if filename == "give_feedback":
             Assignment.edit(assignment_id=assignment_id, give_feedback=code)
         elif filename == "on_change":
