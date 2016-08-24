@@ -32,6 +32,7 @@ class UpdateDatasets(Command):
             '_images/python.png': 'static/images/',
             '_images/racket.png': 'static/images/',
             '_images/sql.png': 'static/images/',
+            '_images/blockpy.png': 'static/images/',
             '_images/visualizer.png': 'static/images/',
             '_images/corgis-logo-smaller.png': 'static/images/',
             'python/python.html': 'templates/corgis/python/',
