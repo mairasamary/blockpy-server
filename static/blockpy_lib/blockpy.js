@@ -626,6 +626,13 @@ AbstractInterpreter.prototype.visit_Name = function(node) {
     this.generic_visit(node);
 }
 
+AbstractInterpreter.prototype.visit_If = function(node) {
+    this.inside_if = true;
+    console.log(node);
+    //this.visit(node);
+    this.inside_if = false;
+}
+
 AbstractInterpreter.prototype.visit_For = function(node) {
     this.visit(node.iter);
     this.addFrame();
@@ -3629,8 +3636,27 @@ BlockPyEditor.CATEGORY_MAP = {
     'Data - Parking': '<category name="Data - Parking" colour="45">'+
                     '<block type="datetime_day"></block>'+
                     '<block type="datetime_time"></block>'+
-                    '<block type="datetime_check_day"></block>'+
-                    '<block type="datetime_check_time"></block>'+
+                    '<block type="logic_compare">'+
+                        '<field name="OP">EQ</field>'+
+                        '<value name="A">'+
+                          '<block type="datetime_time">'+
+                            '<mutation isNow="1"></mutation>'+
+                            '<field name="HOUR">1</field>'+
+                            '<field name="MINUTE">00</field>'+
+                            '<field name="MERIDIAN">PM</field>'+
+                          '</block>'+
+                        '</value>'+
+                    '</block>'+
+                    '<block type="logic_compare">'+
+                        '<field name="OP">EQ</field>'+
+                        '<value name="A">'+
+                          '<block type="datetime_day">'+
+                            '<field name="DAY">Monday</field>'+
+                          '</block>'+
+                        '</value>'+
+                    '</block>'+
+                    //'<block type="datetime_check_day"></block>'+
+                    //'<block type="datetime_check_time"></block>'+
                 '</category>',
     'Separator': '<sep></sep>'
 };

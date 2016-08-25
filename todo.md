@@ -7,7 +7,6 @@ Test code explanation
 Make sure that we are logging everything
 None is broken during back-and-forth
 Semantic error on defining variables inside an if-condition
-"PM" is broken for some. Ensure that we support both upper and lowercase!
 Flip some of the symbols for parking times groann
 
 Ready:
