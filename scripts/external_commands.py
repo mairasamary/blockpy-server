@@ -38,6 +38,9 @@ class UpdateDatasets(Command):
             'python/python.html': 'templates/corgis/python/',
             'visualizer/visualizer.html': 'templates/corgis/visualizer/',
             'java/java.html': 'templates/corgis/java/',
+            'csv/csv.html': 'templates/corgis/csv/',
+            'racket/racket.html': 'templates/corgis/racket/',
+            'json/json.html': 'templates/corgis/json/',
             'index.json': 'static/corgis/'
         }
         root_directory = app.config['ROOT_DIRECTORY']
