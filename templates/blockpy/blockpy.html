@@ -99,7 +99,7 @@ $(document).ready(function() {
             // assignment
             {
                 'assignment_id': {{ assignment.id|tojson }},
-                'course_id': {{ assignment.course_id|tojson }},
+                'course_id': {{ submission.course_id|tojson }},
                 'student_id': {{ g.user.id|tojson }},
                 'introduction': {{ assignment.body|tojson}},
                 'name': {{ assignment.name|tojson}},
