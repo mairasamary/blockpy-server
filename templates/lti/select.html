@@ -69,7 +69,7 @@ function MainModel() {
             'id': {{ assignment[0].id }},
             'title': ko.observable("{{assignment[0].title()}}"),
             'select': "{{ return_url }}?url={{url_for('assignments.load', assignment_id=assignment[0].id, _external=True, embed= menu == 'embed') | urlencode}}&return_type={{ 'lti_launch_url' if menu != 'embed' else 'iframe' }}&title={{ assignment[0].title()|urlencode }}&text=BlockPy%20Exercise&width=100%25&height=600", 
-            'edit': "{{ url_for('assignments.load', assignment_id=assignment[0].id, course_id=assignment[0].course_id ) }}",
+            'edit': "{{ url_for('assignments.load', assignment_id=assignment[0].id, course_id=assignment[0].course_id )|safe }}",
             'modified': ko.observable('{{ assignment[0].date_modified.strftime(" %I:%M%p on %a %d, %b %Y").replace(" 0", " ") }}'),
             'body': ko.observable("{{ assignment[0].body|striptags|truncate(255) }}")
         }{{ "," if not loop.last }}
