@@ -1,13 +1,12 @@
 Screen is overflowed by datasets in Import Datasets
 Sampling
-Publishers (add index, sample down?), State Demographics
+Publishers, State Demographics
 Making two graphs is broken!
 LTI OAuth error
 Test code explanation
 Make sure that we are logging everything
 None is broken during back-and-forth
 Semantic error on defining variables inside an if-condition
-Flip some of the symbols for parking times groann
 
 Ready:
     Broadway

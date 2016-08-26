@@ -55,7 +55,7 @@ def new_assignment(course_id, lti=lti):
                    title= assignment.title(),
                    view = url_for('assignments.load', assignment_id=assignment.id,  embed= menu == 'embed'),
                    select = url_quote(url_for(endpoint, assignment_id=assignment.id, _external=True, embed= menu == 'embed'))+"&return_type="+launch_type+"&title="+url_quote(assignment.title())+"&text=BlockPy%20Exercise&width=100%25&height=600",
-                   edit= url_for('assignments.load', assignment_id=assignment.id),
+                   edit= url_for('assignments.load', assignment_id=assignment.id, course_id=assignment.course_id),
                    date_modified = assignment.date_modified.strftime(" %I:%M%p on %a %d, %b %Y").replace(" 0", " "))
     
 @blueprint_assignments.route('/remove/', methods=['GET', 'POST'])
