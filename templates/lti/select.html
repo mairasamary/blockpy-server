@@ -253,6 +253,7 @@ function MainModel() {
                 self.assignments.unshift({
                     'id': data.id,
                     'group_id': ko.observable(-1),
+                    'type': ko.observable(type),
                     'course_id': ko.observable(parseInt(course_id)),
                     'name': ko.observable(data.name),
                     'title': ko.observable(data.title),
@@ -336,7 +337,9 @@ tr.hover-remove-rows button.remove-button {
                 <select class="form-control" data-bind="value: createAssignmentType">
                     <option>BlockPy</option>
                     <option>Maze</option>
-                    <option>Code Explanation</option>
+                    <option value='explain'>Code Explanation</option>
+                    <option value='visualizer'>CORGIS (Visualizer)</option>
+                    <option value='corgis (python)'>CORGIS (Python)</option>
                 </select>
             </div>
             <div class="form-group" data-bind="visible: createAssignmentType() != 'Maze'">
@@ -452,6 +455,7 @@ tr.hover-remove-rows button.remove-button {
             <span data-bind="text: modified"></span>
         </td>
         <td class='col-md-5 col-sm-5 col-xs-5'>
+            <span class='label label-default' data-bind="text: type"></span>
             <span data-bind="text: body"></span>
         </td>
         <td class='col-md-1 col-sm-1 col-xs-1'>

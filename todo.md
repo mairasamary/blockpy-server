@@ -1,28 +1,12 @@
 Screen is overflowed by datasets in Import Datasets
 Sampling
-Publishers, State Demographics
 Making two graphs is broken!
-LTI OAuth error
-Test code explanation
 Make sure that we are logging everything
-None is broken during back-and-forth
 Semantic error on defining variables inside an if-condition
 
-Ready:
-    Broadway
-    Construction Spending
-    Weather    
-    Earthquakes
-    Tate
-    Classics
-    Global Development
-    State Crime
-    Airlines
-
-Explain
-
-Superior error messages
-Upload mode
+"Number of <Abstraction Row>"
+Ranges in Histogram
+Better explanations of when it's time on the x-axis?
 
 
 Low
@@ -40,13 +24,9 @@ Low
     Extract visualizer
     Deleting an assignment should potentially delete linked submissions?
     Add new graphs
-    Assignment adding is broken (doesn't return a URL)
-    Trashcan is broken
-    Enable "shift-select" to do multi-block select.
     Student View is broken
 High
     Upload mode
-    Finish parking menus
     Unit testing for the static analyzer
         += is not correctly intrepetted
         Doesn't recognize built-ins like sorted

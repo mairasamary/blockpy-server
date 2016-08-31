@@ -27,12 +27,17 @@ blueprint_explain = Blueprint('explain', __name__, url_prefix='/explain')
 def load(lti=lti, lti_exception=None, assignments=None, submissions=None, embed=False):
     if assignments is None or submissions is None:
         assignments, submissions = get_assignments_from_request()
+    if 'course_id' in request.values:
+        course_id = int(request.values.get('course_id'))
+    else:
+        course_id = g.course.id if "course" in g else None
     MAX_QUESTIONS = 5
     code, elements = submissions[0].load_explanation(MAX_QUESTIONS)
     return render_template('explain/explain.html',
                            assignment= assignments[0], 
                            submission= submissions[0],
                            code = code,
+                           course_id = course_id,
                            elements=elements,
                            embed=embed,
                            user_id=g.user.id)
@@ -40,9 +45,11 @@ def load(lti=lti, lti_exception=None, assignments=None, submissions=None, embed=
 @blueprint_explain.route('/download/', methods=['GET', 'POST'])
 @blueprint_explain.route('/download', methods=['GET', 'POST'])
 def download():
-    assignment_id = request.values.get('assignment_id', None)
-    if assignment_id is None:
-        return jsonify(success=False, message="No Assignment ID given!")
+    assignment_id = request.form.get('assignment_id', None)
+    course_id = request.values.get('course_id', g.course.id if 'course' in g else None)
+    if None in (assignment_id, course_id):
+        return jsonify(success=False, message="No Assignment ID or Course ID given!")
+        
     user = User.from_lti("canvas", session["pylti_user_id"], 
                          session.get("user_email", ""),
                          session.get("lis_person_name_given", ""),
@@ -88,15 +95,12 @@ def delete():
 @blueprint_explain.route('/explain/upload', methods=['POST'])
 @lti(request='session', app=app)
 def upload(lti=lti):
-    assignment_id = request.values.get('assignment_id', None)
+    assignment_id = request.form.get('assignment_id', None)
+    course_id = request.values.get('course_id', g.course.id if 'course' in g else None)
+    if None in (assignment_id, course_id):
+        return jsonify(success=False, message="No Assignment ID or Course ID given!")
     max_questions = int(request.values.get('max_questions', '5'))
-    if assignment_id is None:
-        return jsonify(success=False, invalid=False, message="No Assignment ID given!")
-    user = User.from_lti("canvas", session["pylti_user_id"], 
-                         session.get("user_email", ""),
-                         session.get("lis_person_name_given", ""),
-                         session.get("lis_person_name_family", ""))
-    submission = Submission.load(user.id, assignment_id)
+    submission = Submission.load(g.user.id, int(assignment_id), int(course_id))
     
     # Get the uploaded information
     data_file = request.files.get('files')
@@ -117,35 +121,29 @@ def upload(lti=lti):
 @blueprint_explain.route('/explain/save', methods=['POST'])
 @lti(request='session', app=app)
 def save_explain(lti=lti):
-    assignment_id = request.form.get('question_id', None)
+    assignment_id = request.form.get('assignment_id', None)
+    course_id = request.values.get('course_id', g.course.id if 'course' in g else None)
+    if None in (assignment_id, course_id):
+        return jsonify(success=False, message="No Assignment ID or Course ID given!")
     assignment_version = int(request.form.get('version', -1))
-    if assignment_id is None:
-        return jsonify(success=False, message="No Assignment ID given!")
     answer = request.form.get('answer', '')
     name = request.form.get('name', '')
-    user = User.from_lti("canvas", session["pylti_user_id"], 
-                         session.get("user_email", ""),
-                         session.get("lis_person_name_given", ""),
-                         session.get("lis_person_name_family", ""))
-    Submission.save_explanation_answer(user.id, assignment_id, name, answer)
+    Submission.save_explanation_answer(g.user.id, int(assignment_id), int(course_id), name, answer)
     return jsonify(success=True)
 
 @blueprint_explain.route('/explain/submit/', methods=['POST'])
 @blueprint_explain.route('/explain/submit', methods=['POST'])
 @lti(request='session', app=app)
 def submit_explain(lti=lti):
-    assignment_id = request.form.get('question_id', None)
-    lis_result_sourcedid = request.form.get('lis_result_sourcedid', None)
-    if assignment_id is None:
-        return jsonify(success=False, message="No Assignment ID given!")
-    user = User.from_lti("canvas", session["pylti_user_id"], 
-                         session.get("user_email", ""),
-                         session.get("lis_person_name_given", ""),
-                         session.get("lis_person_name_family", ""))
-    assignment = Assignment.by_id(assignment_id)
-    submission = Submission.save_correct(user.id, assignment_id)
+    assignment_id = request.form.get('assignment_id', None)
+    course_id = request.values.get('course_id', g.course.id if 'course' in g else None)
+    if None in (assignment_id, course_id):
+        return jsonify(success=False, message="No Assignment ID or Course ID given!")
+    assignment = Assignment.by_id(int(assignment_id))
+    submission = Submission.save_correct(g.user.id, int(assignment_id), int(course_id))
+    lis_result_sourcedid = request.form.get('lis_result_sourcedid', submission.url) or None
     code, elements = submission.load_explanation(5)
-    if lis_result_sourcedid is None:
+    if lis_result_sourcedid is None or lis_result_sourcedid == "NOT IN SESSION":
         return jsonify(success=False, message="Not in a grading context.")
     hl_lines  = [e['line'][0] for e in elements]
     message = """<h1>Code Annotation</h1>
@@ -160,5 +158,5 @@ def submit_explain(lti=lti):
                                                       type=Submission.abbreviate_element_type(e['name']))
              for e in sorted(elements, key=lambda e: e['line'][0])])
         )
-    lti.post_grade(0, message, endpoint=lis_result_sourcedid)
+    lti.post_grade(0, message, endpoint=lis_result_sourcedid)   
     return jsonify(success=True)

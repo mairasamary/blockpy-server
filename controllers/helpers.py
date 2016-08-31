@@ -1,5 +1,6 @@
 # Built-in imports
 from datetime import timedelta
+from pprint import pprint
 from functools import wraps, update_wrapper
 import calendar, datetime
 import json
@@ -10,6 +11,7 @@ from flask import g, request, redirect, url_for, make_response, current_app
 from flask import flash, session
 import flask_security
 from flask_security.core import current_user
+from flask import request as r
 
 from pylti.flask import LTI, LTIException
 
@@ -60,7 +62,7 @@ def lti(request='any', *lti_args, **lti_kwargs):
                 kwargs['lti_exception']['exception'] = lti_exception
                 kwargs['lti_exception']['kwargs'] = kwargs
                 kwargs['lti_exception']['args'] = args
-                flash("LTI Error: "+str(lti_exception)+"\n<br>Try reloading!")
+                flash("LTI Error: "+str(lti_exception)+".\nTry reloading!")
             return function(*args, **kwargs)
         return lti_wrapper
     lti_kwargs['request'] = request
@@ -142,6 +144,10 @@ def get_assignments_from_request():
     assignment_group_id = request.args.get('assignment_group_id', None)
     if 'course_id' in request.args:
         course_id = int(request.args.get('course_id'))
+    if 'user' in g and g.user != None:
+        user_id = g.user.id
+    else:
+        user_id = None
     if 'course' in g:
         course_id = g.course.id
     else:
@@ -151,11 +157,11 @@ def get_assignments_from_request():
     if assignment_group_id is not None:
         group = AssignmentGroup.by_id(int(assignment_group_id) if assignment_group_id != None else None)
         assignments = group.get_assignments()
-        submissions = [a.get_submission(g.user.id, course_id=course_id, submission_url=submission_url) for a in assignments]
+        submissions = [a.get_submission(user_id, course_id=course_id, submission_url=submission_url) for a in assignments]
     elif assignment_id is not None:
         assignment = Assignment.by_id(int(assignment_id) if assignment_id != None else None)
         assignments = [assignment] if assignment else []
-        submissions = [assignment.get_submission(g.user.id, course_id=course_id, submission_url=submission_url)] if assignment else []
+        submissions = [assignment.get_submission(user_id, course_id=course_id, submission_url=submission_url)] if assignment else []
     else:
         assignments = []
         submissions = []

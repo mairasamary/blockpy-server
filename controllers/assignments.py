@@ -1,4 +1,5 @@
 from functools import wraps
+from pprint import pprint
 
 from flask import Blueprint, g, session, render_template, url_for, request, jsonify
 from urllib import quote as url_quote
@@ -11,6 +12,7 @@ from main import app
 import maze
 import explain
 import blockpy
+import corgis
 import json
 
 from models.models import (db, Assignment, AssignmentGroup, User, Course)
@@ -30,6 +32,8 @@ def load(lti, lti_exception=None):
         return    maze.load(assignments=assignments, submissions=submissions, lti=lti,embed=embed)
     elif assignments[0].type == 'explain':
         return explain.load(assignments=assignments, submissions=submissions, lti=lti, embed=embed)
+    elif assignments[0].type == 'corgis (visualizer)':
+        return corgis.redirect_language_index(language='visualizer', assignments=assignments, submissions=submissions, lti=lti, embed=embed)
     else:
         return blockpy.load(assignments=assignments, submissions=submissions, lti=lti, embed=embed)
 
@@ -153,13 +157,12 @@ def select(lti, menu='select'):
     """
     # Store current user_id and context_id
     assignments = Assignment.get_available()
-    print(assignments)
     groups = AssignmentGroup.query.all()
     return_url = get_lti_property('launch_presentation_return_url')
     course_groups = Course.get_all_groups()
     editable_courses = g.user.get_editable_courses()
     
-    return render_template('lti/select.html', assignments=assignments, groups=groups, return_url=return_url, menu='select', editable_courses=editable_courses, course_groups=course_groups)
+    return render_template('lti/select.html', assignments=assignments, groups=groups, return_url=return_url, menu=menu, editable_courses=editable_courses, course_groups=course_groups)
 
 @blueprint_assignments.route('/select_embed/', methods=['GET', 'POST'])
 @blueprint_assignments.route('/select_embed', methods=['GET', 'POST'])

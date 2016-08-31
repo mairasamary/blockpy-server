@@ -83,7 +83,8 @@ function CodeLineWidgetViewModel(params) {
         if (requestTimer) window.clearTimeout(requestTimer);
         requestTimer = setTimeout(function() {
             $.post(URL_MAP.save_explain, {
-                'question_id': {{ assignment.id|tojson }},
+                'assignment_id': {{ assignment.id|tojson }},
+                'course_id': {{ course_id|tojson }},
                 'version': {{ assignment.version|tojson }},
                 'answer': newValue,
                 'name': that.name
@@ -133,7 +134,8 @@ mainModel = {
             type: "POST",
             url: URL_MAP.submit_explain, 
             data: {
-                'question_id': {{ assignment.id|tojson }},
+                'assignment_id': {{ assignment.id|tojson }},
+                'course_id': {{ course_id|tojson }},
                 'lis_result_sourcedid': URL_MAP.lis_result_sourcedid
             }, 
             success: function(data) {

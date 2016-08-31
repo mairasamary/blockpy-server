@@ -46,12 +46,14 @@ def load(lti=None, assignments=None, submissions=None, embed=False):
     if assignments:
         course_id = assignments[0].course_id
         instructor_mode = g.user.is_instructor(course_id)
+        if 'course_id' in request.values:
+            course_id = int(request.values.get('course_id'))
     else:
         instructor_mode = False
-    if 'course_id' in request.values:
-        course_id = int(request.values.get('course_id'))
-    else:
-        course_id = None
+        if 'course_id' in request.values:
+            course_id = int(request.values.get('course_id'))
+        else:
+            course_id = None
     return render_template('blockpy/blockpy.html',
                            group=zip(assignments, submissions),
                            course_id=course_id,

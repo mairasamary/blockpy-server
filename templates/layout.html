@@ -36,13 +36,16 @@
     {% block extrajs %}
     {% endblock %}
     
+    {% if not reduced_layout %}
     $(document).ready(function () {
         $("#{{request.endpoint}}").parent().addClass("active");
         setTimeout(function() {
             $("#survey-link").tooltip('show');
         }, 5000);
     });
+    {% endif %}
     </script>
+    
     
   </head>
 <body>

@@ -1,6 +1,7 @@
 import os
 import json
 from pprint import pprint
+import logging
 
 from flask.ext.wtf import Form
 from wtforms import IntegerField, BooleanField
@@ -18,7 +19,7 @@ from models.models import db, Assignment
 
 from controllers.helpers import lti
 
-
+from interaction_logger import StructuredEvent
 
 blueprint_corgis = Blueprint('corgis', __name__, url_prefix='/corgis')
 
@@ -36,8 +37,10 @@ def index():
     
 @blueprint_corgis.route('/<language>/', methods=['GET', 'POST'])    
 @blueprint_corgis.route('/<language>/index.html', methods=['GET', 'POST'])
-def language_index(language):
-    return render_template('corgis/generic.html', name='corgis/{language}/{language}.html'.format(language=language))
+def language_index(language, assignments=None, submissions=None, lti=None, embed=None):
+    if embed == None:
+        embed = request.values.get("embed", "False") == "True"
+    return render_template('corgis/generic.html', name='corgis/{language}/{language}.html'.format(language=language), embed=embed)
 
 @blueprint_corgis.route('/<language>/<dataset>/', methods=['GET', 'POST'])    
 @blueprint_corgis.route('/<language>/<dataset>/<path:path>', methods=['GET', 'POST'])
@@ -55,10 +58,30 @@ def redirect_index():
     
 @blueprint_datasets.route('/<language>/', methods=['GET', 'POST'])    
 @blueprint_datasets.route('/<language>/index.html', methods=['GET', 'POST'])
-def redirect_language_index(language):
-    return redirect(url_for('corgis.language_index', language=language))
+def redirect_language_index(language, assignments=None, submissions=None, lti=None, embed=False):
+    embed = embed or 'iframe' == request.form.get('launch_presentation_document_target')
+    return redirect(url_for('corgis.language_index', language=language, assignments=None, submissions=None, lti=None, embed=embed))
 
 @blueprint_datasets.route('/<language>/<dataset>/', methods=['GET', 'POST'])    
 @blueprint_datasets.route('/<language>/<dataset>/<path:path>', methods=['GET', 'POST'])
 def redirect_language_dataset(language, dataset, path):
     return redirect(url_for('corgis.language_dataset', language=language, dataset=dataset, path=path))
+
+@blueprint_datasets.route('/_log/', methods=['GET', 'POST'])
+@blueprint_datasets.route('/_log', methods=['GET', 'POST'])
+def log_event():
+    if 'user_id' in request.values:
+        user_id = request.values.get('user_id')
+    elif 'user' in g and g.user.id:
+        user_id = g.user.id
+    else:
+        user_id = str(request.remote_addr)
+    assignment_id = request.values.get('assignment_id', "")
+    event = request.values.get('event', "")
+    action = request.values.get('action', "")
+    body = request.values.get('body', "")
+    external_interactions_logger = logging.getLogger('StudentInteractions')
+    external_interactions_logger.info(
+        StructuredEvent(user_id, assignment_id, event, action, body)
+    )
+    return jsonify(success=True)
