@@ -32,7 +32,7 @@ def load(lti, lti_exception=None):
         return    maze.load(assignments=assignments, submissions=submissions, lti=lti,embed=embed)
     elif assignments[0].type == 'explain':
         return explain.load(assignments=assignments, submissions=submissions, lti=lti, embed=embed)
-    elif assignments[0].type == 'corgis (visualizer)':
+    elif assignments[0].type in ('corgis (visualizer)', 'visualizer'):
         return corgis.redirect_language_index(language='visualizer', assignments=assignments, submissions=submissions, lti=lti, embed=embed)
     else:
         return blockpy.load(assignments=assignments, submissions=submissions, lti=lti, embed=embed)
