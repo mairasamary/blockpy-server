@@ -4,6 +4,7 @@ static/corgis/
 static/uploads/
 
 templates/corgis/
+!templates/corgis/generic.html
 
 main.db
 test.db
