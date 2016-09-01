@@ -10,8 +10,8 @@
 function log(action, body) {
     try {
         $.post({{ url_for('datasets.log_event')|tojson }}, {
-                    'course_id': {{ g.course.id|tojson }},
-                    'student_id': {{ g.user.id|tojson }},
+                    'course_id': {{ (g.course.id if course in g else -1)|tojson }},
+                    'student_id': {{ (g.user.id if user in g else -1)|tojson }},
                     'event': 'corgis',
                     'action': action,
                     'body': body

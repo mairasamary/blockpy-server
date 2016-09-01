@@ -5,8 +5,16 @@ Make sure that we are logging everything
 Semantic error on defining variables inside an if-condition
 
 "Number of <Abstraction Row>"
+Better "Still loading" screen for Visualizer
+Reset title if changing graph
+
 Ranges in Histogram
 Better explanations of when it's time on the x-axis?
+
+Fix semantic checker
+
+I have set the homework to allow multiple attempts. We call them quizzes, but that's just because Canvas forces us to.
+Module closes next thursday
 
 
 Low
