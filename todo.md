@@ -16,6 +16,8 @@ Fix semantic checker
 I have set the homework to allow multiple attempts. We call them quizzes, but that's just because Canvas forces us to.
 Module closes next thursday
 
+Remove Jackie
+
 
 Low
     Add student(s)

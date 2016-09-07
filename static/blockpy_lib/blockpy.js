@@ -101,11 +101,11 @@ NodeVisitor.prototype.generic_visit = function(node) {
         if (Array === value.constructor) {
             for (var j = 0; j < value.length; j += 1) {
                 var subvalue = value[j];
-                if ("_astname" in subvalue) {
+                if (subvalue instanceof Object && "_astname" in subvalue) {
                     this.visit(subvalue);
                 }
             }
-        } else if ("_astname" in value) {
+        } else if (value instanceof Object && "_astname" in value) {
             this.visit(value);
         }
     }
@@ -154,12 +154,49 @@ function arrayContains(needle, haystack) {
 
 function AbstractInterpreter(code, filename) {
     NodeVisitor.apply(this, Array.prototype.slice.call(arguments));
-    this.id = 0;
-    this.frameIndex = 0;
+    
+    // Code
     this.code = code;
     this.source = code !== "" ? this.code.split("\n") : [];
     this.filename = filename || '__main__';
-    this.stackDepth = 0;
+    
+    // Attempt parsing - might fail!
+    try {
+        var parse = Sk.parse(this.filename, this.code);
+        this.ast = Sk.astFromParse(parse.cst, this.filename, parse.flags);
+    } catch (error) {
+        this.report = {"error": error, "message": "Parsing error"};
+        return;
+    }
+    
+    // Handle loops
+    this.loopStackId = 0
+    this.loopHierarchy = {};
+    this.loopStack = [];
+    
+    // Handle decisions
+    this.branchStackId = 0;
+    
+    this.branchTree = { null: [] };
+    this.currentBranch = this.branchTree[null];
+    this.currentBranchName = null;
+    
+    // Handle walking AST
+    this.astStackDepth = 0;
+    
+    this.variables = {};
+    for (var name in this.BUILTINS) {
+        this.setVariable(name, this.BUILTINS[name]);
+    }
+    
+    // OLD
+    //this.frameIndex = 0;
+    //this.rootFrame = this.newFrame(null);
+    //this.currentFrame = this.rootFrame;
+    this.report = this.newReport();
+    
+    this.visit(this.ast);
+    this.postProcess();
 }
 
 AbstractInterpreter.prototype = new NodeVisitor();
@@ -212,8 +249,11 @@ AbstractInterpreter.MODULES = {
 
 AbstractInterpreter.prototype.newReport = function(parentFrame) {
     return {
+            "error": false,
+            "Unconnected blocks": [],
             "Unread variables": [],
             "Undefined variables": [],
+            "Possibly undefined variables": [],
             "Overwritten variables": [],
             "Append to non-list": [],
             "Used iteration list": [],
@@ -227,151 +267,212 @@ AbstractInterpreter.prototype.newReport = function(parentFrame) {
         }
 }
 
-AbstractInterpreter.prototype.newFrame = function(parentFrame) {
-    this.frameIndex += 1;
-    return {"variables":{}, 
-            "plurals": [], 
-            "singulars": [], 
-            "children": [],
-            "writes": [],
-            "reads": [],
-            "parentFrame": parentFrame,
-            "index": this.frameIndex};
+AbstractInterpreter.prototype._initializeVariable = function(name) {
+    if (!(name in this.variables)) {
+        this.variables[name] = [];
+    }
+}
+AbstractInterpreter.prototype._newBehavior = function(method, type, position, currentType) {
+    return {"method": method, 
+            "type": type, 
+            "loop": this.loopStackId, 
+            "parentName": this.currentBranchName,
+            "position": position, 
+            "currentType": currentType};
 }
 
-AbstractInterpreter.prototype.analyze = function() {    
-    // Attempt parsing - might fail!
-    try {
-        var parse = Sk.parse(this.filename, this.code);
-        this.ast = Sk.astFromParse(parse.cst, this.filename, parse.flags);
-    } catch (error) {
-        return {"error": error, "message": "Parsing error"};
-    }
-    
-    this.rootFrame = this.newFrame(null);
-    this.currentFrame = this.rootFrame;
-    this.report = this.newReport();
-    
-    for (var name in this.BUILTINS) {
-        this.addVariable(name);
-        this.setType(name, this.BUILTINS[name]);
-    }
-    
-    this.visit(this.ast);
-    this.postProcess();
-    return true;
+AbstractInterpreter.prototype.setVariable = function(name, type, position) {
+    this._initializeVariable(name);
+    this.variables[name].push(this._newBehavior("set", type, position, type));
+}
+AbstractInterpreter.prototype.setIterVariable = function(name, type, position) {
+    this._initializeVariable(name);
+    this.variables[name].push(this._newBehavior("set_iterate", type, position, type));
+}
+AbstractInterpreter.prototype.updateVariable = function(name, type, position) {
+    this._initializeVariable(name);
+    this.variables[name].push(this._newBehavior("update", type, position, type));
+}
+AbstractInterpreter.prototype.readVariable = function(name, position) {
+    this._initializeVariable(name);
+    var previousType = this.getType(name);
+    this.variables[name].push(this._newBehavior("read", null, position, previousType));
+}
+AbstractInterpreter.prototype.iterateVariable = function(name, position) {
+    this._initializeVariable(name);
+    var previousType = this.getType(name);
+    this.variables[name].push(this._newBehavior("iterate", null, position, previousType));
+}
+// The type here refers to the subtype of the list
+AbstractInterpreter.prototype.appendVariable = function(name, type, position) {
+    this._initializeVariable(name);
+    this.variables[name].push(this._newBehavior("append", type, position, {
+        "type": "List", "subtype": type, "empty": false
+    }));
+}
+
+function nameBranch(branch) {
+    return (branch.id == null ? null : branch.id+branch.path[0]);
+}
+
+function otherBranch(branch) {
+    return (branch.id == null ? null : branch.id+(branch.path[0] == 'i' ? 'e' : 'i'));
 }
 
 AbstractInterpreter.prototype.postProcess = function() {
+    for (var name in this.variables) {
+        if (!(name in this.BUILTINS)) {
+            var trace = this.variables[name];
+            if (name == "___") {
+                this.report["Unconnected blocks"].push({"position": trace[0].position})
+            }
+            /*console.log(name, trace.map(function(e, i) { 
+                return e.method +(e.type == null ? "" : "["+e.type.type+"]")
+                                +("_"+e.parentName);
+            }));*/
+            // Check for unread variables
+            var previousBehavior = null;
+            
+            var traceTree = (function buildTraceTree(nodes, parentId) {
+                var result = [];
+                while (trace.length && parentId == trace[0].parentName) {
+                    result.push(trace.shift())
+                }
+                
+                for (var i = 0, len = nodes.length; i < len; i += 1) {
+                    var node = nodes[i];
+                    result.push({
+                        "if": buildTraceTree(node["if"], node.id+"i"),
+                        "else": buildTraceTree(node["else"], node.id+"e"),
+                        "method": "branch"
+                    })
+                    while (trace.length && parentId == trace[0].parentName) {
+                        result.push(trace.shift())
+                    }
+                    
+                }
+                return result;
+            })(this.branchTree[null], null);
+            //console.log("TT", traceTree)
+            
+            var SETTINGS = ["was set", "was read", "was overwritten"],
+                report = this.report,
+                previousType = null,
+                testTypeEquality = this.testTypeEquality,
+                overwrittenLine = null;
+            var finalState = (function walkState(nodes, previous) {
+                var result;
+                if (previous === null) {
+                    result = {"was set": "no", "was read": "no", "was overwritten": "no"}
+                } else {
+                    result = {"was set": previous["was set"],
+                              "was read": previous["was read"],
+                              "was overwritten": previous["was overwritten"]};
+                }
+                for (var i = 0, len = nodes.length; i < len; i += 1) {
+                    var node = nodes[i];
+                    if (node.method == "branch") {
+                        var ifResult = walkState(node["if"], result)
+                        var elseResult = walkState(node["else"], result)
+                        for (var j = 0, len2 = SETTINGS.length; j < len2; j += 1) {
+                            var setting = SETTINGS[j];
+                            if (ifResult[setting] == "yes" && elseResult[setting] == "yes") {
+                                result[setting] = "yes";
+                            } else if (ifResult[setting] == "no" && elseResult[setting] == "no") {
+                                result[setting] = "no";
+                            } else {
+                                result[setting] = "maybe";
+                            }
+                        }
+                        //console.log(ifResult, elseResult, result)
+                    } else {
+                        if (node["method"] == "set" || node["method"] == "set_iterate") {
+                            if (previousType == null) {
+                                previousType = node.type;
+                            } else {
+                                if (node.type != null && testTypeEquality(previousType, node.type)) {
+                                    previousType = node.type;
+                                } else {
+                                    report['Type changes'].push({"name": name, "position": node.position});
+                                }
+                            }
+                            if (result["was set"] == "yes" && result["was read"] == "no") {
+                                result["was overwritten"] = "yes";
+                                if (overwrittenLine == null) {
+                                    overwrittenLine = node.position;
+                                }
+                            } else {
+                                result["was set"] = "yes"
+                                if (node["method"] == "set") {
+                                    result["was read"] = "no"
+                                } else {
+                                    result["was read"] = "yes"
+                                }
+                            }
+                        } else if (node["method"] == "read" || node["method"] == "iterate") {
+                            if (result["was set"] == "no") {
+                                report['Undefined variables'].push({"name": name, "position": node.position});
+                            } else if (result["was set"] == "maybe") {
+                                report['Possibly undefined variables'].push({"name": name, "position": node.position});
+                            }
+                            result["was read"] = "yes"
+                        } else if (node["method"] == "update" || node["method"] == "append") {
+                            if (node["method"] == "append" && previousType != null && previousType.type != "List") {
+                                report["Append to non-list"].push({"name": name, "position": node.position, "type": node.type})
+                            }
+                            if (result["was set"] == "no") {
+                                report['Undefined variables'].push({"name": name, "position": node.position});
+                            } else if (result["was set"] == "maybe") {
+                                report['Possibly undefined variables'].push({"name": name, "position": node.position});
+                            }
+                            result["was set"] = "yes"
+                        }
+                    }
+                }
+                return result;
+            })(traceTree, null);
+            
+            if (finalState["was read"] == "no") {
+                this.report['Unread variables'].push({"name": name});
+            }
+            if (finalState["was overwritten"] == "yes") {
+                report['Overwritten variables'].push({"name": name, "position": overwrittenLine});
+            }
+            
+            //console.log("ELLIE", name, finalState);
+        }
+    }
+    /*
     this.checkUnreadVariables(this.rootFrame)
     this.checkUnusedSingular(this.rootFrame)
     this.checkUsedPlural(this.rootFrame)
     this.checkSingularIsPlural(this.rootFrame)
+    */
 }
 
-AbstractInterpreter.prototype.getFrameIndex = function() {
-    return this.currentFrame.index;
-}
-AbstractInterpreter.prototype.addSingular = function(singular) {
-    this.currentFrame.singulars.push(singular);
-}
-AbstractInterpreter.prototype.addPlural = function(plural) {
-    this.currentFrame.plurals.push(plural);
-}
-AbstractInterpreter.prototype.addFrame = function() {
-    var newChild = this.newFrame(this.currentFrame)
-    this.currentFrame.children.push(newChild)
-    this.currentFrame = newChild
-}
-AbstractInterpreter.prototype.leaveFrame = function() {
-    this.currentFrame = this.currentFrame.parentFrame;
-}
-AbstractInterpreter.prototype.addVariable = function(name, loc) {
-    var currentFrame = this.currentFrame;
-    currentFrame.writes.push(name);
-    while (currentFrame !== null) {
-        if (name in currentFrame.variables) {
-            var behavior = currentFrame.variables[name].behavior;
-            if (behavior.slice(-1)[0].mode == "write") {
-                this.report["Overwritten variables"].push({
-                    'name': name,
-                    'last_location': loc,
-                    'first_location': behavior[0].location
-                })
-            }
-            behavior.push({"mode": "write", "location": loc});
-            return;
-        }
-        currentFrame = currentFrame.parentFrame;
-    }
-    this.currentFrame.variables[name] = {"behavior": [{"mode": "write", "location": loc}], "type": null};
-}
 
-AbstractInterpreter.prototype.setListType = function(name, type, loc) {
-    var currentFrame = this.currentFrame;
-    while (currentFrame !== null) {
-        if (name in currentFrame.variables) {
-            var variable = currentFrame.variables[name];
-            if (variable.type.type === "List") {
-                if (variable.type.empty || this.testTypeEquality(variable.type.component, type)) {
-                    variable.type = {"type": "List", "empty": false, "component": type};
-                } else {
-                    this.report["Type changes"].push(loc);
-                }
-            } else {
-                this.report["Append to non-list"].push(name);
-            }
-            // Adjust the read to become a write
-            for (var i = variable.behavior.length-1; i > 0; i = i-1) {
-                if (variable.behavior[i].location == loc) {
-                    variable.behavior[i].mode = "append";
-                }
-            }
-        }
-        currentFrame = currentFrame.parentFrame;
-    }
-}
 AbstractInterpreter.prototype.testTypeEquality = function(left, right) {
     if (left === null || right === null) {
         return false;
     } else if (left.type === null || right.type === null) {
         return false;
     } else if (left.type === "List" && right.type === "List") {
-        if (left.empty && right.empty) {
+        if (left.empty || right.empty) {
             return true;
-        } else if (left.empty || right.empty) {
-            return false;
         } else {
-            return left.component == right.component
+            return left.subtypes == right.subtypes;
         }
     } else {
         return left.type == right.type;
     }
 }
-AbstractInterpreter.prototype.setType = function(name, type, loc) {
-    var currentFrame = this.currentFrame;
-    while (currentFrame !== null) {
-        if (name in currentFrame.variables) {
-            var variable = currentFrame.variables[name];
-            if (variable.type !== null) {
-                if (!this.testTypeEquality(variable.type, type)) {
-                    this.report["Type changes"].push(name);
-                }
-            }
-            variable.type = type;
-            return;
-        }
-        currentFrame = currentFrame.parentFrame;
-    }
-}
 
 AbstractInterpreter.prototype.getType = function(name) {
-    var currentFrame = this.currentFrame;
-    while (currentFrame !== null) {
-        if (name in currentFrame.variables) {
-            return currentFrame.variables[name].type;
+    if (name in this.variables) {
+        var trace = this.variables[name];
+        if (trace != undefined && trace.length > 0) {
+            return trace[trace.length-1].currentType;
         }
-        currentFrame = currentFrame.parentFrame;
     }
     return null;
 }
@@ -384,96 +485,11 @@ AbstractInterpreter.prototype.isTypeList = function(name) {
     var type = this.getType(name);
     return (type !== null && type.type === "List");
 }
-AbstractInterpreter.prototype.readVariable = function(name, loc) {
-    var currentFrame = this.currentFrame;
-    currentFrame.reads.push(name);
-    while (currentFrame !== null) {
-        if (name in currentFrame.variables) {
-            currentFrame.variables[name].behavior.push({"mode": "read", "location": loc});
-            return;
-        }
-        currentFrame = currentFrame.parentFrame;
-    }
-    this.report["Undefined variables"].push({'name': name, 'line': loc});
-}
-AbstractInterpreter.prototype.checkUnreadVariables = function(frame) {
-    //TODO: Make it check EVERYWHERE before deciding to report unread
-    for (var name in frame.variables) {
-        if (!(name in this.BUILTINS)) {
-            var is_read = false
-            for (var i = 0, len = frame.variables[name].behavior.length;
-                 i < len; i++) {
-                is_read = is_read || frame.variables[name].behavior[i].mode == "read";
-            }
-            if (!is_read) {
-                var typeInfo = this.getType(name);
-                //console.log(frame.variables[name].behavior[0])
-                this.report["Unread variables"].push({
-                    'name': name, 
-                    'type': typeInfo == null ? null : typeInfo.type,
-                    'line': frame.variables[name].behavior[0].location
-                });
-            }
-        }
-    }
-    for (var i = 0, len = frame.children.length; i < len; i++) {
-        this.checkUnreadVariables(frame.children[i])
-    }
-}
-
-AbstractInterpreter.prototype.checkUnusedSingular = function(frame) {
-    for (var i = 0, len = frame.singulars.length; i < len; i++) {
-        if (!(this.walkFramesForUse(frame, frame.singulars[i], "reads"))) {
-            this.report["Unused iteration variable"].push(frame.singulars[i])
-        }
-    }
-    for (var i = 0, len = frame.children.length; i < len; i++) {
-        this.checkUnusedSingular(frame.children[i])
-    }
-}
-AbstractInterpreter.prototype.checkUsedPlural = function(frame) {
-    for (var i = 0, len = frame.plurals.length; i < len; i++) {
-        if (this.walkFramesForUse(frame, frame.plurals[i], "both")) {
-            this.report["Used iteration list"].push(frame.plurals[i])
-        }
-    }
-    for (var i = 0, len = frame.children.length; i < len; i++) {
-        this.checkUsedPlural(frame.children[i])
-    }
-}
-AbstractInterpreter.prototype.checkSingularIsPlural = function(frame) {
-    for (var i = 0, len = frame.plurals.length; i < len; i++) {
-        for (var j = 0, len = frame.singulars.length; j < len; j++) {
-            if (frame.plurals[i] == frame.singulars[j]) {
-                this.report["Iteration variable is iteration list"].push(frame.singulars[j]);
-            }
-        }
-    }
-    for (var i = 0, len = frame.children.length; i < len; i++) {
-        this.checkSingularIsPlural(frame.children[i])
-    }
-}
-AbstractInterpreter.prototype.walkFramesForUse = function(frame, name, type) {
-    if (type === undefined) {
-        type = "both";
-    }
-    if ((type == "both" || type == "reads") && arrayContains(name, frame.reads)) {
-        return true;
-    }
-    if ((type == "both" || type == "writes") && arrayContains(name, frame.writes)) {
-        return true;
-    }
-    var result = false;
-    for (var i = 0, len = frame.children.length; i < len; i++) {
-        result = result || this.walkFramesForUse(frame.children[i], name, type);
-    }
-    return result;
-}
 
 AbstractInterpreter.prototype.visit = function(node) {
-    this.stackDepth += 1;
+    this.astStackDepth += 1;
     NodeVisitor.prototype.visit.call(this, node);
-    this.stackDepth -= 1;
+    this.astStackDepth -= 1;
 }
 
 AbstractInterpreter.prototype.typecheck = function(value) {
@@ -487,7 +503,7 @@ AbstractInterpreter.prototype.typecheck = function(value) {
             for (var i = 0, len = value.elts.length; i < len; i++) {
                 components.push(this.typecheck(value.elts[i]))
             }
-            return {"type": "Tuple", "components": components};
+            return {"type": "Tuple", "subtypes": components};
         case "Dict":
             var literals = true;
             for (var i = 0, len = value.keys.length; i < len; i++) {
@@ -500,7 +516,7 @@ AbstractInterpreter.prototype.typecheck = function(value) {
                     var value_type = this.typecheck(value.values[i]);
                     components[value.keys[i].id.v] = {"key": key_type, "value": value_type};
                 }
-                return {"type": "Dict", "literals": true, "components": components};
+                return {"type": "Dict", "literals": true, "subtypes": components};
             } else {
                 var key_type = {"type": "Unknown"}, value_type = {"type": "Unknown"};
                 if (value.keys.length > 0) {
@@ -513,22 +529,23 @@ AbstractInterpreter.prototype.typecheck = function(value) {
             if (value.elts.length == 0) {
                 return {"type": "List", "empty": true};
             } else {
-                return {"type": "List", "empty": false, "component": this.typecheck(value.elts[0])};
+                return {"type": "List", "empty": false, "subtypes": this.typecheck(value.elts[0])};
             }
         case "Call":
-            return this.walkAttributeChain(value.func);
+            var funcType = this.walkAttributeChain(value.func);
+            return funcType;
         case "BinOp":
             var left = this.typecheck(value.left),
                 right = this.typecheck(value.right);
             if (left === null || right === null) {
-                return {"type": "Unknown"}
+                return null;
             } else if (left.type != right.type) {
-                this.report["Incompatible types"].push(value.lineno);
+                this.report["Incompatible types"].push({"left": left, "right": right, "operation": value.op.name, "position": this.getLocation(value)});
             } else {
                 return left;
             }
         default:
-            return {"type": "Unknown"}
+            return null;
     }
 }
 
@@ -540,17 +557,23 @@ AbstractInterpreter.prototype.walkAttributeChain = function(attribute) {
         } else if (attribute.attr.v in result) {
             return result[attribute.attr.v];
         } else {
-            this.report["Unknown functions"].push(attribute.attr.v);
+            this.report["Unknown functions"].push({"name": attribute.attr.v, "position": this.getLocation(attribute)});
             return null;
         }
     } else if (attribute._astname == "Name") {
         if (attribute.id.v in AbstractInterpreter.MODULES) {
             return AbstractInterpreter.MODULES[attribute.id.v];
+        } else if (attribute.id.v in this.BUILTINS) {
+            return this.BUILTINS[attribute.id.v];
         } else {
-            this.report["Unknown functions"].push(attribute.attr);
+            this.report["Unknown functions"].push({"name": attribute.attr, "position": this.getLocation(attribute)});
             return null;
         }
     }
+}
+
+AbstractInterpreter.prototype.getLocation = function(node) {
+    return {"column": node.col_offset, "line": node.lineno};
 }
 
 AbstractInterpreter.prototype.visit_AugAssign = function(node) {
@@ -561,24 +584,41 @@ AbstractInterpreter.prototype.visit_AugAssign = function(node) {
     for (var i = 0, len = walked.length; i < len; i++) {
         var targetChild = walked[i];
         if (targetChild._astname == "Tuple") {
-            
+            // TODO: Check if is an iterable (list, tuple, dict, set) literal or variable
         } else if (targetChild._astname == "Name") {
-            this.setType(targetChild.id.v, typeValue, this.getLocation(node));
+            this.updateVariable(targetChild.id.v, typeValue, this.getLocation(node));
         }
     }
 }
+
 AbstractInterpreter.prototype.visit_Call = function(node) {
-    this.generic_visit(node);
     if (node.func._astname == "Attribute") {
         if (node.func.attr.v == "append") {
             if (node.args.length >= 1) {
                 var valueType = this.typecheck(node.args[0]);
                 if (node.func.value._astname == "Name") {
                     var target = node.func.value.id.v;
-                    this.setListType(target, valueType, this.getLocation(node));
+                    this.appendVariable(target, valueType, this.getLocation(node));
+                    this.visitList(node.keywords);
+                    this.visitList(node.args);
+                    if (node.kwargs != null) {
+                        this.visit(node.kwargs);
+                    }
+                    if (node.starargs != null) {
+                        this.visit(node.starargs);
+                    }
+                } else {
+                    this.generic_visit(node);
                 }
+            } else {
+                this.generic_visit(node);
             }
+        } else {
+            this.generic_visit(node);
         }
+    } else {
+        console.log(node);
+        this.generic_visit(node);
     }
 }
 AbstractInterpreter.prototype.visit_Assign = function(node) {
@@ -590,100 +630,151 @@ AbstractInterpreter.prototype.visit_Assign = function(node) {
         for (var j = 0, len = walked.length; j < len; j++) {
             var targetChild = walked[j];
             if (targetChild._astname == "Tuple") {
-                
+                // TODO: Check if is an iterable (list, tuple, dict, set) literal or variable
             } else if (targetChild._astname == "Name") {
-                this.setType(targetChild.id.v, typeValue, this.getLocation(node));
+                this.setVariable(targetChild.id.v, typeValue, this.getLocation(node));
             }
         }
     }
-}
-AbstractInterpreter.prototype.getLocation = function(node) {
-    return node.lineno+"|"+node.col_offset;
 }
 AbstractInterpreter.prototype.visit_Import = function(node) {
     for (var i = 0, len = node.names.length; i < len; i++) {
         var module = node.names[i];
         var asname = module.asname === null ? module.name : module.asname;
-        this.addVariable(asname.v, this.getLocation(node));
-        this.setType(asname.v, {"type": "Module"}, this.getLocation(node));
+        this.setVariable(asname.v, {"type": "Module"}, this.getLocation(node))
     }
 }
 AbstractInterpreter.prototype.visit_ImportFrom = function(node) {
     for (var i = 0, len = node.names.length; i < len; i++) {
         var module = node.module === null ? node.names[i] : node.module + node.names[i];
         var asname = module.asname === null ? module.name : module.asname;
-        this.addVariable(asname.v, this.getLocation(node));
-        this.setType(asname.v, {"type": "Module"}, this.getLocation(node));
+        this.setVariable(asname.v, {"type": "Module"}, this.getLocation(node));
     }
 }
 
 AbstractInterpreter.prototype.visit_Name = function(node) {
-    if (node.ctx.name == "Store") {
-        this.addVariable(node.id.v, this.getLocation(node));
-    } else if (node.ctx.name === "Load") {
+    if (node.ctx.name === "Load") {
         this.readVariable(node.id.v, this.getLocation(node));
     }
     this.generic_visit(node);
 }
 
 AbstractInterpreter.prototype.visit_If = function(node) {
-    this.inside_if = true;
-    console.log(node);
-    //this.visit(node);
-    this.inside_if = false;
+    // Visit the conditional
+    this.visit(node.test);
+    
+    // Update branch management
+    this.branchStackId += 1;
+    var branchId = this.branchStackId;
+    
+    var cb = this.currentBranch,
+        cbName = this.currentBranchName,
+        branches = {"if": [], 
+                    "else": [], 
+                    "id": branchId, 
+                    "method": "branch",
+                    "parentName": this.currentBranchName};
+    cb.push(branches)
+    
+    // Visit the bodies
+    this.currentBranch = branches["if"];
+    this.currentBranchName = branchId + 'i';
+    for (var i = 0, len = node.body.length; i < len; i++) {
+        this.visit(node.body[i]);
+    }
+    this.currentBranch = branches["else"];
+    this.currentBranchName = branchId + 'e';
+    for (var i = 0, len = node.orelse.length; i < len; i++) {
+        this.visit(node.orelse[i]);
+    }
+    this.currentBranch = cb;
+    this.currentBranchName = cbName;
 }
 
 AbstractInterpreter.prototype.visit_For = function(node) {
-    this.visit(node.iter);
-    this.addFrame();
-    var walked = this.walk(node.iter);
+    this.loopStackId += 1;
+    // Handle the iteration list
+    var walked = this.walk(node.iter),
+        iterationList = null;
     for (var i = 0, len = walked.length; i < len; i++) {
         var child = walked[i];
         if (child._astname === "Name" && child.ctx.name === "Load") {
+            iterationList = child.id.v;
             if (this.isTypeEmptyList(child.id.v)) {
-                this.report["Empty iterations"].push(child.id.v);
+                this.report["Empty iterations"].push({"name": child.id.v, "position": this.getLocation(node)});
             }
             if (!(this.isTypeList(child.id.v))) {
-                this.report["Non-list iterations"].push(child.id.v);
+                this.report["Non-list iterations"].push({"name": child.id.v, "position": this.getLocation(node)});
             }
-            this.addPlural(child.id.v, this.getLocation(node));
+            this.iterateVariable(child.id.v, this.getLocation(node));
         } else if (child._astname === "List" && child.elts.length === 0) {
-            this.report["Empty iterations"].push(child.lineno);
+            this.report["Empty iterations"].push({"name": child.lineno, "position": this.getLocation(node)});
         } else {
-            //console.log(child);
+            this.visit(child);
         }
     }
+    var iterType = this.typecheck(node.iter),
+        iterSubtype = null;
+    if (iterType !== null && iterType.type == "List" && !iterType.empty) {
+        iterSubtype = iterType.subtype;
+    }
+    
+    // Handle the iteration variable
     walked = this.walk(node.target);
+    var iterationVariable = null;
     for (var i = 0, len = walked.length; i < len; i++) {
         var child = walked[i];
         if (child._astname === "Name" && child.ctx.name === "Store") {
-            this.addSingular(child.id.v, this.getLocation(node));
+            iterationVariable = node.target.id.v;
+            this.setIterVariable(node.target.id.v, iterSubtype, this.getLocation(node));
+        } else {
+            this.visit(child);
         }
     }
-    this.visit(node.target);
-    var iterType = this.typecheck(node.iter);
-    if (iterType !== null && iterType.type == "List" && !iterType.empty) {
-        this.setType(node.target.id.v, iterType.component, this.getLocation(node));
+    
+    if (iterationVariable && iterationList && iterationList == iterationVariable) {
+        this.report["Iteration variable is iteration list"].push({"name": iterationList, "position": this.getLocation(node)});
     }
+
+    // Handle the bodies
     for (var i = 0, len = node.body.length; i < len; i++) {
         this.visit(node.body[i]);
     }
     for (var i = 0, len = node.orelse.length; i < len; i++) {
         this.visit(node.orelse[i]);
     }
-    this.leaveFrame();
 }
 
 
-/*
+
+
 var filename = '__main__.py';
-var python_source = 'sum([1,2])/len([4,5,])\ntotal=0\ntotal=total+1\nimport weather\nimport matplotlib.pyplot as plt\ncelsius_temperatures = []\nexisting=weather.get_forecasts("Miami, FL")\nfor t in existing:\n    celsius = (t - 32) / 2\n    celsius_temperatures.append(celsius)\nplt.plot(celsius_temperatures)\nplt.title("Temperatures in Miami")\nplt.show()';
+//var python_source = 'sum([1,2])/len([4,5,])\ntotal=0\ntotal=total+1\nimport weather\nimport matplotlib.pyplot as plt\ncelsius_temperatures = []\nexisting=weather.get_forecasts("Miami, FL")\nfor t in existing:\n    celsius = (t - 32) / 2\n    celsius_temperatures.append(celsius)\nplt.plot(celsius_temperatures)\nplt.title("Temperatures in Miami")\nplt.show()';
+var python_source = ''+
+    'b=0\n'+
+    'if X:\n'+
+        '\ta=0\n'+
+        '\tc=0\n'+
+    'else:\n'+
+        '\tif Y:\n'+
+            '\t\ta=0\n'+
+            '\t\ta=0\n'+
+            '\t\tb = 0\n'+
+        '\telif Z:\n'+
+            '\t\ta=0\n'+
+        '\telse:\n'+
+            '\t\ta=0\n'+
+        '\tif A:\n'+
+            '\t\tb=0\n'+
+        '\telse:\n'+
+            '\t\ta=0\n'+
+    'print(c)';
 var analyzer = new AbstractInterpreter(python_source);
-analyzer.analyze()
+//console.log(python_source);
+/*
 console.log(python_source);
-console.log(analyzer.ast);
-console.log(analyzer.rootFrame);
-console.log(analyzer.report);
+console.log("AST:", analyzer.ast);
+console.log("Report:",analyzer.report);
 */
 function PythonToBlocks() {
 }
@@ -1990,6 +2081,8 @@ PythonToBlocks.prototype.Name = function(node)
             return block("logic_boolean", node.lineno, {"BOOL": "TRUE"});
         case "False":
             return block("logic_boolean", node.lineno, {"BOOL": "FALSE"});
+        case "None":
+            return block("logic_null", node.lineno);
         case "___":
             return null;
         default:
@@ -3970,7 +4063,9 @@ BlockPyFeedback.prototype.semanticError = function(name, message, line) {
     this.original.hide();
     this.body.html(message);
     this.main.model.status.error("semantic");
-    this.main.components.editor.highlightError(line-1);
+    if (line !== null) {
+        this.main.components.editor.highlightError(line-1);
+    }
     this.main.components.printer.print("Execution stopped - there was an error!");
 }
 
@@ -4292,29 +4387,48 @@ BlockPyEngine.prototype.analyze = function() {
     var analyzer = new AbstractInterpreter(code);
     this.main.model.execution.ast = analyzer.ast;
     
-    result = analyzer.analyze();
+    report = analyzer.report;
     // Syntax error
-    if (result !== true) {
-        this.main.reportError('editor', result.error, "While attempting to convert the Python code into blocks, I found a syntax error. In other words, your Python code has a spelling or grammatical mistake. You should check to make sure that you have written all of your code correctly. To me, it looks like the problem is on line "+ result.error.args.v[2]+', where it says:<br><code>'+result.error.args.v[3][2]+'</code>', result.error.args.v[2]);
+    if (report.error !== false) {
+        this.main.reportError('editor', report.error, "While attempting to convert the Python code into blocks, I found a syntax error. In other words, your Python code has a spelling or grammatical mistake. You should check to make sure that you have written all of your code correctly. To me, it looks like the problem is on line "+ report.error.args.v[2]+', where it says:<br><code>'+report.error.args.v[3][2]+'</code>', report.error.args.v[2]);
         return false;
     }
-    
-    var report = analyzer.report;
-    // Semantic error
-    //console.log(report);
-    
-    // TODO: variables defined AFTER their use
-    if (report["Undefined variables"].length >= 1) {
+        
+    if (report["Unconnected blocks"].length >= 1) {
+        var variable = report['Unconnected blocks'][0];
+        feedback.semanticError("Unconnected blocks", "It looks like you have unconnected blocks on line "+variable.position.line+". Before you run your program, you must make sure that all of your blocks are connected and that there are no unfilled holes.", variable.position.line)
+        return false;
+    } else if (report['Iteration variable is iteration list'].length >= 1) {
+        var variable = report['Iteration variable is iteration list'][0];
+        feedback.semanticError("Iteration Problem", "The property <code>"+variable.name+"</code> was iterated on line "+variable.position.line+", but you used the same variable as the iteration variable. You should choose a different variable name for the iteration variable. Usually, the iteration variable is the singular form of the iteration list (e.g., <code>for dog in dogs:</code>).", variable.position.line)
+        return false;
+    } else if (report["Undefined variables"].length >= 1) {
         var variable = report["Undefined variables"][0];
-        feedback.semanticError("Initialization Problem", "The property <code>"+variable.name+"</code> was read on line "+variable.line.split("|")[0]+", but it was not given a value on a previous line. You cannot use a property until it has been initialized.", variable.line.split("|")[0])
+        feedback.semanticError("Initialization Problem", "The property <code>"+variable.name+"</code> was read on line "+variable.position.line+", but it was not given a value on a previous line. You cannot use a property until it has been initialized.", variable.position.line)
+        return false;
+    } else if (report["Possibly undefined variables"].length >= 1) {
+        var variable = report["Possibly undefined variables"][0];
+        feedback.semanticError("Initialization Problem", "The property <code>"+variable.name+"</code> was read on line "+variable.position.line+", but it was possibly not given a value on a previous line. You cannot use a property until it has been initialized. Check to make sure that this variable was declared in all of the branches of your decision.", variable.position.line);
         return false;
     } else if (report["Unread variables"].length >= 1) {
         var variable = report["Unread variables"][0];
-        feedback.semanticError("Unused Property", "The property <code>"+variable.name+"</code> was created on line "+variable.line.split("|")[0]+", but was never used.", variable.line.split("|")[0])
+        feedback.semanticError("Unused Property", "The property <code>"+variable.name+"</code> was set, but was never used after that.", null)
         return false;
     } else if (report["Overwritten variables"].length >= 1) {
         var variable = report["Overwritten variables"][0];
-        feedback.semanticError("Overwritten Property", "The property <code>"+variable.name+"</code> was set on line "+variable.first_location.split("|")[0]+", but before it could be read it was changed on line "+variable.last_location.split("|")[0]+". It is unnecessary to change an existing variable's value without reading it first.", variable.last_location.split("|")[0])
+        feedback.semanticError("Overwritten Property", "The property <code>"+variable.name+"</code> was set, but before it could be read it was changed on line "+variable.position.line+". It is unnecessary to change an existing variable's value without reading it first.", variable.position.line)
+        return false;
+    } else if (report["Empty iterations"].length >= 1) {
+        var variable = report["Empty iterations"][0];
+        feedback.semanticError("Iterating over empty list", "The property <code>"+variable.name+"</code> was set as an empty list, and then you attempted to iterate over it on "+variable.position.line+". You should only iterate over non-empty lists.", variable.position.line)
+        return false;
+    } else if (report["Non-list iterations"].length >= 1) {
+        var variable = report["Non-list iterations"][0];
+        feedback.semanticError("Iterating over non-list", "The property <code>"+variable.name+"</code> is not a list, but you attempted to iterate over it on "+variable.position.line+". You should only iterate over non-empty lists.", variable.position.line)
+        return false;
+    } else if (report["Incompatible types"].length >= 1) {
+        var variable = report["Incompatible types"][0];
+        feedback.semanticError("Incompatible types", "You attempted to "+variable.operation+" a "+variable.left.type+" and a "+variable.right.type+" on line "+variable.position.line+". But you can't do that with that operator. Make sure both sides of the operator are the right type.", variable.position.line)
         return false;
     }
     
@@ -4367,10 +4481,9 @@ BlockPyEngine.prototype.run = function() {
         function (module) {
             // Run the afterSingleExecution one extra time for final state
             Sk.afterSingleExecution(module.$d, -1, 0, "<stdin>.py");
-            //blockpy.explorer.reload(blockpy.traceTable, -1);
             // Handle checks
             feedback.noErrors()
-            engine.check(code, execution.trace(), execution.output(), execution.ast);
+            engine.check(code, execution.trace(), execution.output(), execution.ast, module.$d);
             // Reenable "Run"
             engine.main.model.execution.status("waiting");
         },
@@ -4428,8 +4541,25 @@ var instructor_module = function(name) {
         return (new NodeVisitor()).recursive_walk(ast);
     }
     
+    mod.get_value_by_name = new Sk.builtin.func(function(name) {
+        Sk.builtin.pyCheckArgs("get_properties_by_type", arguments, 1, 1);
+        Sk.builtin.pyCheckType("name", "string", Sk.builtin.checkString(name));
+        name = name.v;
+        var final_values = Sk.builtins._final_values;
+        if (name in final_values) {
+            return final_values[name];
+        } else {
+            return Sk.builtin.none.none$;
+        }
+    });
+    mod.parse_json = new Sk.builtin.func(function(blob) {
+        Sk.builtin.pyCheckArgs("parse_json", arguments, 1, 1);
+        Sk.builtin.pyCheckType("blob", "string", Sk.builtin.checkString(blob));
+        blob = blob.v;
+        return Sk.ffi.remapToPy(JSON.parse(blob));
+    });
     mod.get_property = new Sk.builtin.func(function(name) {
-        Sk.builtin.pyCheckArgs("calls_function", arguments, 1, 1);
+        Sk.builtin.pyCheckArgs("get_property", arguments, 1, 1);
         Sk.builtin.pyCheckType("name", "string", Sk.builtin.checkString(name));
         name = name.v;
         var trace = Sk.builtins._trace;
@@ -4491,7 +4621,7 @@ var instructor_module = function(name) {
     return mod;
 }
 
-BlockPyEngine.prototype.setupEnvironment = function(student_code, traceTable, output, ast) {
+BlockPyEngine.prototype.setupEnvironment = function(student_code, traceTable, output, ast, final_values) {
     var model = this.main.model;
     this._backup_execution = Sk.afterSingleExecution;
     Sk.afterSingleExecution = undefined;
@@ -4509,12 +4639,15 @@ BlockPyEngine.prototype.setupEnvironment = function(student_code, traceTable, ou
     });
     Sk.builtins.trace = Sk.ffi.remapToPy(traceTable);
     Sk.builtins._trace = traceTable;
+    Sk.builtins._final_values = final_values;
     Sk.builtins.code = Sk.ffi.remapToPy(student_code);
     Sk.builtins.set_success = this.instructor_module.set_success;
     Sk.builtins.set_feedback = this.instructor_module.set_feedback;
     Sk.builtins.count_components = this.instructor_module.count_components;
     Sk.builtins.calls_function = this.instructor_module.calls_function;
     Sk.builtins.get_property = this.instructor_module.get_property;
+    Sk.builtins.get_value_by_name = this.instructor_module.get_value_by_name;
+    Sk.builtins.parse_json = this.instructor_module.parse_json;
     Sk.skip_drawing = true;
     model.settings.mute_printer(true);
 }
@@ -4533,21 +4666,21 @@ BlockPyEngine.prototype.disposeEnvironment = function() {
     Sk.builtins.count_components = undefined;
     Sk.builtins.calls_function = undefined;
     Sk.builtins.get_property = undefined;
+    Sk.builtins.get_value_by_name = undefined;
+    Sk.builtins.parse_json = undefined;
     Sk.skip_drawing = false;
     GLOBAL_VALUE = undefined;
     this.main.model.settings.mute_printer(false);
 }
 
-BlockPyEngine.prototype.check = function(student_code, traceTable, output, ast) {
+BlockPyEngine.prototype.check = function(student_code, traceTable, output, ast, final_values) {
     var engine = this;
     var server = this.main.components.server;
     var model = this.main.model;
     var on_run = model.programs['give_feedback']();
     if (on_run !== undefined && on_run.trim() !== "") {
-        
-        
         on_run = 'def run_code():\n'+indent(student_code)+'\n'+on_run;
-        this.setupEnvironment(student_code, traceTable, output, ast);
+        this.setupEnvironment(student_code, traceTable, output, ast, final_values);
         
         var executionPromise = Sk.misceval.asyncToPromise(function() {
             return Sk.importMainWithBody("<stdin>", false, on_run, true);
@@ -4646,7 +4779,7 @@ BlockPyEngine.prototype.parseValue = function(property, value) {
                 "value": value.$r().v
             };
         case Sk.builtin.list:
-            if (value.v.length <= 10) {
+            if (value.v.length <= 20) {
                 return {'name': property,
                     'type': "List",
                     "value": value.$r().v
@@ -4654,7 +4787,7 @@ BlockPyEngine.prototype.parseValue = function(property, value) {
             } else {
                 return {'name': property,
                     'type': "List",
-                    "value": "[... "+value.v.length+" elements ...]<code>"
+                    "value": "[... "+value.v.length+" elements ...]"
                 };
             }
         case Sk.builtin.dict:
