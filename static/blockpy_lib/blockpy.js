@@ -2715,10 +2715,11 @@ BlockPyPrinter.prototype.getConfiguration = function() {
     var printer = this;
     return {
         'printHtml': function(html, value) { printer.printHtml(html, value);},
-        'width': this.tag.width(),
-        'png_mode': true,
-        'height': this.tag.height(),
-        'console': this.tag[0]
+        'width': this.tag.width()-40,
+        'pngMode': true,
+        'skipDrawing': false,
+        'height': this.tag.height()+40,
+        'container': this.tag[0]
     }
 }
 
@@ -3661,6 +3662,7 @@ BlockPyEditor.CATEGORY_MAP = {
                     //'<block type="text_print_multiple"></block>'+
                     '<block type="plot_line"></block>'+
                     '<block type="plot_scatter"></block>'+
+                    '<block type="plot_hist"></block>'+
                     '<block type="plot_show"></block>'+
                     '<block type="plot_title"></block>'+
                     '<block type="plot_xlabel"></block>'+
@@ -4542,7 +4544,7 @@ var instructor_module = function(name) {
     }
     
     mod.get_value_by_name = new Sk.builtin.func(function(name) {
-        Sk.builtin.pyCheckArgs("get_properties_by_type", arguments, 1, 1);
+        Sk.builtin.pyCheckArgs("get_value_by_name", arguments, 1, 1);
         Sk.builtin.pyCheckType("name", "string", Sk.builtin.checkString(name));
         name = name.v;
         var final_values = Sk.builtins._final_values;
@@ -4552,6 +4554,19 @@ var instructor_module = function(name) {
             return Sk.builtin.none.none$;
         }
     });
+    mod.get_value_by_type = new Sk.builtin.func(function(type) {
+        Sk.builtin.pyCheckArgs("get_value_by_type", arguments, 1, 1);
+        
+        var final_values = Sk.builtins._final_values;
+        var result = [];
+        for (var property in final_values) {
+            if (final_values[property].tp$name == type.tp$name) {
+                result.push(final_values[property]);
+            }
+        }
+        return Sk.builtin.list(result);
+    });
+    
     mod.parse_json = new Sk.builtin.func(function(blob) {
         Sk.builtin.pyCheckArgs("parse_json", arguments, 1, 1);
         Sk.builtin.pyCheckType("blob", "string", Sk.builtin.checkString(blob));
@@ -4647,6 +4662,7 @@ BlockPyEngine.prototype.setupEnvironment = function(student_code, traceTable, ou
     Sk.builtins.calls_function = this.instructor_module.calls_function;
     Sk.builtins.get_property = this.instructor_module.get_property;
     Sk.builtins.get_value_by_name = this.instructor_module.get_value_by_name;
+    Sk.builtins.get_value_by_type = this.instructor_module.get_value_by_type;
     Sk.builtins.parse_json = this.instructor_module.parse_json;
     Sk.skip_drawing = true;
     model.settings.mute_printer(true);
@@ -4667,6 +4683,7 @@ BlockPyEngine.prototype.disposeEnvironment = function() {
     Sk.builtins.calls_function = undefined;
     Sk.builtins.get_property = undefined;
     Sk.builtins.get_value_by_name = undefined;
+    Sk.builtins.get_value_by_type = undefined;
     Sk.builtins.parse_json = undefined;
     Sk.skip_drawing = false;
     GLOBAL_VALUE = undefined;
