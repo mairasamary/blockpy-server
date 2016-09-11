@@ -15,7 +15,8 @@ EXTENDED_ERROR_EXPLANATION = {
 	'IOError': "This is a very easy error to get. The most common reason is that you were trying to open a file and it wasn't in the right place.   <br><b>Suggestion: </b>Make sure that the file is in the right place - print out the file path, and then check that it's definitely on your computer at that location. If you need help doing file processing, you should probably check with an instructor.",
 	'KeyError': "A dictionary has a bunch of keys that you can use to get data. This error is caused by you trying to refer to a key that does not exist.  <br><b>Suggestion: </b>The most common reason you get this exception is that you have a typo in your dictionary access. Check your spelling. Also double check that the key definitely exists.",
 	'MemoryError': "Somehow, you have run out of memory. <br><b>Suggestion: </b>Make sure you are filtering your dataset! Alternatively, bring your code to an instructor.",
-	'OSError': "It's hard to say what an OSError is without deep checking. Many things can cause it.  <br><b>Suggestion: </b>Bring your code to an instructor.      "
+	'OSError': "It's hard to say what an OSError is without deep checking. Many things can cause it.  <br><b>Suggestion: </b>Bring your code to an instructor.      ",
+    'TimeLimitError': "A TimeLimit error means that BlockPy wasn't able to process your program fast enough. Typically, this means that you're iterating through too many elements."
 }
 /*
 var filename = '__main__.py';
@@ -2784,7 +2785,7 @@ BlockPyPrinter.prototype.printHtml = function(chart, value) {
     }
 }
 
-BlockPyInterface = "<div class='blockpy-content container-fluid' style='background-color :#fcf8e3; border: 1px solid #faebcc; '>    <div class='blockpy-popup modal fade' style='display:none'>        <div class='modal-dialog' style='width:750px'>            <div class='modal-content' id='modal-message' >                <div class='modal-header'>                    <button type='button' class='close' data-dismiss='modal' aria-hidden='true'>&times;</button>                    <h4 class='modal-title'>Dynamic Content</h4>                </div>                <div class='modal-body' style='width:100%; height:400px; white-space:pre-wrap'>                </div>                <div class='modal-footer'>                    <button type='button' class='btn btn-white' data-dismiss='modal'>Close</button>                </div>                </div>        </div>    </div>    <canvas id='capture-canvas' style='display:none'></canvas>    <div class='row' style='padding-bottom: 10px; border-bottom: 1px solid #faebcc; '>        <div class='blockpy-content-top col-md-9 col-sm-9'>            <span class='blockpy-alert pull-right text-muted' data-bind=\"visible: false, text: status.text\"></span>            <strong>BlockPy: </strong>             <span class='blockpy-presentation-name'                  data-bind='text: assignment.name'></span>            <div class='blockpy-presentation' data-bind=\"html: assignment.introduction\">            </div>        </div>        <div class='blockpy-content-topright col-md-3 col-sm-3'>            <span class='pull-right label label-default'                  data-bind=\"css: status_server_class()[0],                             text: status_server_class()[1]\">Loading</span>            <div class='pull-right'>                Disable Semantic Errors: <input type='checkbox' data-bind=\"checked: settings.disable_semantic_errors\">                <label class='blockpy-toolbar-auto-upload' data-bind=\"visible: settings.instructor\">                Auto-save:                <input type='checkbox' data-bind=\"checked:settings.auto_upload\">                </label>                                 <label class='blockpy-toolbar-instructor-mode' data-bind=\"visible: settings.instructor_initial\">                Instructor mode:                 <input type='checkbox' data-bind=\"checked:settings.instructor\">                </label>                                <label class='blockpy-toolbar-instructor-mode' data-bind=\"visible: settings.instructor_initial\">                Upload mode:                 <input type='checkbox' data-bind=\"checked:assignment.upload\">                </label>             </div>            <!--<img src=\"images/corgi.png\" class='img-responsive' />-->        </div>    </div>    <div class='row' style='margin-top: 5px border: 1px solid #bce8f1;'>        <div class='blockpy-content-left col-md-6 col-sm-6'             style='padding:10px'>            <strong>Printer</strong>            <div class='blockpy-printer blockpy-printer-default'>            </div>        </div>        <div class='blockpy-content-right col-md-6 col-sm-6 bubble'             style='padding:10px'>            <div class='blockpy-feedback'>                <button type='button' class='btn btn-sm btn-default blockpy-feedback-trace pull-right'                         data-bind=\"visible: !execution.show_trace() && (status.error() == 'feedback' || status.error() == 'no errors')\">                    <span class='glyphicon glyphicon-circle-arrow-down'></span> Trace Variables                </button>                                <strong>Feedback: </strong>                <span class='label blockpy-feedback-status' data-bind=\"css: status_feedback_class()[0], text: status_feedback_class()[1]\">Runtime Error</span>                <br>                <pre class='blockpy-feedback-original'></pre>                <strong class='blockpy-feedback-title'></strong>                <div class='blockpy-feedback-body'><i>Run your code to get feedback.</i></div>                <div class='blockpy-code-trace'></div>                                <div class=\"blockpy-feedback-traces\"                      data-bind=\"visible: execution.show_trace, foreach: execution.trace\">                                <div data-bind=\"visible: $index()+1 == $root.execution.trace_step()\">                <div>                    <button type='button' class='btn btn-default' data-bind=\"click: $root.moveTraceFirst\">                        <span class='glyphicon glyphicon-step-backward'></span>                    </button>                    <button type='button' class='btn btn-default' data-bind=\"click: $root.moveTraceBackward\">                        <span class='glyphicon glyphicon-backward'></span>                    </button>                    Step <span data-bind='text: step'></span>                    / <span data-bind='text: $root.execution.last_step()-1'></span>                    (<span data-bind='text: line == -1 ? \"The end\" : \"Line \"+line'></span>)                    <button type='button' class='btn btn-default' data-bind=\"click: $root.moveTraceForward\">                        <span class='glyphicon glyphicon-forward'></span>                    </button>                    <button type='button' class='btn btn-default' data-bind=\"click: $root.moveTraceLast\">                        <span class='glyphicon glyphicon-step-forward'></span>                    </button>                </div>                                <table class='table table-condensed table-striped table-bordered table-hover'>                    <thead>                        <tr><th>Name</th><th>Type</th><th>Value</th></tr>                    </thead>                    <tbody data-bind=\"foreach: properties\">                        <tr data-bind=\"visible: name != '__file__' && name != '__path__'\">                            <td data-bind=\"text: name\"></td>                            <td data-bind=\"text: type\"></td>                            <td><code data-bind=\"text: value\"></code></td>                        </tr>                    </tbody>                </table>                </div>                                </div>            </div>        </div>    </div>    <div class=\"row\"         style='background-color :#fcf8e3; padding-bottom: 10px; border: 1px solid #faebcc'>        <div class='col-md-12 col-sm-12 blockpy-toolbar btn-toolbar' role='toolbar'>                        <button type='button' class='btn blockpy-run' style='float:left',                data-bind='css: execution.status() == \"running\" ? \"btn-info\" :                                execution.status() == \"error\" ? \"btn-danger\" : \"btn-success\" ' >                <span class='glyphicon glyphicon-play'></span> Run            </button>                        <div class=\"btn-group\" data-toggle=\"buttons\" data-bind=\"visible: !assignment.upload()\">                <label class=\"btn btn-default blockpy-mode-set-blocks\"                        data-bind=\"css: {active: settings.editor() == 'Blocks'}\">                    <span class='glyphicon glyphicon-th-large'></span>                    <input type=\"radio\" name=\"blockpy-mode-set\" autocomplete=\"off\" checked> Blocks                </label>                <label class=\"btn btn-default blockpy-mode-set-instructor\"                       data-bind=\"visible: settings.instructor,                                  css: {active: settings.editor() == 'Upload'}\">                    <span class='glyphicon glyphicon-list-alt'></span>                    <input type=\"radio\" name=\"blockpy-mode-set\" autocomplete=\"off\"> Instructor                </label>                <label class=\"btn btn-default blockpy-mode-set-text\"                        data-bind=\"css: {active: settings.editor() == 'Text'}\">                    <span class='glyphicon glyphicon-pencil'></span>                    <input type=\"radio\" name=\"blockpy-mode-set\" autocomplete=\"off\"> Text                </label>            </div>            <button type='button' class='btn btn-default blockpy-toolbar-reset' data-bind=\"visible: !assignment.upload()\">                <span class='glyphicon glyphicon-refresh'></span> Reset            </button>            <!--<button type='button' class='btn btn-default blockpy-toolbar-capture'>                <span class='glyphicon glyphicon-picture'></span> Capture            </button>-->            <button type='button' class='btn btn-default blockpy-toolbar-import' data-bind=\"visible: !assignment.upload()\">                <span class='glyphicon glyphicon-list-alt'></span> Import Datasets            </button>            <!--            <button type='button' class='btn btn-default blockpy-toolbar-english'>                <span class='glyphicon glyphicon-list-alt'></span> English            </button>            -->                        <select data-bind=\"visible: settings.instructor() & !assignment.upload(), value: settings.filename\"                    class=\"blockpy-toolbar-filename-picker\">                <option value='__main__' selected>Student Code</option>                <option value='starting_code'>Starting Code</option>                <option value='give_feedback'>Generate Feedback</option>            </select>                        </div>    </div>    <div class='row blockpy-content-bottom'         style='padding-bottom: 10px; border: 1px solid #faebcc'>        <div class='blockpy-editor col-md-12 col-sm-12'>            <div class='blockpy-blocks blockpy-editor-menu'                  style='height:100%'>                <div class='blockly-div' style='height:450px; width: 100%' '></div>                <!-- <div class='blockly-area'></div> -->            </div>            <div class='blockpy-text blockpy-editor-menu'>                <div class='blockpy-text-sidebar' style='width:150px; height: 100%; float:left; background-color: #ddd'>                <!--                <button type='button' class='btn btn-default blockpy-text-insert-if'>Decision (If)</button>                <button type='button' class='btn btn-default blockpy-text-insert-if-else'>Decision (If/Else)</button>                -->                </div>                <textarea class='codemirror-div language-python'                           style='height:100%'></textarea>            </div>            <div class='blockpy-upload blockpy-editor-menu'>                <label class=\"btn btn-default btn-file\">                    Browse <input type=\"file\" style=\"display: none;\">                </label>            </div>            <div class='blockpy-instructor blockpy-editor-menu form-inline'>                <!-- Name -->                <form class=\"form-inline\" style='display:inline-block'>                <label>Name:</label>                <input type='text' class='blockpy-presentation-name-editor form-control'                       data-bind='textInput: assignment.name'>                 </form>                <br>                <br>                                <label>Introduction:</label>                <div class='blockpy-presentation-body-editor'>                 </div>                                <!-- Parsons -->                <label class='blockpy-presentation-parsons-check'>                Parsons:                <input type='checkbox' class='form-control' data-bind=\"checked:assignment.parsons\">                </label>                 <br>                                <!-- Initial mode -->                <label class='blockpy-presentation-text-first'>                Initial View:                <select data-bind=\"value: assignment.initial_view\">                    <option value=\"Blocks\" selected>Blocks</option>                    <option value=\"Text\">Text</option>                    <option value=\"Instructor\">Instructor</option>                    <option value=\"Upload\">Upload</option>                </select>                </label>                <br>                                <label>Available Modules</lable>                <select class='blockpy-available-modules' multiple='multiple'                        data-bind=\"selectedOptions: assignment.modules\">                    <option>Properties</option>                    <option>Decisions</option>                    <option>Iteration</option>                    <option>Functions</option>                    <option>Calculation</option>                    <option>Output</option>                    <option>Python</option>                    <option>Values</option>                    <option>Lists</option>                    <option>Dictionaries</option>                    <option>Data - Parking</option>                            </div>            <div class='blockpy-upload blockpy-editor-menu'>            </div>        </div>    </div>    <div>        <div class='blockpy-content-right col-md-5 col-sm-5 alert alert-info'>            <div class='panel panel-default'>                <div class='panel-heading'>Data Explorer</div>                <div class='panel-body'>                <div class='blockpy-explorer'>                    <table><tr>                    <!-- Step: X of Y (Line: Z) -->                    <td colspan='4'>                        <div class='blockpy-explorer-run-hide'>                            <i>Run your code to explore it.</i>                        </div>                        <div class='blockpy-explorer-status'>                            <strong>Step: </strong>                            <span class='blockpy-explorer-step-span'>0</span> of                             <span class='blockpy-explorer-length-span'>0</span>                             (<strong>Line: </strong>                            <span class='blockpy-explorer-line-span'>0</span>)                        </div>                    </td>                    </tr><tr>                    <!-- First Previous Next Last -->                    <td style='width:25%'>                        <button type='button' class='btn btn-default blockpy-explorer-first'>                        <span class='glyphicon glyphicon-fast-backward'></span> First</button>                    </td><td style='width:25%'>                        <button type='button' class='btn btn-default blockpy-explorer-back'>                        <span class='glyphicon glyphicon-backward'></span> Back</button>                    </td><td style='width:25%'>                        <button type='button' class='btn btn-default blockpy-explorer-next'>                        Next <span class='glyphicon glyphicon-forward'></span></button>                    </td><td style='width:25%'>                        <button type='button' class='btn btn-default blockpy-explorer-last'>                        Last <span class='glyphicon glyphicon-fast-forward'></span> </button>                    </td>                    </tr></table>                    <!-- Printer -->                                        <!-- Modules -->                    <br><div>                        <strong>Loaded Modules: </strong>                        <i class='blockpy-explorer-modules'>None</i>                    </div>                    <!-- Actual Trace data -->                    <br><strong>Trace Table</strong>                    <br><table style='width: 100%'                            class='table table-condensed table-striped                                    table-bordered table-hover blockpy-explorer-table'>                        <!-- Property Type Value -->                        <tr>                            <th>Property</th>                            <th>Type</th>                            <th>Value</th>                        </tr>                    </table>                </div>                </div>            </div>        </div>    </div></div><!--<div class='blockpy-explorer-errors alert alert-danger alert-dismissible' role='alert'>                     <button type='button' class='blockpy-explorer-errors-hide close' aria-label='Close'><span  aria-hidden='true'>&times;</span></button>                     <div class='blockpy-explorer-errors-body'>                                     </div>-->";
+BlockPyInterface = "<div class='blockpy-content container-fluid' style='background-color :#fcf8e3; border: 1px solid #faebcc; '>    <div class='blockpy-popup modal fade' style='display:none'>        <div class='modal-dialog' style='width:750px'>            <div class='modal-content' id='modal-message' >                <div class='modal-header'>                    <button type='button' class='close' data-dismiss='modal' aria-hidden='true'>&times;</button>                    <h4 class='modal-title'>Dynamic Content</h4>                </div>                <div class='modal-body' style='width:100%; height:400px; white-space:pre-wrap'>                </div>                <div class='modal-footer'>                    <button type='button' class='btn btn-white' data-dismiss='modal'>Close</button>                </div>                </div>        </div>    </div>    <canvas id='capture-canvas' style='display:none'></canvas>    <div class='row' style='padding-bottom: 10px; border-bottom: 1px solid #faebcc; '>        <div class='blockpy-content-top col-md-9 col-sm-9'>            <span class='blockpy-alert pull-right text-muted' data-bind=\"visible: false, text: status.text\"></span>            <strong>BlockPy: </strong>             <span class='blockpy-presentation-name'                  data-bind='text: assignment.name'></span>            <div class='blockpy-presentation' data-bind=\"html: assignment.introduction\">            </div>        </div>        <div class='blockpy-content-topright col-md-3 col-sm-3'>            <span class='pull-right label label-default'                  data-bind=\"css: status_server_class()[0],                             text: status_server_class()[1]\">Loading</span>            <div class='pull-right'>                Disable Semantic Errors: <input type='checkbox' data-bind=\"checked: settings.disable_semantic_errors\">                <label class='blockpy-toolbar-auto-upload' data-bind=\"visible: settings.instructor\">                Auto-save:                <input type='checkbox' data-bind=\"checked:settings.auto_upload\">                </label>                                 <label class='blockpy-toolbar-instructor-mode' data-bind=\"visible: settings.instructor_initial\">                Instructor mode:                 <input type='checkbox' data-bind=\"checked:settings.instructor\">                </label>                                <label class='blockpy-toolbar-instructor-mode' data-bind=\"visible: settings.instructor_initial\">                Upload mode:                 <input type='checkbox' data-bind=\"checked:assignment.upload\">                </label>             </div>            <!--<img src=\"images/corgi.png\" class='img-responsive' />-->        </div>    </div>    <div class='row' style='margin-top: 5px border: 1px solid #bce8f1;'>        <div class='blockpy-content-left col-md-6 col-sm-6'             style='padding:10px'>            <strong>Printer</strong>            <div class='blockpy-printer blockpy-printer-default'>            </div>        </div>        <div class='blockpy-content-right col-md-6 col-sm-6 bubble'             style='padding:10px'>            <div class='blockpy-feedback'>                <button type='button' class='btn btn-sm btn-default blockpy-feedback-trace pull-right'                         data-bind=\"visible: !execution.show_trace() && (status.error() == 'feedback' || status.error() == 'no errors')\">                    <span class='glyphicon glyphicon-circle-arrow-down'></span> Trace Variables                </button>                                <strong>Feedback: </strong>                <span class='label blockpy-feedback-status' data-bind=\"css: status_feedback_class()[0], text: status_feedback_class()[1]\">Runtime Error</span>                <br>                <pre class='blockpy-feedback-original'></pre>                <strong class='blockpy-feedback-title'></strong>                <div class='blockpy-feedback-body'><i>Run your code to get feedback.</i></div>                <div class='blockpy-code-trace'></div>                                <!-- ko if: execution.trace().length < 200 -->                <div class=\"blockpy-feedback-traces\"                      data-bind=\"visible: execution.show_trace, foreach: execution.trace\">                                <div data-bind=\"visible: $index()+1 == $root.execution.trace_step()\">                <div>                    <button type='button' class='btn btn-default' data-bind=\"click: $root.moveTraceFirst\">                        <span class='glyphicon glyphicon-step-backward'></span>                    </button>                    <button type='button' class='btn btn-default' data-bind=\"click: $root.moveTraceBackward\">                        <span class='glyphicon glyphicon-backward'></span>                    </button>                    Step <span data-bind='text: step'></span>                    / <span data-bind='text: $root.execution.last_step()-1'></span>                    (<span data-bind='text: line == -1 ? \"The end\" : \"Line \"+line'></span>)                    <button type='button' class='btn btn-default' data-bind=\"click: $root.moveTraceForward\">                        <span class='glyphicon glyphicon-forward'></span>                    </button>                    <button type='button' class='btn btn-default' data-bind=\"click: $root.moveTraceLast\">                        <span class='glyphicon glyphicon-step-forward'></span>                    </button>                </div>                                <table class='table table-condensed table-striped table-bordered table-hover'>                    <thead>                        <tr><th>Name</th><th>Type</th><th>Value</th></tr>                    </thead>                    <tbody data-bind=\"foreach: properties\">                        <tr data-bind=\"visible: name != '__file__' && name != '__path__'\">                            <td data-bind=\"text: name\"></td>                            <td data-bind=\"text: type\"></td>                            <td><code data-bind=\"text: value\"></code></td>                        </tr>                    </tbody>                </table>                </div>                                </div>                <!-- /ko -->                <!-- ko if: execution.trace().length >= 200 -->                <div class=\"blockpy-feedback-traces\" data-bind=\"visible: execution.show_trace\">                <hr>                Your program ran for <span data-bind='text: execution.trace().length'></span> steps. That's too many for me to show!                </div>                <!-- /ko -->                            </div>        </div>    </div>    <div class=\"row\"         style='background-color :#fcf8e3; padding-bottom: 10px; border: 1px solid #faebcc'>        <div class='col-md-12 col-sm-12 blockpy-toolbar btn-toolbar' role='toolbar'>                        <button type='button' class='btn blockpy-run' style='float:left',                data-bind='css: execution.status() == \"running\" ? \"btn-info\" :                                execution.status() == \"error\" ? \"btn-danger\" : \"btn-success\" ' >                <span class='glyphicon glyphicon-play'></span> Run            </button>                        <div class=\"btn-group\" data-toggle=\"buttons\" data-bind=\"visible: !assignment.upload()\">                <label class=\"btn btn-default blockpy-mode-set-blocks\"                        data-bind=\"css: {active: settings.editor() == 'Blocks'}\">                    <span class='glyphicon glyphicon-th-large'></span>                    <input type=\"radio\" name=\"blockpy-mode-set\" autocomplete=\"off\" checked> Blocks                </label>                <label class=\"btn btn-default blockpy-mode-set-instructor\"                       data-bind=\"visible: settings.instructor,                                  css: {active: settings.editor() == 'Upload'}\">                    <span class='glyphicon glyphicon-list-alt'></span>                    <input type=\"radio\" name=\"blockpy-mode-set\" autocomplete=\"off\"> Instructor                </label>                <label class=\"btn btn-default blockpy-mode-set-text\"                        data-bind=\"css: {active: settings.editor() == 'Text'}\">                    <span class='glyphicon glyphicon-pencil'></span>                    <input type=\"radio\" name=\"blockpy-mode-set\" autocomplete=\"off\"> Text                </label>            </div>            <button type='button' class='btn btn-default blockpy-toolbar-reset' data-bind=\"visible: !assignment.upload()\">                <span class='glyphicon glyphicon-refresh'></span> Reset            </button>            <!--<button type='button' class='btn btn-default blockpy-toolbar-capture'>                <span class='glyphicon glyphicon-picture'></span> Capture            </button>-->            <button type='button' class='btn btn-default blockpy-toolbar-import' data-bind=\"visible: !assignment.upload() && (assignment.importable() || settings.instructor())\">                <span class='glyphicon glyphicon-list-alt'></span> Import Datasets            </button>            <!--            <button type='button' class='btn btn-default blockpy-toolbar-english'>                <span class='glyphicon glyphicon-list-alt'></span> English            </button>            -->                        <select data-bind=\"visible: settings.instructor() & !assignment.upload(), value: settings.filename\"                    class=\"blockpy-toolbar-filename-picker\">                <option value='__main__' selected>Student Code</option>                <option value='starting_code'>Starting Code</option>                <option value='give_feedback'>Generate Feedback</option>            </select>                        </div>    </div>    <div class='row blockpy-content-bottom'         style='padding-bottom: 10px; border: 1px solid #faebcc'>        <div class='blockpy-editor col-md-12 col-sm-12'>            <div class='blockpy-blocks blockpy-editor-menu'                  style='height:100%'>                <div class='blockly-div' style='height:450px; width: 100%' '></div>                <!-- <div class='blockly-area'></div> -->            </div>            <div class='blockpy-text blockpy-editor-menu'>                <div class='blockpy-text-sidebar' style='width:150px; height: 100%; float:left; background-color: #ddd'>                <!--                <button type='button' class='btn btn-default blockpy-text-insert-if'>Decision (If)</button>                <button type='button' class='btn btn-default blockpy-text-insert-if-else'>Decision (If/Else)</button>                -->                </div>                <textarea class='codemirror-div language-python'                           style='height:100%'></textarea>            </div>            <div class='blockpy-upload blockpy-editor-menu'>                <label class=\"btn btn-default btn-file\">                    Browse <input type=\"file\" style=\"display: none;\">                </label>            </div>            <div class='blockpy-instructor blockpy-editor-menu form-inline'>                <!-- Name -->                <form class=\"form-inline\" style='display:inline-block'>                <label>Name:</label>                <input type='text' class='blockpy-presentation-name-editor form-control'                       data-bind='textInput: assignment.name'>                 </form>                <br>                <br>                                <label>Introduction:</label>                <div class='blockpy-presentation-body-editor'>                 </div>                                <!-- Parsons -->                <label class='blockpy-presentation-parsons-check'>                Parsons:                <input type='checkbox' class='form-control' data-bind=\"checked:assignment.parsons\">                </label>                 <br>                                <!-- Parsons -->                <label class='blockpy-presentation-importable-check'>                Able to import datasets:                <input type='checkbox' class='form-control' data-bind=\"checked:assignment.importable\">                </label>                 <br>                                <!-- Initial mode -->                <label class='blockpy-presentation-text-first'>                Initial View:                <select data-bind=\"value: assignment.initial_view\">                    <option value=\"Blocks\" selected>Blocks</option>                    <option value=\"Text\">Text</option>                    <option value=\"Instructor\">Instructor</option>                    <option value=\"Upload\">Upload</option>                </select>                </label>                <br>                                <label>Available Modules</lable>                <select class='blockpy-available-modules' multiple='multiple'                        data-bind=\"selectedOptions: assignment.modules\">                    <option>Properties</option>                    <option>Decisions</option>                    <option>Iteration</option>                    <option>Functions</option>                    <option>Calculation</option>                    <option>Output</option>                    <option>Python</option>                    <option>Values</option>                    <option>Lists</option>                    <option>Dictionaries</option>                    <option>Data - Parking</option>                            </div>            <div class='blockpy-upload blockpy-editor-menu'>            </div>        </div>    </div>    <div>        <div class='blockpy-content-right col-md-5 col-sm-5 alert alert-info'>            <div class='panel panel-default'>                <div class='panel-heading'>Data Explorer</div>                <div class='panel-body'>                <div class='blockpy-explorer'>                    <table><tr>                    <!-- Step: X of Y (Line: Z) -->                    <td colspan='4'>                        <div class='blockpy-explorer-run-hide'>                            <i>Run your code to explore it.</i>                        </div>                        <div class='blockpy-explorer-status'>                            <strong>Step: </strong>                            <span class='blockpy-explorer-step-span'>0</span> of                             <span class='blockpy-explorer-length-span'>0</span>                             (<strong>Line: </strong>                            <span class='blockpy-explorer-line-span'>0</span>)                        </div>                    </td>                    </tr><tr>                    <!-- First Previous Next Last -->                    <td style='width:25%'>                        <button type='button' class='btn btn-default blockpy-explorer-first'>                        <span class='glyphicon glyphicon-fast-backward'></span> First</button>                    </td><td style='width:25%'>                        <button type='button' class='btn btn-default blockpy-explorer-back'>                        <span class='glyphicon glyphicon-backward'></span> Back</button>                    </td><td style='width:25%'>                        <button type='button' class='btn btn-default blockpy-explorer-next'>                        Next <span class='glyphicon glyphicon-forward'></span></button>                    </td><td style='width:25%'>                        <button type='button' class='btn btn-default blockpy-explorer-last'>                        Last <span class='glyphicon glyphicon-fast-forward'></span> </button>                    </td>                    </tr></table>                    <!-- Printer -->                                        <!-- Modules -->                    <br><div>                        <strong>Loaded Modules: </strong>                        <i class='blockpy-explorer-modules'>None</i>                    </div>                    <!-- Actual Trace data -->                    <br><strong>Trace Table</strong>                    <br><table style='width: 100%'                            class='table table-condensed table-striped                                    table-bordered table-hover blockpy-explorer-table'>                        <!-- Property Type Value -->                        <tr>                            <th>Property</th>                            <th>Type</th>                            <th>Value</th>                        </tr>                    </table>                </div>                </div>            </div>        </div>    </div></div><!--<div class='blockpy-explorer-errors alert alert-danger alert-dismissible' role='alert'>                     <button type='button' class='blockpy-explorer-errors-hide close' aria-label='Close'><span  aria-hidden='true'>&times;</span></button>                     <div class='blockpy-explorer-errors-body'>                                     </div>-->";
 
 function BlockPyServer(main) {
     this.main = main;
@@ -2804,6 +2805,7 @@ BlockPyServer.prototype.createSubscriptions = function() {
     model.assignment.name.subscribe(function() { server.saveAssignment();});
     model.assignment.introduction.subscribe(function() { server.saveAssignment(); });
     model.assignment.parsons.subscribe(function() { server.saveAssignment(); });
+    model.assignment.importable.subscribe(function() { server.saveAssignment(); });
     model.assignment.initial_view.subscribe(function() { server.saveAssignment(); });
     model.assignment.modules.subscribe(function() { server.saveAssignment(); });
     model.settings.editor.subscribe(function(newValue) { server.logEvent('editor', newValue); });
@@ -2839,10 +2841,15 @@ BlockPyServer.prototype.defaultFailure = function() {
     this.setStatus('Disconnected');
 }
 
-BlockPyServer.prototype.logEvent = function(event_name, action) {
+BlockPyServer.prototype.logEvent = function(event_name, action, body) {
     var data = this.createServerData();
     data['event'] = event_name;
     data['action'] = action;
+    if (body === undefined) {
+        data['body'] = '';
+    } else {
+        data['body'] = body;
+    }
     
     this.setStatus('Logging');
     if (this.main.model.server_is_connected('log_event')) {
@@ -2880,6 +2887,7 @@ BlockPyServer.prototype.saveAssignment = function() {
     data['introduction'] = model.assignment.introduction();
     data['parsons'] = model.assignment.parsons();
     data['initial'] = model.assignment.initial_view();
+    data['importable'] = model.assignment.importable();
     data['name'] = model.assignment.name();
     //data['disabled'] = disabled;
     data['modules'] = model.assignment.modules().join(','); // TODO: hackish, broken if ',' is in name
@@ -3912,8 +3920,9 @@ BlockPyCorgis.prototype.openDialog = function(name) {
                     });
                 }
                 $("<tr></tr>")
-                    .append($("<td>"+title_name+"</td>"))
-                    .append($("<td></td>").append(btn))
+                    .append($("<td class='col-md-4'>"+title_name+"</td>"))
+                    .append($("<td>"+datasets[title_name]['short']+"</td>"))
+                    .append($("<td class='col-md-2'></td>").append(btn))
                     .appendTo(body);
             });
             var editor = corgis.main.components.editor;
@@ -3922,33 +3931,6 @@ BlockPyCorgis.prototype.openDialog = function(name) {
                     editor.updateBlocks();
                 }
             });
-        });
-    } else {
-        var datasets = {"Classics": "", "Weather": "", "Global Development": "", "Tate": ""};
-        var body = $('<table></table>', {'class': 'table-bordered table-condensed table-striped'});
-        var loadedDatasets = this.loadedDatasets;
-        Object.keys(datasets).map(function(name) {
-            var title_name = name;
-            name = name.replace(/\s/g, '_').toLowerCase();
-            var btn = $('<button type="button" class="btn btn-primary" data-toggle="button" aria-pressed="false" autocomplete="off">Load</button>');
-            if (loadedDatasets.indexOf(name) > -1) {
-                set_button_loaded(btn);
-            } else {
-                btn.click(function() {
-                    corgis.importDataset(name.toLowerCase(), title_name);
-                    set_button_loaded(btn);
-                });
-            }
-            $("<tr></tr>")
-                .append($("<td>"+title_name+"</td>"))
-                .append($("<td></td>").append(btn))
-                .appendTo(body);
-        });
-        var editor = this.main.components.editor;
-        this.main.components.dialog.show("Import Datasets", body, function() {
-            if (editor.main.model.settings.editor() == "Blocks") {
-                editor.updateBlocks();
-            }
         });
     }
 };
@@ -3995,6 +3977,7 @@ BlockPyFeedback.prototype.buildTraceTable = function() {
     var execution = this.main.model.execution;
     execution.show_trace(true);
     execution.trace_step(execution.last_step());
+    main.components.server.logEvent('editor', 'trace')
 }
 
 BlockPyFeedback.prototype.error = function(html) {
@@ -4022,6 +4005,7 @@ BlockPyFeedback.prototype.clearEditorErrors = function() {
 BlockPyFeedback.prototype.success = function() {
     this.tag.html("<span class='label label-success'><span class='glyphicon glyphicon-ok'></span> Success!</span>");
     this.tag.removeClass("alert-warning");
+    this.main.components.server.logEvent('feedback', "Success");
 }
 
 BlockPyFeedback.prototype.editorError = function(original, message, line) {
@@ -4032,6 +4016,7 @@ BlockPyFeedback.prototype.editorError = function(original, message, line) {
     this.main.model.status.error("editor");
     this.main.components.editor.highlightError(line-1);
     this.main.components.printer.print("Editor error - could not make blocks!");
+    this.main.components.server.logEvent('feedback', "Editor Error", original+"\n|\n"+message);
 }
 
 BlockPyFeedback.prototype.complete = function() {
@@ -4040,6 +4025,7 @@ BlockPyFeedback.prototype.complete = function() {
     this.body.html("Great work!");
     this.main.model.status.error("complete");
     this.main.components.editor.unhighlightLines();
+    this.main.components.server.logEvent('feedback', "Success");
 }
 
 BlockPyFeedback.prototype.noErrors = function() {
@@ -4048,6 +4034,7 @@ BlockPyFeedback.prototype.noErrors = function() {
     this.body.html("No errors reported. View your output on the left.");
     this.main.model.status.error("no errors");
     this.main.components.editor.unhighlightLines();
+    this.main.components.server.logEvent('feedback', "No Errors", '');
 }
 
 BlockPyFeedback.prototype.syntaxError = function(original, message, line) {
@@ -4058,6 +4045,7 @@ BlockPyFeedback.prototype.syntaxError = function(original, message, line) {
     this.main.model.status.error("syntax");
     this.main.components.editor.highlightError(line-1);
     this.main.components.printer.print("Execution stopped - there was an error!");
+    this.main.components.server.logEvent('feedback', "Syntax Error", original+"\n|\n"+message);
 }
 
 BlockPyFeedback.prototype.semanticError = function(name, message, line) {
@@ -4069,6 +4057,7 @@ BlockPyFeedback.prototype.semanticError = function(name, message, line) {
         this.main.components.editor.highlightError(line-1);
     }
     this.main.components.printer.print("Execution stopped - there was an error!");
+    this.main.components.server.logEvent('feedback', "Semantic Error", name+"\n|\n"+message);
 }
 
 BlockPyFeedback.prototype.internalError = function(original, name, message) {
@@ -4078,6 +4067,7 @@ BlockPyFeedback.prototype.internalError = function(original, name, message) {
     this.body.html(message);
     this.main.model.status.error("internal");
     this.main.components.printer.print("Internal error! Please show this to an instructor!");
+    this.main.components.server.logEvent('feedback', "Internal Error", name+"\n|\n"+original+"\n|\n"+message);
 }
 
 BlockPyFeedback.prototype.instructorFeedback = function(name, message, line) {
@@ -4088,6 +4078,7 @@ BlockPyFeedback.prototype.instructorFeedback = function(name, message, line) {
     if (line !== undefined) {
         this.main.components.editor.highlightError(line-1);
     }
+    this.main.components.server.logEvent('feedback', "Instructor Feedback", name+"\n|\n"+original+"\n|\n"+message);
 }
 
 BlockPyFeedback.prototype.emptyProgram = function() {
@@ -4095,6 +4086,7 @@ BlockPyFeedback.prototype.emptyProgram = function() {
     this.original.hide().html("");
     this.body.html("You have not written any code yet.");
     this.main.model.status.error("runtime");
+    this.main.components.server.logEvent('feedback', "Empty Program");
 }
 
 BlockPyFeedback.prototype.prettyPrintError = function(error) {
@@ -4135,48 +4127,7 @@ BlockPyFeedback.prototype.printError = function(error) {
     }
     this.main.model.status.error("runtime");
     this.main.components.editor.highlightError(error.traceback[0].lineno-1);
-    return;
-    // Is it a string?
-    if (typeof error !== "string") {
-        // A weird skulpt thing?
-        if (error.tp$str !== undefined) {
-            try {
-                this.editor.highlightError(error.traceback[0].lineno-1);
-            } catch (e) {
-            }
-            
-            var all_blocks = Blockly.mainWorkspace.getAllBlocks();
-            blockMap = {};
-            all_blocks.forEach(function(elem) {
-                if (elem.lineNumber in blockMap) {
-                    blockMap[elem.lineNumber].push(elem);
-                } else {
-                    blockMap[elem.lineNumber] = [elem];
-                }
-            });
-            var hblocks = blockMap[""+error.traceback[0].lineno];
-            Blockly.mainWorkspace.highlightBlock(hblocks[0].id);
-            //hblocks[0].addSelect();
-            
-            if (error.constructor == Sk.builtin.NameError
-                && error.args.v.length > 0
-                && error.args.v[0].v == "name '___' is not defined") {
-                error = "<b>Error: </b> You have incomplete blocks. Make sure that you do not have any dangling blocks.<br><br><b>Extended Error Explanation:</b> If you look at the text view of your Python code, you'll see <code>___</code> in the code. The converter will create these <code>___</code> to show that you have a block that's missing a piece.";
-            }  else if (error.tp$name == "ParseError") {
-                
-            } else if (error.tp$name in EXTENDED_ERROR_EXPLANATION) {
-                error = "<b>Error: </b>"+error.tp$str().v + "<br><br>"+EXTENDED_ERROR_EXPLANATION[error.tp$name];
-            } else {
-                error = error.tp$str().v;
-            }
-        } else {
-            // An error?
-            error = ""+error.name + ": " + error.message;
-            printer.log("Unknown Error"+error.stack);
-        }
-    }
-    // Perform any necessary cleaning
-    this.explorer.tags.errors_body.html(error);
+    this.main.components.server.logEvent('feedback', "Runtime", original);
 }
 
 
@@ -4264,25 +4215,32 @@ BlockPyToolbar.prototype.activateToolbar = function() {
     var elements = this.elements;
     this.tag.find('.blockpy-run').click(function() {
         main.components.engine.run();
+        main.components.server.logEvent('editor', 'run')
     });
     this.tags.mode_set_text.click(function() {
         main.model.settings.editor("Text");
+        main.components.server.logEvent('editor', 'text')
     });
     this.tag.find('.blockpy-toolbar-reset').click(function() {
         main.model.programs['__main__'](main.model.programs['starting_code']());
         main.components.editor.updateBlocks();
+        main.components.server.logEvent('editor', 'reset');
     });
     this.tag.find('.blockpy-mode-set-blocks').click(function() {
         main.model.settings.editor("Blocks");
+        main.components.server.logEvent('editor', 'blocks')
     });
     this.tag.find('.blockpy-mode-set-instructor').click(function() {
         main.model.settings.editor("Instructor");
+        main.components.server.logEvent('editor', 'instructor')
     });
     this.tag.find('.blockpy-toolbar-import').click(function() {
         main.components.corgis.openDialog();
+        main.components.server.logEvent('editor', 'import')
     });
     this.tag.find('.blockpy-toolbar-english').click(function() {
         main.components.english.openDialog();
+        main.components.server.logEvent('editor', 'english')
     });
 }
 /**
@@ -4321,6 +4279,9 @@ BlockPyEngine.prototype.loadEngine = function() {
     Sk.console = printer.getConfiguration();
     // Stepper!
     Sk.afterSingleExecution = this.step.bind(this);
+    
+    //
+    this.executionBuffer = {};
 }
 
 BlockPyEngine.prototype.loadCode = function(code) {
@@ -4336,6 +4297,12 @@ BlockPyEngine.prototype.readFile = function(filename) {
 }
 
 BlockPyEngine.prototype.reset = function() {
+    this.executionBuffer = {
+        'trace': [],
+        'step': 0,
+        'last_step': 0,
+        'line_number': 0,
+    };
     this.main.model.execution.trace.removeAll();
     this.main.model.execution.step(0);
     this.main.model.execution.last_step(0);
@@ -4347,9 +4314,9 @@ BlockPyEngine.prototype.reset = function() {
 BlockPyEngine.prototype.step = function(variables, lineNumber, 
                                        columnNumber, filename, astType, ast) {
     if (filename == '<stdin>.py') {
-        var currentStep = this.main.model.execution.step();
+        var currentStep = this.executionBuffer.step;
         var globals = this.parseGlobals(variables);
-        this.main.model.execution.trace.push(
+        this.executionBuffer.trace.push(
             {'step': currentStep,
              'filename': filename,
              //'block': highlightMap[lineNumber-1],
@@ -4357,10 +4324,19 @@ BlockPyEngine.prototype.step = function(variables, lineNumber,
              'column': columnNumber,
              'properties': globals.properties,
              'modules': globals.modules});
-        this.main.model.execution.step(currentStep+1)
-        this.main.model.execution.last_step(currentStep+1);
-        this.main.model.execution.line_number(lineNumber)
+        this.executionBuffer.step = currentStep+1;
+        this.executionBuffer.last_step = currentStep+1;
+        this.executionBuffer.line_number = lineNumber;
     }
+}
+
+BlockPyEngine.prototype.lastStep = function() {
+    var execution = this.main.model.execution;
+    execution.trace(this.executionBuffer.trace);
+    this.main.model.execution.step(this.executionBuffer.step)
+    this.main.model.execution.last_step(this.executionBuffer.last_step)
+    this.main.model.execution.line_number(this.executionBuffer.line_number)
+    this.executionBuffer = undefined;
 }
 
 /*
@@ -4483,6 +4459,7 @@ BlockPyEngine.prototype.run = function() {
         function (module) {
             // Run the afterSingleExecution one extra time for final state
             Sk.afterSingleExecution(module.$d, -1, 0, "<stdin>.py");
+            engine.lastStep();
             // Handle checks
             feedback.noErrors()
             engine.check(code, execution.trace(), execution.output(), execution.ast, module.$d);
@@ -4923,6 +4900,7 @@ function BlockPy(settings, assignment, submission, programs) {
             "initial_view": ko.observable(assignment.initial_view || 'Blocks'),
             'parsons': ko.observable(assignment.parsons),
             'upload': ko.observable(assignment.initial_view == 'Upload'),
+            'importable': ko.observable(assignment.importable),
         },
         "programs": {
             "__main__": ko.observable(programs.__main__),
@@ -4976,6 +4954,12 @@ function BlockPy(settings, assignment, submission, programs) {
         execution.trace_step(next); };
     this.model.moveTraceLast = function(index) { 
         execution.trace_step(execution.last_step()); };
+    
+    // For performance reasons, batch notifications for execution handling.
+    execution.trace.extend({ rateLimit: { timeout: 20, method: "notifyWhenChangesStop" } });
+    execution.step.extend({ rateLimit: { timeout: 20, method: "notifyWhenChangesStop" } });
+    execution.last_step.extend({ rateLimit: { timeout: 20, method: "notifyWhenChangesStop" } });
+    execution.line_number.extend({ rateLimit: { timeout: 20, method: "notifyWhenChangesStop" } });
     
     this.initMain();
 }

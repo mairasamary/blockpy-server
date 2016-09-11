@@ -288,7 +288,7 @@ class Log(Base):
     user_id = Column(Integer(), ForeignKey('user.id'))
     
     @staticmethod    
-    def new(event, action, assignment_id, user_id):
+    def new(event, action, assignment_id, user_id, body=''):
         # Database logging
         log = Log(event=event, action=action, assignment_id=assignment_id, user_id=user_id)
         db.session.add(log)
@@ -296,7 +296,7 @@ class Log(Base):
         # Single-file logging
         student_interactions_logger = logging.getLogger('StudentInteractions')
         student_interactions_logger.info(
-            StructuredEvent(user_id, assignment_id, event, action, '')
+            StructuredEvent(user_id, assignment_id, event, action, body)
         )
         return log
     

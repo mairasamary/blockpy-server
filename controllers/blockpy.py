@@ -90,9 +90,10 @@ def save_events(lti=lti):
     assignment_id = request.form.get('assignment_id', None)
     event = request.form.get('event', "blank")
     action = request.form.get('action', "missing")
+    body = request.form.get('body', "")
     if assignment_id is None:
         return jsonify(success=False, message="No Assignment ID given!")
-    log = Log.new(event, action, assignment_id, g.user.id)
+    log = Log.new(event, action, assignment_id, g.user.id, body=body)
     return jsonify(success=True)
     
 @blueprint_blockpy.route('/save_correct/', methods=['GET', 'POST'])
