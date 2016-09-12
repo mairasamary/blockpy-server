@@ -497,7 +497,7 @@ class Assignment(Base):
     url = Column(String(255), default="")
     name = Column(String(255), default="Untitled")
     body = Column(Text(), default="")
-    give_feedback = Column(Text(), default="def on_run(code, output, properties):\n    return True")
+    give_feedback = Column(Text(), default="")
     on_step = Column(Text(), default="")
     starting_code = Column(Text(), default="")
     answer = Column(Text(), default="")
@@ -554,7 +554,7 @@ class Assignment(Base):
     def edit(assignment_id, presentation=None, name=None, 
              give_feedback=None, on_step=None, starting_code=None, 
              parsons=None, text_first=None,
-             modules=None):
+             modules=None, importable=False):
         assignment = Assignment.by_id(assignment_id)
         if name is not None:
             assignment.name = name
@@ -577,7 +577,10 @@ class Assignment(Base):
             settings = json.loads(assignment.settings)
             if 'modules' not in settings:
                 settings['modules'] = {'added': [], 'removed': []}
+            if 'importable' not in settings:
+                settings['importable'] = False
             kept_modules = modules.split(",")
+            settings['importable'] = importable
             settings['modules']['added'] = [m for m in kept_modules 
                                             if m not in Assignment.BUILTIN_MODULES]
             settings['modules']['removed'] = [m for m in Assignment.BUILTIN_MODULES 

@@ -55,6 +55,7 @@ Assignment
                 'give_feedback': '',
                 'starting_code': 'x = 0',
                 'initial_view': 'Blocks',
+                "importable": true,
                 'modules': {}
             },
             // submission
@@ -108,6 +109,7 @@ $(document).ready(function() {
                 'parsons': {{ 'true' if assignment.type == 'parsons' else 'false' }}, 
                 'starting_code': {{ assignment.starting_code|tojson }},
                 {% set settings = assignment.settings|json_load %}
+                'importable': {{ "true" if settings.importable else "false" }},
                 'modules': {
                     'added': {{ settings.modules.added|tojson if settings.modules else "[]" }},
                     'removed': {{ settings.modules.removed|tojson if settings.modules else "[]"}},

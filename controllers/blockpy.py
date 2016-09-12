@@ -187,6 +187,7 @@ def save_presentation(lti=lti):
         return jsonify(success=False, message="No Assignment ID given!")
     presentation = request.form.get('introduction', "")
     parsons = request.form.get('parsons', "false") == "true"
+    importable = request.form.get('importable', "false") == "true"
     text_first = request.form.get('text_first', "false") == "true"
     name = request.form.get('name', "")
     modules = request.form.get('modules', "")
@@ -194,7 +195,7 @@ def save_presentation(lti=lti):
         return jsonify(success=False, message="You are not an instructor in this course.")
     if not Assignment.is_in_course(int(assignment_id), int(course_id)):
         return jsonify(success=False, message="That assignment group does not belong to that course.")
-    Assignment.edit(assignment_id=assignment_id, presentation=presentation, name=name, parsons=parsons, text_first=text_first, modules=modules)
+    Assignment.edit(assignment_id=assignment_id, presentation=presentation, name=name, parsons=parsons, text_first=text_first, modules=modules, importable=importable)
     return jsonify(success=True)
 
 @blueprint_blockpy.route('/load_corgis/<path:path>', methods=['GET', 'POST'])
