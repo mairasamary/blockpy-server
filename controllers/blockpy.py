@@ -44,7 +44,10 @@ def load(lti=None, assignments=None, submissions=None, embed=False):
     if assignments is None or submissions is None:
         assignments, submissions = get_assignments_from_request()
     if assignments:
-        course_id = assignments[0].course_id
+        if submissions:
+            course_id = submissions[0].course_id
+        else:
+            course_id = assignments[0].course_id
         instructor_mode = g.user.is_instructor(course_id)
         if 'course_id' in request.form:
             course_id = int(request.form.get('course_id'))

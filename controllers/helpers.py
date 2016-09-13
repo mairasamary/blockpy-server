@@ -144,6 +144,8 @@ def get_assignments_from_request():
     assignment_group_id = request.args.get('assignment_group_id', None)
     if 'course_id' in request.args:
         course_id = int(request.args.get('course_id'))
+    if 'course_id' in request.form:
+        course_id = int(request.form.get('course_id'))
     if 'user' in g and g.user != None:
         user_id = g.user.id
     else:
