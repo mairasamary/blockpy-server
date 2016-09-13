@@ -205,8 +205,8 @@ AbstractInterpreter.prototype = new NodeVisitor();
 AbstractInterpreter.prototype.BUILTINS = {'print': {"type": 'None'}, 
                                 'sum': {"type": "Num"},
                                 'round': {"type": "Num"},
-                                'range': {"type": "List"},
-                                'xrange': {"type": "List"},
+                                'range': {"type": "List", "subtype": "Num"},
+                                'xrange': {"type": "List", "subtype": "Num"},
                                 'reversed': {"type": "List"},
                                 'len': {"type": "Num"},
                                 'True': {"type": "Bool"}, 
@@ -461,7 +461,7 @@ AbstractInterpreter.prototype.testTypeEquality = function(left, right) {
         if (left.empty || right.empty) {
             return true;
         } else {
-            return left.subtypes == right.subtypes;
+            return this.testTypeEquality(left.subtype, right.subtype);
         }
     } else {
         return left.type == right.type;
@@ -530,7 +530,7 @@ AbstractInterpreter.prototype.typecheck = function(value) {
             if (value.elts.length == 0) {
                 return {"type": "List", "empty": true};
             } else {
-                return {"type": "List", "empty": false, "subtypes": this.typecheck(value.elts[0])};
+                return {"type": "List", "empty": false, "subtype": this.typecheck(value.elts[0])};
             }
         case "Call":
             var funcType = this.walkAttributeChain(value.func);

@@ -1,12 +1,13 @@
-Screen is overflowed by datasets in Import Datasets
-Sampling
-Make sure that we are logging everything
-
 "Number of <Abstraction Row>"
 Better "Still loading" screen for Visualizer
 Reset title if changing graph
 
 Better explanations of when it's time on the x-axis?
+
+* Scatter Plot Sampling
+* Right side number clipping
+* Check CW4 numbers
+* Fix the semantic checker for dataset access functions
 
 
 Low
