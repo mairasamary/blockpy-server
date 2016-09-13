@@ -182,9 +182,6 @@ def get_submission_image(lti=lti):
 @blueprint_blockpy.route('/save_presentation/', methods=['GET', 'POST'])
 @blueprint_blockpy.route('/save_presentation', methods=['GET', 'POST'])
 def save_presentation(lti=lti):
-    course_id = request.form.get('course_id', None)
-    if course_id is None:
-        return jsonify(success=False, message="No course id")
     assignment_id = request.form.get('assignment_id', None)
     if assignment_id is None:
         return jsonify(success=False, message="No Assignment ID given!")
@@ -194,10 +191,9 @@ def save_presentation(lti=lti):
     text_first = request.form.get('text_first', "false") == "true"
     name = request.form.get('name', "")
     modules = request.form.get('modules', "")
-    if not g.user.is_instructor(int(course_id)):
-        return jsonify(success=False, message="You are not an instructor in this course.")
-    if not Assignment.is_in_course(int(assignment_id), int(course_id)):
-        return jsonify(success=False, message="That assignment group does not belong to that course.")
+    assignment = Assignment.by_id(int(assignment_id))
+    if not g.user.is_instructor(int(assignment.course_id)):
+        return jsonify(success=False, message="You are not an instructor in this assignments' course.")
     Assignment.edit(assignment_id=assignment_id, presentation=presentation, name=name, parsons=parsons, text_first=text_first, modules=modules, importable=importable)
     return jsonify(success=True)
 
