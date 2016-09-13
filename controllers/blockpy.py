@@ -46,12 +46,12 @@ def load(lti=None, assignments=None, submissions=None, embed=False):
     if assignments:
         course_id = assignments[0].course_id
         instructor_mode = g.user.is_instructor(course_id)
-        if 'course_id' in request.values:
-            course_id = int(request.values.get('course_id'))
+        if 'course_id' in request.form:
+            course_id = int(request.form.get('course_id'))
     else:
         instructor_mode = False
-        if 'course_id' in request.values:
-            course_id = int(request.values.get('course_id'))
+        if 'course_id' in request.form:
+            course_id = int(request.form.get('course_id'))
         else:
             course_id = None
     return render_template('blockpy/blockpy.html',
@@ -67,7 +67,7 @@ def load(lti=None, assignments=None, submissions=None, embed=False):
 def save_code(lti=lti):
     assignment_id = request.form.get('assignment_id', None)
     assignment_version = int(request.form.get('version', -1))
-    course_id = request.values.get('course_id', g.course.id)
+    course_id = request.form.get('course_id', g.course.id)
     if None in (assignment_id, course_id):
         return jsonify(success=False, message="No Assignment ID or Course ID given!")
     code = request.form.get('code', '')
@@ -103,7 +103,7 @@ def save_correct(lti, lti_exception=None):
     assignment_id = request.form.get('assignment_id', None)
     status = float(request.form.get('status', "0.0"))
     image = request.form.get('image', "")
-    course_id = request.values.get('course_id', g.course.id)
+    course_id = request.form.get('course_id', g.course.id)
     if None in (assignment_id, course_id):
         return jsonify(success=False, message="No Assignment ID or Course ID given!")
     assignment = Assignment.by_id(assignment_id)
@@ -179,7 +179,7 @@ def get_submission_image(lti=lti):
 @blueprint_blockpy.route('/save_presentation/', methods=['GET', 'POST'])
 @blueprint_blockpy.route('/save_presentation', methods=['GET', 'POST'])
 def save_presentation(lti=lti):
-    course_id = request.values.get('course_id', None)
+    course_id = request.form.get('course_id', None)
     if course_id is None:
         return jsonify(success=False, message="No course id")
     assignment_id = request.form.get('assignment_id', None)
