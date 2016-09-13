@@ -207,18 +207,28 @@ def load_corgis(path):
 
 @blueprint_blockpy.route('/fix_ghost_submission/', methods=['GET', 'POST'])    
 @blueprint_blockpy.route('/fix_ghost_submission', methods=['GET', 'POST'])    
-def fix_ghost_submission():
+@lti()
+def fix_ghost_submission(lti, lti_exception=None):
     my_course_stuff = Submission.query.filter_by(course_id=8).all()
     result = []
     for row in my_course_stuff:
         meta_course = Submission.query.filter_by(course_id=3, assignment_id=row.assignment_id,
                                               user_id=row.user_id).first()
         if meta_course is not None:
-            result.append([meta_course.assignment_id, row.assignment_id, meta_course.user_id, row.user_id, meta_course.code, meta_course.correct, row.url])
-            continue
+            row.code = meta_course.code
+            row.correct = meta_course.correct
+            row.assignment_version = meta_course.assignment_version
+            row.version = meta_course.version
+            db.session.commit()
             if row.url:
-                code = highlight(submission.code, PythonLexer(), HtmlFormatter())
-                potential_image = "Submitted Blocks:<br><img src='{0}'>".format(image_url) if image else ""
+                code = highlight(row.code, PythonLexer(), HtmlFormatter())
+                image_url = url_for('blockpy.get_submission_image', submission_id=row.id, _external=True)
+                url = url_for('blockpy.get_submission_code', submission_id=row.id, _external=True)
+                potential_image = "Submitted Blocks:<br><img src='{0}'>".format(image_url)
+                if row.correct:
+                    message = "Success!"
+                else:
+                    message = "Incomplete"
                 body = '''
                 <h1>{message}</h1>
                 <div>Latest work in progress: <a href='{url}' target='_blank'>View</a></div>
@@ -227,6 +237,7 @@ def fix_ghost_submission():
                 <br>
                 Submitted code:<br>
                 {code}
-                '''.format(message=message, url=url, touches=submission.version, code=code, potential_image=potential_image)
-                lti.post_grade(float(submission.correct), body, endpoint=lis_result_sourcedid)
+                '''.format(message=message, url=url, touches=row.version, code=code, potential_image=potential_image)
+                lti.post_grade(float(row.correct), body, endpoint=row.url)
+            result.append(["Changed", row.assignment_id, row.user_id, "to", meta_course.code, meta_course.correct, row.url])
     return jsonify(result=result)
