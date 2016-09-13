@@ -204,3 +204,29 @@ def save_presentation(lti=lti):
 @blueprint_blockpy.route('/load_corgis/<path:path>', methods=['GET', 'POST'])
 def load_corgis(path):
     return app.send_static_file('corgis/{path}'.format(path=path))
+
+@blueprint_blockpy.route('/fix_ghost_submission/', methods=['GET', 'POST'])    
+@blueprint_blockpy.route('/fix_ghost_submission', methods=['GET', 'POST'])    
+def fix_ghost_submission():
+    my_course_stuff = Submission.query.filter_by(course_id=5).all()
+    result = []
+    for row in my_course_stuff:
+        meta_course = Submission.query.filter_by(course_id=3, assignment_id=row.assignment_id,
+                                              user_id=row.user_id).first()
+        if meta_course is not None:
+            result.append([meta_course.assignment_id, row.assignment_id, meta_course.user_id, row.user_id, meta_course.code, meta_course.correct, row.url])
+            continue
+            if row.url:
+                code = highlight(submission.code, PythonLexer(), HtmlFormatter())
+                potential_image = "Submitted Blocks:<br><img src='{0}'>".format(image_url) if image else ""
+                body = '''
+                <h1>{message}</h1>
+                <div>Latest work in progress: <a href='{url}' target='_blank'>View</a></div>
+                <div>Touches: {touches}</div>
+                {potential_image}
+                <br>
+                Submitted code:<br>
+                {code}
+                '''.format(message=message, url=url, touches=submission.version, code=code, potential_image=potential_image)
+                lti.post_grade(float(submission.correct), body, endpoint=lis_result_sourcedid)
+    return jsonify(result=result)
