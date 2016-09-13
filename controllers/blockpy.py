@@ -208,7 +208,7 @@ def load_corgis(path):
 @blueprint_blockpy.route('/fix_ghost_submission/', methods=['GET', 'POST'])    
 @blueprint_blockpy.route('/fix_ghost_submission', methods=['GET', 'POST'])    
 def fix_ghost_submission():
-    my_course_stuff = Submission.query.filter_by(course_id=5).all()
+    my_course_stuff = Submission.query.filter_by(course_id=8).all()
     result = []
     for row in my_course_stuff:
         meta_course = Submission.query.filter_by(course_id=3, assignment_id=row.assignment_id,
