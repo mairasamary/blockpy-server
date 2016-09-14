@@ -4,10 +4,26 @@ Reset title if changing graph
 
 Better explanations of when it's time on the x-axis?
 
+* Fix copy/paste for now block
 * Scatter Plot Sampling
 * Right side number clipping
-* Check CW4 numbers
+* Internet Explorer semantic checker is broken
+* Look into the semantic checker's line number - it might be reporting the wrong number? (Safari)
+* Safari seems to not be reporting successes
+* Nested semantic checker for branches -
+    if something
+        set
+        if something
+            set
+    else:
+        set
 * Fix the semantic checker for dataset access functions
+
+* Remove weather, earthquake, etc. from the old datasets
+* Possibly remove trace builtin (in favor _trace) for performance reasons.
+
+
+Plot the death years for the artists as a histogram. Note that authors who haven't died have been stored as 0. Observe the output, and then create a new histogram where 0 have been filtered out.
 
 
 Low

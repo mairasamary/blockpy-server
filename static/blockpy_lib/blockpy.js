@@ -618,7 +618,7 @@ AbstractInterpreter.prototype.visit_Call = function(node) {
             this.generic_visit(node);
         }
     } else {
-        console.log(node);
+        //console.log(node);
         this.generic_visit(node);
     }
 }
@@ -4078,7 +4078,7 @@ BlockPyFeedback.prototype.instructorFeedback = function(name, message, line) {
     if (line !== undefined) {
         this.main.components.editor.highlightError(line-1);
     }
-    this.main.components.server.logEvent('feedback', "Instructor Feedback", name+"\n|\n"+original+"\n|\n"+message);
+    this.main.components.server.logEvent('feedback', "Instructor Feedback", name+"\n|\n"+"\n|\n"+message);
 }
 
 BlockPyFeedback.prototype.emptyProgram = function() {
@@ -4626,10 +4626,10 @@ BlockPyEngine.prototype.setupEnvironment = function(student_code, traceTable, ou
         model.execution.output.removeAll();
     });
     Sk.builtins.log = new Sk.builtin.func(function(data) { 
-        Sk.builtin.pyCheckArgs("output", arguments, 1, 1);
+        Sk.builtin.pyCheckArgs("log", arguments, 1, 1);
         console.log(data)
     });
-    Sk.builtins.trace = Sk.ffi.remapToPy(traceTable);
+    //Sk.builtins.trace = Sk.ffi.remapToPy(traceTable);
     Sk.builtins._trace = traceTable;
     Sk.builtins._final_values = final_values;
     Sk.builtins.code = Sk.ffi.remapToPy(student_code);
