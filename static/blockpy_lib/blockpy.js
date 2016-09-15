@@ -205,8 +205,8 @@ AbstractInterpreter.prototype = new NodeVisitor();
 AbstractInterpreter.prototype.BUILTINS = {'print': {"type": 'None'}, 
                                 'sum': {"type": "Num"},
                                 'round': {"type": "Num"},
-                                'range': {"type": "List", "subtype": "Num"},
-                                'xrange': {"type": "List", "subtype": "Num"},
+                                'range': {"type": "List", "subtype": {"type": "Num"} },
+                                'xrange': {"type": "List", "subtype": {"type": "Num"} },
                                 'reversed': {"type": "List"},
                                 'len': {"type": "Num"},
                                 'True': {"type": "Bool"}, 
@@ -3684,13 +3684,13 @@ BlockPyEditor.CATEGORY_MAP = {
     'Lists':    '<category name="Lists" colour="30">'+
                     '<block type="lists_create_with">'+
                         '<value name="ADD0">'+
-                          '<shadow type="math_number"><field name="NUM">0</field></shadow>'+
+                          '<block type="math_number"><field name="NUM">0</field></block>'+
                         '</value>'+
                         '<value name="ADD1">'+
-                          '<shadow type="math_number"><field name="NUM">0</field></shadow>'+
+                          '<block type="math_number"><field name="NUM">0</field></block>'+
                         '</value>'+
                         '<value name="ADD2">'+
-                          '<shadow type="math_number"><field name="NUM">0</field></shadow>'+
+                          '<block type="math_number"><field name="NUM">0</field></block>'+
                         '</value>'+
                     '</block>'+
                     '<block type="lists_create_with"></block>'+

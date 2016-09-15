@@ -18,6 +18,7 @@ Better explanations of when it's time on the x-axis?
     else:
         set
 * Fix the semantic checker for dataset access functions
+* Ternery AND is broken!
 
 * Remove weather, earthquake, etc. from the old datasets
 * Possibly remove trace builtin (in favor _trace) for performance reasons.
