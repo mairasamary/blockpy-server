@@ -22,6 +22,13 @@ Better explanations of when it's time on the x-axis?
 
 * Remove weather, earthquake, etc. from the old datasets
 * Possibly remove trace builtin (in favor _trace) for performance reasons.
+* Structure section 5 to have more about the research questions we're answering.
+* Type check equality/comparison operators
+
+Iteration quiz
+* Student was confused about how blockpy code related to the table - did the blockpy code actually need to even be there?
+* the name "movie" should be the name "price"
+
 
 
 Plot the death years for the artists as a histogram. Note that authors who haven't died have been stored as 0. Observe the output, and then create a new histogram where 0 have been filtered out.

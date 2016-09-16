@@ -709,7 +709,7 @@ AbstractInterpreter.prototype.visit_For = function(node) {
             }
             this.iterateVariable(child.id.v, this.getLocation(node));
         } else if (child._astname === "List" && child.elts.length === 0) {
-            this.report["Empty iterations"].push({"name": child.lineno, "position": this.getLocation(node)});
+            this.report["Empty iterations"].push({"name": child.id.v, "position": this.getLocation(node)});
         } else {
             this.visit(child);
         }
