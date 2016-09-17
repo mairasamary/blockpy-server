@@ -38,6 +38,7 @@ class UpdateDatasets(Command):
             'python/python.html': 'templates/corgis/python/',
             'visualizer/visualizer.html': 'templates/corgis/visualizer/',
             'java/java.html': 'templates/corgis/java/',
+            'blockpy/blockpy.html': 'templates/corgis/blockpy/',
             'csv/csv.html': 'templates/corgis/csv/',
             'racket/racket.html': 'templates/corgis/racket/',
             'json/json.html': 'templates/corgis/json/',

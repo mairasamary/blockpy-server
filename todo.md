@@ -17,13 +17,19 @@ Better explanations of when it's time on the x-axis?
             set
     else:
         set
-* Fix the semantic checker for dataset access functions
 * Ternery AND is broken!
+* Change "i" in iteration variable to "a single thing"
+* More checks for printing whole list rather than individual item
+* Grades for surveys
+* Make doc pages for BlockPy fields
+* Better "loading please wait" for datasets
+* CBS radio mystery theater - nice mp3 downloaded format
 
 * Remove weather, earthquake, etc. from the old datasets
 * Possibly remove trace builtin (in favor _trace) for performance reasons.
 * Structure section 5 to have more about the research questions we're answering.
 * Type check equality/comparison operators
+* Fix the semantic checker for dataset access functions
 
 Iteration quiz
 * Student was confused about how blockpy code related to the table - did the blockpy code actually need to even be there?

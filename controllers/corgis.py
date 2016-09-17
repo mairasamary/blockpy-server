@@ -72,7 +72,7 @@ def redirect_language_dataset(language, dataset, path):
 def log_event():
     if 'user_id' in request.values:
         user_id = request.values.get('user_id')
-    elif 'user' in g and g.user.id:
+    elif 'user' in g and g.user and g.user.id:
         user_id = g.user.id
     else:
         user_id = str(request.remote_addr)
