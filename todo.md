@@ -17,14 +17,17 @@ Better explanations of when it's time on the x-axis?
             set
     else:
         set
-* Ternery AND is broken!
 * Change "i" in iteration variable to "a single thing"
 * More checks for printing whole list rather than individual item
+* Update website with VT_AWC instagram
+* Flipping test=True
+* Printing out a warning about the datasets being in Test Mode: "You are using a test sample of the data. To use the full data, remove the 'test=True' part."
+
 * Grades for surveys
+* Ternery AND is broken!
 * Make doc pages for BlockPy fields
 * Better "loading please wait" for datasets
 * CBS radio mystery theater - nice mp3 downloaded format
-
 * Remove weather, earthquake, etc. from the old datasets
 * Possibly remove trace builtin (in favor _trace) for performance reasons.
 * Structure section 5 to have more about the research questions we're answering.
@@ -34,11 +37,6 @@ Better explanations of when it's time on the x-axis?
 Iteration quiz
 * Student was confused about how blockpy code related to the table - did the blockpy code actually need to even be there?
 * the name "movie" should be the name "price"
-
-
-
-Plot the death years for the artists as a histogram. Note that authors who haven't died have been stored as 0. Observe the output, and then create a new histogram where 0 have been filtered out.
-
 
 Low
     Add student(s)
