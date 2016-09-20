@@ -1,27 +1,3 @@
-"Number of <Abstraction Row>"
-Better "Still loading" screen for Visualizer
-Reset title if changing graph
-
-Better explanations of when it's time on the x-axis?
-
-* Fix copy/paste for now block
-* Scatter Plot Sampling
-* Right side number clipping
-* Internet Explorer semantic checker is broken
-* Look into the semantic checker's line number - it might be reporting the wrong number? (Safari)
-* Safari seems to not be reporting successes
-* Nested semantic checker for branches -
-    if something
-        set
-        if something
-            set
-    else:
-        set
-* Change "i" in iteration variable to "a single thing"
-* More checks for printing whole list rather than individual item
-* Update website with VT_AWC instagram
-* Flipping test=True
-* Printing out a warning about the datasets being in Test Mode: "You are using a test sample of the data. To use the full data, remove the 'test=True' part."
 
 * Grades for surveys
 * Ternery AND is broken!

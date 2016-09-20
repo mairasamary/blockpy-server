@@ -200,6 +200,20 @@ def save_presentation(lti=lti):
 @blueprint_blockpy.route('/load_corgis/<path:path>', methods=['GET', 'POST'])
 def load_corgis(path):
     return app.send_static_file('corgis/{path}'.format(path=path))
+    
+@blueprint_blockpy.route('/force_right_section/', methods=['GET', 'POST'])    
+@blueprint_blockpy.route('/force_right_section', methods=['GET', 'POST'])    
+def force_right_section():
+    kaf_students = Submission.query.with_entities(Submission.user_id).filter_by(course_id=5).distinct().all()
+    kaf_students = [a[0] for a in kaf_students]
+    my_submissions = Submission.query.filter_by(course_id=8).all()
+    modified = []
+    for submission in my_submissions:
+        if submission.user_id in kaf_students:
+            submission.course_id = 5
+            modified.append( {"user": submission.user_id, "course": submission.course_id, "assignment": submission.assignment_id, "id": submission.id})
+    db.session.commit()
+    return jsonify(result=modified)
 
 @blueprint_blockpy.route('/fix_ghost_submission/', methods=['GET', 'POST'])    
 @blueprint_blockpy.route('/fix_ghost_submission', methods=['GET', 'POST'])    
