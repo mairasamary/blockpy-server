@@ -101,7 +101,7 @@ $(document).ready(function() {
             {
                 'assignment_id': {{ assignment.id|tojson }},
                 'course_id': {{ course_id if course_id != None else submission.course_id|tojson }},
-                'student_id': {{ g.user.id|tojson }},
+                'student_id': {{ g.user.id|tojson if g.user != None else -1}},
                 'introduction': {{ assignment.body|tojson}},
                 'name': {{ assignment.name|tojson}},
                 'initial_view': "{{ "Text" if assignment.mode.lower() == "text" else "Blocks" }}",

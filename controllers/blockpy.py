@@ -48,7 +48,10 @@ def load(lti=None, assignments=None, submissions=None, embed=False):
             course_id = submissions[0].course_id
         else:
             course_id = assignments[0].course_id
-        instructor_mode = g.user.is_instructor(course_id)
+        if g.user and g.user is not None:
+            instructor_mode = g.user.is_instructor(course_id)
+        else:
+            instructor_mode = False
         if 'course_id' in request.form:
             course_id = int(request.form.get('course_id'))
     else:
@@ -94,9 +97,10 @@ def save_events(lti=lti):
     event = request.form.get('event', "blank")
     action = request.form.get('action', "missing")
     body = request.form.get('body', "")
+    user_id = g.user.id if g.user != None else -1
     if assignment_id is None:
         return jsonify(success=False, message="No Assignment ID given!")
-    log = Log.new(event, action, assignment_id, g.user.id, body=body)
+    log = Log.new(event, action, assignment_id, -1, body=body)
     return jsonify(success=True)
     
 @blueprint_blockpy.route('/save_correct/', methods=['GET', 'POST'])
