@@ -84,7 +84,8 @@ class UpdateDatasets(Command):
                         copy(complete_filepath, final_static_target)
                 if language == 'java':
                     doc_folder = os.path.join(final_source, 'docs/')
-                    copytree(doc_folder, final_static_target+'/docs/')
+                    if os.path.exists(doc_folder):
+                        copytree(doc_folder, final_static_target+'/docs/')
 
 class UpdateBlockPy(Command):
     """Retrieves the latest generated files from the blockpy folder"""
