@@ -107,7 +107,8 @@ class User(Base, UserMixin):
                             if role.course_id == course_id}
         else:
             role_strings ={role.name.lower() for role in self.roles.all()}
-        return ('instructor' in role_strings or 'teachingassistant' in role_strings)
+        return ('instructor' in role_strings or 
+                'urn:lti:role:ims/lis/teachingassistant' in role_strings)
         
     def update_roles(self, new_roles, course_id):
         old_roles = [role for role in self.roles.all() if role.course_id == course_id]
