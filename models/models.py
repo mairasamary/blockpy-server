@@ -100,6 +100,14 @@ class User(Base, UserMixin):
             return 'instructor' in {role.name.lower() for role in self.roles.all()
                                     if role.course_id == course_id}
         return 'instructor' in {role.name.lower() for role in self.roles.all()}
+    
+    def is_grader(self, course_id=None):
+        if course_id is not None:
+            role_strings = {role.name.lower() for role in self.roles.all()
+                            if role.course_id == course_id}
+        else:
+            role_strings ={role.name.lower() for role in self.roles.all()}
+        return ('instructor' in role_strings or 'teachingassistant' in role_strings)
         
     def update_roles(self, new_roles, course_id):
         old_roles = [role for role in self.roles.all() if role.course_id == course_id]
