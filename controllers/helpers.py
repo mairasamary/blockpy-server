@@ -8,7 +8,7 @@ from HTMLParser import HTMLParser
 
 # Flask imports
 from flask import g, request, redirect, url_for, make_response, current_app
-from flask import flash, session
+from flask import flash, session, jsonify
 import flask_security
 from flask_security.core import current_user
 from flask import request as r
