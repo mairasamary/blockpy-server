@@ -166,12 +166,13 @@ def get_submission_code(lti=lti):
         return "Sorry, no submission ID was given."
     submission = Submission.query.get(submission_id)
     if 'user' not in g or not g.user:
-        return "You are not logged in as a grader!"
+        return "You are not logged in as a grader! Make sure you've visited a BlockPy Canvas."
+    if 'course' not in g or not g.course:
+        return "You're not in a course context! Make sure you've visited a BlockPy Canvas."
+    if not submission:
+        return '#No submission found!'
     if g.user.is_grader(g.course.id) or submission.user_id == g.user.id:
-        if submission:
-            return '<pre>'+submission.code+"</pre>" if submission.code else "#No code given!"
-        else:
-            return '#No submission found!'
+        return '<pre>'+submission.code+"</pre>" if submission.code else "#No code given!"
     else:
         return "Sorry, you do not have sufficient permissions to spy!"
         
