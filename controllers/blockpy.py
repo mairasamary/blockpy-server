@@ -166,7 +166,10 @@ def get_submission_code(lti=lti):
         return "Sorry, no submission ID was given."
     submission = Submission.query.get(submission_id)
     if g.user.is_grader(g.course.id) or submission.user_id == g.user.id:
-        return '<pre>'+submission.code+"</pre>" if submission.code else "#No code given!"
+        if submission:
+            return '<pre>'+submission.code+"</pre>" if submission.code else "#No code given!"
+        else:
+            return '#No submission found!'
     else:
         return "Sorry, you do not have sufficient permissions to spy!"
         
