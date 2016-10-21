@@ -86,6 +86,9 @@ class UpdateDatasets(Command):
                     doc_folder = os.path.join(final_source, 'docs/')
                     if os.path.exists(doc_folder):
                         copytree(doc_folder, final_static_target+'/docs/')
+                    dist_folder = os.path.join(final_source, 'dist/')
+                    if os.path.exists(dist_folder):
+                        copytree(dist_folder, final_static_target+'/dist/')
 
 class UpdateBlockPy(Command):
     """Retrieves the latest generated files from the blockpy folder"""

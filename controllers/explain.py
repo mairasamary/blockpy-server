@@ -141,6 +141,7 @@ def submit_explain(lti=lti):
         return jsonify(success=False, message="No Assignment ID or Course ID given!")
     assignment = Assignment.by_id(int(assignment_id))
     submission = Submission.save_correct(g.user.id, int(assignment_id), int(course_id))
+    
     lis_result_sourcedid = request.form.get('lis_result_sourcedid', submission.url) or None
     code, elements = submission.load_explanation(5)
     if lis_result_sourcedid is None or lis_result_sourcedid == "NOT IN SESSION":
