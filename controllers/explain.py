@@ -31,7 +31,7 @@ def load(lti=lti, lti_exception=None, assignments=None, submissions=None, embed=
         course_id = int(request.values.get('course_id'))
     else:
         course_id = g.course.id if "course" in g else None
-    MAX_QUESTIONS = 5
+    MAX_QUESTIONS = 4
     code, elements = submissions[0].load_explanation(MAX_QUESTIONS)
     return render_template('explain/explain.html',
                            assignment= assignments[0], 
@@ -106,7 +106,7 @@ def upload(lti=lti):
     data_file = request.files.get('files')
     if not data_file:
         return jsonify(success=False, invalid=True, message="No data file!")
-    code_submission = data_file.read()
+    code_submission = data_file.read().strip()
     try:
         elements = find_elements(code_submission)
     except SyntaxError:

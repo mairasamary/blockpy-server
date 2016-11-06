@@ -411,10 +411,10 @@ class Submission(Base):
         self.log_code()
         return submission_destructured
         
-    ELEMENT_PRIORITY_LIST = ['CORGIS_USE', 'FOR_LOOP', 'DICTIONARY_ACCESS', 
-                         'IMPORT_CORGIS', 'LIST_APPEND', 'IMPORT_MATPLOTLIB', 
-                         'ASSIGNMENT', 'MATPLOTLIB_PLOT', 'IF_STATEMENT',
-                         'DICT_ASSIGNMENT', 'PRINT_USE']
+    ELEMENT_PRIORITY_LIST = ['FOR_LOOP', 'ASSIGNMENT', 'DICTIONARY_ACCESS', 
+                         'LIST_APPEND', 'IF_STATEMENT',
+                         'IMPORT_CORGIS', 'IMPORT_MATPLOTLIB', 
+                         'MATPLOTLIB_PLOT', 'CORGIS_USE', 'DICT_ASSIGNMENT', 'PRINT_USE']
                          
     @staticmethod
     def abbreviate_element_type(element_type):

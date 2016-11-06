@@ -9,6 +9,7 @@ templates/corgis/
 main.db
 test.db
 
+tests/
 logs/
 queued_logs/
 backups/

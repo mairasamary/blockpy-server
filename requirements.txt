@@ -2,6 +2,7 @@ flask==0.10.1
 flask-sqlalchemy==1.0
 flask-admin
 flask-security==1.7.3
+flask-login==0.2.11
 flask-script
 sqlalchemy
 pylti
