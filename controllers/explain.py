@@ -99,7 +99,7 @@ def upload(lti=lti):
     course_id = request.values.get('course_id', g.course.id if 'course' in g else None)
     if None in (assignment_id, course_id):
         return jsonify(success=False, message="No Assignment ID or Course ID given!")
-    max_questions = int(request.values.get('max_questions', '5'))
+    max_questions = int(request.values.get('max_questions', '4'))
     submission = Submission.load(g.user.id, int(assignment_id), int(course_id))
     
     # Get the uploaded information
