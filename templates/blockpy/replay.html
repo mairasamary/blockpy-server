@@ -23,13 +23,13 @@ Replay!
             // settings
             {
                 'editor': 'Blocks',
-                'blocklyPath': "blockly/",
+                'blocklyPath': {{ url_for('static', filename='blockly/')|tojson }},
                 'attachmentPoint': document.getElementById('blockpy-div'),
                 'instructor': true,
                 'developer': true,
                 'disable_semantic_errors': false,
                 'urls': {
-                    'import_datasets': 'http://localhost:8000/test_corgis/',
+                    'import_datasets': {{ url_for('blockpy.load_corgis',path='')|tojson }},
                     /*'save_code': 'http://localhost:8000/save_code/',
                     'save_success': 'http://localhost:8000/submit_grade/',
                     'log_event': 'http://localhost:8000/save_events/'*/
@@ -46,8 +46,8 @@ Replay!
                 'importable': true,
                 'initial_view': 'Blocks',
                 'modules': {
-                    'added': ['Functions', 'Data - Parking'],
-                    'removed': ['Iteration']
+                    'added': ['Data - Parking'],
+                    'removed': []
                 }
             },
             // submission
