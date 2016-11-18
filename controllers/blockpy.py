@@ -261,3 +261,9 @@ def fix_ghost_submission(lti, lti_exception=None):
                 lti.post_grade(float(row.correct), body, endpoint=row.url)
             result.append(["Changed", row.assignment_id, row.user_id, "to", meta_course.code, meta_course.correct, row.url])
     return jsonify(result=result)
+    
+
+@blueprint_blockpy.route('/replay', methods=['GET', 'POST'])
+@blueprint_blockpy.route('/replay/', methods=['GET', 'POST'])
+def replay_page():
+    return render_template('blockpy/replay.html')
