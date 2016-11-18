@@ -1,84 +1,21 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <title>Blockpy/Kennel/Silicon</title>
-    
-    <link rel="stylesheet" href="libs/bootstrap.min.css">
-    <link rel="stylesheet" href="libs/codemirror/codemirror.css">
-    <link rel="stylesheet" href="libs/font-awesome.min.css">
-    <link rel="stylesheet" href="libs/summernote/summernote.css">
-    <link rel="stylesheet" href="libs/multi-select.css">
-    <link rel="stylesheet" href="src/blockpy.css">
-    <!--<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap-theme.min.css">-->
-    
-    <!-- JQuery, D3, Math.js, Bootstrap -->
-    <script type="text/javascript" src="libs/jquery.js"></script>
-    <script type="text/javascript" src="libs/jquery-ui.min.js"></script>
-    <script type="text/javascript" src="libs/jquery.hotkeys.js"></script>
-    <script type="text/javascript" src="libs/jquery.multi-select.js"></script>
-    <script type="text/javascript" src="libs/d3.min.js"></script>
-    <script type="text/javascript" src="libs/math.0.19.0.min.js"></script>
-    <script type="text/javascript" src="libs/bootstrap.min.js"></script>
-    <script type="text/javascript" src="libs/bootstrap-wysiwyg.js"></script>
-    <script type="text/javascript" src="libs/mindmup-editabletable.js"></script>
-    <script type="text/javascript" src="libs/codemirror/codemirror.js"></script>
-    <script type="text/javascript" src="libs/codemirror/python.js"></script>
-    <script type="text/javascript" src="libs/codemirror/htmlmixed.js"></script>
-    <script type="text/javascript" src="libs/codemirror/xml.js"></script>
-    <script type="text/javascript" src="libs/knockout-3.4.0.js"></script>
-    
-    <!-- Summernote, a rich text editor -->
-    <script type="text/javascript" src="libs/summernote/summernote.min.js"></script>
-    <script type="text/javascript" src="libs/summernote/summernote-ext-hint.js"></script>
-    <script type="text/javascript" src="libs/summernote/summernote-ext-video.js"></script>
-  
-    <!-- Datasets -->
-    <script type="text/javascript" src="libs/crime_data.js"></script>
-    
-    <!-- Blockly -->
-    <script type="text/javascript" src="blockly/blockly_uncompressed.js"></script>
-    <script type="text/javascript" src="blockly/blocks_compressed.js"></script>
-    <script type="text/javascript" src="blockly/python_compressed.js"></script>
-    <script type="text/javascript" src="blockly/pseudo_compressed.js"></script>
-    <script type="text/javascript" src="blockly/javascript_compressed.js"></script>
-    <script type="text/javascript" src="blockly/msg/js/en.js"></script>
-    
-    <!-- Skulpt -->
-    <script type="text/javascript" src="skulpt/dist/skulpt.min.js"></script>
-    <script type="text/javascript" src="skulpt/dist/skulpt-stdlib.js"></script>
-    
-    
-    <!-- Source Code -->
-    <script type="text/javascript" src="src/python_errors.js"></script>
-    <script type="text/javascript" src="src/ast_node_visitor.js"></script>
-    <script type="text/javascript" src="src/abstract_interpreter.js"></script>
-    <script type="text/javascript" src="src/abstract_interpreter_tests.js"></script>
-    <script type="text/javascript" src="src/python_to_blockly.js"></script>
-    <script type="text/javascript" src="src/imported.js"></script>
-    <script type="text/javascript" src="src/util.js"></script>
-    <script type="text/javascript" src="src/dialog.js"></script>
-    <script type="text/javascript" src="src/storage.js"></script>
-    <script type="text/javascript" src="src/printer.js"></script>
-    <script type="text/javascript" src="src/interface.js"></script>
-    <script type="text/javascript" src="src/server.js"></script>
-    <script type="text/javascript" src="src/english.js"></script>
-    <script type="text/javascript" src="src/corgis.js"></script>
-    <script type="text/javascript" src="src/presentation.js"></script>
-    <script type="text/javascript" src="src/property_explorer.js"></script>
-    <script type="text/javascript" src="src/editor.js"></script>
-    <script type="text/javascript" src="src/feedback.js"></script>
-    <script type="text/javascript" src="src/toolbar.js"></script>
-    <script type="text/javascript" src="src/engine.js"></script>
-    <script type="text/javascript" src="src/main.js"></script>
-    
-    <!--<script type="text/javascript" src="test_corgis/blockpy/tate/tate_blockly.js"></script>
-    <script type="text/javascript" src="test_corgis/blockpy/tate/tate_skulpt.js"></script>
-    <script type="text/javascript" src="test_corgis/blockpy/tate/tate_dataset.js"></script>-->
-    
-    <style>
+{% set reduced_layout = embed or 'iframe' == request.form.get('launch_presentation_document_target') %}
+{% extends 'layout.html' %}
 
-    </style>
+{% block title %}
+Replay!
+{% endblock %}
+
+{% block statusbar %}
+{% endblock %}
+
+{% block extrahead %}
+    
+{% assets "blockpy_js" %}
+    <script type="text/javascript" src="{{ ASSET_URL }}"></script>
+{% endassets %}
+{% assets "blockpy_css" %}
+    <link rel="stylesheet" href="{{ ASSET_URL }}" />
+{% endassets %}
     
     <script>
     $(document).ready(function() {
@@ -287,8 +224,11 @@
     });
     </script>
   
-</head>
-<body>
+
+{% endblock %}
+
+{% block body %}
+
 <div style="width:900px;  margin:0 auto;" id='blockpy-container'> <!-- 900px -->
     <!-- Replay stuff -->
     <textarea class="form-control" rows="3" id='replay-data'></textarea>
@@ -305,5 +245,4 @@
 
 </script>
 
-</body>
-</html>
+{% endblock %}
