@@ -48,6 +48,9 @@ class Finder(ast.NodeVisitor):
     def visit_Dict(self, node):
         if self.inside_assignment and 'DICT_ASSIGNMENT' not in self.results:
             self.results['DICT_ASSIGNMENT'] = (node.lineno, node.col_offset)
+    def visit_Num(self, node):
+        if self.inside_assignment and 'NUM_ASSIGNMENT' not in self.results:
+            self.results['NUM_ASSIGNMENT'] = (node.lineno, node.col_offset)
         
     def visit_Assign(self, node):
         if 'ASSIGNMENT' not in self.results:

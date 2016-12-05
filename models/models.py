@@ -368,6 +368,7 @@ class Submission(Base):
                     'ASSIGNMENT': {'line': 0, 'present': False, 'answer': '', 'name': 'ASSIGNMENT'},
                     'MATPLOTLIB_PLOT': {'line': 0, 'present': False, 'answer': '', 'name': 'MATPLOTLIB_PLOT'},
                     'LIST_ASSIGNMENT': {'line': 0, 'present': False, 'answer': '', 'name': 'LIST_ASSIGNMENT'},
+                    'NUM_ASSIGNMENT': {'line': 0, 'present': False, 'answer': '', 'name': 'NUM_ASSIGNMENT'},
                     'IF_STATEMENT': {'line': 0, 'present': False, 'answer': '', 'name': 'IF_STATEMENT'},
                     'DICT_ASSIGNMENT': {'line': 0, 'present': False, 'answer': '', 'name': 'DICT_ASSIGNMENT'},
                     'PRINT_USE': {'line': 0, 'present': False, 'answer': '', 'name': 'PRINT_USE'}
@@ -411,8 +412,9 @@ class Submission(Base):
         self.log_code()
         return submission_destructured
         
-    ELEMENT_PRIORITY_LIST = ['FOR_LOOP', 'ASSIGNMENT', 'DICTIONARY_ACCESS', 
+    ELEMENT_PRIORITY_LIST = ['FOR_LOOP', 'LIST_ASSIGNMENT', 'DICTIONARY_ACCESS', 
                          'LIST_APPEND', 'IF_STATEMENT',
+                         'LIST_ASSIGNMENT',
                          'IMPORT_CORGIS', 'IMPORT_MATPLOTLIB', 
                          'MATPLOTLIB_PLOT', 'CORGIS_USE', 'DICT_ASSIGNMENT', 'PRINT_USE']
                          
