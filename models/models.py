@@ -414,7 +414,7 @@ class Submission(Base):
         
     ELEMENT_PRIORITY_LIST = ['FOR_LOOP', 'LIST_ASSIGNMENT', 'DICTIONARY_ACCESS', 
                          'LIST_APPEND', 'IF_STATEMENT',
-                         'LIST_ASSIGNMENT',
+                         'NUM_ASSIGNMENT',
                          'IMPORT_CORGIS', 'IMPORT_MATPLOTLIB', 
                          'MATPLOTLIB_PLOT', 'CORGIS_USE', 'DICT_ASSIGNMENT', 'PRINT_USE']
                          
