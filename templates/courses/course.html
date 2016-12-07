@@ -34,19 +34,9 @@ $().ready(function() {
 <a href="{{ url_for('courses.index') }}">Back to all courses</a>
 
 {% if is_instructor %}
-
-
-<h3>Edit Course</h3>        
-
-<a href="{{ url_for('courses.remove_course', course_id=course.id) }}" onclick="return confirm('Are you sure?')" class='btn btn-danger'>Delete Course</a><br>
-<button onclick="renameCourse()" class='btn btn-default'>Rename Course</button><br>
-
 <h3>Manage Assignments</h3>
-
 {% else %}
-
 <h3>View Assignments</h3>
-
 {% endif %}
 
 <a href="{{ url_for('courses.assignments', course_id=course.id) }}" class='btn btn-default'>View Assignments</a>
@@ -56,6 +46,12 @@ $().ready(function() {
 <h3>Manage Students</h3>
 
 <a href="" class='btn btn-default'>Add student</a>
+
+<h3>Edit Course</h3>        
+
+<a href="{{ url_for('courses.remove_course', course_id=course.id) }}" onclick="return confirm('Are you sure?')" class='btn btn-danger'>Delete Course</a><br><br>
+<button onclick="renameCourse()" class='btn btn-default'>Rename Course</button><br>
+
 {% endif %}
 
 {% endblock %}

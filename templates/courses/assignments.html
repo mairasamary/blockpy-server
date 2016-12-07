@@ -40,14 +40,15 @@ function findById(anArray, id, isFunc) {
 }
 
 var sortNames = function(a, b) {
-    if (a.id == -1)
-        return 1;
-    if (b.id == -1)
-        return -1;
-    if (a.name < b.name)
-        return -1;
-    if (a.name > b.name)
-        return 1;
+    if (a.id == -1) return 1;
+    if (b.id == -1) return -1;
+    if (a.name < b.name) return -1;
+    if (a.name > b.name) return 1;
+    return 0;
+}
+var sortTitles = function(a, b) {
+    if (a.title() < b.title()) return -1;
+    if (a.title() > b.title()) return 1;
     return 0;
 }
 
@@ -88,6 +89,9 @@ function MainModel() {
         }{{ "," if not loop.last }}
         {% endfor %}
     ]);
+    self.thisCourse = ko.pureComputed(function() {
+        return findById(self.groupedAssignments(), {{ course_id|int|tojson }}, false);
+    });
     self.strayGroup = self.groups();
     self.groupedAssignments = ko.pureComputed(function() {
         var result = [];
@@ -98,7 +102,6 @@ function MainModel() {
                 group_id = v.group_id();
             if (!(course_id in mappedCourses)) {
                 var new_course = findById(self.groups(), course_id, true);
-                console.log(self.groups(), course_id, new_course);
                 mappedCourses[course_id] = {'id': course_id, 
                                             'name': new_course.name(),
                                             'groups': new_course.groups().map(function(elem) {
@@ -122,6 +125,9 @@ function MainModel() {
         });
         result.forEach(function(v, i) {
             v.groups.sort(sortNames);
+            v.groups.forEach(function(vv, ii) {
+                vv.assignments.sort(sortTitles);
+            });
         });
         result.sort(sortNames);
         return result;
@@ -177,7 +183,7 @@ function MainModel() {
     };
     
     self.addGroup = function() {
-        var course_id = parseInt(mainModel.createGroupCourse());
+        var course_id = parseInt(mainModel.thisCourse().id); //mainModel.createGroupCourse());
         var name = mainModel.createGroupName();
         $.post("{{ url_for('assignment_group.add_group') }}", {
             "course_id": course_id,
@@ -236,7 +242,7 @@ function MainModel() {
     }
     
     self.addAssignment = function() {
-        var course_id = mainModel.createAssignmentCourse();
+        var course_id = mainModel.thisCourse().id; //mainModel.createAssignmentCourse();
         var name = mainModel.createAssignmentName();
         var level = mainModel.createAssignmentLevel();
         var type = mainModel.createAssignmentType().toLowerCase();
@@ -361,6 +367,7 @@ tr.hover-remove-rows button.remove-button {
                     <option value='10'>Level 10</option>
                 </select>
             </div>
+            <!--
             <div class="form-group">
                 <label for="assignment-name">Owning Course</label>
                 <select class="form-control" data-bind="value: createAssignmentCourse">
@@ -368,7 +375,7 @@ tr.hover-remove-rows button.remove-button {
                     <option value="{{ course.id }}" {{'selected' if course.id == g.course.id }}>{{ course.name }}</option>
                 {% endfor %}
                 </select>
-            </div>
+            </div>-->
         </form>
       </div>
       <div class="modal-footer">
@@ -393,6 +400,7 @@ tr.hover-remove-rows button.remove-button {
                 <input type="text" class="form-control" id="group-name"
                        data-bind="value: createGroupName" placeholder="Day X - ">
             </div>
+            <!--
             <div class="form-group">
                 <label for="group-name">Owning Course</label>
                 <select class="form-control" data-bind="value: createGroupCourse">
@@ -401,6 +409,7 @@ tr.hover-remove-rows button.remove-button {
                 {% endfor %}
                 </select>
             </div>
+            -->
         </form>
       </div>
       <div class="modal-footer">
@@ -414,26 +423,19 @@ tr.hover-remove-rows button.remove-button {
 <table class="table table-condensed table-hover">
 <tbody>
     <tr id='new-row'>
-        <td colspan='1'>
+        <td colspan='2'>
             <a href="#" data-toggle="modal" data-target="#assignment-create" class="btn btn-default btn-sm"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span>Create Assignment</a>
-        </td>
-        <td colspan='1'>
+            &nbsp;
+            <!--
+            <a href="#" data-toggle="modal" data-target="#assignment-import" class="btn btn-default btn-sm"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span>Import Assignment</a>
+            &nbsp;-->
             <a href="#" data-toggle="modal" data-target="#group-create" class="btn btn-default btn-sm"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span>Create Group</a>
         </td>
         <td colspan='3'>
-            <label>
-                Show completed courses
-                <input type='checkbox' data-bind="checked: $root.showCompletedCourses">
-            </label><br>
         </td>
     </tr>
     
-    <!-- ko foreach: groupedAssignments() -->
-    <tr class="hover-remove-rows">
-        <td class="col-md-12 col-sm-12 col-xs-12" colspan="4">
-            <h4 data-bind="text: name"></h4>
-        </td>
-    </tr>
+    <!-- ko with: thisCourse() -->
     <!-- ko foreach: groups -->
     <tr class="active hover-remove-rows">
         <td class="col-md-12 col-sm-12 col-xs-12" colspan="3">
@@ -466,20 +468,11 @@ tr.hover-remove-rows button.remove-button {
                   <li><a href="#" data-bind="click: $root.moveMembership.bind($data, $parent, $parents[1]), text: name"></a></li>
               </ul>
             </div>
-            
-            <div class="mover-buttons btn-group">
-              <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                Move Course <span class="caret"></span>
-              </button>
-              <ul class="dropdown-menu dropdown-menu-right" data-bind="foreach: $root.groups()">
-                  <li><a href="#" data-bind="click: $root.moveCourse.bind($data, $parents[0], $parents[2]), text: name"></a></li>
-              </ul>
-            </div>
         </td>
         <td class='col-md-2 col-sm-2 col-xs-2'>
             <div class="btn-group">
                 <!-- Select button -->
-                <a data-bind="attr: { href: select }" class="btn btn-primary">Select</a>
+                <a target="_blank" data-bind="attr: { href: edit }" class="btn btn-primary">Edit</a>
                 <!-- Dropdown -->
                 <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     <span class="caret"></span>
@@ -487,8 +480,6 @@ tr.hover-remove-rows button.remove-button {
                 </button>
                 <!-- Extended buttons -->
                 <ul class="dropdown-menu">
-                    <li><a target="_blank" data-bind="attr: { href: edit }">Fork</a></li>
-                    <li><a target="_blank" data-bind="attr: { href: edit }">Edit</a></li>
                     <!--<li><a href="#" data-bind="click: $root.refreshAssignment">Refresh</a></li>-->
                     <li><a href="#" data-bind="click: $root.removeAssignment.bind($data, $parent)">Delete</a></li>
                 </ul>

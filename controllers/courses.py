@@ -80,17 +80,12 @@ def course(course_id):
 @login_required
 def assignments(course_id):
     #TODO: ensure in course
-    course = Course.query.filter_by(id=course_id).first()
-    assignments = Assignment.by_course(course_id, exclude_builtins=False)
-    groups = [(group, group.get_assignments())
-              for group in AssignmentGroup.by_course(course_id)]
-    strays = AssignmentGroup.get_ungrouped_assignments(course_id)
+    assignments = Assignment.get_available()
+    groups = AssignmentGroup.query.all()
+    course_groups = Course.get_all_groups()
+    editable_courses = g.user.get_editable_courses()
     
-    return render_template('courses/assignments.html', 
-                           course=course,
-                           groups=groups,
-                           strays=strays,
-                           assignments=assignments)
+    return render_template('courses/assignments.html', assignments=assignments, groups=groups, editable_courses=editable_courses, course_groups=course_groups, course_id=course_id)
 
 @courses.route('/', methods=['GET', 'POST'])
 @login_required
