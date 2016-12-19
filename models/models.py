@@ -267,6 +267,12 @@ class Course(Base):
                                          user_id=user_id)
         else:
             return lti_course
+            
+    def grading_grid(self):
+        # Return a list of lists of assignments/students/submissions
+        assignments = []
+        submissions = []
+        return assignments, submissions
     
 class Role(Base, RoleMixin):
     name = Column(String(80))
@@ -281,6 +287,10 @@ class Role(Base, RoleMixin):
     def __str__(self):
         return '<User {} is {}>'.format(self.user_id, self.name)
         
+class CourseInvitations(Base):
+    course_id = Column(Integer(), ForeignKey('course.id'), default=None)
+    email = Column(String(255))
+
 class Authentication(Base):
     type = Column(String(80))
     value = Column(String(255))

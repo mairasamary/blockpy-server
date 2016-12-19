@@ -87,6 +87,22 @@ def assignments(course_id):
     
     return render_template('courses/assignments.html', assignments=assignments, groups=groups, editable_courses=editable_courses, course_groups=course_groups, course_id=course_id)
 
+@courses.route('/view_assignments/<course_id>/', methods=['GET', 'POST'])
+@courses.route('/view_assignments/<course_id>', methods=['GET', 'POST'])
+@login_required
+def view_assignments(course_id):
+    #TODO: ensure in course
+    course = Course.by_id(course_id)
+    assignments = Assignment.by_course(course_id)
+    groups = AssignmentGroup.by_course(course_id)
+    
+    return render_template('courses/view_assignments.html', assignments=assignments, groups=groups, course=course, course_id=course_id)
+    
+def view_completion(course_id):
+    course = Course.by_id(course_id)
+    completions = course.grading_grid()
+    return render_template('courses/view_assignments.html', assignments=assignments, groups=groups, course=course, course_id=course_id)
+
 @courses.route('/', methods=['GET', 'POST'])
 @login_required
 def index():

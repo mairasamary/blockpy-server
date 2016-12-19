@@ -1,0 +1,95 @@
+{% extends 'layout.html' %}
+
+{% block title %}
+Courses: Assignments
+{% endblock %}
+
+{% block statusbar %}
+{% endblock %}
+
+{% block extrahead %}
+
+<script type='text/javascript'>
+
+function MainModel() {
+    var self = this;
+}
+mainModel = new MainModel();
+$().ready(function() {
+    ko.applyBindings(mainModel);
+});
+
+
+</script>
+<style>
+.btn-group {
+    display: flex;
+}
+
+.table-hover tbody tr:hover td, .table-hover tbody tr:hover th {
+    background-color: #e9eaed;
+}
+
+tr:hover.hover-movers-rows div.mover-buttons {
+    visibility: visible;
+}
+
+tr.hover-movers-rows div.mover-buttons {
+    visibility: hidden;
+}
+
+tr:hover.hover-remove-rows button.remove-button {
+    visibility: visible;
+}
+
+tr.hover-remove-rows button.remove-button {
+    visibility: hidden;
+}
+
+</style>
+{% endblock %}
+
+{% block body %}
+
+<h3>Assignments</h3>
+
+{% for group in groups %}
+
+{% endfor %}
+
+
+<table class="table table-condensed table-hover">
+<tbody>
+    
+    {% for group in groups %}
+    
+    
+    <tr class="active hover-remove-rows">
+        <td class="col-md-12 col-sm-12 col-xs-12" colspan="3">
+            <strong>{{ group.name }}</strong>
+        </td>
+    </tr>
+    
+    {% for assignment in group.get_assignments() %}
+    
+    <tr class='hover-movers-rows'>
+        <td class='col-md-5 col-sm-5 col-xs-5'>
+            <a href="{{ url_for('assignments.load', assignment_id=assignment.id, course_id=course_id) }}"><strong>{{ assignment.title() }}</strong></a><br>
+            Last modified at
+            <span>{{ assignment.modified }}</span>
+        </td>
+        <td class='col-md-7 col-sm-7 col-xs-7'>
+            <span class='label label-default'>{{ assignment.type }}</span>
+            <span>{{ assignment.body }}</span>
+        </td>
+    </tr>
+    
+    {% endfor %}
+    
+    {% endfor %}
+    
+</tbody>
+</table>
+
+
+{% endblock %}

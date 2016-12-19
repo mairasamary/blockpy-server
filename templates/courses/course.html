@@ -35,11 +35,12 @@ $().ready(function() {
 
 {% if is_instructor %}
 <h3>Manage Assignments</h3>
+<a href="{{ url_for('courses.assignments', course_id=course.id) }}" class='btn btn-default'>Manage Assignments</a><br><br>
 {% else %}
 <h3>View Assignments</h3>
 {% endif %}
 
-<a href="{{ url_for('courses.assignments', course_id=course.id) }}" class='btn btn-default'>View Assignments</a>
+<a href="{{ url_for('courses.view_assignments', course_id=course.id) }}" class='btn btn-default'>View Assignments</a>
 
 {% if is_instructor %}
 

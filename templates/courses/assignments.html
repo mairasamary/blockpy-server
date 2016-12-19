@@ -97,6 +97,22 @@ function MainModel() {
         var result = [];
         var mappedCourses = {},
             strayGroups = {};
+        self.groups().forEach(function(v, i) {
+            var course_id = v.id();
+            mappedCourses[course_id] = {'id': course_id, 
+                                        'name': v.name(),
+                                        'groups': v.groups().map(function(elem) {
+                                            return {'id': elem.id(), 'name': elem.name(), 'assignments': []}
+                                        })};
+            strayGroups[course_id] = {
+                'id': -1,
+                'name': 'Ungrouped Assignments',
+                'assignments': []
+            };
+            mappedCourses[course_id].groups.push(strayGroups[course_id])
+            result.push(mappedCourses[course_id]);
+        });
+        console.log(mappedCourses);
         self.assignments().forEach(function(v, i) {
             var course_id = v.course_id(), 
                 group_id = v.group_id();
@@ -367,15 +383,6 @@ tr.hover-remove-rows button.remove-button {
                     <option value='10'>Level 10</option>
                 </select>
             </div>
-            <!--
-            <div class="form-group">
-                <label for="assignment-name">Owning Course</label>
-                <select class="form-control" data-bind="value: createAssignmentCourse">
-                {% for course in editable_courses %}
-                    <option value="{{ course.id }}" {{'selected' if course.id == g.course.id }}>{{ course.name }}</option>
-                {% endfor %}
-                </select>
-            </div>-->
         </form>
       </div>
       <div class="modal-footer">
@@ -400,16 +407,6 @@ tr.hover-remove-rows button.remove-button {
                 <input type="text" class="form-control" id="group-name"
                        data-bind="value: createGroupName" placeholder="Day X - ">
             </div>
-            <!--
-            <div class="form-group">
-                <label for="group-name">Owning Course</label>
-                <select class="form-control" data-bind="value: createGroupCourse">
-                {% for course in editable_courses %}
-                    <option value="{{ course.id }}" {{'selected' if course.id == g.course.id }}>{{ course.name }}</option>
-                {% endfor %}
-                </select>
-            </div>
-            -->
         </form>
       </div>
       <div class="modal-footer">

@@ -186,6 +186,7 @@ function AbstractInterpreter(code, filename) {
     this.astStackDepth = 0;
     
     this.variables = {};
+    this.variableTypes = {};
     for (var name in this.BUILTINS) {
         this.setVariable(name, this.BUILTINS[name]);
     }
@@ -360,7 +361,8 @@ AbstractInterpreter.prototype.postProcess = function() {
                 report = this.report,
                 previousType = null,
                 testTypeEquality = this.testTypeEquality.bind(this),
-                overwrittenLine = null;
+                overwrittenLine = null,
+                variableTypes = this.variableTypes;
             var finalState = (function walkState(nodes, previous) {
                 var result;
                 if (previous === null) {
@@ -372,6 +374,9 @@ AbstractInterpreter.prototype.postProcess = function() {
                 }
                 for (var i = 0, len = nodes.length; i < len; i += 1) {
                     var node = nodes[i];
+                    if (node.type !== null && node.type !== undefined && !(name in variableTypes)) {
+                        variableTypes[name] = node.type;
+                    }
                     if (node.method == "branch") {
                         var ifResult = walkState(node["if"], result)
                         var elseResult = walkState(node["else"], result)
@@ -1256,11 +1261,11 @@ PythonToBlocks.prototype.For = function(node) {
     }
     
     return block("controls_forEach", node.lineno, {
-        "VAR": this.Name_str(target)
     }, {
-        "LIST": this.convert(iter)
+        "LIST": this.convert(iter),
+        "VAR": this.convert(target)
     }, {
-        "inline": "false"
+        "inline": "true"
     }, {}, {
         "DO": this.convertBody(body)
     });
@@ -2593,6 +2598,221 @@ Blockly.Python['datetime_check_time'] = function(block) {
     var code = "parking.time_compare(" + operator+", "+left + ',' + hour + ',' + minute + ',' +meridian + ")";
     return [code, Blockly.Python.ORDER_ATOMIC];
 };
+
+Blockly.Blocks['controls_forEach'] = {
+  /**
+   * Block for 'for each' loop.
+   * @this Blockly.Block
+   */
+  init: function() {
+    this.jsonInit({
+      "message0": "for each item %1 in list %2 : ", //Blockly.Msg.CONTROLS_FOREACH_TITLE,
+      "args0": [
+        {
+          "type": "input_value",
+          "name": "VAR",
+          "check": "Tuple"
+        },
+        {
+          "type": "input_value",
+          "name": "LIST",
+          "check": "Array"
+        }
+      ],
+      "inputsInline": true,
+      "previousStatement": null,
+      "nextStatement": null,
+      "colour": Blockly.Blocks.loops.HUE,
+      "helpUrl": Blockly.Msg.CONTROLS_FOREACH_HELPURL
+    });
+    this.appendStatementInput('DO')
+        .appendField(Blockly.Msg.CONTROLS_FOREACH_INPUT_DO);
+    this.setInputsInline(true);
+    // Assign 'this' to a variable for use in the tooltip closure below.
+    var thisBlock = this;
+    this.setTooltip(function() {
+      return Blockly.Msg.CONTROLS_FOREACH_TOOLTIP.replace('%1',
+          Blockly.Python.valueToCode(thisBlock, 'VAR', Blockly.Python.ORDER_RELATIONAL) || '___');
+    });
+  },
+  customContextMenu: Blockly.Blocks['controls_for'].customContextMenu
+};
+
+Blockly.Python['controls_forEach'] = function(block) {
+  // For each loop.
+  var variable0 = Blockly.Python.valueToCode(block, 'VAR',
+      Blockly.Python.ORDER_RELATIONAL) || '___';
+  var argument0 = Blockly.Python.valueToCode(block, 'LIST',
+      Blockly.Python.ORDER_RELATIONAL) || '___';
+  var branch = Blockly.Python.statementToCode(block, 'DO');
+  branch = Blockly.Python.addLoopTrap(branch, block.id) ||
+      Blockly.Python.PASS;
+  var code = 'for ' + variable0 + ' in ' + argument0 + ':\n' + branch;
+  return code;
+};
+Blockly.Blocks['dicts_create_with_container'] = {
+  // Container.
+  init: function() {
+    this.setColour(Blockly.Blocks.dicts.HUE);
+    this.appendDummyInput()
+        .appendField(Blockly.Msg.DICTS_CREATE_WITH_CONTAINER_TITLE_ADD);
+    this.appendStatementInput('STACK');
+    this.setTooltip(Blockly.Msg.DICTS_CREATE_WITH_CONTAINER_TOOLTIP);
+    this.contextMenu = false;
+  }
+};
+
+Blockly.Blocks['dicts_create_with_item'] = {
+  // Add items.
+  init: function() {
+    this.setColour(Blockly.Blocks.dicts.HUE);
+    this.appendDummyInput()
+        .appendField(Blockly.Msg.DICTS_CREATE_WITH_ITEM_TITLE);
+    this.setPreviousStatement(true);
+    this.setNextStatement(true);
+    this.setTooltip(Blockly.Msg.DICTS_CREATE_WITH_ITEM_TOOLTIP);
+    this.contextMenu = false;
+  }
+};
+Blockly.Blocks['dicts_create_with'] = {
+    /**
+     * Block for creating a dict with any number of elements of any type.
+     * @this Blockly.Block
+     */
+    init: function() {
+        console.log("init");
+        this.setInputsInline(false);
+        this.setColour(Blockly.Blocks.dicts.HUE);
+        this.itemCount_ = 1;
+        this.updateShape_();
+        this.setOutput(true, 'dict');
+        this.setMutator(new Blockly.Mutator(['dicts_create_with_item']));
+        this.setTooltip(Blockly.Msg.DICTS_CREATE_WITH_TOOLTIP);
+    },
+    /**
+     * Create XML to represent dict inputs.
+     * @return {Element} XML storage element.
+     * @this Blockly.Block
+     */
+    mutationToDom: function(workspace) {
+        console.log("mutationToDom");
+        var container = document.createElement('mutation');
+        container.setAttribute('items', this.itemCount_);
+        return container;
+    },
+    /**
+     * Parse XML to restore the dict inputs.
+     * @param {!Element} xmlElement XML storage element.
+     * @this Blockly.Block
+     */
+    domToMutation: function(xmlElement) {
+        console.log("domToMutation");
+        this.itemCount_ = parseInt(xmlElement.getAttribute('items'), 10);
+        this.updateShape_();
+    },
+    /**
+     * Modify this block to have the correct number of inputs.
+     * @private
+     * @this Blockly.Block
+     */
+    updateShape_: function() {
+        console.log("updateShape");
+        // Delete everything.
+        if (this.getInput("EMPTY")) {
+            this.removeInput('EMPTY');
+        }
+        var keyNames = [];
+        for (var i = 0; this.getInput('VALUE' + i); i++) {
+            //this.getInput('VALUE' + i).removeField("KEY"+i);
+            keyNames.push(this.getFieldValue("KEY"+i))
+            this.removeInput('VALUE' + i);
+        }
+        // Rebuild block.
+        if (this.itemCount_ == 0) {
+            this.appendDummyInput('EMPTY')
+                .appendField(Blockly.Msg.DICTS_CREATE_EMPTY_TITLE);
+        } else {
+            this.appendDummyInput('EMPTY')
+                .appendField(Blockly.Msg.DICTS_CREATE_WITH_INPUT_WITH);
+            for (var i = 0; i < this.itemCount_; i++) {
+                this.appendValueInput('VALUE' + i)
+                    .setCheck(null)
+                    .setAlign(Blockly.ALIGN_RIGHT)
+                    .appendField(
+                          new Blockly.FieldTextInput(
+                              keyNames.length > i
+                              ? keyNames[i]
+                              : Blockly.Msg.DICTS_CREATE_WITH_ITEM_KEY),
+                         'KEY'+i)
+                   .appendField(Blockly.Msg.DICTS_CREATE_WITH_ITEM_MAPPING);
+            }
+        }
+    },
+    /**
+     * Populate the mutator's dialog with this block's components.
+     * @param {!Blockly.Workspace} workspace Mutator's workspace.
+     * @return {!Blockly.Block} Root block in mutator.
+     * @this Blockly.Block
+     */
+    decompose: function(workspace) {
+        console.log("Decompose");
+        var containerBlock = workspace.newBlock('dicts_create_with_container');
+        containerBlock.initSvg();
+        var connection = containerBlock.getInput('STACK').connection;
+        for (var x = 0; x < this.itemCount_; x++) {
+          var itemBlock = workspace.newBlock('dicts_create_with_item');
+          itemBlock.initSvg();
+          connection.connect(itemBlock.previousConnection);
+          connection = itemBlock.nextConnection;
+        }
+        return containerBlock;
+    },
+    /**
+     * Reconfigure this block based on the mutator dialog's components.
+     * @param {!Blockly.Block} containerBlock Root block in mutator.
+     * @this Blockly.Block
+     */
+    compose: function(containerBlock) {
+        console.log("Compose");
+        var itemBlock = containerBlock.getInputTargetBlock('STACK');
+        // Count number of inputs.
+        var connections = [];
+        var i = 0;
+        while (itemBlock) {
+            connections[i] = itemBlock.valueConnection_;
+            itemBlock = itemBlock.nextConnection &&
+                        itemBlock.nextConnection.targetBlock();
+            i++;
+        }
+        this.itemCount_ = i;
+        this.updateShape_();
+        // Reconnect any child blocks.
+        for (var i = 0; i < this.itemCount_; i++) {
+            if (connections[i]) {
+                this.getInput('VALUE' + i).connection.connect(connections[i]);
+            }
+        }
+    },
+    /**
+     * Store pointers to any connected child blocks.
+     * @param {!Blockly.Block} containerBlock Root block in mutator.
+     * @this Blockly.Block
+     */
+    saveConnections: function(containerBlock) {
+        console.log("SaveConnections");
+        // Store a pointer to any connected child blocks.
+        var itemBlock = containerBlock.getInputTargetBlock('STACK');
+        var x = 0;
+        while (itemBlock) {
+            var value_input = this.getInput('VALUE' + x);
+            itemBlock.valueConnection_ = value_input && value_input.connection.targetConnection;
+            x++;
+            itemBlock = itemBlock.nextConnection &&
+                        itemBlock.nextConnection.targetBlock();
+        }
+    }
+};
+
 function randomInteger(min,max) {
     return Math.floor(Math.random()*(max-min+1)+min);
 }
@@ -2652,6 +2872,17 @@ Blockly.WorkspaceSvg.prototype.shuffle = function() {
     }
 }
 
+/**
+ * A utility object for quickly and conveniently generating dialog boxes.
+ * Unfortunately, this doesn't dynamically create new boxes; it reuses the same one
+ * over and over again. It turns out dynamically generating new dialog boxes
+ * is a pain! So we can't stack them.
+ *
+ * @constructor
+ * @this {BlockPyDialog}
+ * @param {Object} main - The main BlockPy instance
+ * @param {HTMLElement} tag - The HTML object this is attached to.
+ */
 function BlockPyDialog(main, tag) {
     this.main = main;
     this.tag = tag;
@@ -2660,6 +2891,14 @@ function BlockPyDialog(main, tag) {
     this.bodyTag = tag.find('.modal-body');
 }
 
+/**
+ * A simple externally available function for popping up a dialog
+ * message. This menu will be draggable by its title.
+ * 
+ * @param {String} title - The title of the message dialog. Can have HTML.
+ * @param {String} body - The body of the message dialog. Can have HTML.
+ * @param {function} onclose - A function to be run when the user closes the dialog.
+ */
 BlockPyDialog.prototype.show = function(title, body, onclose) {
     this.titleTag.html(title);
     this.bodyTag.html(body);
@@ -2697,22 +2936,27 @@ function LocalStorageWrapper(namespace) {
 };
 //BlockPyLocalStorage = new LocalStorageWrapper("BLOCKPY")
 /**
- * Printer
- * Responsible for maintaining the list of elements in the printer console.
+ * An object for managing the console where printing and plotting is outputed.
+ *
+ * @constructor
+ * @this {BlockPyEditor}
+ * @param {Object} main - The main BlockPy instance
+ * @param {HTMLElement} tag - The HTML object this is attached to.
  */
-
 function BlockPyPrinter(main, tag) {
     this.main = main;
     this.tag = tag;
+    
+    /** Keep printer settings available for interested parties */
     this.printerSettings = {};
     
-    this.loadPrinter();
+    this.resetPrinter();
 };
 
-BlockPyPrinter.prototype.loadPrinter = function() {
-    this.resetPrinter();
-}
-
+/**
+ * Reset the status of the printer, including removing any text in it and
+ * fixing its size.
+ */
 BlockPyPrinter.prototype.resetPrinter = function() {
     this.tag.empty();
     this.main.model.execution.output.removeAll();
@@ -2720,6 +2964,12 @@ BlockPyPrinter.prototype.resetPrinter = function() {
     this.printerSettings['height'] = Math.min(500, this.tag.height()+40);
 }
 
+/**
+ * Update and return the current configuration of the printer. This 
+ * involves calculating its size, among other operations.
+ *
+ * @returns {Object} Returns an object with information about the printer.
+ */
 BlockPyPrinter.prototype.getConfiguration = function() {
     var printer = this;
     this.printerSettings['printHtml']= function(html, value) { printer.printHtml(html, value);};
@@ -2731,6 +2981,13 @@ BlockPyPrinter.prototype.getConfiguration = function() {
     return this.printerSettings;
 }
 
+/**
+ * Updates each printed element in the printer and makes it hidden
+ * or visible, depending on what step we're on.
+ *
+ * @param {Number} step - The current step of the executed program that we're on; each element in the printer must be marked with a "data-step" property to resolve this.
+ * @param {Number} page - Deprecated, not sure what this even does.
+ */
 BlockPyPrinter.prototype.stepPrinter = function(step, page) {
     $(this.printer).find('.blockpy-printer-output').each(function() {
         if ($(this).attr("data-step") <= step) {
@@ -2741,8 +2998,9 @@ BlockPyPrinter.prototype.stepPrinter = function(step, page) {
     });
 }
 
-/*
+/**
  * Print a successful line to the on-screen printer.
+ * @param {String} lineText - A line of text to be printed out.
  */
 BlockPyPrinter.prototype.print = function(lineText) {
     var stepNumber = this.main.model.execution.step();
@@ -2768,10 +3026,13 @@ BlockPyPrinter.prototype.print = function(lineText) {
     }
 }
 
-/*
- *
- * html: A blob of HTML to render in the tag
- * value: a value to push on the outputList for comparison
+/**
+ * Prints a successful HTML blob to the printer. This is typically charts,
+ * but it can actually be any kind of HTML. This will probably be useful for
+ * doing Turtle and Processing stuff down the road.
+ * 
+ * @param {HTML} html - A blob of HTML to render in the tag
+ * @param {Anything} value - a value to push on the outputList for comparison. For instance, on charts this is typically the data of the chart.
  */
 BlockPyPrinter.prototype.printHtml = function(chart, value) {
     var step = this.main.model.execution.step();
@@ -2987,6 +3248,17 @@ BlockPyServer.prototype.load = function() {
     }
 };
 */
+/**
+ * An object for managing the blob of text at the top of a problem describing it.
+ * This isn't a very busy component.
+ *
+ * TODO: Isn't most of this redundant now?
+ *
+ * @constructor
+ * @this {BlockPyEditor}
+ * @param {Object} main - The main BlockPy instance
+ * @param {HTMLElement} tag - The HTML object this is attached to.
+ */
 function BlockPyPresentation(main, tag) {
     this.main = main;
     this.tag = tag;
@@ -2995,14 +3267,29 @@ function BlockPyPresentation(main, tag) {
     //this.main.model.settings.instructor.subscribe(function() {presentationEditor.setVisible()});
 }
 
+/**
+ * Removes the editor when it's not in use.
+ * DEPRECATED
+ */
 BlockPyPresentation.prototype.closeEditor = function() {
     this.tag.destroy();
 };
+
+/**
+ * Updates the contents of the presentation blob, possibly updating the
+ * editor's size too.
+ *
+ * @param {String} content - The new text of the presentation blob.
+ */
 BlockPyPresentation.prototype.setBody = function(content) {
     this.main.model.assignment.introduction(content);
     this.main.components.editor.blockly.resize();
 };
 
+/**
+ * Makes the editor available or not.
+ * DEPRECATED.
+ */
 BlockPyPresentation.prototype.setVisible = function() {
     if (this.main.model.settings.instructor()) {
         this.startEditor();
@@ -3011,6 +3298,10 @@ BlockPyPresentation.prototype.setVisible = function() {
     }
 }
 
+/**
+ * Creates the Summer Note editor for the presentation blob.
+ * DEPRECATED.
+ */
 BlockPyPresentation.prototype.startEditor = function() {
     var presentationEditor = this;
     this.tag.summernote({
@@ -3180,10 +3471,25 @@ PropertyExplorer.prototype.load = function() {
     this.tags.errors.hide();
     this.step = 0;
 }
+/**
+ * An object that manages the various editors, where users can edit their program. Also manages the
+ * movement between editors.
+ * There are currently four editors:
+ *  - Blocks: A Blockly instance
+ *  - Text: A CodeMirror instance
+ *  - Instructor: Features for changing the assignment and environment settings
+ *  - Upload: (Incomplete) A menu for uploading and running code from a desktop file.
+ *
+ * @constructor
+ * @this {BlockPyEditor}
+ * @param {Object} main - The main BlockPy instance
+ * @param {HTMLElement} tag - The HTML object this is attached to.
+ */
 function BlockPyEditor(main, tag) {
     this.main = main;
     this.tag = tag;
     
+    // This tool is what actually converts text to blocks!
     this.converter = new PythonToBlocks();
     
     // HTML DOM accessors
@@ -3196,6 +3502,7 @@ function BlockPyEditor(main, tag) {
     // Blockly and CodeMirror instances
     this.blockly = null;
     this.codeMirror = null;
+    // The updateStack keeps track of whether an update is percolating, to prevent duplicate update events.
     this.updateStack = [];
     this.blocksFailed = false;
     
@@ -3216,6 +3523,11 @@ function BlockPyEditor(main, tag) {
     this.main.model.settings.level.subscribe(function() {editor.setLevel()});
 }
 
+/**
+ * Initializes the Blockly instance (handles all the blocks). This includes
+ * attaching a number of ChangeListeners that can keep the internal code
+ * representation updated and enforce type checking.
+ */
 BlockPyEditor.prototype.initBlockly = function() {
     var blocklyDiv = this.blockTag.find('.blockly-div')[0];
     this.blockly = Blockly.inject(blocklyDiv,
@@ -3247,8 +3559,37 @@ BlockPyEditor.prototype.initBlockly = function() {
     this.blocklyToolboxWidth = this.blockly.toolbox_.width;
     
     Blockly.captureDialog_ = this.copyImage.bind(this);
+    
+    // Enable static type checking! 
+    this.blockly.addChangeListener(function() {
+        if (editor.main.model.settings.disable_variable_types()) {
+            var variables = editor.main.components.engine.analyzeVariables()
+            editor.blockly.getAllBlocks().filter(function(r) {return r.type == 'variables_get'}).forEach(function(block) { 
+                var name = block.inputList[0].fieldRow[0].value_;
+                if (name in variables) {
+                    var type = variables[name];
+
+                    if (type.type == "Num") {
+                        block.setOutput(true, "Number");
+                    } else if (type.type == "List") {
+                        block.setOutput(true, "Array");
+                    } else if (type.type == "Str") {
+                        block.setOutput(true, "String");
+                    } else {
+                        block.setOutput(true, null);
+                    }
+                }
+            })
+        }
+    });
+
+
 };
 
+/**
+ * Initializes the CodeMirror instance. This handles text editing (with syntax highlighting)
+ * and also attaches a listener for change events to update the internal code represntation.
+ */
 BlockPyEditor.prototype.initText = function() {
     var codeMirrorDiv = this.textTag.find('.codemirror-div')[0];
     this.codeMirror = CodeMirror.fromTextArea(codeMirrorDiv, {
@@ -3276,6 +3617,7 @@ BlockPyEditor.prototype.initText = function() {
     // Ensure that it fills the editor area
     this.codeMirror.setSize(null, "100%");
     
+    // Was toying with buttons for injecting code. These are deprecated now.
     this.tag.find('.blockpy-text-insert-if').click(function() {
         var line_number = blockpy.components.editor.codeMirror.getCursor().line;
         var line = blockpy.components.editor.codeMirror.getLine(line_number);
@@ -3290,6 +3632,11 @@ BlockPyEditor.prototype.initText = function() {
     });
 };
 
+/**
+ * Initializes the Instructor tab, which has a number of buttons and menus for
+ * manipulating assignments and the environment. One important job is to register the
+ * SummerNote instance used for editing the Introduction of the assignment.
+ */
 BlockPyEditor.prototype.initInstructor = function() {
     var introductionEditor = this.instructorTag.find('.blockpy-presentation-body-editor');
     var model = this.main.model;
@@ -3313,6 +3660,12 @@ BlockPyEditor.prototype.initInstructor = function() {
     
 }
 
+/**
+ * Makes the module available in the availableModules multi-select menu by adding
+ * it to the list.
+ * 
+ * @param {String} name - The name of the module (human-friendly version, as opposed to the slug) to be added.
+ */
 BlockPyEditor.prototype.addAvailableModule = function(name) {
     this.availableModules.multiSelect('addOption', { 
         'value': name, 'text': name
@@ -3320,18 +3673,27 @@ BlockPyEditor.prototype.addAvailableModule = function(name) {
     this.availableModules.multiSelect('select', name);
 };
 
+/**
+ * Hides the Text tab, which involves shrinking it and hiding its CodeMirror too.
+ */
 BlockPyEditor.prototype.hideTextMenu = function() {
     this.textTag.css('height', '0%');
     $(this.codeMirror.getWrapperElement()).hide();
     this.textSidebarTag.hide();
     this.textTag.hide();
 }
+
+/**
+ * Shows the Text tab, which requires restoring its height, showing AND refreshing
+ * the CodeMirror instance.
+ */
 BlockPyEditor.prototype.showTextMenu = function() {
     this.textTag.show();
     // Adjust height
     this.textTag.css('height', '100%');
     // Show CodeMirror
     $(this.codeMirror.getWrapperElement()).show();
+    // CodeMirror doesn't know its changed size
     this.codeMirror.refresh();
     
     // Resize sidebar
@@ -3341,34 +3703,60 @@ BlockPyEditor.prototype.showTextMenu = function() {
     this.textSidebarTag.show();
 }
 
+/**
+ * Hides the Block tab, which involves shrinking it and hiding the Blockly instance.
+ */
 BlockPyEditor.prototype.hideBlockMenu = function() {
     this.blocklyToolboxWidth = this.blockly.toolbox_.width;
     this.blockTag.css('height', '0%');
     this.blockly.setVisible(false);
 }
 
+/**
+ * Shows the Block tab, which involves restoring its height and showing the Blockly instance.
+ */
 BlockPyEditor.prototype.showBlockMenu = function() {
     this.blockTag.css('height', '100%');
     this.blockly.resize();
     this.blockly.setVisible(true);
 }
-BlockPyEditor.prototype.showUploadMenu = function() {
-    this.uploadTag.css('height', '100%');
-    this.uploadTag.show();
-}
+
+/**
+ * Hides the Upload tab, which shrinking it.
+ */
 BlockPyEditor.prototype.hideUploadMenu = function() {
     this.uploadTag.hide();
     this.uploadTag.css('height', '0%');
 }
-BlockPyEditor.prototype.showInstructorMenu = function() {
-    this.instructorTag.css('height', '100%');
-    this.instructorTag.show();
+
+/**
+ * Shows the Upload tab, which involves restoring its height.
+ */
+BlockPyEditor.prototype.showUploadMenu = function() {
+    this.uploadTag.css('height', '100%');
+    this.uploadTag.show();
 }
+
+/**
+ * Hides the Instructor tab, which shrinking it.
+ */
 BlockPyEditor.prototype.hideInstructorMenu = function() {
     this.instructorTag.hide();
     this.instructorTag.css('height', '0%');
 }
 
+/**
+ * Shows the Instructor tab, which involves restoring its height.
+ */
+BlockPyEditor.prototype.showInstructorMenu = function() {
+    this.instructorTag.css('height', '100%');
+    this.instructorTag.show();
+}
+
+/**
+ * Sets the current editor mode to Text, hiding the other menus.
+ * Also forces the text side to update.
+ */
 BlockPyEditor.prototype.setModeToText = function() {
     this.hideBlockMenu();
     this.hideUploadMenu();
@@ -3378,6 +3766,12 @@ BlockPyEditor.prototype.setModeToText = function() {
     this.updateText(); //TODO: is this necessary?
 }
 
+/**
+ * Sets the current editor mode to Blocks, hiding the other menus.
+ * Also forces the block side to update.
+ * There is a chance this could fail, if the text side is irredeemably
+ * awful. So then the editor bounces back to the text side.
+ */
 BlockPyEditor.prototype.setModeToBlocks = function() {
     this.hideTextMenu();
     this.hideUploadMenu();
@@ -3395,6 +3789,9 @@ BlockPyEditor.prototype.setModeToBlocks = function() {
     }
 }
 
+/**
+ * Sets the current editor mode to Upload mode, hiding the other menus.
+ */
 BlockPyEditor.prototype.setModeToUpload = function() {
     this.hideTextMenu();
     this.hideInstructorMenu();
@@ -3403,6 +3800,9 @@ BlockPyEditor.prototype.setModeToUpload = function() {
     //TODO: finish upload mode
 }
 
+/**
+ * Sets the current editor mode to the Instructor mode, hiding the other menus.
+ */
 BlockPyEditor.prototype.setModeToInstructor = function() {
     this.hideTextMenu();
     this.hideBlockMenu();
@@ -3420,6 +3820,12 @@ BlockPyEditor.prototype.changeMode = function() {
     }
 }
 
+/**
+ * Dispatch method to set the mode to the given argument.
+ * If the mode is invalid, an editor error is reported. If the 
+ *
+ * @param {String} mode - The new mode to set to ("Blocks", "Text", "Upload", or "Instructor")
+ */
 BlockPyEditor.prototype.setMode = function(mode) {
     // Either update the model, or go with the model's
     if (mode === undefined) {
@@ -3439,10 +3845,15 @@ BlockPyEditor.prototype.setMode = function(mode) {
     } else if (mode == 'Instructor') {
         this.setModeToInstructor();
     } else {
-        this.main.reportError("editor", "Invalid Mode: "+mode);
+        this.components.feedback.internalError(""+mode, "Invalid Mode", "The editor attempted to change to an invalid mode.")
     }
 }
 
+/**
+ * Attempts to update the model for the current code file from the 
+ * block workspace. Might be prevented if an update event was already
+ * percolating.
+ */
 BlockPyEditor.prototype.updateCodeFromBlocks = function() {
     if (this.updateStack.slice(-1).pop() !== undefined) {
         return;
@@ -3452,6 +3863,12 @@ BlockPyEditor.prototype.updateCodeFromBlocks = function() {
     this.main.setCode(newCode);
     this.updateStack.pop();
 }
+
+/**
+ * Attempts to update the model for the current code file from the 
+ * text editor. Might be prevented if an update event was already
+ * percolating. Also unhighlights any lines.
+ */
 BlockPyEditor.prototype.updateCodeFromText = function() {
     if (this.updateStack.slice(-1).pop() !== undefined) {
         return;
@@ -3465,6 +3882,11 @@ BlockPyEditor.prototype.updateCodeFromText = function() {
     // Ensure that we maintain proper highlighting
 }
 
+/**
+ * Updates the text editor from the current code file in the
+ * model. Might be prevented if an update event was already
+ * percolating.
+ */
 BlockPyEditor.prototype.updateText = function() {
     if (this.updateStack.slice(-1).pop() == 'text') {
         return;
@@ -3480,6 +3902,13 @@ BlockPyEditor.prototype.updateText = function() {
     this.updateStack.pop();
 }
 
+/**
+ * Updates the block editor from the current code file in the
+ * model. Might be prevented if an update event was already
+ * percolating. This can also report an error if one occurs.
+ *
+ * @returns {Boolean} Returns true upon success.
+ */
 BlockPyEditor.prototype.updateBlocks = function() {
     if (this.updateStack.slice(-1).pop() == 'blocks') {
         return;
@@ -3490,7 +3919,7 @@ BlockPyEditor.prototype.updateBlocks = function() {
         xml_code = result.xml;
         if (result.error !== null) {
             this.blocksFailed = true;
-            this.main.reportError('editor', result.error, "While attempting to convert the Python code into blocks, I found a syntax error. In other words, your Python code has a spelling or grammatical mistake. You should check to make sure that you have written all of your code correctly. To me, it looks like the problem is on line "+ result.error.args.v[2]+', where it says:<br><code>'+result.error.args.v[3][2]+'</code>', result.error.args.v[2]);
+            this.components.feedback.editorError(result.error, "While attempting to convert the Python code into blocks, I found a syntax error. In other words, your Python code has a spelling or grammatical mistake. You should check to make sure that you have written all of your code correctly. To me, it looks like the problem is on line "+ result.error.args.v[2]+', where it says:<br><code>'+result.error.args.v[3][2]+'</code>', result.error.args.v[2]);
             return false;
         }
     }
@@ -3522,22 +3951,48 @@ BlockPyEditor.prototype.updateBlocks = function() {
     return true;
 }
 
+/**
+ * Helper function for retrieving the current Blockly workspace as
+ * an XML DOM object.
+ *
+ * @returns {XMLDom} The blocks in the current workspace.
+ */
 BlockPyEditor.prototype.getBlocksFromXml = function() {
     return Blockly.Xml.workspaceToDom(this.blockly);
 }
           
+/**
+ * Helper function for setting the current Blockly workspace to
+ * whatever XML DOM is given. This clears out any existing blocks.
+ */
 BlockPyEditor.prototype.setBlocksFromXml = function(xml) {
     this.blockly.clear();
     Blockly.Xml.domToWorkspace(xml, this.blockly);
     //console.log(this.blockly.getAllBlocks());
 }
 
+/** 
+ * @property {Number} previousLine - Keeps track of the previously highlighted line.
+ */
 BlockPyEditor.prototype.previousLine = null;
+
+/**
+ * Assuming that a line has been highlighted previously, this will set the
+ * line to be highlighted again. Used when we need to restore a highlight.
+ */
 BlockPyEditor.prototype.refreshHighlight = function() {
     if (this.previousLine !== null) {
         this.codeMirror.addLineClass(this.previousLine, 'text', 'editor-error-line');
     }
+    // TODO: Shouldn't this refresh the highlight in the block side too?
 }
+
+/**
+ * Highlights a line of code in the CodeMirror instance. This applies the "active" style
+ * which is meant to bring attention to a line, but not suggest it is wrong.
+ *
+ * @param {Number} line - The line of code to highlight. I think this is zero indexed?
+ */
 BlockPyEditor.prototype.highlightLine = function(line) {
     if (this.previousLine !== null) {
         this.codeMirror.removeLineClass(this.previousLine, 'text', 'editor-active-line');
@@ -3546,6 +4001,13 @@ BlockPyEditor.prototype.highlightLine = function(line) {
     this.codeMirror.addLineClass(line, 'text', 'editor-active-line');
     this.previousLine = line;
 }
+
+/**
+ * Highlights a line of code in the CodeMirror instance. This applies the "error" style
+ * which is meant to suggest that a line is wrong.
+ *
+ * @param {Number} line - The line of code to highlight. I think this is zero indexed?
+ */
 BlockPyEditor.prototype.highlightError = function(line) {
     if (this.previousLine !== null) {
         this.codeMirror.removeLineClass(this.previousLine, 'text', 'editor-active-line');
@@ -3555,10 +4017,25 @@ BlockPyEditor.prototype.highlightError = function(line) {
     this.refreshBlockHighlight(line);
     this.previousLine = line;
 }
+
+/**
+ * Highlights a block in Blockly. Unfortunately, this is the same as selecting it.
+ *
+ * @param {Number} block - The ID of the block object to highlight.
+ */
 BlockPyEditor.prototype.highlightBlock = function(block) {
     this.blockly.highlightBlock(block);
 }
 
+/**
+ * Used to restore a block's highlight when travelling from the code tab. This
+ * uses a mapping between the blocks and text that is generated from the parser.
+ * The parser has stored the relevant line numbers for each block in the XML of the
+ * block. Very sophisticated, and sadly fairly fragile.
+ * TODO: I believe there's some kind of off-by-one error here...
+ *
+ * @param {Number} line - The line of code to highlight. I think this is zero indexed?
+ */
 BlockPyEditor.prototype.refreshBlockHighlight = function(line) {
     if (this.blocksFailed) {
         this.blocksFailed = false;
@@ -3588,9 +4065,18 @@ BlockPyEditor.prototype.refreshBlockHighlight = function(line) {
         }
     }
 }
+
+/**
+ * Removes the outline around a block. Currently unused.
+ */
 BlockPyEditor.prototype.unhighlightBlock = function() {
     // TODO:
 }
+
+/**
+ * Removes any highlight in the text code editor.
+ *
+ */
 BlockPyEditor.prototype.unhighlightLines = function() {
     if (this.previousLine !== null) {
         this.codeMirror.removeLineClass(this.previousLine, 'text', 'editor-active-line');
@@ -3599,14 +4085,15 @@ BlockPyEditor.prototype.unhighlightLines = function() {
     this.previousLine = null;
 }
 
-/*
+/**
  * DEPRECATED, thankfully
  * Builds up an array indicating the relevant block ID for a given step.
  * Operates on the current this.blockly instance
  * It works by injecting __HIGHLIGHT__(id); at the start of every line of code
  *  and then extracting that with regular expressions. This makes it vulnerable
  *  if someone decides to use __HIGHLIGHT__ in their code. I'm betting on that
- *  never being a problem, though.
+ *  never being a problem, though. Still, this was a miserable way of accomplishing
+ *  the desired behavior.
  */
 BlockPyEditor.prototype.getHighlightMap = function() {
     // Protect the current STATEMENT_PREFIX
@@ -3630,7 +4117,11 @@ BlockPyEditor.prototype.getHighlightMap = function() {
     return highlightMap;
 }
 
-
+/**
+ * Updates the current file being edited in the editors.
+ *
+ * @param {String} name - The name of the file being edited (e.g, "__main__", "starting_code")
+ */
 BlockPyEditor.prototype.changeProgram = function(name) {
     this.silentChange_ = true;
     this.model.settings.filename = name;
@@ -3638,10 +4129,20 @@ BlockPyEditor.prototype.changeProgram = function(name) {
     this.toolbar.elements.programs.find("[data-name="+name+"]").click();
 }
 
+/**
+ * Eventually will be used to update "levels" of sophistication of the code interface.
+ * Currently unimplemented and unused.
+ */
 BlockPyEditor.prototype.setLevel = function() {
     var level = this.main.model.settings.level();
 }
 
+/**
+ * Maps short category names in the toolbox to the full XML used to
+ * represent that category as usual. This is kind of a clunky mechanism
+ * for managing the different categories, and doesn't allow us to specify
+ * individual blocks.
+ */
 BlockPyEditor.CATEGORY_MAP = {
     'Properties': '<category name="Properties" custom="VARIABLE" colour="240">'+
                   '</category>',
@@ -3771,6 +4272,14 @@ BlockPyEditor.CATEGORY_MAP = {
     'Separator': '<sep></sep>'
 };
 
+/**
+ * Creates an updated representation of the Toolboxes XML as currently specified in the
+ * model, using whatever modules have been added or removed. This method can either set it
+ * or just retrieve it for future use.
+ *
+ * @param {Boolean} only_set - Whether to return the XML string or to actually set the XML. False means that it will not update the toolbox!
+ * @returns {String?} Possibly returns the XML of the toolbox as a string.
+ */
 BlockPyEditor.prototype.updateToolbox = function(only_set) {
     var xml = '<xml id="toolbox" style="display: none">';
     var modules = this.main.model.assignment.modules();
@@ -3811,6 +4320,14 @@ BlockPyEditor.prototype.updateToolbox = function(only_set) {
     }
 };
 
+/**
+ * Generates a PNG version of the current workspace. This PNG is stored in a Base-64 encoded
+ * string as part of a data URL (e.g., "data:image/png;base64,...").
+ * TODO: There seems to be some problems capturing blocks that don't start with
+ * statement level blocks (e.g., expression blocks).
+ * 
+ * @param {Function} callback - A function to be called with the results. This function should take two parameters, the URL (as a string) of the generated base64-encoded PNG and the IMG tag.
+ */
 BlockPyEditor.prototype.getPngFromBlocks = function(callback) {
     var blocks = this.blockly.svgBlockCanvas_.cloneNode(true);
     blocks.removeAttribute("width");
@@ -3847,7 +4364,10 @@ BlockPyEditor.prototype.getPngFromBlocks = function(callback) {
     }
 }
 
-
+/**
+ * Shows a dialog window with the current block workspace encoded as a
+ * downloadable PNG image.
+ */
 BlockPyEditor.prototype.copyImage = function() {
     var dialog = this.main.components.dialog;
     this.getPngFromBlocks(function(canvasUrl, img) {
@@ -3977,6 +4497,15 @@ BlockPyEnglish.prototype.openDialog = function() {
     }
     this.main.components.dialog.show("English", body, function() {});
 }
+/**
+ * An object that manages the feedback area, where users are told the state of their
+ * program's execution and given guidance. Also manages the creation of the Trace Table.
+ *
+ * @constructor
+ * @this {BlockPyFeedback}
+ * @param {Object} main - The main BlockPy instance
+ * @param {HTMLElement} tag - The HTML object this is attached to.
+ */
 function BlockPyFeedback(main, tag) {
     this.main = main;
     this.tag = tag;
@@ -3987,11 +4516,16 @@ function BlockPyFeedback(main, tag) {
     this.status = this.tag.find('.blockpy-feedback-status');
     this.trace = this.tag.find('.blockpy-feedback-trace');
     
+    // Reload the tracetable on click
     this.trace.click(this.buildTraceTable.bind(this));
     
     this.original.hide();
 };
 
+/**
+ * Reload the trace table, showing it if it was hidden and
+ * resetting its position to the last step.
+ */
 BlockPyFeedback.prototype.buildTraceTable = function() {
     var execution = this.main.model.execution;
     execution.show_trace(true);
@@ -3999,6 +4533,11 @@ BlockPyFeedback.prototype.buildTraceTable = function() {
     this.main.components.server.logEvent('editor', 'trace')
 }
 
+/**
+ * Raises a generic warning. This might not be used anymore.
+ *
+ * @param {String} html - Some HTML content to render to the user.
+ */
 BlockPyFeedback.prototype.error = function(html) {
     this.tag.html(html);
     this.tag.removeClass("alert-success");
@@ -4006,6 +4545,10 @@ BlockPyFeedback.prototype.error = function(html) {
     this.main.components.printer.print("Execution stopped - there was an error!");
 }
 
+/**
+ * Clears any output currently in the feedback area. Also resets the printer and
+ * any highlighted lines in the editor.
+ */
 BlockPyFeedback.prototype.clear = function() {
     this.title.html("Ready");
     this.original.hide();
@@ -4015,18 +4558,24 @@ BlockPyFeedback.prototype.clear = function() {
     this.main.components.printer.resetPrinter()
 };
 
+/**
+ * Clears any errors from the editor area. I'm not sure that this is actually used.
+ */
 BlockPyFeedback.prototype.clearEditorErrors = function() {
     if (this.main.model.status.error() == "editor") {
         this.clear();
     }
 }
 
-BlockPyFeedback.prototype.success = function() {
-    this.tag.html("<span class='label label-success'><span class='glyphicon glyphicon-ok'></span> Success!</span>");
-    this.tag.removeClass("alert-warning");
-    this.main.components.server.logEvent('feedback', "Success");
-}
-
+/**
+ * Show an error message related to a problem with the editor. This will appear in
+ * the Feedback area, the Printer, and also log to the server. The relevant line of
+ * code or block will also be highlighted.
+ *
+ * @param {String} original - HTML content that represents the original error message generated by the system.
+ * @param {String} message - HTML content that is a hopefully friendlier message for the user explaining the error.
+ * @param {number} line - What line the error occurred on.
+ */
 BlockPyFeedback.prototype.editorError = function(original, message, line) {
     original = this.prettyPrintError(original);
     this.title.html("Editor Error");
@@ -4038,6 +4587,10 @@ BlockPyFeedback.prototype.editorError = function(original, message, line) {
     this.main.components.server.logEvent('feedback', "Editor Error", original+"\n|\n"+message);
 }
 
+/**
+ * Mark this problem as completed for the student. This will appear in the Feedback area,
+ * and will also unhighlight lines in the editor and log to the server.
+ */
 BlockPyFeedback.prototype.complete = function() {
     this.title.html("Complete!");
     this.original.hide();
@@ -4047,6 +4600,11 @@ BlockPyFeedback.prototype.complete = function() {
     this.main.components.server.logEvent('feedback', "Success");
 }
 
+/**
+ * This notifies the student that their code ran without errors, but that there was no
+ * Success raised by the Checker. This will appear in the Feedback area,
+ * and will also unhighlight lines in the editor and log to the server.
+ */
 BlockPyFeedback.prototype.noErrors = function() {
     this.title.html("Ran");
     this.original.hide();
@@ -4056,6 +4614,15 @@ BlockPyFeedback.prototype.noErrors = function() {
     this.main.components.server.logEvent('feedback', "No Errors", '');
 }
 
+/**
+ * Show an error message related to syntax issue. This will appear in
+ * the Feedback area, the Printer, and also log to the server. The relevant line of
+ * code or block will also be highlighted.
+ *
+ * @param {String} original - HTML content that represents the original error message generated by the system.
+ * @param {String} message - HTML content that is a hopefully friendlier message for the user explaining the error.
+ * @param {number} line - What line the error occurred on.
+ */
 BlockPyFeedback.prototype.syntaxError = function(original, message, line) {
     original = this.prettyPrintError(original);
     this.title.html("Syntax Error");
@@ -4067,6 +4634,15 @@ BlockPyFeedback.prototype.syntaxError = function(original, message, line) {
     this.main.components.server.logEvent('feedback', "Syntax Error", original+"\n|\n"+message);
 }
 
+/**
+ * Show an error message related to semantic error with the program (e.g., unused variable). 
+ * This will appear in the Feedback area, the Printer, and also log to the server. The
+ * relevant line of code or block will also be highlighted.
+ *
+ * @param {String} original - HTML content that represents the original error message generated by the system.
+ * @param {String} message - HTML content that is a hopefully friendlier message for the user explaining the error.
+ * @param {number} line - What line the error occurred on.
+ */
 BlockPyFeedback.prototype.semanticError = function(name, message, line) {
     this.title.html(name);
     this.original.hide();
@@ -4079,6 +4655,16 @@ BlockPyFeedback.prototype.semanticError = function(name, message, line) {
     this.main.components.server.logEvent('feedback', "Semantic Error", name+"\n|\n"+message);
 }
 
+/**
+ * Show an error message related to a serious internal BlockPy program. Under normal conditions,
+ * this should never appear to a student. This will appear in
+ * the Feedback area, the Printer, and also log to the server. The relevant line of
+ * code or block will also be highlighted.
+ *
+ * @param {String} original - HTML content that represents the original error message generated by the system.
+ * @param {String} message - HTML content that is a hopefully friendlier message for the user explaining the error.
+ * @param {number} line - What line the error occurred on.
+ */
 BlockPyFeedback.prototype.internalError = function(original, name, message) {
     original = this.prettyPrintError(original);
     this.title.html(name);
@@ -4089,6 +4675,15 @@ BlockPyFeedback.prototype.internalError = function(original, name, message) {
     this.main.components.server.logEvent('feedback', "Internal Error", name+"\n|\n"+original+"\n|\n"+message);
 }
 
+/**
+ * Show an incorrect code message related to a problem as specified by the Checker. This will appear in
+ * the Feedback area, the Printer, and also log to the server. The relevant line of
+ * code or block will also be highlighted.
+ *
+ * @param {String} original - HTML content that represents the original error message generated by the system.
+ * @param {String} message - HTML content that is a hopefully friendlier message for the user explaining the error.
+ * @param {number} line - What line the error occurred on.
+ */
 BlockPyFeedback.prototype.instructorFeedback = function(name, message, line) {
     this.title.html(name);
     this.original.hide();
@@ -4100,6 +4695,15 @@ BlockPyFeedback.prototype.instructorFeedback = function(name, message, line) {
     this.main.components.server.logEvent('feedback', "Instructor Feedback", name+"\n|\n"+"\n|\n"+message);
 }
 
+/**
+ * Show "Empty Program" error, indicating the student hasn't written any code. This will appear in
+ * the Feedback area, the Printer, and also log to the server. The relevant line of
+ * code or block will also be highlighted.
+ *
+ * @param {String} original - HTML content that represents the original error message generated by the system.
+ * @param {String} message - HTML content that is a hopefully friendlier message for the user explaining the error.
+ * @param {number} line - What line the error occurred on.
+ */
 BlockPyFeedback.prototype.emptyProgram = function() {
     this.title.html("Blank Program");
     this.original.hide().html("");
@@ -4108,6 +4712,11 @@ BlockPyFeedback.prototype.emptyProgram = function() {
     this.main.components.server.logEvent('feedback', "Empty Program");
 }
 
+/**
+ * Converts any kind of error (usually a Skulpt one) into a prettier version that's ready
+ * for users to see. If it's already a string, it is passed along unchanged. But Skulpt
+ * errors have to be processed more closely.
+ */
 BlockPyFeedback.prototype.prettyPrintError = function(error) {
     if (typeof error === "string") {
         return error;
@@ -4121,8 +4730,13 @@ BlockPyFeedback.prototype.prettyPrintError = function(error) {
     }
 }
 
-/*
- * Print an error to the printers -- the on screen one and the browser one
+/**
+ * Print an error to the printers -- the on screen one and the browser one. This
+ * will attempt to provide extra explanation and context for an error.
+ * Notice that this is largely for Run-time errors that will be thrown when the code
+ * is executed, as opposed to ones raised elsewhere in the environment.
+ * 
+ * @param {String} error - The error message to be analyzed and printed.
  */
 BlockPyFeedback.prototype.printError = function(error) {
     //console.log(error);
@@ -4149,26 +4763,25 @@ BlockPyFeedback.prototype.printError = function(error) {
     this.main.components.server.logEvent('feedback', "Runtime", original);
 }
 
-
-BlockPyFeedback.prototype.printSemantic = function(result) {
-    //this.explorer.tags.message.show();
-    //this.explorer.tags.message.html(JSON.stringify(result.identifiers));
-    var out = $("<div></div>");
-    for (var title in result) {
-        if (result[title].length >0) {
-            out.append("<b>"+title+"</b>: "+result[title].join()+"<br>");
-        }
-    }
-    this.body.html(out);
-}
+/**
+ * An object that manages the main toolbar, including the different mode buttons.
+ * This doesn't actually have many responsibilities after the initial load.
+ *
+ * @constructor
+ * @this {BlockPyToolbar}
+ * @param {Object} main - The main BlockPy instance
+ * @param {HTMLElement} tag - The HTML object this is attached to.
+ */
 function BlockPyToolbar(main, tag) {
     this.main = main;
     this.tag = tag;
     
+    // Holds the HTMLElement tags for each of the toolbar items
     this.tags = {};
     this.tags.mode_set_text = this.tag.find('.blockpy-mode-set-text');
     this.tags.filename_picker = this.tag.find('.blockpy-toolbar-filename-picker');
     
+    // Set up each of the relevant Button Groups
     var groupHtml = '<div class="btn-group" role="group"></div>';
     var runGroup =      $(groupHtml).appendTo(tag);
     var modeGroup =     $(groupHtml).appendTo(tag);
@@ -4176,32 +4789,10 @@ function BlockPyToolbar(main, tag) {
     var blocksGroup =   $(groupHtml).appendTo(tag);
     var codeGroup =     $(groupHtml).appendTo(tag);
     var programsGroup = $(groupHtml).appendTo(tag);
+    
+    // this used to hold many items, but now we store them directly in the
+    // html of interface.js
     this.elements = {
-        /*'undo': $("<button></button>")
-                            .addClass('btn btn-default blockpy-toolbar-undo')
-                            .attr("role", "group")
-                            .html('<i class="fa fa-undo"></i>')
-                            .appendTo(doGroup),
-        'redo': $("<button></button>")
-                            .addClass('btn btn-default blockpy-toolbar-redo')
-                            .attr("role", "group")
-                            .html('<i class="fa fa-repeat"></i>')
-                            .appendTo(doGroup),*/
-        /*'align': $("<button></button>")
-                            .addClass('btn btn-default blockpy-toolbar-align')
-                            .attr("role", "group")
-                            .html('<i class="fa fa-align-left"></i> Align')
-                            .appendTo(doGroup),
-        'reset': $("<button></button>")
-                            .addClass('btn btn-default blockpy-toolbar-reset')
-                            .attr("role", "group")
-                            .html('<i class="fa fa-refresh"></i> Reset')
-                            .appendTo(doGroup),
-        'clear': $("<button></button>")
-                            .addClass('btn btn-default blockpy-toolbar-clear')
-                            .attr("role", "group")
-                            .html('<i class="fa fa-trash-o"></i> Clear')
-                            .appendTo(doGroup),*/
         'programs': $("<div></div>")
                             .addClass('btn-group blockpy-programs')
                             .attr("data-toggle", "buttons")
@@ -4209,9 +4800,17 @@ function BlockPyToolbar(main, tag) {
     };    
     this.elements.programs.hide();
     this.elements.editor_mode = this.tag.find('.blockpy-change-mode');
+    
+    // Actually set up the toolbar!
     this.activateToolbar();
 }
 
+/**
+ * Add a new button for the given filename in the Programs button group.
+ * These programs will be things like "__main__".
+ *
+ * @param {String} name - The name of the new program.
+ */
 BlockPyToolbar.prototype.addProgram = function(name) {
     this.elements.programs.append("<label class='btn btn-default'>"+
                                     "<input type='radio' id='"+name+"' "+
@@ -4220,18 +4819,25 @@ BlockPyToolbar.prototype.addProgram = function(name) {
                                    "</label>");
 }
 
+/**
+ * Show the programs button group.
+ */
 BlockPyToolbar.prototype.showPrograms = function() {
     this.elements.programs.show();
 }
 
+/**
+ * Hide the programs button group.
+ */
 BlockPyToolbar.prototype.hidePrograms = function() {
     this.elements.programs.hide();
 }
     
-    
+/**
+ * Register click events for more complex toolbar actions.
+ */
 BlockPyToolbar.prototype.activateToolbar = function() {
     var main = this.main;
-    var elements = this.elements;
     this.tag.find('.blockpy-run').click(function() {
         main.components.engine.run();
         main.components.server.logEvent('editor', 'run')
@@ -4263,20 +4869,26 @@ BlockPyToolbar.prototype.activateToolbar = function() {
     });
 }
 /**
- * Printer
- * Responsible for executing code and cleaning the results
+ * An object for executing Python code and passing the results along to interested components.
+ *
+ * @constructor
+ * @this {BlockPyEditor}
+ * @param {Object} main - The main BlockPy instance
+ * @param {HTMLElement} tag - The HTML object this is attached to.
  */
-
 function BlockPyEngine(main) {
     this.main = main;
     
     this.loadEngine();
     
-    this.instructor_module = instructor_module('instructor')
+    this.instructor_module = instructor_module('instructor');
     
     //this.main.model.program.subscribe(this.analyze.bind(this))
 }
 
+/**
+ * Initializes the Python Execution engine and the Printer (console).
+ */
 BlockPyEngine.prototype.loadEngine = function() {
     var engine = this;
     var printer = this.main.components.printer;
@@ -4296,17 +4908,21 @@ BlockPyEngine.prototype.loadEngine = function() {
     });
     // Identify the location to put new charts
     Sk.console = printer.getConfiguration();
-    // Stepper!
+    // Stepper! Executed after every statement.
     Sk.afterSingleExecution = this.step.bind(this);
     
-    //
+    // Keeps track of the tracing while the program is executing; destroyed afterwards.
     this.executionBuffer = {};
 }
 
-BlockPyEngine.prototype.loadCode = function(code) {
-    // Create parse
-}
-
+/**
+ * Used to access Skulpt built-ins. This is pretty generic, taken
+ * almost directly from the Skulpt docs.
+ *
+ * @param {String} filename - The python filename (e.g., "os" or "pprint") that will be loaded.
+ * @returns {String} The JavaScript source code of the file (weird, right?)
+ * @throws Will throw an error if the file isn't found.
+ */
 BlockPyEngine.prototype.readFile = function(filename) {
     if (Sk.builtinFiles === undefined ||
         Sk.builtinFiles["files"][filename] === undefined) {
@@ -4315,6 +4931,12 @@ BlockPyEngine.prototype.readFile = function(filename) {
     return Sk.builtinFiles["files"][filename];
 }
 
+/**
+ * Resets the state of the execution engine, including reinitailizing
+ * the execution buffer (trace, step, etc.), reseting the printer, and
+ * hiding the trace button.
+ *
+ */
 BlockPyEngine.prototype.reset = function() {
     this.executionBuffer = {
         'trace': [],
@@ -4330,6 +4952,17 @@ BlockPyEngine.prototype.reset = function() {
     this.main.model.execution.show_trace(false);
 }
 
+/**
+ * "Steps" the execution of the code, meant to be used as a callback to the Skulpt
+ * environment.
+ * 
+ * @param {Object} variables - Hash that maps the names of variables (Strings) to their Skulpt representation.
+ * @param {Number} lineNumber - The corresponding line number in the source code that is being executed.
+ * @param {Number} columnNumber - The corresponding column number in the source code that is being executed. Think of it as the "X" position to the lineNumber's "Y" position.
+ * @param {String} filename - The name of the python file being executed (e.g., "__main__.py").
+ * @param {String} astType - Unused? TODO: What is this?
+ * @param {String} ast - String-encoded JSON representation of the AST node associated with this element.
+ */
 BlockPyEngine.prototype.step = function(variables, lineNumber, 
                                        columnNumber, filename, astType, ast) {
     if (filename == '<stdin>.py') {
@@ -4349,6 +4982,10 @@ BlockPyEngine.prototype.step = function(variables, lineNumber,
     }
 }
 
+/**
+ * Called at the end of the Skulpt execution to terminate the executionBuffer
+ * and hand it off to the execution trace in the model.
+ */
 BlockPyEngine.prototype.lastStep = function() {
     var execution = this.main.model.execution;
     execution.trace(this.executionBuffer.trace);
@@ -4358,15 +4995,30 @@ BlockPyEngine.prototype.lastStep = function() {
     this.executionBuffer = undefined;
 }
 
-/*
-Syntax Error
-Runtime Error
-Semantic Error
-Question Error
-*/
+/**
+ * Runs the AbstractInterpreter to get some static information about the code,
+ * in particular the variables' types. This is needed for type checking.
+ *
+ * @returns {Object<String, AIType>} Maps variable names (as Strings) to types as constructed by the AbstractIntepreter.
+ */
+BlockPyEngine.prototype.analyzeVariables = function() {
+    // Get the code
+    var code = this.main.model.programs['__main__']();
+    if (code.trim() == "") {
+        return {};
+    }
+    
+    var analyzer = new AbstractInterpreter(code);
+    report = analyzer.report;
+    return analyzer.variableTypes;
+}
 
-/*
- * Gives suggestions on the given code
+/**
+ * Runs the AbstractInterpreter to get some static information about the code,
+ * including potential semantic errors. It then parses that information to give
+ * feedback.
+ *
+ * @returns {Boolean} Whether the code was successfully analyzed.
  */
 BlockPyEngine.prototype.analyze = function() {
     this.main.model.execution.status("analyzing");
@@ -4837,6 +5489,18 @@ BlockPyEngine.prototype.parseValue = function(property, value) {
                     };
     }
 }
+/**
+ * A helper function for extending an array based
+ * on an "addArray" and "removeArray". Any element
+ * found in removeArray is removed from the first array
+ * and all the elements of addArray are added.
+ * Creates a new array, so is non-destructive.
+ *
+ * @param {Array} array - the array to manipulate
+ * @param {Array} addArray - the elements to add to the array
+ * @param {Array} removeArray - the elements to remove from the array
+ * @return {Array} The modified array
+ */
 function expandArray(array, addArray, removeArray) {
     var copyArray = array.filter(function(item) {
         return removeArray.indexOf(item) === -1;
@@ -4844,6 +5508,16 @@ function expandArray(array, addArray, removeArray) {
     return copyArray.concat(addArray);
 }
 
+/**
+ * Creates an instance of BlockPy
+ *
+ * @constructor
+ * @this {BlockPy}
+ * @param {Object} settings - User level settings (e.g., what view mode, whether to mute semantic errors, etc.)
+ * @param {Object} assignment - Assignment level settings (data about the loaded assignment, user, submission, etc.)
+ * @param {Object} submission - Unused parameter.
+ * @param {Object} programs - Includes the source code of any programs to be loaded
+ */
 function BlockPy(settings, assignment, submission, programs) {
     this.model = {
         // User level settings
@@ -4865,6 +5539,8 @@ function BlockPy(settings, assignment, submission, programs) {
             'level': ko.observable("level"),
             // boolean
             'disable_semantic_errors': ko.observable(settings.disable_semantic_errors),
+            // boolean
+            'disable_variable_types': ko.observable(settings.disable_variable_types || false),
             // boolean
             'auto_upload': ko.observable(true),
             // boolean
@@ -4936,14 +5612,18 @@ function BlockPy(settings, assignment, submission, programs) {
             "give_feedback": ko.observable(assignment.give_feedback),
         }
     };
+    
+    // The code for the current active program file (e.g., "__main__")
     this.model.program = ko.computed(function() {
         return this.programs[this.settings.filename()]();
     }, this.model) //.extend({ rateLimit: { method: "notifyWhenChangesStop", timeout: 400 } });
     
+    // Whether this URL has been specified
     this.model.server_is_connected = function(url) {
         return this.constants.urls !== undefined && this.constants.urls[url] !== undefined;
     };
     
+    // Helper function to map error statuses to UI elements
     this.model.status_feedback_class = ko.computed(function() {
         switch (this.status.error()) {
             default: case 'none': return ['label-none', ''];
@@ -4958,6 +5638,7 @@ function BlockPy(settings, assignment, submission, programs) {
         }
     }, this.model);
     
+    // Helper function to map Server error statuses to UI elements
     this.model.status_server_class = ko.computed(function() {
         switch (this.status.server()) {
             default: case 'Loading': return ['label-default', 'Loading'];
@@ -4971,6 +5652,7 @@ function BlockPy(settings, assignment, submission, programs) {
         }
     }, this.model);
     
+    // Program trace functions
     var execution = this.model.execution;
     this.model.moveTraceFirst = function(index) { 
         execution.trace_step(0); };
@@ -4986,6 +5668,14 @@ function BlockPy(settings, assignment, submission, programs) {
         return execution.trace()[Math.min(execution.trace().length-1, execution.trace_step())];
     });
     
+    /**
+     * Opens a new window to represent the exact value of a Skulpt object.
+     * Particularly useful for things like lists that can be really, really
+     * long.
+     * 
+     * @param {String} type - The type of the value
+     * @param {Object} exact_value - A Skulpt value to be rendered.
+     */
     this.model.viewExactValue = function(type, exact_value) {
         return function() {
             if (type == "List") {
@@ -4997,6 +5687,7 @@ function BlockPy(settings, assignment, submission, programs) {
     }
     
     // For performance reasons, batch notifications for execution handling.
+    // I'm not even sure these have any value any more.
     execution.trace.extend({ rateLimit: { timeout: 20, method: "notifyWhenChangesStop" } });
     execution.step.extend({ rateLimit: { timeout: 20, method: "notifyWhenChangesStop" } });
     execution.last_step.extend({ rateLimit: { timeout: 20, method: "notifyWhenChangesStop" } });
@@ -5005,12 +5696,22 @@ function BlockPy(settings, assignment, submission, programs) {
     this.initMain();
 }
 
+/**
+ * The default modules to make available to the user.
+ *
+ * @type Array.<String>
+ */
 BlockPy.DEFAULT_MODULES = ['Properties', 'Decisions', 
                            'Iteration',
                            'Calculation', 'Output', 
                            'Values', 
                            'Lists', 'Dictionaries']
 
+/**
+ * Initializes the BlockPy object by initializing its interface,
+ * model, and components.
+ *
+ */
 BlockPy.prototype.initMain = function() {
     this.initInterface();
     this.initModel();
@@ -5020,20 +5721,39 @@ BlockPy.prototype.initMain = function() {
     }
 }
 
-BlockPy.prototype.initInterface = function(postCompletion) {
+/**
+ * Initializes the User Inteface for the instance, by loading in the
+ * HTML file (which has been manually encoded into a JS string using
+ * the build.py script). We do this because its a giant hassle to keep
+ * HTML correct when it's stored in JS strings. We should look into
+ * more sophisticated templating features, probably.
+ *
+ */
+BlockPy.prototype.initInterface = function() {
     var constants = this.model.constants;
+    // Refer to interface.js, interface.html, and build.py
     constants.container = $(constants.attachmentPoint).html($(BlockPyInterface))
 }
 
+/**
+ * Applys the KnockoutJS bindings to the model, instantiating the values into the
+ * HTML.
+ */
 BlockPy.prototype.initModel = function() {
     ko.applyBindings(this.model);
 }
 
+/**
+ * Initializes each of the relevant components of BlockPy. For more information,
+ * consult each of the component's relevant JS file in turn.
+ */
 BlockPy.prototype.initComponents = function() {
     var container = this.model.constants.container;
     this.components = {};
     var main = this,
         components = this.components;
+    // Each of these components will take the BlockPy instance, and possibly a
+    // reference to the relevant HTML location where it will be embedded.
     components.dialog = new BlockPyDialog(main, container.find('.blockpy-popup'));
     components.toolbar  = new BlockPyToolbar(main,  container.find('.blockpy-toolbar'));
     components.feedback = new BlockPyFeedback(main, container.find('.blockpy-feedback'));
@@ -5048,12 +5768,20 @@ BlockPy.prototype.initComponents = function() {
     main.model.status.server('Loaded')
 }
 
+/**
+ * Initiailizes certain development data, useful for testing out new modules in
+ * Skulpt.
+ */
 BlockPy.prototype.initDevelopment = function () {
     /*$.get('src/skulpt_ast.js', function(data) {
         Sk.builtinFiles['files']['src/lib/ast/__init__.js'] = data;
     });*/
 }
 
+/**
+ * Redundant method for reporting an error. If this is used anywhere, it should be
+ * converted to direct calls to components.feedback.
+ */
 BlockPy.prototype.reportError = function(component, original, message, line) {
     if (component == 'editor') {
         this.components.feedback.editorError(original, message, line);
@@ -5063,138 +5791,10 @@ BlockPy.prototype.reportError = function(component, original, message, line) {
     console.error(component, message)
 }
 
-/*
-function BlockPy(attachmentPoint, mode, presentation, current_code,
-                on_run, on_change, starting_code, instructor, view, blocklyPath,
-                settings,
-                urls, questionProperties) {
-    // User programs
-}
-*/
-
-BlockPy.prototype.activateToolbar = function() {
-    var elements = this.toolbar.elements;
-    var blockpy = this, server = this.server;
-    // Editor mode
-    
-    elements.to_pseudo.click(function(ev) {
-        ev.preventDefault();
-        blockpy.editor.updateBlocks();
-        server.logEvent('editor', 'pseudo');
-        var popup = blockpy.mainDiv.find('.blockpy-popup');
-        popup.find('.modal-title').html("Pseudo-code Explanation");
-        popup.find('.modal-body').html(Blockly.Pseudo.workspaceToCode(blockpy.editor.blockly));
-        popup.modal('show');
-    });
-    blockpy.mainDiv.find('.blockpy-popup').on('hidden.bs.modal', function () {
-        server.logEvent('editor', 'close_pseudo');
-    });
-    if (!this.model.settings.instructor) {
-        elements.blockpy_mode.hide();
-        //elements.to_rst.hide();
-    }
-    // Run
-    elements.run.click(function() {
-        server.logEvent('editor', 'run');
-        blockpy.run();
-    });
-    // Undo
-    elements.undo.click(function() {
-        server.logEvent('editor', 'undo');
-        if (blockpy.model.settings.editor() == 'blocks') {
-            blockpy.editor.blockly.undo();
-        } else {
-            blockpy.editor.text.undo();
-        }
-    });
-    // Redo
-    elements.redo.click(function() {
-        server.logEvent('editor', 'redo');
-        if (blockpy.model.settings.editor() == 'blocks') {
-            blockpy.editor.blockly.redo();
-        } else {
-            blockpy.editor.text.redo();
-        }
-    });
-    // Wide
-    var left = blockpy.mainDiv.find('.blockpy-content-left'),
-        right = blockpy.mainDiv.find('.blockpy-content-right');
-    elements.wide.click(function() {
-        if (elements.wide.attr("data-side") == "skinny") {
-            server.logEvent('editor', 'wide');
-            // Make it skinny
-            elements.wide.attr("data-side", "wide")
-                         .html('<i class="fa fa-ellipsis-h"></i> Wide');
-            // Left side
-            left.removeClass('col-md-10 col-sm-12 col-xs-12 col-md-offset-1');
-            left.addClass('col-md-7 col-sm-7 col-xs-7');
-            // Right side
-            right.removeClass('col-md-10 col-sm-12 col-xs-12 col-md-offset-1');
-            right.addClass('col-md-5 col-xs-5 col-sm-5');
-        } else {
-            server.logEvent('editor', 'skinny');
-            // Make it wide
-            elements.wide.attr("data-side", "skinny")
-                         .html('<i class="fa fa-ellipsis-v"></i> Skinny');
-            // Left side
-            left.removeClass('col-md-7 col-xs-7 col-sm-7');
-            left.addClass('col-md-10 col-sm-12 col-xs-12 col-md-offset-1');
-            // Right side
-            right.removeClass('col-md-5 col-xs-5 col-sm-7');
-            right.addClass('col-md-10 col-sm-12 col-xs-12 col-md-offset-1');
-        }
-        // Hack: Force the blockly window to fit the width
-        if (blockpy.model.settings.editor == 'blocks') {
-            blockpy.editor.blockly.render();
-        }
-    });
-    // Reset code
-    elements.reset.click(function() {
-        server.logEvent('editor', 'reset');
-        blockpy.setCode(blockpy.model.programs.starting_code);
-    });
-    // Clear code
-    elements.clear.click(function() {
-        server.logEvent('editor', 'clear');
-        blockpy.setCode("");
-    });
-    // Align blocks
-    elements.align.click(function() {
-        server.logEvent('editor', 'align');
-        blockpy.editor.blockly.align();
-    });
-    // Change programs
-    for (var name in this.model.programs) {
-        this.toolbar.addProgram(name);
-    }
-    this.toolbar.elements.programs.button('toggle').change(function(event) {
-        if (blockpy.silentChange_) {
-            blockpy.silentChange_ = false;
-        } else {
-            var name = $(event.target).attr("data-name");
-            blockpy.changeProgram(name);
-        }
-    });
-    
-    var parsonBox = blockpy.mainDiv.find('.blockpy-presentation-parsons-check input');
-    var textFirstBox = blockpy.mainDiv.find('.blockpy-presentation-text-first input');
-    var nameEditor = blockpy.mainDiv.find('.blockpy-presentation-name-editor');
-    var updatePresentation = function() {
-        blockpy.model.settings.parsons = parsonBox.prop('checked');
-        blockpy.model.settings.text_first = textFirstBox.prop('checked');
-        blockpy.server.savePresentation(blockpy.presentation.get(), 
-                                       nameEditor.val(), 
-                                       blockpy.model.settings.parsons,
-                                       blockpy.model.settings.text_first);
-    }
-    // Save name editing
-    nameEditor.change(updatePresentation);
-    // Parsons checkbox
-    parsonBox.change(updatePresentation).prop('checked', this.model.settings.parsons);
-    // Text first checkbox
-    textFirstBox.change(updatePresentation).prop('checked', this.model.settings.text_first);
-}
-
+/**
+ * Helper function for setting the current code. I'm not sure if this is used anywhere.
+ *
+ */
 BlockPy.prototype.setCode = function(code, name) {
     if (name === undefined) {
         name = this.model.settings.filename();
@@ -5202,12 +5802,3 @@ BlockPy.prototype.setCode = function(code, name) {
     this.model.programs[name](code);
 }
 
-BlockPy.prototype.alert = function(message) {
-    var box = this.mainDiv.find('.blockpy-alert');
-    box.text(message).show();
-    return box;
-}
-
-/*
- * Resets skulpt to some default values
- */
