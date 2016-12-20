@@ -37,13 +37,14 @@ Assignment
 {% if not group %}
 <script>
     $(document).ready(function() {
+        queryParams = getQueryParams();
         blockpy = new BlockPy(
             // settings
             {
                 'editor': 'Blocks',
                 'blocklyPath': {{ url_for('static', filename='blockly/')|tojson }},
                 'attachmentPoint': document.getElementById('blockpy-div'),
-                'instructor': false,
+                'instructor': (queryParams.mode == "instructor"),
                 'urls': {
                     'import_datasets': {{ url_for('blockpy.load_corgis',path='')|tojson }},
                 }
@@ -134,6 +135,23 @@ $(document).ready(function() {
 $(document).ready(function() {
     $('.delete-on-load').remove();
 });
+
+function getQueryParams(){
+    try{
+        url = window.location.href;
+        query_str = url.substr(url.indexOf('?')+1, url.length-1);
+        r_params = query_str.split('&');
+        params = {}
+        for( i in r_params){
+            param = r_params[i].split('=');
+            params[ param[0] ] = param[1];
+        }
+        return params;
+    }
+    catch(e){
+       return {};
+    }
+}
 </script>
 
 {% endblock %}
