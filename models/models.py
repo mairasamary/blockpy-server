@@ -68,6 +68,18 @@ class User(Base, UserMixin):
     authentications = relationship("Authentication", backref='user', lazy='dynamic')
     assignments = relationship("Assignment",  backref='user', lazy='dynamic')
     
+    @staticmethod
+    def new_from_instructor(email, first_name='', last_name=''):
+        new_user = User(first_name=first_name, last_name=last_name, 
+                        email=email)
+        db.session.add(new_user)
+        db.session.commit()
+        return new_user
+        
+    @staticmethod
+    def find_student(email):
+        return User.query.filter_by(email=email).first()
+    
     def get_roles(self):
         return Role.query.filter_by(user_id=self.id).all()
         
@@ -110,6 +122,17 @@ class User(Base, UserMixin):
         return ('instructor' in role_strings or 
                 'urn:lti:sysrole:ims/lis/none' in role_strings or
                 'urn:lti:role:ims/lis/teachingassistant' in role_strings)
+                
+    def is_student(self, course_id=None):
+        if course_id is not None:
+            return 'learner' in {role.name.lower() for role in self.roles.all()
+                                    if role.course_id == course_id}
+        return 'learner' in {role.name.lower() for role in self.roles.all()}
+        
+    def add_role(self, name, course_id):
+        new_role = Role(name=name, user_id=self.id, course_id=course_id)
+        db.session.add(new_role)
+        db.session.commit()
         
     def update_roles(self, new_roles, course_id):
         old_roles = [role for role in self.roles.all() if role.course_id == course_id]
@@ -212,6 +235,11 @@ class Course(Base):
         Course.query.filter_by(id=course_id).delete()
         db.session.commit()
         
+    def get_users(self):
+        return (db.session.query(Role, User)
+                          .filter(Role.course_id==self.id)
+                          .filter(Role.user_id==User.id).all())
+        
     @staticmethod
     def get_all_groups():
         courses = Course.query.all()
@@ -286,6 +314,15 @@ class Role(Base, RoleMixin):
     
     def __str__(self):
         return '<User {} is {}>'.format(self.user_id, self.name)
+    
+    @staticmethod    
+    def remove(role_id):
+        Role.query.filter_by(id=role_id).delete()
+        db.session.commit()
+        
+    @staticmethod
+    def by_id(role_id):
+        return Role.query.get(role_id)
         
 class CourseInvitations(Base):
     course_id = Column(Integer(), ForeignKey('course.id'), default=None)

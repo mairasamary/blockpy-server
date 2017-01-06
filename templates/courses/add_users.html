@@ -1,0 +1,28 @@
+{% from "helpers/_formhelpers.html" import render_field %}
+{% extends 'layout.html' %}
+
+{% block title %}
+Courses: Add Users
+{% endblock %}
+
+{% block statusbar %}
+{% endblock %}
+
+{% block extrahead %}
+<script type='text/javascript'>
+</script>
+{% endblock %}
+
+{% block body %}
+
+<form method=post action="{{ url_for('courses.add_users', course_id=course_id) }}">
+  <dl>
+    {{ render_field(add_form.invite) }}
+    {{ render_field(add_form.send_email) }}
+    <p>Add each new user email on a new line. Optionally, you can include their names ("First Name|Last Name|email@email.com").</p>
+    {{ render_field(add_form.new_users) }}
+  </dl>
+  <p><input type=submit value="Add Student">
+</form>
+
+{% endblock %}
