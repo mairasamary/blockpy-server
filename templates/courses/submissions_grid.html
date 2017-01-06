@@ -56,11 +56,18 @@ $().ready(function() {
     <td>{{ student.name() }}</td>
     {% for group in assignment_groups %}
     {% for assignment in grouped_assignments[group.id] %}
-    <td>{% if submissions.get((assignment.id, student.id)).correct -%}
-    check
+    <td>
+    {% if (assignment.id, student.id) in submissions %}
+    <a href="{{ url_for('courses.submissions_specific', 
+                submission_id=submissions[(assignment.id, student.id)].id) }}">
+    <img src="{{ url_for('static', 
+                 filename='images/'+
+                 ('tick.png' if submissions[(assignment.id, student.id)].correct else 'text_italic.png')) }}">
+    </a>
     {% else %}
-    mark
-    {% endif %}</td>
+    <img src="{{ url_for('static', filename='images/red-x.png') }}">
+    {% endif %}
+    </td>
     {% endfor %}
     {% endfor %}
 </tr>

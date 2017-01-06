@@ -30,7 +30,7 @@ $().ready(function() {
 <p>Back to <a href="{{ url_for('courses.course', course_id=course_id if course_id != None else 0) }}">Course</a></p>
 
 Name: {{ user.name() }} ({{ user.email }})<br>
-Assignment: {{ assignment.title() }} (<a href="{{ url_for('assignments.load', id=assignment.id) }}">View</a>)<br>
+Assignment: {{ assignment.title() }} (<a href="{{ url_for('assignments.load', assignment_id=assignment.id) }}">View</a>)<br>
 Body: {{ assignment.body}}<br>
 Type: {{ assignment.type}}<br>
 {% if assignment.type == "blockpy" %}

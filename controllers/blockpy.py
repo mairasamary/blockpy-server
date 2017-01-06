@@ -52,12 +52,12 @@ def load(lti=None, assignments=None, submissions=None, embed=False):
             instructor_mode = g.user.is_instructor(course_id)
         else:
             instructor_mode = False
-        if 'course_id' in request.form:
-            course_id = int(request.form.get('course_id'))
+        if 'course_id' in request.values:
+            course_id = int(request.values.get('course_id'))
     else:
         instructor_mode = False
-        if 'course_id' in request.form:
-            course_id = int(request.form.get('course_id'))
+        if 'course_id' in request.values:
+            course_id = int(request.values.get('course_id'))
         else:
             course_id = None
     return render_template('blockpy/blockpy.html',
@@ -71,13 +71,13 @@ def load(lti=None, assignments=None, submissions=None, embed=False):
 @blueprint_blockpy.route('/save_code/', methods=['GET', 'POST'])
 @blueprint_blockpy.route('/save_code', methods=['GET', 'POST'])
 def save_code(lti=lti):
-    assignment_id = request.form.get('assignment_id', None)
-    assignment_version = int(request.form.get('version', -1))
-    course_id = request.form.get('course_id', g.course.id)
+    assignment_id = request.values.get('assignment_id', None)
+    assignment_version = int(request.values.get('version', -1))
+    course_id = request.values.get('course_id', g.course.id)
     if None in (assignment_id, course_id):
         return jsonify(success=False, message="No Assignment ID or Course ID given!")
-    code = request.form.get('code', '')
-    filename = request.form.get('filename', '__main__')
+    code = request.values.get('code', '')
+    filename = request.values.get('filename', '__main__')
     is_version_correct = True
     if filename == "__main__":
         submission, is_version_correct = Submission.save_code(g.user.id, assignment_id, int(course_id), code, assignment_version)
@@ -93,10 +93,10 @@ def save_code(lti=lti):
 @blueprint_blockpy.route('/save_events/', methods=['GET', 'POST'])
 @blueprint_blockpy.route('/save_events', methods=['GET', 'POST'])
 def save_events(lti=lti):
-    assignment_id = request.form.get('assignment_id', None)
-    event = request.form.get('event', "blank")
-    action = request.form.get('action', "missing")
-    body = request.form.get('body', "")
+    assignment_id = request.values.get('assignment_id', None)
+    event = request.values.get('event', "blank")
+    action = request.values.get('action', "missing")
+    body = request.values.get('body', "")
     user_id = g.user.id if g.user != None else -1
     if assignment_id is None:
         return jsonify(success=False, message="No Assignment ID given!")
@@ -107,10 +107,10 @@ def save_events(lti=lti):
 @blueprint_blockpy.route('/save_correct', methods=['GET', 'POST'])
 @lti()
 def save_correct(lti, lti_exception=None):
-    assignment_id = request.form.get('assignment_id', None)
-    status = float(request.form.get('status', "0.0"))
-    image = request.form.get('image', "")
-    course_id = request.form.get('course_id', g.course.id)
+    assignment_id = request.values.get('assignment_id', None)
+    status = float(request.values.get('status', "0.0"))
+    image = request.values.get('image', "")
+    course_id = request.values.get('course_id', g.course.id if 'course' in g else None)
     if None in (assignment_id, course_id):
         return jsonify(success=False, message="No Assignment ID or Course ID given!")
     assignment = Assignment.by_id(assignment_id)
@@ -134,7 +134,7 @@ def save_correct(lti, lti_exception=None):
             os.remove(image_path)
         except Exception:
             app.logger.info("Could not delete")
-    lis_result_sourcedid = request.form.get('lis_result_sourcedid', submission.url) or None
+    lis_result_sourcedid = request.values.get('lis_result_sourcedid', submission.url) or None
     url = url_for('blockpy.get_submission_code', submission_id=submission.id, _external=True)
     print url
     if lis_result_sourcedid is None:
@@ -198,15 +198,15 @@ def get_submission_image(lti=lti):
 @blueprint_blockpy.route('/save_presentation/', methods=['GET', 'POST'])
 @blueprint_blockpy.route('/save_presentation', methods=['GET', 'POST'])
 def save_presentation(lti=lti):
-    assignment_id = request.form.get('assignment_id', None)
+    assignment_id = request.values.get('assignment_id', None)
     if assignment_id is None:
         return jsonify(success=False, message="No Assignment ID given!")
-    presentation = request.form.get('introduction', "")
-    parsons = request.form.get('parsons', "false") == "true"
-    importable = request.form.get('importable', "false") == "true"
-    text_first = request.form.get('text_first', "false") == "true"
-    name = request.form.get('name', "")
-    modules = request.form.get('modules', "")
+    presentation = request.values.get('introduction', "")
+    parsons = request.values.get('parsons', "false") == "true"
+    importable = request.values.get('importable', "false") == "true"
+    text_first = request.values.get('text_first', "false") == "true"
+    name = request.values.get('name', "")
+    modules = request.values.get('modules', "")
     assignment = Assignment.by_id(int(assignment_id))
     if not g.user.is_instructor(int(assignment.course_id)):
         return jsonify(success=False, message="You are not an instructor in this assignments' course.")
