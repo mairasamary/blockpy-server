@@ -1,0 +1,38 @@
+{% extends 'layout.html' %}
+
+{% block title %}
+Courses: Submissions Grid
+{% endblock %}
+
+{% block statusbar %}
+{% endblock %}
+
+{% block extrahead %}
+
+<script type='text/javascript'>
+
+function MainModel() {
+    var self = this;
+}
+mainModel = new MainModel();
+$().ready(function() {
+    ko.applyBindings(mainModel);
+});
+
+
+</script>
+{% endblock %}
+
+{% block body %}
+
+<h3>Submission Grid</h3>
+
+<p>Back to <a href="{{ url_for('courses.course', course_id=course_id) }}">Course</a></p>
+
+<table class="table table-condensed table-hover table-striped table-bordered">
+<tbody>
+</tbody>
+</table>
+
+
+{% endblock %}

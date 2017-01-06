@@ -239,6 +239,14 @@ class Course(Base):
         return (db.session.query(Role, User)
                           .filter(Role.course_id==self.id)
                           .filter(Role.user_id==User.id).all())
+    def get_students(self):
+        return [x[1] for x in (db.session.query(Role, User)
+                          .filter(Role.course_id==self.id)
+                          .filter(Role.user_id==User.id).distinct())]
+    def get_assignments(self):
+        return (db.session.query(Assignment)
+                          .filter(Assignment.course_id==self.id)
+                          .all())
         
     @staticmethod
     def get_all_groups():
@@ -379,6 +387,37 @@ class Submission(Base):
     version = Column(Integer(), default=0)
     url = Column(Text(), default="")
     
+    @staticmethod
+    def by_id(submission_id):
+        return Submission.query.get(submission_id)
+    
+    @staticmethod
+    def full_by_id(submission_id):
+        result = (db.session.query(Submission, User, Assignment)
+                          .filter(Submission.user_id == User.id)
+                          .filter(Submission.assignment_id == Assignment.id)
+                          .filter(Submission.id == submission_id)
+                          .first())
+        if result is None:
+            return None, None, None
+    
+    @staticmethod
+    def by_assignment(assignment_id, course_id):
+        return (db.session.query(Submission, User, Assignment)
+                          .filter(Submission.user_id == User.id)
+                          .filter(Submission.assignment_id == Assignment.id)
+                          .filter(Submission.assignment_id == assignment_id)
+                          .filter(Submission.course_id == course_id)
+                          .all())
+    @staticmethod
+    def by_student(user_id, course_id):
+        return (db.session.query(Submission, User, Assignment)
+                          .filter(Submission.user_id == User.id)
+                          .filter(Submission.assignment_id == Assignment.id)
+                          .filter(Submission.user_id == user_id)
+                          .filter(Submission.course_id == course_id)
+                          .all())
+                          
     def __str__(self):
         return '<Submission {} for {}>'.format(self.id, self.user_id)
         

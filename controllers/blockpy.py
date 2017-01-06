@@ -184,7 +184,13 @@ def get_submission_image(lti=lti):
         return "Sorry, no submission ID was given."
     relative_image_path = 'uploads/submission_blocks/'+str(submission_id)+'.png'
     submission = Submission.query.get(int(submission_id))
-    if g.user.is_grader(g.course.id) or submission.user_id == g.user.id:
+    course_id = request.values.get('course_id', None)
+    if course_id is None:
+        if 'course' in g:
+            course_id = g.course.id
+        else:
+            return "No course was found or given."
+    if g.user.is_grader(course_id) or submission.user_id == g.user.id:
         return app.send_static_file(relative_image_path)
     else:
         return "Sorry, you do not have sufficient permissions to spy!"

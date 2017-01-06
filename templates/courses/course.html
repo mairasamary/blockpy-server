@@ -46,6 +46,12 @@ $().ready(function() {
 
 <a href="{{ url_for('courses.manage_users', course_id=course.id) }}" class='btn btn-default'>Manage Students</a>
 
+<h3>Submissions</h3>
+
+<a href="{{ url_for('courses.submissions_filter', course_id=course.id) }}" class='btn btn-default'>Filter Submissions</a><br><br>
+
+<a href="{{ url_for('courses.submissions_grid', course_id=course.id) }}" class='btn btn-default'>Submissions Grid</a><br><br>
+
 <h3>Edit Course</h3>        
 
 <a href="{{ url_for('courses.remove_course', course_id=course.id) }}" onclick="return confirm('Are you sure?')" class='btn btn-danger'>Delete Course</a><br><br>

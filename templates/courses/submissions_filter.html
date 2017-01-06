@@ -1,0 +1,91 @@
+{% extends 'layout.html' %}
+
+{% block title %}
+Courses: Submissions Filter
+{% endblock %}
+
+{% block statusbar %}
+{% endblock %}
+
+{% block extrahead %}
+
+<script type='text/javascript'>
+
+function MainModel() {
+    var self = this;
+}
+mainModel = new MainModel();
+$().ready(function() {
+    ko.applyBindings(mainModel);
+    
+    $("#search-assignments").change(function(i, v) {
+        if (i.target.value != "") {
+            window.location.href = {{ url_for('courses.submissions_filter', course_id=course_id)|tojson }}+"?criteria=assignment&search_key="+i.target.value;
+        }
+    });
+    
+    $("#search-students").change(function(i, v) {
+        if (i.target.value != "") {
+            window.location.href = {{ url_for('courses.submissions_filter', course_id=course_id)|tojson }}+"?criteria=student&search_key="+i.target.value;
+        }
+    });
+});
+
+
+</script>
+{% endblock %}
+
+{% block body %}
+
+<h3>Submission Filter</h3>
+
+<p>Back to <a href="{{ url_for('courses.course', course_id=course_id) }}">Course</a></p>
+
+<h4>Filter Criteria</h4>
+
+Student:
+<select id='search-students'>
+<option value=''></option>
+{% for student in students %}
+<option value='{{ student.id }}'
+{%- if criteria == "student" and search_key == student.id %} selected 
+{%- endif %} >{{ student.last_name}}, {{ student.first_name }}</option>
+{% endfor %}
+</select>
+<br><br>
+Assignment:
+<select id='search-assignments'>
+<option value=''></option>
+{% for assignment in assignments %}
+<option value='{{ assignment.id }}'
+{%- if criteria == "assignment" and search_key == assignment.id %} selected 
+{%- endif %} >{{ assignment.title() }}</option>
+{% endfor %}
+</select>
+<br><br>
+
+<table class="table table-condensed table-hover table-striped table-bordered">
+<tbody>
+<tr>
+    {% if criteria=="student" %}<th>Assignment<th>{%endif %}
+    {% if criteria=="assignment" %}<th>Student</th>{%endif %}
+    <th>Status</th>
+    <th>View</th>
+    <th>Touches</th>
+</tr>
+{% for submission in submissions %}
+<tr>
+    {% if criteria=="student" %}<td>{{ submission[2].title() }}<td>{%endif %}
+    {% if criteria=="assignment" %}<td>{{ submission[1].name() }}</td>{%endif %}
+    <td>{% if submission[0].correct%}Yes{% else %}No{% endif %}</td>
+    <td>{% if submission[0] != None -%}
+    <a href="{{ url_for('courses.submissions_specific', submission_id=submission[0].id) }}">View</a>
+    {% else %}No submission{% endif %}</td>
+    <td>{{ submission[0].version or "0"}}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+
+
+{% endblock %}

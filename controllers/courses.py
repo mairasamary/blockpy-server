@@ -13,7 +13,7 @@ from sqlalchemy import Date, cast, func, desc, or_
 from controllers.helpers import instructor_required, login_required, get_course_id
 
 from main import app
-from models.models import db, Assignment, AssignmentGroup, Course, User, Role
+from models.models import db, Assignment, AssignmentGroup, Course, User, Role, Submission
 
 courses = Blueprint('courses', __name__, url_prefix='/courses')
 
@@ -194,3 +194,67 @@ def config():
     """
     return Response(render_template('courses/config.xml',
                                     version='1'), mimetype='text/xml')
+                                    
+@courses.route('/submissions_filter/<course_id>/', methods=['GET', 'POST'])
+@courses.route('/submissions_filter/<course_id>', methods=['GET', 'POST'])
+@login_required
+def submissions_filter(course_id):
+    ''' List all the users in the course '''
+    is_instructor = g.user.is_instructor(int(course_id))
+    if not is_instructor:
+        return "You are not an instructor!"
+    course_id = int(course_id)
+    course = Course.by_id(course_id)
+    students = course.get_students()
+    assignments = course.get_assignments()
+    criteria = request.values.get("criteria", "none")
+    search_key = int(request.values.get("search_key", "-1"))
+    submissions = []
+    if criteria == "student":
+        all_subs = Submission.by_student(search_key, course_id)
+        all_subs = {s[0].assignment_id: s for s in all_subs}
+        submissions = [all_subs.get(assignment.id, (None, None, assignment))
+                       for assignment in assignments]
+    elif criteria == "assignment":
+        all_subs = Submission.by_assignment(search_key, course_id)
+        all_subs = {s[0].user_id: s for s in all_subs}
+        submissions = [all_subs.get(student.id, (None, student, None))
+                       for student in students]
+    return render_template('courses/submissions_filter.html',
+                           course_id=course_id,
+                           assignments=assignments,
+                           students=students,
+                           submissions= submissions,
+                           criteria = criteria,
+                           search_key = search_key,
+                           is_instructor=is_instructor)
+@courses.route('/submissions_specific/<submission_id>/', methods=['GET', 'POST'])
+@courses.route('/submissions_specific/<submission_id>', methods=['GET', 'POST'])
+@login_required
+def submissions_specific(submission_id):
+    ''' List all the users in the course '''
+    submission, user, assignment = Submission.full_by_id(int(submission_id))
+    course_id = submission.course_id
+    if course_id is not None:
+        is_instructor = g.user.is_instructor(int(course_id))
+    else:
+        is_instructor = False
+    is_owner = g.user.id == submission.user_id
+    if not is_instructor and not is_owner:
+        return "You are not an instructor or the owner of the assignment!"
+    return render_template('courses/submissions_specific.html',
+                           submission=submission,
+                           assignment=assignment,
+                           user=user,
+                           course_id=course_id)
+@courses.route('/submissions_grid/<course_id>/', methods=['GET', 'POST'])
+@courses.route('/submissions_grid/<course_id>', methods=['GET', 'POST'])
+@login_required
+def submissions_grid(course_id):
+    ''' List all the users in the course '''
+    is_instructor = g.user.is_instructor(int(course_id))
+    if not is_instructor:
+        return "You are not an instructor!"
+    return render_template('courses/submissions_grid.html',
+                           course_id=course_id,
+                           is_instructor=is_instructor)

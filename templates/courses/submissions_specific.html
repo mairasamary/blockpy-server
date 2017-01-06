@@ -1,0 +1,45 @@
+{% extends 'layout.html' %}
+
+{% block title %}
+Courses: View Submission
+{% endblock %}
+
+{% block statusbar %}
+{% endblock %}
+
+{% block extrahead %}
+
+<script type='text/javascript'>
+
+function MainModel() {
+    var self = this;
+}
+mainModel = new MainModel();
+$().ready(function() {
+    ko.applyBindings(mainModel);
+});
+
+
+</script>
+{% endblock %}
+
+{% block body %}
+
+<h3>View Submission</h3>
+
+<p>Back to <a href="{{ url_for('courses.course', course_id=course_id if course_id != None else 0) }}">Course</a></p>
+
+Name: {{ user.name() }} ({{ user.email }})<br>
+Assignment: {{ assignment.title() }} (<a href="{{ url_for('assignments.load', id=assignment.id) }}">View</a>)<br>
+Body: {{ assignment.body}}<br>
+Type: {{ assignment.type}}<br>
+{% if assignment.type == "blockpy" %}
+Blocks: <img src="{{ url_for('blockpy.get_submission_image', submission_id=submission.id, course_id=course_id, _external=True) }}"><br>
+Code: <pre>{{ submission.code }}</pre><br>
+{% elif assignment.type == "explain" %}
+Response: {{ submission.code | tojson }}
+{% endif %}
+Completed: {{ submission.correct }}<br>
+Touches: {{ submission.version }}<br>
+
+{% endblock %}
