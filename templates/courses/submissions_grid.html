@@ -31,6 +31,41 @@ $().ready(function() {
 
 <table class="table table-condensed table-hover table-striped table-bordered">
 <tbody>
+
+<!-- Group Header -->
+<tr>
+    <th></th>
+    {% for group in assignment_groups %}
+    <th colspan="{{ grouped_assignments[group.id]|length }}">{{ group.name}}</th>
+    {% endfor %}
+</tr>
+
+<!-- Assignments -->
+<tr>
+    <th></th>
+    {% for group in assignment_groups %}
+    {% for assignment in grouped_assignments[group.id] %}
+    <th>{{ assignment.title()}}</th>
+    {% endfor %}
+    {% endfor %}
+</tr>
+
+<!-- Student Submissions -->
+{% for student in students %}
+<tr>
+    <td>{{ student.name() }}</td>
+    {% for group in assignment_groups %}
+    {% for assignment in grouped_assignments[group.id] %}
+    <td>{% if submissions.get((assignment.id, student.id)).correct -%}
+    check
+    {% else %}
+    mark
+    {% endif %}</td>
+    {% endfor %}
+    {% endfor %}
+</tr>
+{% endfor %}
+
 </tbody>
 </table>
 

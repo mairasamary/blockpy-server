@@ -1,4 +1,5 @@
 from pprint import pprint
+from collections import defaultdict
 
 from flask.ext.wtf import Form
 from wtforms import IntegerField, BooleanField, TextField, SubmitField, SelectField
@@ -254,9 +255,23 @@ def submissions_specific(submission_id):
 @login_required
 def submissions_grid(course_id):
     ''' List all the users in the course '''
-    is_instructor = g.user.is_instructor(int(course_id))
+    course_id = int(course_id)
+    is_instructor = g.user.is_instructor(course_id)
     if not is_instructor:
         return "You are not an instructor!"
+    course = Course.by_id(course_id)
+    students = course.get_students()
+    assignments = course.get_assignments()
+    grouped_assignments = defaultdict(list)
+    for assig_pair in assignments:
+        assignment, membership = assig_pair
+        grouped_assignments[membership.assignment_group_id].append(assignment)
+    assignment_groups = course.get_assignment_groups()
+    submissions = { (s.assignment_id, s.user_id) :s for s in course.get_submissions()}
     return render_template('courses/submissions_grid.html',
                            course_id=course_id,
+                           students=students,
+                           submissions=submissions,
+                           assignment_groups= assignment_groups,
+                           grouped_assignments= grouped_assignments,
                            is_instructor=is_instructor)

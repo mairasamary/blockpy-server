@@ -244,8 +244,18 @@ class Course(Base):
                           .filter(Role.course_id==self.id)
                           .filter(Role.user_id==User.id).distinct())]
     def get_assignments(self):
-        return (db.session.query(Assignment)
-                          .filter(Assignment.course_id==self.id)
+        return (db.session.query(Assignment, AssignmentGroupMembership)
+                          .filter(Assignment.course_id==self.id,
+                                  AssignmentGroupMembership.assignment_id == Assignment.id)
+                          .all())
+    def get_submissions(self):
+        return (db.session.query(Submission)
+                          .filter(Submission.course_id==self.id)
+                          .all())
+    def get_assignment_groups(self):
+        return (db.session.query(AssignmentGroup)
+                          .filter(AssignmentGroup.course_id==self.id)
+                          .order_by(AssignmentGroup.name)
                           .all())
         
     @staticmethod
