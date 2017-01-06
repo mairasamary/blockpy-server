@@ -400,6 +400,8 @@ class Submission(Base):
                           .first())
         if result is None:
             return None, None, None
+        else:
+            return result
     
     @staticmethod
     def by_assignment(assignment_id, course_id):

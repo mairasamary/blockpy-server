@@ -234,6 +234,8 @@ def submissions_filter(course_id):
 def submissions_specific(submission_id):
     ''' List all the users in the course '''
     submission, user, assignment = Submission.full_by_id(int(submission_id))
+    if submission is None:
+        return "Submission not found"
     course_id = submission.course_id
     if course_id is not None:
         is_instructor = g.user.is_instructor(int(course_id))

@@ -37,7 +37,14 @@ Type: {{ assignment.type}}<br>
 Blocks: <img src="{{ url_for('blockpy.get_submission_image', submission_id=submission.id, course_id=course_id, _external=True) }}"><br>
 Code: <pre>{{ submission.code }}</pre><br>
 {% elif assignment.type == "explain" %}
-Response: {{ submission.code | tojson }}
+Response: <pre>{{ (submission.code|json_load).code }}</pre>
+<ol>
+{% for element in (submission.code|json_load).elements.values() %}
+{% if element.present %}
+<li>{{ element.name }} ({{ element.line }}): {{ element.answer }}</li>
+{% endif %}
+{% endfor %}
+</ol>
 {% endif %}
 Completed: {{ submission.correct }}<br>
 Touches: {{ submission.version }}<br>
