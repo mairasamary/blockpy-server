@@ -3,13 +3,14 @@ import time
 from collections import OrderedDict
 
 class StructuredEvent(object):
-    def __init__(self, user, assignment, event, action, body):
+    def __init__(self, user, assignment, event, action, body, timestamp=""):
         self.user = user
         self.assignment = assignment
         self.event = event
         self.action = action
         self.body = body
         self.time = time.time()
+        self.timestamp = timestamp
 
     def __str__(self):
         return json.dumps(OrderedDict([
@@ -19,4 +20,5 @@ class StructuredEvent(object):
             ('event', self.event),
             ('action', self.action),
             ('body', self.body),
+            ('timestamp', self.timestamp)
         ]))

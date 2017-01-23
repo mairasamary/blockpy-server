@@ -363,7 +363,7 @@ class Log(Base):
     user_id = Column(Integer(), ForeignKey('user.id'))
     
     @staticmethod    
-    def new(event, action, assignment_id, user_id, body=''):
+    def new(event, action, assignment_id, user_id, body='', timestamp=''):
         # Database logging
         log = Log(event=event, action=action, assignment_id=assignment_id, user_id=user_id)
         db.session.add(log)
@@ -371,7 +371,7 @@ class Log(Base):
         # Single-file logging
         student_interactions_logger = logging.getLogger('StudentInteractions')
         student_interactions_logger.info(
-            StructuredEvent(user_id, assignment_id, event, action, body)
+            StructuredEvent(user_id, assignment_id, event, action, body, timestamp)
         )
         return log
     
@@ -546,7 +546,7 @@ class Submission(Base):
         return code, available_elements
         
     @staticmethod
-    def save_code(user_id, assignment_id, course_id, code, assignment_version):
+    def save_code(user_id, assignment_id, course_id, code, assignment_version, timestamp=''):
         submission = Submission.query.filter_by(user_id=user_id, 
                                                 course_id=course_id,
                                                 assignment_id=assignment_id).first()
@@ -564,7 +564,7 @@ class Submission(Base):
             current_assignment_version = Assignment.by_id(submission.assignment_id).version
             is_version_correct = (assignment_version == current_assignment_version)
         db.session.commit()
-        submission.log_code()
+        submission.log_code(timestamp=timestamp)
         return submission, is_version_correct
         
     @staticmethod
@@ -583,7 +583,7 @@ class Submission(Base):
         db.session.commit()
         return submission
         
-    def log_code(self, extension='.py'):
+    def log_code(self, extension='.py', timestamp=''):
         '''
         Store the code on disk, mapped to the Assignment ID and the Student ID
         '''
@@ -595,13 +595,33 @@ class Submission(Base):
         ensure_dirs(directory)
         name = time.strftime("%Y%m%d-%H%M%S")
         file_name = os.path.join(directory, name + extension)
+        
         with open(file_name, 'wb') as blockly_logfile:
             blockly_logfile.write(self.code)
         # Single file logging
         student_interactions_logger = logging.getLogger('StudentInteractions')
         student_interactions_logger.info(
-            StructuredEvent(self.user_id, self.assignment_id, 'code', 'set', self.code)
+            StructuredEvent(self.user_id, self.assignment_id, 'code', 'set', self.code, timestamp=timestamp)
         )
+        
+    def get_history(self):
+        '''
+        Retrieve all codes from disk
+        '''
+        directory = os.path.join(app.config['BLOCKLY_LOG_DIR'],
+                                 str(self.assignment_id), 
+                                 str(self.user_id))
+        ensure_dirs(directory)
+        all_files = []
+        for file_name in os.listdir(directory):
+            full_path = os.path.join(directory, file_name)
+            with open(full_path, 'r') as blockly_logfile:
+                body = blockly_logfile.read()
+                all_files.append({
+                    'code': body,
+                    'time': file_name[:-2]
+                })
+        return all_files
     
 class Assignment(Base):
     url = Column(String(255), default="")
