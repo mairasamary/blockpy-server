@@ -6287,7 +6287,9 @@ BlockPy.prototype.initComponents = function() {
     
     var statusBox = container.find(".blockpy-status-box");
     main.model.status.server.subscribe(function(newValue) {
-        if (newValue == "Error" || newValue == "Offline") {
+        if (newValue == "Error" || 
+            newValue == "Offline" ||
+            newValue == "Disconnected") {
             if (!statusBox.is(':animated')) {
                 statusBox.effect("shake");
             }
