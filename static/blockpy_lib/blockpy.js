@@ -3828,6 +3828,7 @@ function BlockPyEditor(main, tag) {
     
     // HTML DOM accessors
     this.blockTag = tag.find('.blockpy-blocks');
+    this.blocklyDiv = this.blockTag.find('.blockly-div');
     this.textTag = tag.find('.blockpy-text');
     this.uploadTag = tag.find('.blockpy-upload');
     this.instructorTag = tag.find('.blockpy-instructor');
@@ -3872,8 +3873,7 @@ function BlockPyEditor(main, tag) {
  * representation updated and enforce type checking.
  */
 BlockPyEditor.prototype.initBlockly = function() {
-    var blocklyDiv = this.blockTag.find('.blockly-div')[0];
-    this.blockly = Blockly.inject(blocklyDiv,
+    this.blockly = Blockly.inject(this.blocklyDiv[0],
                                   { path: this.main.model.constants.blocklyPath, 
                                     scrollbars: this.main.model.constants.blocklyScrollbars, 
                                     readOnly: this.main.model.settings.read_only(),
@@ -4079,6 +4079,7 @@ BlockPyEditor.prototype.showTextMenu = function() {
 BlockPyEditor.prototype.hideBlockMenu = function() {
     this.blocklyToolboxWidth = this.blockly.toolbox_.width;
     this.blockTag.css('height', '0%');
+    this.blocklyDiv.css("width", "0");
     this.blockly.setVisible(false);
 }
 
@@ -4088,6 +4089,7 @@ BlockPyEditor.prototype.hideBlockMenu = function() {
 BlockPyEditor.prototype.showBlockMenu = function() {
     this.blockTag.css('height', '100%');
     this.blockTag.css('width', '100%');
+    this.blocklyDiv.css("width", "100%");
     this.blockly.resize();
     this.blockly.setVisible(true);
     this.blockTag.removeClass('col-md-6');
@@ -6286,7 +6288,9 @@ BlockPy.prototype.initComponents = function() {
     var statusBox = container.find(".blockpy-status-box");
     main.model.status.server.subscribe(function(newValue) {
         if (newValue == "Error" || newValue == "Offline") {
-            statusBox.effect("shake");
+            if (!statusBox.is(':animated')) {
+                statusBox.effect("shake");
+            }
         }
     });
     statusBox.tooltip();
@@ -6341,7 +6345,7 @@ BlockPy.prototype.turnOnHacks = function() {
         (function () {
             var oldEffect = $.fn.effect;
             $.fn.effect = function (effectName) {
-                if (effectName === "shake") {
+                if (effectName === "shake" || effectName.effect == "shake") {
                     var old = $.effects.createWrapper;
                     $.effects.createWrapper = function (element) {
                         var result;
