@@ -313,6 +313,8 @@ def watch():
     course_id = request.values.get('course_id',  g.course.id if 'course' in g else None)
     if course_id == None or course_id == "":
         return jsonify(success=False, message="No Course ID given!")
+    if not g.user.is_instructor(int(course_id)):
+        return jsonify(success=False, message="You are not an instructor in this assignments' course.")
     update = request.values.get('update', 'false') == "true"
     if update:
         data = []
