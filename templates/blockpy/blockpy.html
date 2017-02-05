@@ -106,9 +106,10 @@ $(document).ready(function() {
                 'student_id': {{ g.user.id|tojson if g.user != None else -1}},
                 'introduction': {{ assignment.body|tojson}},
                 'name': {{ assignment.name|tojson}},
+                'version': {{ assignment.version|tojson }},
                 'initial_view': "{{ "Text" if assignment.mode.lower() == "text" else "Blocks" }}",
                 'give_feedback': {{ assignment.give_feedback|tojson}},
-                'parsons': {{ 'true' if assignment.type == 'parsons' else 'false' }}, 
+                'parsons': {{ 'true' if assignment.mode == 'parsons' else 'false' }}, 
                 'starting_code': {{ assignment.starting_code|tojson }},
                 {% set settings = assignment.settings|json_load %}
                 'importable': {{ "true" if settings.importable else "false" }},

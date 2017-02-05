@@ -37,7 +37,9 @@ function reportChange() {
 }
 function reportSuccess() {
     markSuccess();
-    var data = {'assignment_id': "{{ assignment.id }}", 'status': '1'};
+    var data = {'assignment_id': "{{ assignment.id }}", 
+                'course_id': {{ (course_id if course_id != None else submission.course_id)|tojson }},
+                'status': '1'};
     $.post(URL_MAP.save_success, data, function(response) {
         if (response.success) {
             alertBox("Success reported").delay(200).fadeOut("slow");
@@ -67,6 +69,7 @@ $(document).ready(function() {
         var answer = Blockly.Xml.domToText(Blockly.Xml.workspaceToDom(Blockly.getMainWorkspace()));
         var data = {
             'assignment_id': "{{ assignment.id }}",
+            'course_id': {{ (course_id if course_id != None else submission.course_id)|tojson }},
             'filename': '__main__',
             'code': answer
             };

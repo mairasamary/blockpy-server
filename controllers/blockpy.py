@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+import time
 import os
 import json
 from pprint import pprint
@@ -102,7 +104,7 @@ def save_events(lti=lti):
     user_id = g.user.id if g.user != None else -1
     if assignment_id is None:
         return jsonify(success=False, message="No Assignment ID given!")
-    log = Log.new(event, action, assignment_id, -1, body=body, timestamp=timestamp)
+    log = Log.new(event, action, assignment_id, user_id, body=body, timestamp=timestamp)
     return jsonify(success=True)
     
 @blueprint_blockpy.route('/save_correct/', methods=['GET', 'POST'])
@@ -138,7 +140,6 @@ def save_correct(lti, lti_exception=None):
             app.logger.info("Could not delete")
     lis_result_sourcedid = request.values.get('lis_result_sourcedid', submission.url) or None
     url = url_for('blockpy.get_submission_code', submission_id=submission.id, _external=True)
-    print url
     if lis_result_sourcedid is None:
         return jsonify(success=False, message="Not in a grading context.")
     else:
@@ -146,7 +147,8 @@ def save_correct(lti, lti_exception=None):
     if assignment.mode == 'maze':
         lti.post_grade(float(submission.correct), "<h1>{0}</h1>".format(message), endpoint=lis_result_sourcedid);
     else:
-        code = highlight(submission.code, PythonLexer(), HtmlFormatter())
+        formatter = HtmlFormatter(linenos=True, noclasses=True)
+        code = highlight(submission.code, PythonLexer(), formatter)
         potential_image = "Submitted Blocks:<br><img src='{0}'>".format(image_url) if image else ""
         body = '''
         <h1>{message}</h1>
@@ -286,3 +288,50 @@ def fix_ghost_submission(lti, lti_exception=None):
 @blueprint_blockpy.route('/replay/', methods=['GET', 'POST'])
 def replay_page():
     return render_template('blockpy/replay.html')
+
+def process_history(history):
+    if len(history) <= 1:
+        return 0
+    total_duration = 0.0
+    previous_time = None
+    for a_time in history:
+        parsed_time = datetime.strptime(a_time[ :15], "%Y%m%d-%H%M%S")
+        if previous_time != None:
+            diff = (parsed_time - previous_time).seconds/60.
+            if diff < 2:
+                total_duration += diff
+        previous_time = parsed_time
+    return total_duration
+
+@blueprint_blockpy.route('/watch', methods=['GET', 'POST'])
+@blueprint_blockpy.route('/watch/', methods=['GET', 'POST'])
+def watch():
+    assignment_list = request.values.get('assignments', '')
+    if not assignment_list:
+        return jsonify(success=False, message="Need a comma separated list of assignments")
+    assignments = [int(aid) for aid in assignment_list.split(',')]
+    course_id = request.values.get('course_id',  g.course.id if 'course' in g else None)
+    if course_id == None or course_id == "":
+        return jsonify(success=False, message="No Course ID given!")
+    update = request.values.get('update', 'false') == "true"
+    if update:
+        data = []
+        for aid in assignments:
+            submissions = Submission.by_assignment(aid, int(course_id))
+            completions = sum([int(sua[0].correct) for sua in submissions])
+            workings = len(Submission.get_latest(aid, int(course_id)))
+            histories = [process_history([h['time'] for h in sua[0].get_history()])
+                         for sua in submissions]
+            touches = [int(sua[0].version) for sua in submissions]
+            feedbacks = [l[0] for l in Log.calculate_feedbacks(aid, course_id)]
+            data.append({'id': aid,
+                         'Completions': completions,
+                         'Workings': workings,
+                         'Time': histories,
+                         'Touches': touches,
+                         'Feedbacks': feedbacks})
+        return jsonify(success=True, data=data)
+    else:
+        assignments = [Assignment.by_id(aid) for aid in assignments]
+        return render_template('blockpy/watch.html', course_id=course_id, assignments=assignments,
+                               assignment_list=assignment_list)

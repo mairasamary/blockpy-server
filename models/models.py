@@ -378,6 +378,16 @@ class Log(Base):
     def __str__(self):
         return '<Log {} for {}>'.format(self.event, self.action)
         
+    @staticmethod
+    def calculate_feedbacks(assignment_id, course_id):
+        return (db.session.query(func.count(Log.id))
+                          .filter(Log.assignment_id == assignment_id)
+                          #.filter(Log.course_id == course_id)
+                          .filter(Log.event == 'feedback')
+                          .filter(Log.action != "Success")
+                          .group_by(Log.user_id)
+                          .all())
+        
 class Settings(Base):
     mode = Column(String(80))
     connected = Column(String(80))
@@ -421,6 +431,16 @@ class Submission(Base):
                           .filter(Submission.assignment_id == assignment_id)
                           .filter(Submission.course_id == course_id)
                           .all())
+                          
+    @staticmethod
+    def get_latest(assignment_id, course_id):
+        return (db.session.query(Submission, func.max(Submission.date_modified))
+                          .filter(Submission.course_id == course_id)
+                          .group_by(Submission.user_id)
+                          .order_by(func.max(Submission.date_modified).desc())
+                          .having(Submission.assignment_id == assignment_id)
+                          .all())
+    
     @staticmethod
     def by_student(user_id, course_id):
         return (db.session.query(Submission, User, Assignment)

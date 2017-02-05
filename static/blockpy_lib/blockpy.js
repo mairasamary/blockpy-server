@@ -2228,7 +2228,7 @@ PythonToBlocks.prototype.List = function(node) {
     return block("lists_create_with", node.lineno, {}, 
         this.convertElements("ADD", elts)
     , {
-        "inline": "true"
+        "inline": elts.length > 3 ? "false" : "true", 
     }, {
         "@items": elts.length
     });
@@ -3397,11 +3397,19 @@ BlockPyServer.prototype.setStatus = function(status, server_error) {
         this.main.model.status.server_error('');
     }
 }
-
+BlockPyServer.prototype.defaultResponseWithoutVersioning = function(response) {
+    if (response.success) {
+        this.setStatus('Saved');
+    } else {
+        console.error(response);
+        this.setStatus('Error', response.message);
+    }
+}
 BlockPyServer.prototype.defaultResponse = function(response) {
-    if (response.is_version_correct) {
+    /*console.log(response);
+    if (!response.is_version_correct) {
         this.setStatus('Out of date');
-    } else if (response.success) {
+    } else */if (response.success) {
         this.setStatus('Saved');
     } else {
         console.error(response);
@@ -3438,9 +3446,12 @@ BlockPyServer.prototype.markSuccess = function(success) {
         model = this.main.model;
     data['code'] = model.programs.__main__;
     data['status'] = success;
+    console.log("OH");
     this.main.components.editor.getPngFromBlocks(function(pngData, img) {
         data['image'] = pngData;
+        console.log("AF");
         img.remove();
+        console.log("HERE");
         server.setStatus('Saving');
         if (model.server_is_connected('save_success')) {
             $.post(model.constants.urls.save_success, data, 
@@ -3470,7 +3481,7 @@ BlockPyServer.prototype.saveAssignment = function() {
         clearTimeout(this.presentationTimer);
         this.presentationTimer = setTimeout(function() {
             $.post(server.main.model.constants.urls.save_assignment, data, 
-                   server.defaultResponse.bind(server))
+                   server.defaultResponseWithoutVersioning.bind(server))
              .fail(server.defaultFailure.bind(server));
         }, this.TIMER_DELAY);
     } else {
@@ -3493,7 +3504,9 @@ BlockPyServer.prototype.saveCode = function() {
         }
         this.saveTimer[filename] = setTimeout(function() {
             $.post(server.main.model.constants.urls.save_code, data, 
-                   server.defaultResponse.bind(server))
+                   filename == '__main__'
+                    ? server.defaultResponse.bind(server)
+                    : server.defaultResponseWithoutVersioning.bind(server))
              .fail(server.defaultFailure.bind(server));
         }, this.TIMER_DELAY);
     } else {
@@ -4790,38 +4803,44 @@ BlockPyEditor.prototype.updateToolbox = function(only_set) {
  * @param {Function} callback - A function to be called with the results. This function should take two parameters, the URL (as a string) of the generated base64-encoded PNG and the IMG tag.
  */
 BlockPyEditor.prototype.getPngFromBlocks = function(callback) {
-    var blocks = this.blockly.svgBlockCanvas_.cloneNode(true);
-    blocks.removeAttribute("width");
-    blocks.removeAttribute("height");
-    if (blocks.children[0] !== undefined) {
-        blocks.removeAttribute("transform");
-        blocks.children[0].removeAttribute("transform");
-        blocks.children[0].children[0].removeAttribute("transform");
-        var linkElm = document.createElementNS("http://www.w3.org/1999/xhtml", "style");
-        linkElm.textContent = Blockly.Css.CONTENT.join('') + '\n\n';
-        blocks.insertBefore(linkElm, blocks.firstChild);
-        var bbox = document.getElementsByClassName("blocklyBlockCanvas")[0].getBBox();
-        var xml = new XMLSerializer().serializeToString(blocks);
-        xml = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="'+bbox.width+'" height="'+bbox.height+'" viewBox="0 0 '+bbox.width+' '+bbox.height+'"><rect width="100%" height="100%" fill="white"></rect>'+xml+'</svg>';
-        var data = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(xml)));
-        var img  = document.createElement("img");
-        img.setAttribute('src', data);
-        img.style.display = 'block';
-        img.onload = function() {
-            //TODO: Make this capture a class descendant. Cross the D3/Jquery barrier!
-            var canvas = d3.select('#capture-canvas').node();//d3.select('body').append('canvas').node();
-            canvas.width = bbox.width;
-            canvas.height = bbox.height;
-            var ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0);
-            var canvasUrl = canvas.toDataURL("image/png");
-            callback(canvasUrl, img);
+    try {
+        var blocks = this.blockly.svgBlockCanvas_.cloneNode(true);
+        blocks.removeAttribute("width");
+        blocks.removeAttribute("height");
+        if (blocks.childNodes[0] !== undefined) {
+            blocks.removeAttribute("transform");
+            blocks.childNodes[0].removeAttribute("transform");
+            blocks.childNodes[0].childNodes[0].removeAttribute("transform");
+            var linkElm = document.createElementNS("http://www.w3.org/1999/xhtml", "style");
+            linkElm.textContent = Blockly.Css.CONTENT.join('') + '\n\n';
+            blocks.insertBefore(linkElm, blocks.firstChild);
+            var bbox = document.getElementsByClassName("blocklyBlockCanvas")[0].getBBox();
+            var xml = new XMLSerializer().serializeToString(blocks);
+            xml = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="'+bbox.width+'" height="'+bbox.height+'" viewBox="0 0 '+bbox.width+' '+bbox.height+'"><rect width="100%" height="100%" fill="white"></rect>'+xml+'</svg>';
+            console.log(xml);
+            var data = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(xml)));
+            var img  = document.createElement("img");
+            img.setAttribute('src', data);
+            img.style.display = 'block';
+            img.onload = function() {
+                //TODO: Make this capture a class descendant. Cross the D3/Jquery barrier!
+                var canvas = d3.select('#capture-canvas').node();//d3.select('body').append('canvas').node();
+                canvas.width = bbox.width;
+                canvas.height = bbox.height;
+                var ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+                var canvasUrl = canvas.toDataURL("image/png");
+                callback(canvasUrl, img);
+            }
+            img.onerror = function() {
+                callback("", img);
+            }
+        } else {
+            callback("", document.createElement("img"))
         }
-        img.onerror = function() {
-            callback("", img);
-        }
-    } else {
-        callback("", document.createElement("img"))
+    } catch (e) {
+        callback("", document.createElement("img"));
+        console.error("PNG image creation not supported!", e);
     }
 }
 
@@ -5190,6 +5209,7 @@ BlockPyFeedback.prototype.internalError = function(original, name, message) {
  * @param {number} line - What line the error occurred on.
  */
 BlockPyFeedback.prototype.instructorFeedback = function(name, message, line) {
+    console.log("A");
     this.title.html(name);
     this.original.hide();
     this.body.html(message);
@@ -5198,6 +5218,7 @@ BlockPyFeedback.prototype.instructorFeedback = function(name, message, line) {
         this.main.components.editor.highlightError(line-1);
     }
     this.main.components.server.logEvent('feedback', "Instructor Feedback", name+"\n|\n"+"\n|\n"+message);
+    console.log("B");
 }
 
 /**
@@ -5879,8 +5900,11 @@ BlockPyEngine.prototype.check = function(student_code, traceTable, output, ast, 
                     server.markSuccess(1.0);
                     engine.main.components.feedback.complete();
                 } else if (error.tp$name == "Feedback") {
+                    console.log("ALPHA");
                     server.markSuccess(0.0);
+                    console.log("BETA");
                     engine.main.components.feedback.instructorFeedback("Incorrect Answer", error.args.v[0].v);
+                    console.log("DELTA");
                 } else {
                     console.error(error);
                     engine.main.components.feedback.internalError(error, "Feedback Error", "Error in instructor's feedback. Please show the above message to an instructor!");
@@ -6022,6 +6046,25 @@ function expandArray(array, addArray, removeArray) {
 }
 
 /**
+ * Deeply clones a node
+ * @param {Node} node A node to clone
+ * @return {Node} A clone of the given node and all its children
+ */
+function cloneNode(node) {
+    // If the node is a text node, then re-create it rather than clone it
+    var clone = node.nodeType == 3 ? document.createTextNode(node.nodeValue) : node.cloneNode(false);
+ 
+    // Recurse     
+    var child = node.firstChild;
+    while(child) {
+        clone.appendChild(cloneNode(child));
+        child = child.nextSibling;
+    }
+     
+    return clone;
+}
+
+/**
  * Creates an instance of BlockPy
  *
  * @constructor
@@ -6159,6 +6202,7 @@ function BlockPy(settings, assignment, submission, programs) {
         switch (this.status.server()) {
             default: case 'Loading': return ['label-default', 'Loading'];
             case 'Offline': return ['label-default', 'Offline'];
+            case 'Out of date': return ['label-danger', 'Out of Date'];
             case 'Loaded': return ['label-success', 'Loaded'];
             case 'Logging': return ['label-primary', 'Logging'];
             case 'Saving': return ['label-primary', 'Saving'];
@@ -6292,6 +6336,10 @@ BlockPy.prototype.initComponents = function() {
             newValue == "Disconnected") {
             if (!statusBox.is(':animated')) {
                 statusBox.effect("shake");
+            }
+        } else if (newValue == "Out of date") {
+            if (!statusBox.is(':animated')) {
+                statusBox.effect("shake").effect("shake");
             }
         }
     });
