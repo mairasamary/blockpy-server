@@ -704,7 +704,8 @@ class Assignment(Base):
     def edit(assignment_id, presentation=None, name=None, 
              give_feedback=None, on_step=None, starting_code=None, 
              parsons=None, text_first=None,
-             modules=None, importable=False):
+             modules=None, importable=False,
+             disable_algorithm_errors=False):
         assignment = Assignment.by_id(assignment_id)
         if name is not None:
             assignment.name = name
@@ -729,8 +730,11 @@ class Assignment(Base):
                 settings['modules'] = {'added': [], 'removed': []}
             if 'importable' not in settings:
                 settings['importable'] = False
+            if 'disable_algorithm_errors' not in settings:
+                settings['disable_algorithm_errors'] = False
             kept_modules = modules.split(",")
             settings['importable'] = importable
+            settings['disable_algorithm_errors'] = disable_algorithm_errors
             settings['modules']['added'] = [m for m in kept_modules 
                                             if m not in Assignment.BUILTIN_MODULES]
             settings['modules']['removed'] = [m for m in Assignment.BUILTIN_MODULES 

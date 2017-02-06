@@ -56,6 +56,7 @@ Assignment
                 'give_feedback': '',
                 'starting_code': 'x = 0',
                 'initial_view': 'Blocks',
+                'disable_algorithm_errors': false,
                 "importable": true,
                 'modules': {}
             },
@@ -113,6 +114,7 @@ $(document).ready(function() {
                 'starting_code': {{ assignment.starting_code|tojson }},
                 {% set settings = assignment.settings|json_load %}
                 'importable': {{ "true" if settings.importable else "false" }},
+                'disable_algorithm_errors': {{ "true" if settings.disable_algorithm_errors else "false"}},
                 'modules': {
                     'added': {{ settings.modules.added|tojson if settings.modules else "[]" }},
                     'removed': {{ settings.modules.removed|tojson if settings.modules else "[]"}},
