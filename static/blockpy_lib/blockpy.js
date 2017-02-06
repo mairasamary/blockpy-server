@@ -3865,6 +3865,10 @@ function BlockPyEditor(main, tag) {
     this.blocksFailed = false;
     this.blocksFailedTimeout = null;
     
+    // Hack to prevent chrome errors. Forces audio to load on demand. 
+    // See: https://github.com/google/blockly/issues/299
+    Blockly.WorkspaceSvg.prototype.preloadAudio_ = function() {};
+    
     // Keep track of the toolbox width
     this.blocklyToolboxWidth = 0;
     
@@ -3907,13 +3911,14 @@ BlockPyEditor.prototype.initBlockly = function() {
                                     zoom: {enabled: false},
                                     toolbox: this.updateToolbox(false)});
     // Activate tracing in blockly for highlighting
-    this.blockly.traceOn(true);
+    //this.blockly.traceOn(true);
     // Activate undo/redo
     this.blockly.enableUndo();
     // Register model changer
     var editor = this;
     this.blockly.addChangeListener(function(evt) { 
         //editor.main.components.feedback.clearEditorErrors();
+        editor.blockly.highlightBlock(null);
         editor.updateBlocks();
         //editor.updateBlocks();
     });
@@ -4512,7 +4517,7 @@ BlockPyEditor.prototype.highlightError = function(line) {
  * @param {Number} block - The ID of the block object to highlight.
  */
 BlockPyEditor.prototype.highlightBlock = function(block) {
-    this.blockly.highlightBlock(block);
+    //this.blockly.highlightBlock(block);
 }
 
 /**
@@ -4529,7 +4534,8 @@ BlockPyEditor.prototype.refreshBlockHighlight = function(line) {
         this.blocksFailed = false;
         return;
     }
-    if (this.main.model.settings.editor() != "Blocks") {
+    if (this.main.model.settings.editor() != "Blocks" &&
+        this.main.model.settings.editor() != "Split") {
         return;
     }
     var all_blocks = this.blockly.getAllBlocks();
@@ -4549,6 +4555,7 @@ BlockPyEditor.prototype.refreshBlockHighlight = function(line) {
             elem.addSelect();
         });*/
         if (hblocks.length > 0) {
+            console.log(hblocks[0], hblocks[0].id)
             this.blockly.highlightBlock(hblocks[0].id);
         }
     }
