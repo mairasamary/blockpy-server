@@ -3312,8 +3312,8 @@ BlockPyPrinter.prototype.stepPrinter = function(step, page) {
  */
 BlockPyPrinter.prototype.print = function(lineText) {
     // Should probably be accessing the model instead of a component...
-    var stepNumber = this.main.components.engine.executionBuffer.step;
-    var lineNumber = this.main.components.engine.executionBuffer.line_number;
+    var stepNumber = 0; //this.main.components.engine.executionBuffer.step;
+    var lineNumber = 0; //this.main.components.engine.executionBuffer.line_number;
     // Perform any necessary cleaning
     if (lineText !== "\n") {
         var encodedText = encodeHTML(lineText);
