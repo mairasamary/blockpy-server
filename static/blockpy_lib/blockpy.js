@@ -2533,7 +2533,7 @@ Blockly.Blocks['datetime_time'] = {
         return container;
     },
     domToMutation: function(xmlElement) {
-        var isNow = (xmlElement.getAttribute('isnow').toLowerCase() == 'true');
+        var isNow = (xmlElement.getAttribute('isnow') == 'true');
         this.updateShape_(isNow);
     },
     updateShape_: function(isNow) {
