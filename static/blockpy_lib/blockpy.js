@@ -3312,8 +3312,8 @@ BlockPyPrinter.prototype.stepPrinter = function(step, page) {
  */
 BlockPyPrinter.prototype.print = function(lineText) {
     // Should probably be accessing the model instead of a component...
-    var stepNumber = 0; //this.main.components.engine.executionBuffer.step;
-    var lineNumber = 0; //this.main.components.engine.executionBuffer.line_number;
+    var stepNumber = this.main.components.engine.executionBuffer.step;
+    var lineNumber = this.main.components.engine.executionBuffer.line_number;
     // Perform any necessary cleaning
     if (lineText !== "\n") {
         var encodedText = encodeHTML(lineText);
@@ -5603,7 +5603,7 @@ BlockPyEngine.prototype.lastStep = function() {
     this.main.model.execution.step(this.executionBuffer.step)
     this.main.model.execution.last_step(this.executionBuffer.last_step)
     this.main.model.execution.line_number(this.executionBuffer.line_number)
-    this.executionBuffer = undefined;
+    //this.executionBuffer = undefined;
 }
 
 /**
