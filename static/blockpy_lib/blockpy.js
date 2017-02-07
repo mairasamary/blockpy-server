@@ -831,6 +831,8 @@ PythonToBlocks.prototype.convertSource = function(python_source) {
         var yLocation = parseInt(lineColumn[0], 10);
         this.comments[yLocation] = parse.comments[commentLocation];
     }
+    this.previousGlobalLine = 0;
+    this.nextExpectedLine = 0;
     this.measureNode(ast);
     var converted = this.convert(ast);
     if (converted !== null) {
@@ -888,8 +890,8 @@ PythonToBlocks.prototype.measureNode = function(node) {
     this.heights.shift();
 }
 
-PythonToBlocks.prototype.getSourceCode = function(from, to) {
-    var lines = this.source.slice(from-1, to);
+PythonToBlocks.prototype.getSourceCode = function(frm, to) {
+    var lines = this.source.slice(frm-1, to);
     // Strip out any starting indentation.
     if (lines.length > 0) {
         var indentation = lines[0].search(/\S/);
@@ -907,23 +909,25 @@ PythonToBlocks.prototype.convertBody = function(node, is_top_level) {
     }
     
     // This is tricked by semicolons. Hard to get around that...
-    // TODO: Force semicolon breaks in a preprocessor, and extract comments too
+    // TODO: Force semicolon breaks in a preprocessor
     
-    // Build the actual blocks
+    // The actual line inside the entire program
     var lineFrom = node[0].lineno;
     var to = this.heights.shift();
+    // Offset within this body
     var currentLine = 0;
     
-    // Walk through and convert the blocks to statements
+    // Final result list
     var children = [];
+    
     var currentChild = null,
         firstChild = null,
-        commentChildren = [],
         actualLine = 0,
         previousLine = 0;
+    // Iterate through each node
     for (var i = 0; i < node.length; i++) {
         actualLine += 1;
-        // Handle actual line
+        
         lineFrom = node[i].lineno;
         currentLine = lineFrom;
         to = this.heights.shift();
@@ -977,6 +981,10 @@ PythonToBlocks.prototype.convertBody = function(node, is_top_level) {
     
     return children;
 }
+
+
+
+
 
 function block(type, lineNumber, fields, values, settings, mutations, statements) {
     var newBlock = document.createElement("block");
@@ -2520,12 +2528,12 @@ Blockly.Blocks['datetime_time'] = {
     },
     mutationToDom: function() {
         var container = document.createElement('mutation');
-        var isNow = (this.getFieldValue('HOUR') == 'NOW');
+        var isNow = (this.getFieldValue('HOUR').toUpperCase() == 'NOW');
         container.setAttribute('isnow', isNow);
         return container;
     },
     domToMutation: function(xmlElement) {
-        var isNow = (xmlElement.getAttribute('isnow') == 'true');
+        var isNow = (xmlElement.getAttribute('isnow').toLowerCase() == 'true');
         this.updateShape_(isNow);
     },
     updateShape_: function(isNow) {
@@ -2612,7 +2620,7 @@ PythonToBlocks.KNOWN_MODULES['parking'] = {
                             {"type": "mapper", "name": "VALUE", "method": convertDate}],
     "Day": ["datetime_day", {"type": "mapper", "name": "DAY", "method": convertDate}],
     "now": ["datetime_time", ["HOUR", "NOW"]],
-    "Time": ["datetime_time", {"type": "integer", "name": "HOUR", "add_mutation": {"name": "@isnow", "value": "true"}}, 
+    "Time": ["datetime_time", {"type": "integer", "name": "HOUR", "add_mutation": {"name": "@isnow", "value": "false"}}, 
                              {"type": "integer_mapper", "name": "MINUTE", "method": convertMinute}, 
                              "MERIDIAN"],
     "time_compare": ["datetime_check_time", "OP",
@@ -3303,8 +3311,9 @@ BlockPyPrinter.prototype.stepPrinter = function(step, page) {
  * @param {String} lineText - A line of text to be printed out.
  */
 BlockPyPrinter.prototype.print = function(lineText) {
-    var stepNumber = this.main.model.execution.step();
-    var lineNumber = this.main.model.execution.line_number();
+    // Should probably be accessing the model instead of a component...
+    var stepNumber = this.main.components.engine.executionBuffer.step;
+    var lineNumber = this.main.components.engine.executionBuffer.line_number;
     // Perform any necessary cleaning
     if (lineText !== "\n") {
         var encodedText = encodeHTML(lineText);
@@ -3370,14 +3379,27 @@ function BlockPyServer(main) {
 BlockPyServer.prototype.createSubscriptions = function() {
     var server = this, model = this.main.model;
     model.program.subscribe(function() { server.saveCode(); });
-    model.assignment.name.subscribe(function() { server.saveAssignment();});
-    model.assignment.introduction.subscribe(function() { server.saveAssignment(); });
-    model.assignment.parsons.subscribe(function() { server.saveAssignment(); });
-    model.assignment.importable.subscribe(function() { server.saveAssignment(); });
-    model.assignment.disable_algorithm_errors.subscribe(function() { server.saveAssignment(); });
-    model.assignment.initial_view.subscribe(function() { server.saveAssignment(); });
-    model.assignment.modules.subscribe(function() { server.saveAssignment(); });
+    model.assignment.name.subscribe(function(e) { server.saveAssignment();});
+    model.assignment.introduction.subscribe(function(e) { server.saveAssignment(); });
+    model.assignment.parsons.subscribe(function(e) { server.saveAssignment(); });
+    model.assignment.importable.subscribe(function(e) { server.saveAssignment(); });
+    model.assignment.disable_algorithm_errors.subscribe(function(e) { server.saveAssignment(); });
+    model.assignment.initial_view.subscribe(function(e) { server.saveAssignment(); });
     model.settings.editor.subscribe(function(newValue) { server.logEvent('editor', newValue); });
+    model.execution.show_trace.subscribe(function(newValue) { server.logEvent('trace', newValue); });
+    model.execution.trace_step.subscribe(function(newValue) { server.logEvent('trace_step', newValue); });
+};
+
+/**
+ *
+ * Some subscriptions have to happen after other things have been loaded.
+ * Right now this is just after CORGIS libraries have been loaded, but maybe
+ * we'll add more later and this will need to be refactored.
+ * 
+ */
+BlockPyServer.prototype.finalizeSubscriptions = function() {
+    var server = this, model = this.main.model;
+    model.assignment.modules.subscribe(function(e) { server.saveAssignment(); });
 };
 
 BlockPyServer.prototype.TIMER_DELAY = 1000;
@@ -3452,12 +3474,9 @@ BlockPyServer.prototype.markSuccess = function(success) {
         model = this.main.model;
     data['code'] = model.programs.__main__;
     data['status'] = success;
-    console.log("OH");
     this.main.components.editor.getPngFromBlocks(function(pngData, img) {
         data['image'] = pngData;
-        console.log("AF");
         img.remove();
-        console.log("HERE");
         server.setStatus('Saving');
         if (model.server_is_connected('save_success')) {
             $.post(model.constants.urls.save_success, data, 
@@ -3910,10 +3929,6 @@ BlockPyEditor.prototype.initBlockly = function() {
                                     readOnly: this.main.model.settings.read_only(),
                                     zoom: {enabled: false},
                                     toolbox: this.updateToolbox(false)});
-    // Activate tracing in blockly for highlighting
-    //this.blockly.traceOn(true);
-    // Activate undo/redo
-    this.blockly.enableUndo();
     // Register model changer
     var editor = this;
     this.blockly.addChangeListener(function(evt) { 
@@ -4551,13 +4566,14 @@ BlockPyEditor.prototype.refreshBlockHighlight = function(line) {
     });
     if (1+line in blockMap) {
         var hblocks = blockMap[1+line];
-        /*hblocks.forEach(function(elem) {
-            elem.addSelect();
-        });*/
-        if (hblocks.length > 0) {
-            console.log(hblocks[0], hblocks[0].id)
-            this.blockly.highlightBlock(hblocks[0].id);
-        }
+        var blockly = this.blockly;
+        hblocks.forEach(function(elem) {
+            //elem.addSelect();
+            blockly.highlightBlock(elem.id, true);
+        });
+        /*if (hblocks.length > 0) {
+            this.blockly.highlightBlock(hblocks[0].id, true);
+        }*/
     }
 }
 
@@ -4620,7 +4636,6 @@ BlockPyEditor.prototype.getHighlightMap = function() {
  */
 BlockPyEditor.prototype.changeProgram = function(name) {
     this.silentChange_ = true;
-    console.log(name);
     if (name == 'give_feedback') {
         this.setMode('Text');
     }
@@ -4815,10 +4830,25 @@ BlockPyEditor.prototype.updateToolbox = function(only_set) {
     xml += '</xml>';
     if (only_set) {
         this.blockly.updateToolbox(xml);
+        this.blockly.resize();
     } else {
         return xml;
     }
 };
+
+BlockPyEditor.prototype.DOCTYPE = '<?xml version="1.0" standalone="no"?>' + '<' + '!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">';
+BlockPyEditor.prototype.cssData = null;
+BlockPyEditor.prototype.loadCss = function() {
+    if (this.cssData == null) {
+        var txt = '.blocklyDraggable {}\n';
+        txt += Blockly.Css.CONTENT.join('\n');
+        if (Blockly.FieldDate) {
+            txt += Blockly.FieldDate.CSS.join('\n');
+        }
+        // Strip off any trailing slash (either Unix or Windows).
+        this.cssData = txt.replace(/<<<PATH>>>/g, Blockly.Css.mediaPath_);
+    }
+}
 
 /**
  * Generates a PNG version of the current workspace. This PNG is stored in a Base-64 encoded
@@ -4829,38 +4859,56 @@ BlockPyEditor.prototype.updateToolbox = function(only_set) {
  * @param {Function} callback - A function to be called with the results. This function should take two parameters, the URL (as a string) of the generated base64-encoded PNG and the IMG tag.
  */
 BlockPyEditor.prototype.getPngFromBlocks = function(callback) {
+    this.loadCss();
     try {
+        // Retreive the entire canvas, strip some unnecessary tags
         var blocks = this.blockly.svgBlockCanvas_.cloneNode(true);
         blocks.removeAttribute("width");
         blocks.removeAttribute("height");
+        // Ensure that we have some content
         if (blocks.childNodes[0] !== undefined) {
+            // Remove tags that offset
             blocks.removeAttribute("transform");
             blocks.childNodes[0].removeAttribute("transform");
             blocks.childNodes[0].childNodes[0].removeAttribute("transform");
+            // Add in styles
             var linkElm = document.createElementNS("http://www.w3.org/1999/xhtml", "style");
-            linkElm.textContent = Blockly.Css.CONTENT.join('') + '\n\n';
+            linkElm.textContent = this.cssData + '\n\n';
             blocks.insertBefore(linkElm, blocks.firstChild);
+            // Get the bounding box
             var bbox = document.getElementsByClassName("blocklyBlockCanvas")[0].getBBox();
+            // Create the XML representation of the SVG
             var xml = new XMLSerializer().serializeToString(blocks);
             xml = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="'+bbox.width+'" height="'+bbox.height+'" viewBox="0 0 '+bbox.width+' '+bbox.height+'"><rect width="100%" height="100%" fill="white"></rect>'+xml+'</svg>';
-            console.log(xml);
-            var data = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(xml)));
+            // create a file blob of our SVG.
+            // Unfortunately, this crashes modern chrome for unknown reasons.
+            //var blob = new Blob([ this.DOCTYPE + xml], { type: 'image/svg+xml' });
+            //var url = window.URL.createObjectURL(blob);
+            // Old method: this failed on IE
+            var url = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(xml)));
+            // Create an IMG tag to hold the new element
             var img  = document.createElement("img");
-            img.setAttribute('src', data);
             img.style.display = 'block';
             img.onload = function() {
-                //TODO: Make this capture a class descendant. Cross the D3/Jquery barrier!
-                var canvas = d3.select('#capture-canvas').node();//d3.select('body').append('canvas').node();
+                console.log("A");
+                var canvas = document.createElement('canvas');
                 canvas.width = bbox.width;
                 canvas.height = bbox.height;
                 var ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0);
-                var canvasUrl = canvas.toDataURL("image/png");
+                var canvasUrl;
+                try {
+                    canvasUrl = canvas.toDataURL("image/png");
+                } catch (e) {
+                    canvasUrl = url;
+                }
+                img.onload = null;
                 callback(canvasUrl, img);
             }
             img.onerror = function() {
                 callback("", img);
             }
+            img.setAttribute('src', url);
         } else {
             callback("", document.createElement("img"))
         }
@@ -4918,8 +4966,10 @@ function BlockPyCorgis(main) {
             main.components.editor.updateBlocksFromModel();
         }
         main.components.editor.updateToolbox(true);
+        main.components.server.finalizeSubscriptions();
     }).fail(function(e) {
         console.error(e);
+        main.components.server.finalizeSubscriptions();
     });
 }
 
@@ -5235,7 +5285,6 @@ BlockPyFeedback.prototype.internalError = function(original, name, message) {
  * @param {number} line - What line the error occurred on.
  */
 BlockPyFeedback.prototype.instructorFeedback = function(name, message, line) {
-    console.log("A");
     this.title.html(name);
     this.original.hide();
     this.body.html(message);
@@ -5244,7 +5293,6 @@ BlockPyFeedback.prototype.instructorFeedback = function(name, message, line) {
         this.main.components.editor.highlightError(line-1);
     }
     this.main.components.server.logEvent('feedback', "Instructor Feedback", name+"\n|\n"+"\n|\n"+message);
-    console.log("B");
 }
 
 /**
@@ -5780,8 +5828,30 @@ var instructor_module = function(name) {
             this.generic_visit(node);
         }
         visitor.visit(ast);
-        console.log(nums);
         return nums;
+    }
+    function getPrintedNonProperties(source) {
+        if (!(source in parses)) {
+            var parse = Sk.parse("__main__", source);
+            parses[source] = Sk.astFromParse(parse.cst, "__main__", parse.flags);
+        }
+        var ast = parses[source];
+        var visitor = new NodeVisitor();
+        var nonVariables = [];
+        visitor.visit_Call = function(node) {
+            var func = node.func;
+            var args = node.args;
+            if (func._astname == 'Name' && func.id.v == 'print') {
+                for (var i =0; i < args.length; i+= 1) {
+                    if (args[i]._astname != "Name") {
+                        nonVariables.push(args[i]);
+                    }
+                }
+            }
+            this.generic_visit(node);
+        }
+        visitor.visit(ast);
+        return nonVariables;
     }
     
     mod.get_value_by_name = new Sk.builtin.func(function(name) {
@@ -5885,12 +5955,20 @@ var instructor_module = function(name) {
         
         var count = 0;
         for (var i = 0, len = num_list.length; i < len; i = i+1) {
-            console.log(num_list[i].v);
             if (num_list[i].v != 0 && num_list[i].v != 1) {
                 return Sk.ffi.remapToPy(true);
             }
         }
         return Sk.ffi.remapToPy(false);
+    });
+    mod.only_printing_properties = new Sk.builtin.func(function(source) {
+        Sk.builtin.pyCheckArgs("only_printing_properties", arguments, 1, 1);
+        Sk.builtin.pyCheckType("source", "string", Sk.builtin.checkString(source));
+        
+        source = source.v;
+        
+        var non_var_list = getPrintedNonProperties(source);
+        return Sk.ffi.remapToPy(non_var_list.length == 0);
     });
     
     return mod;
@@ -5920,6 +5998,7 @@ BlockPyEngine.prototype.setupEnvironment = function(student_code, traceTable, ou
     Sk.builtins.set_feedback = this.instructor_module.set_feedback;
     Sk.builtins.count_components = this.instructor_module.count_components;
     Sk.builtins.no_nonlist_nums = this.instructor_module.no_nonlist_nums;
+    Sk.builtins.only_printing_properties = this.instructor_module.only_printing_properties;
     Sk.builtins.calls_function = this.instructor_module.calls_function;
     Sk.builtins.get_property = this.instructor_module.get_property;
     Sk.builtins.get_value_by_name = this.instructor_module.get_value_by_name;
@@ -5936,7 +6015,6 @@ BlockPyEngine.prototype.disposeEnvironment = function() {
     Sk.builtins.log = undefined;
     Sk.builtins._trace = undefined;
     Sk.builtins.trace = undefined;
-    Sk.builtins.trace = undefined;
     Sk.builtins.code = undefined;
     Sk.builtins.set_success = undefined;
     Sk.builtins.set_feedback = undefined;
@@ -5946,6 +6024,7 @@ BlockPyEngine.prototype.disposeEnvironment = function() {
     Sk.builtins.get_value_by_name = undefined;
     Sk.builtins.get_value_by_type = undefined;
     Sk.builtins.no_nonlist_nums = undefined;
+    Sk.builtins.only_printing_properties = undefined;
     Sk.builtins.parse_json = undefined;
     Sk.skip_drawing = false;
     GLOBAL_VALUE = undefined;
@@ -5975,11 +6054,8 @@ BlockPyEngine.prototype.check = function(student_code, traceTable, output, ast, 
                     server.markSuccess(1.0);
                     engine.main.components.feedback.complete();
                 } else if (error.tp$name == "Feedback") {
-                    console.log("ALPHA");
                     server.markSuccess(0.0);
-                    console.log("BETA");
                     engine.main.components.feedback.instructorFeedback("Incorrect Answer", error.args.v[0].v);
-                    console.log("DELTA");
                 } else {
                     console.error(error);
                     engine.main.components.feedback.internalError(error, "Feedback Error", "Error in instructor's feedback. Please show the above message to an instructor!");

@@ -745,6 +745,9 @@ class Assignment(Base):
             assignment.mode = 'parsons'
             assignment.version += 1
         elif assignment.mode == "parsons":
+            assignment.mode = 'parsons'
+            assignment.version += 1
+        elif parsons is False:
             assignment.mode = 'blocks'
             assignment.version += 1
         if text_first is True:
