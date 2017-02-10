@@ -14,8 +14,35 @@ BlockPy: About
 
 {% block body %}
 
+<h1>Kennel</h1>
+
 <p>
-BlockPy is a web-based Python environment that lets you work with blocks, text, or both. Designed for Data Science and equipped with powerful tools like the State Explorer and Guided Feedback, the goal of BlockPy is to let you solve authentic, real-world problems.
+The <b>Kennel</b> is the host of innovative software created at Virginia Tech for introductory computing education. Currently, the Kennel includes both CORGIS and BlockPy.
+</p>
+
+<h1>CORGIS</h1>
+<p>
+The <b>CORGIS project</b> aims to transform early computer science projects by introducing real-world data via simple-to-use client libraries. Data Science offers an authentic context for your students to solve real-world problems with programming. The CORGIS project has over 40 libraries for subjects such as politics, education, literature, construction, and more!
+</p>
+
+<p>
+CORGIS offers full support for Java, Python, and Racket, in addition to making its data files available in common data formats like JSON and CSV. Some datasets are also available through our unique Visualizer platform, which enables data science exploration directly within the browser!
+</p>
+
+<p>Publications related to CORGIS:
+<ul>
+    <li>A. C. Bart, R. Whitcomb, E. Tilevich, C. A. Shaffer, D. Kafura, Computing with CORGIS: Diverse, Real-world Datasets for. Introductory Computing (Best Research Paper), SIGCSE '17, Seattle, Washington. March, 2017.</li>
+    <li>E. Tilevich, C. A. Shaffer, A. C. Bart. Creating Stimulating, Relevant, and Manageable Introductory Computer Science Projects that Utilize Real-Time, Large, Web-Based Datasets , SIGCSE'15, Kansas City, MO. 2015.</li>
+    <li>E. Tilevich, C. A. Shaffer, A. C. Bart. Creating Stimulating, Relevant, and Manageable Introductory Computer Science Projects that Utilize Real-Time, Web-Based Datasets , SIGCSE'14, Atlanta, GA. 2014.</li>
+    <li>A. C. Bart, J. Riddle, O. Saleem, B. Chowdhury, E. Tilevich, C. A. Shaffer, D. Kafura, Motivating Students with Big Data: CORGIS and MUSIC, Splash-E '14, Portland, Oregon. October 21-23, 2014.</li>
+    <li>A. C. Bart, E. Tilevich, T. Allevato, S. Hall, C. A. Shaffer, Transforming Introductory Computer Science Projects via Real-Time Web Data, SIGCSE '14, Atlanta, Georgia. March 5-8, 2014.</li>
+    <li>A. C. Bart, E. Tilevich, C. A. Shaffer, T. Allevato, S. Hall, Using Real-Time Web Data to Enrich Introductory Computer Science Projects, Splash-E '13, Indianapolis, Indiana. October 26-31, 2013.</li>
+</ul>
+</p>
+
+<h1>BlockPy</h1>
+<p>
+<b>BlockPy</b> is a web-based Python environment that lets you work with blocks, text, or both. Designed for Data Science and equipped with powerful tools like the State Explorer and Guided Feedback, BlockPy lets students solve authentic, real-world problems.
 </p>
 
 <p>
@@ -26,66 +53,71 @@ The goal of BlockPy is to give you a gentle introduction to Python but eventuall
 The BlockPy project is aimed at solving some hard technical problems: having a block-based environment for a dynamic language can be tricky - are a given pair of square brackets representing list indexing or dictionary indexing? Our goal is to use advanced program analysis techniques to provide excellent support to learners.
 </p>
 
-<h3>Features</h3>
-
+<p>Publications related to BlockPy:
 <ul>
-
-    <li>Mutual-Language Translation</li>
-    <li>Data Science Blocks</li>
-    <li>Automatic Feedback</li>
-    <li>Client-side Python Execution</li>
-    <li>LTI Hooks</li>
-    <li>State Explorer</li>
-    <li>Extended Python Errors</li>
-    <li>Natural Language Explanation</li>
-
+    <li>A. C. Bart, J. Tibau, E. Tilevich, C. A. Shaffer, D. Kafura, Design and Evaluation of Open-access, Data Science Programming Environment for Learners, IEEE Computer '17. May, 2017.</li>
+    <li>A. C. Bart, J. Tibau, E. Tilevich, C. A. Shaffer, D. Kafura, Implementing an Open-access, Data Science Programming Environment for Learners, COMPSAC '16, Atlanta, Georgia. June 10-15, 2016.</li>
+    <li>A. C. Bart, E. Tilevich, C. A. Shaffer, D. Kafura, Position Paper: From Interest to Usefulness with BlockPy, a Block-based, Educational Environment, Blocks & Beyond '15, Atlanta, Georgia. October 21-23, 2015.</li>
 </ul>
+</p>
 
-<h3>How Can BlockPy Be Used?</h3>
-
-<ul>
-<li>Classroom assignments</li>
-<li>One-on-one sessions</li>
-<li>Individualized Learning</li>
-</ul>
-
-<h3>The People Behind BlockPy</h3>
+<h1>The People Behind Kennel</h1>
 
 <table class="table table-condensed table-bordered table-striped">
     <tbody>
     
-    <tr><td style="width:15%"><strong>Austin Cory Bart</strong><br><img class="img-thumbnail img-responsive" src="http://think.cs.vt.edu/corgis/static/img/team/cory.jpg"></td>
-    <td>Primary Developer<br><ul>
-        <li>Status: PhD student at Virginia Tech</li>
+    <tr><td style="width:15%"><strong>Austin Cory Bart</strong><br><img class="img-thumbnail img-responsive" src="{{ url_for('static', filename='images/team/cory.jpg') }}"></td>
+    <td>Primary Developer (CORGIS, BlockPy)<br><ul>
+        <li>Status: PhD student (Computer Science) at Virginia Tech</li>
         <li>Email: <a href="mailto:acbart@vt.edu">acbart@vt.edu</a></li>
         <li>Website: <a href="http://www.acbart.com">www.acbart.com</a></li>
     </ul></td></tr>
     
-    <tr><td style="width:15%"><strong>Javier Tibau</strong><br><img style="width:75%" class="img-thumbnail img-responsive" src="http://thirdlab.cs.vt.edu/wp-content/uploads/2015/07/jtibau-300x300.jpeg"></td>
-    <td>Developer<br><ul>
-        <li>Status: PhD student at Virginia Tech</li>
+    <tr><td style="width:15%"><strong>Ryan Whitcomb</strong><br><img class="img-thumbnail img-responsive" src="{{ url_for('static', filename='images/team/whitcomb.jpg') }}"></td>
+    <td>Developer (CORGIS)<br><ul>
+        <li>Status: Undergraduate (Computational Modeling and Data Analytics) at Virginia Tech</li>
+    </ul></td></tr>
+    
+    <tr><td style="width:15%"><strong>Javier Tibau</strong><br><img class="img-thumbnail img-responsive" src="{{ url_for('static', filename='images/team/tibau.jpg') }}"></td>
+    <td>Developer (BlockPy)<br><ul>
+        <li>Status: PhD student (Computer Science) at Virginia Tech</li>
         <li>Website: <a href="https://thirdlab.cs.vt.edu/people/javier-tibau/">https://thirdlab.cs.vt.edu/people/javier-tibau/</a></li>
     </ul></td></tr>
     
-    <tr><td style="width:15%"><strong>Eli Tilevich</strong><br><img class="img-thumbnail img-responsive" src="http://think.cs.vt.edu/corgis/static/img/team/tilevich.jpg"></td>
-    <td>Professor<br><ul>
-        <li>Status: Associate Professor at Virginia Tech</li>
-        <li>Email: <a href="mailto:tilevich@vt.edu">tilevich@vt.edu</a></li>
-        <li>Website: <a href="http://people.cs.vt.edu/~tilevich/">people.cs.vt.edu/~tilevich/</a></li>
+    <tr><td style="width:15%"><strong>Luke Gusukuma</strong><br><img class="img-thumbnail img-responsive" src="{{ url_for('static', filename='images/team/luke.jpg') }}"></td>
+    <td>Developer (BlockPy)<br><ul>
+        <li>Status: PhD student (Computer Science) at Virginia Tech</li>
     </ul></td></tr>
     
-    <tr><td style="width:15%"><strong>Clifford A. Shaffer</strong><br><img class="img-thumbnail img-responsive" src="http://think.cs.vt.edu/corgis/static/img/team/shaffer.jpg"></td>
+    <tr><td style="width:15%"><strong>Dennis Kafura</strong><br><img class="img-thumbnail img-responsive" src="{{ url_for('static', filename='images/team/kafura.jpg') }}"></td>
     <td>Professor<br><ul>
-        <li>Status: Professor</li>
+        <li>Status: Professor (Computer Science) at Virginia Tech</li>
+        <li>Email: <a href="mailto:kafura@vt.edu">kafura@vt.edu</a></li>
+        <li>Website: <a href="http://people.cs.vt.edu/~kafura/">people.cs.vt.edu/~kafura/</a></li>
+    </ul></td></tr>
+    
+    <tr><td style="width:15%"><strong>Clifford A. Shaffer</strong><br><img class="img-thumbnail img-responsive" src="{{ url_for('static', filename='images/team/shaffer.jpg') }}"></td>
+    <td>Professor<br><ul>
+        <li>Status: Professor (Computer Science) at Virginia Tech</li>
         <li>Email: <a href="mailto:shaffer@vt.edu">shaffer@vt.edu</a></li>
         <li>Website: <a href="http://people.cs.vt.edu/~shaffer/">people.cs.vt.edu/~shaffer/</a></li>
     </ul></td></tr>
     
-    <tr><td style="width:15%"><strong>Dennis Kafura</strong><br><img class="img-thumbnail img-responsive" src="http://think.cs.vt.edu/corgis/static/img/team/kafura.jpg"></td>
+    <tr><td style="width:15%"><strong>Eli Tilevich</strong><br><img class="img-thumbnail img-responsive" src="{{ url_for('static', filename='images/team/tilevich.jpg') }}"></td>
     <td>Professor<br><ul>
-        <li>Status: Professor at Virginia Tech</li>
-        <li>Email: <a href="mailto:kafura@vt.edu">kafura@vt.edu</a></li>
-        <li>Website: <a href="http://people.cs.vt.edu/~kafura/">people.cs.vt.edu/~kafura/</a></li>
+        <li>Status: Associate Professor (Computer Science) at Virginia Tech</li>
+        <li>Email: <a href="mailto:tilevich@vt.edu">tilevich@vt.edu</a></li>
+        <li>Website: <a href="http://people.cs.vt.edu/~tilevich/">people.cs.vt.edu/~tilevich/</a></li>
+    </ul></td></tr>
+    
+    <tr><td style="width:15%"><strong>Omar Saleem</strong><br><img class="img-thumbnail img-responsive" src="{{ url_for('static', filename='images/team/omar.jpg') }}"></td>
+    <td>Former Developer (CORGIS)<br><ul>
+        <li>Status: Undergraduate (Computer Science) at Virginia Tech</li>
+    </ul></td></tr>
+    
+    <tr><td style="width:15%"><strong>Jason Riddle</strong><br><img class="img-thumbnail img-responsive" src="{{ url_for('static', filename='images/team/jason.jpg') }}"></td>
+    <td>Former Developer (CORGIS)<br><ul>
+        <li>Status: Undergraduate (Computer Science) at Virginia Tech</li>
     </ul></td></tr>
     
 </tbody></table>

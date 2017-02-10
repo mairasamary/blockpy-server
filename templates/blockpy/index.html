@@ -26,7 +26,10 @@ BlockPy
                 
                 <div class='col-md-6'>
                 <br></br>
-                    <img src='{{ url_for("static", filename="images/blockly-corgi-logo-large.png") }}' />
+                    <video width="480" height="320" controls="controls">
+                    <source src="{{ url_for('static', filename='videos/blockpy-major-features.mp4') }}" type="video/mp4">
+                    </video>
+                    <!--<img src='{{ url_for("static", filename="images/blockly-corgi-logo-large.png") }}' />-->
                 </div>
             </div>
         </div>
