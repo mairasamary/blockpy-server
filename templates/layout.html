@@ -38,7 +38,7 @@
     
     {% if not reduced_layout %}
     $(document).ready(function () {
-        $("#{{request.endpoint}}").parent().addClass("active");
+        $("#{{request.endpoint|replace('.', '\\\\.')}}").parent().addClass("active");
         setTimeout(function() {
             $("#survey-link").tooltip('show');
         }, 5000);
@@ -76,14 +76,14 @@
             <ul class="dropdown-menu">
                 <li><a href="{{ url_for('blockpy.index') }}">BlockPy</a></li>
                 <li><a href="{{ url_for('corgis.index') }}">CORGIS Datasets</a></li>
-                <li><a href="{{ url_for('book.index') }}">Book</a></li>
-                <li><a href="{{ url_for('course_materials.index') }}">Course Materials</a></li>
+                <!--<li><a href="{{ url_for('book.index') }}">Book</a></li>-->
+                <li><a href="{{ url_for('course_materials.index') }}">Computational Thinking Course</a></li>
             </ul>
         </li>
         {% if g.user and g.user.is_admin() %}
         <li><a href="{{ url_for('admin.index') }}">Admin</a></li>
         {% endif %}
-        <li><a href="{{ url_for('about') }}">About</a></li>
+        <li><a id='about' href="{{ url_for('about') }}">About</a></li>
         <!--<li><a id='survey-link' 
                target='_blank' 
                href="https://virginiatech.qualtrics.com/SE/?SID=SV_0UMPv09Ci7gdRCB"
@@ -91,7 +91,7 @@
                title="Take our survey!" 
                data-placement="bottom"
                ><b>Take our survey!</b></a></li>-->
-        <li><a href="https://groups.google.com/forum/#!forum/blockpy">Contact</a></li>
+        <li><a id='contact' href="{{ url_for('contact') }}">Contact</a></li>
       </ul>
       {% if g.user %}
       <p class="navbar-text navbar-right">Signed in as {{ g.user.name() }} <a href="{{ url_for('security.logout') }}" class="navbar-link">(log out)</a></p>

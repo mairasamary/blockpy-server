@@ -20,6 +20,18 @@ from controllers.helpers import lti
 
 blueprint_course_materials = Blueprint('course_materials', __name__, url_prefix='/course_materials')
 
+@app.route('/ct', methods=['GET', 'POST'])
+@app.route('/ctvt', methods=['GET', 'POST'])
+@app.route('/ctatvt', methods=['GET', 'POST'])
+@app.route('/computational_thinking', methods=['GET', 'POST'])
+@app.route('/computationalthinking', methods=['GET', 'POST'])
+@app.route('/ct/', methods=['GET', 'POST'])
+@app.route('/ctvt/', methods=['GET', 'POST'])
+@app.route('/ctatvt/', methods=['GET', 'POST'])
+@app.route('/computational_thinking/', methods=['GET', 'POST'])
+@app.route('/computationalthinking/', methods=['GET', 'POST'])
+def ct():
+    return redirect(url_for('course_materials.index'))
 
 @blueprint_course_materials.route('/', methods=['GET', 'POST'])
 def index():

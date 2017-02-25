@@ -18,8 +18,20 @@ Kennel
 
 <div class="media panel panel-default col-md-6 col-md-offset-3">
     <div class="media-left panel-body">
+        <a href="{{ url_for('course_materials.index') }}">
+            <img class="media-object" src="{{ url_for('static', filename='images/ct-at-vt.png')}}" alt="Course Materials">
+        </a>
+    </div>
+    <div class="media-body panel-body">
+        <h4 class="media-heading"><a href="{{ url_for('course_materials.index') }}">Computational Thinking Course</a></h4>
+        The Computational Thinking course at Virginia Tech is an innovative course for non-Computer Science majors that gently introduces students to big ideas like Abstraction, Algorithms, and the Social Impacts of Computing. With Data Science as the context, the CT@VT project is a great curriculum for any major.
+    </div>
+</div>
+
+<div class="media panel panel-default col-md-6 col-md-offset-3">
+    <div class="media-left panel-body">
         <a href="{{ url_for('blockpy.index') }}">
-            <img class="media-object" src="{{ url_for('static', filename='images/logo.png')}}" alt="BlockPy">
+            <img class="media-object" src="{{ url_for('static', filename='images/blockpy-logo-small.png')}}" alt="BlockPy">
         </a>
     </div>
     <div class="media-body panel-body">
@@ -31,7 +43,7 @@ Kennel
 <div class="media panel panel-default col-md-6 col-md-offset-3">
     <div class="media-left panel-body">
         <a href="{{ url_for('corgis.index') }}">
-            <img class="media-object" src="{{ url_for('static', filename='images/corgis-logo-tiny.png')}}" alt="BlockPy">
+            <img class="media-object" src="{{ url_for('static', filename='images/corgis-logo-tiny.png')}}" alt="CORGIS">
         </a>
     </div>
     <div class="media-body panel-body">

@@ -74,13 +74,18 @@ def index():
 @app.route('/about/', methods=['GET', 'POST'])
 @app.route('/about', methods=['GET', 'POST'])
 def about():
-    """ initial access page to the lti provider.  This page provides
-    authorization for the user.
-
-    :param lti: the `lti` object from `pylti`
-    :return: index page for lti provider
+    """
+    Information about the various projects.
     """
     return render_template('about.html')
+    
+@app.route('/contact/', methods=['GET', 'POST'])
+@app.route('/contact', methods=['GET', 'POST'])
+def contact():
+    """
+    Information on how to contact the developers
+    """
+    return render_template('contact.html')
 
 @app.route('/favicon.ico', methods=['GET', 'POST'])
 def favicon():
