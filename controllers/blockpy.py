@@ -2,6 +2,8 @@ from datetime import datetime, timedelta
 import time
 import os
 import json
+import json
+import logging
 from pprint import pprint
 
 from flask.ext.wtf import Form
@@ -338,3 +340,65 @@ def watch():
         assignments = [Assignment.by_id(aid) for aid in assignments]
         return render_template('blockpy/watch.html', course_id=course_id, assignments=assignments,
                                assignment_list=assignment_list)
+   
+'''
+@blueprint_blockpy.route('/regenerate', methods=['GET', 'POST'])
+@blueprint_blockpy.route('/regenerate/', methods=['GET', 'POST'])
+def regenerate():
+    return render_template('blockpy/regenerate.html')
+
+@blueprint_blockpy.route('/regenerate_events/', methods=['GET', 'POST'])
+@blueprint_blockpy.route('/regenerate_events', methods=['GET', 'POST'])
+def regenerate_events(lti=lti):
+    assignment_id = request.values.get('assignment_id', None)
+    log_id = request.values.get('log_id', '')
+    event = request.values.get('event', "blank")
+    action = request.values.get('action', "missing")
+    body = request.values.get('body', "")
+    timestamp = request.values.get('timestamp', "")
+    user_id = request.values.get('user_id', "")
+    #user_id = g.user.id if g.user != None else -1
+    if assignment_id is None:
+        return jsonify(success=False, message="No Assignment ID given!")
+    #log = Log.new(event, action, assignment_id, user_id, body=body, timestamp=timestamp)
+    if event == 'feedback':
+        student_interactions_logger = logging.getLogger('Feedbackfull')
+        student_interactions_logger.info(
+            json.dumps({'assignment_id': assignment_id, 'log_id': log_id, 'event': event,
+                        'action': action, 'body': body, 'user_id': user_id})
+        )
+    return jsonify(success=True)
+    
+COMPLETED_LOG_IDS = []
+dir = app.config['ROOT_DIRECTORY']+'/log/feedbackless/'
+feedbackless = sorted([dir+s for s in os.listdir(dir)])
+LOG_FILENAME = os.path.join(app.config['ROOT_DIRECTORY'], 'log/feedbackfull/feedbackfull.log')
+with open(LOG_FILENAME) as inp:
+    for line in inp:
+        COMPLETED_LOG_IDS.append(json.loads(line)['log_id'])
+
+@blueprint_blockpy.route('/regenerate_walk/', methods=['GET', 'POST'])
+@blueprint_blockpy.route('/regenerate_walk', methods=['GET', 'POST'])
+def regenerate_walk(lti=lti):
+    user_id = g.user.id if g.user != None else -1
+    if 'user' not in g or not g.user:
+        return jsonify(success=False, message="You are not logged in!")
+    if not g.user.is_grader(g.course.id):
+        return jsonify(success=False, message="You are not logged in as a grader!")
+    # find a new log to fix
+    
+    walks = []
+    # continue if there are files to process, and we have no walk
+    while feedbackless and not walks:
+        less_file = feedbackless.pop()
+        walks = []
+        with open(less_file) as inp:
+            for line in inp:
+                data = json.loads(line)
+                if data['log_id'] not in COMPLETED_LOG_IDS:
+                    walks.append(data)
+    if walks:
+        return jsonify(success=True, walks=walks, more_to_do=True)
+    else:
+        return jsonify(success=True, walks=[], more_to_do=False)
+'''

@@ -54,6 +54,8 @@ class UpdateDatasets(Command):
             'java/java.html': 'templates/corgis/java/',
             'blockpy/blockpy.html': 'templates/corgis/blockpy/',
             'csv/csv.html': 'templates/corgis/csv/',
+            'sql/sql.html': 'templates/corgis/sql/',
+            'metrics/metrics.html': 'templates/corgis/metrics/',
             'racket/racket.html': 'templates/corgis/racket/',
             'json/json.html': 'templates/corgis/json/',
             'index.json': 'static/corgis/'

@@ -832,6 +832,7 @@ PythonToBlocks.prototype.convertSource = function(python_source) {
         this.comments[yLocation] = parse.comments[commentLocation];
     }
     this.highestLineSeen = 0;
+    this.levelIndex = 0;
     this.nextExpectedLine = 0;
     this.measureNode(ast);
     var converted = this.convert(ast);
@@ -903,6 +904,7 @@ PythonToBlocks.prototype.getSourceCode = function(frm, to) {
 }
 
 PythonToBlocks.prototype.convertBody = function(node, is_top_level) {
+    this.levelIndex += 1;
     // Empty body, return nothing
     if (node.length == 0) {
         return null;
@@ -911,16 +913,17 @@ PythonToBlocks.prototype.convertBody = function(node, is_top_level) {
     // Final result list
     var children = [], // The complete set of peers
         root = null, // The top of the current peer
-        current = null; // The bottom of the current peer
+        current = null,
+        levelIndex = this.levelIndex; // The bottom of the current peer
         
     function addPeer(peer) {
         if (root == null) {
             children.push(peer);
         } else {
             children.push(root);
-            root = peer;
-            current = peer;
         }
+        root = peer;
+        current = peer;
     }
     
     function finalizePeers() {
@@ -949,7 +952,8 @@ PythonToBlocks.prototype.convertBody = function(node, is_top_level) {
         distance,
         skipped_line,
         commentCount
-        previousHeight = null;
+        previousHeight = null,
+        visitedFirstLine = false;
     // Iterate through each node
     for (var i = 0; i < node.length; i++) {
         lineNumberInBody += 1;
@@ -997,6 +1001,7 @@ PythonToBlocks.prototype.convertBody = function(node, is_top_level) {
         if (newChild == null) {
             continue;
         }
+        
         skipped_line = distance > 1;
         previousLineInProgram = lineNumberInProgram;
         previousHeight = height;
@@ -1005,12 +1010,14 @@ PythonToBlocks.prototype.convertBody = function(node, is_top_level) {
         if (is_top_level && newChild.constructor == Array) {
             addPeer(newChild[0]);
         // Handle skipped line
-        } else if (is_top_level && skipped_line) {
+        } else if (is_top_level && skipped_line && visitedFirstLine) {
             addPeer(newChild);
         // Otherwise, always embed it in there.
         } else {
             nestChild(newChild);
         }
+        
+        visitedFirstLine = true;
     }
     
     
@@ -1041,6 +1048,8 @@ PythonToBlocks.prototype.convertBody = function(node, is_top_level) {
     
     
     finalizePeers();
+    
+    this.levelIndex -= 1;
     
     return children;
 }
@@ -2055,7 +2064,7 @@ PythonToBlocks.prototype.CallAttribute = function(func, args, keywords, starargs
             default: throw new Error("Unknown function call!");
         }
     } else {
-        //console.log(func, args, keywords, starargs, kwargs);
+        console.log(func, args, keywords, starargs, kwargs);
         heights = this.getChunkHeights(node);
         extractedSource = this.getSourceCode(arrayMin(heights), arrayMax(heights));
         var col_endoffset = node.col_endoffset;
@@ -2071,8 +2080,8 @@ PythonToBlocks.prototype.CallAttribute = function(func, args, keywords, starargs
         //console.log(node, extractedSource, node.col_offset, node.col_endoffset);
         var lineno = node.lineno;
         //console.error(e);
-        return raw_expression(expressionCall, lineno);
-        /*
+        //return raw_expression(expressionCall, lineno);
+        
         var arguments = {};
         var argumentsMutation = {"@name": name};
         for (var i = 0; i < args.length; i+= 1) {
@@ -2087,7 +2096,7 @@ PythonToBlocks.prototype.CallAttribute = function(func, args, keywords, starargs
         return block("attribute_access", node.lineno, {}, {
             "MODULE": this.convert(func.value),
             "NAME": methodCall
-        }, { "inline": "false"}, {});*/
+        }, { "inline": "true"}, {});
     }
 }
 
@@ -2218,7 +2227,14 @@ PythonToBlocks.prototype.Attribute = function(node)
     var attr = node.attr;
     var ctx = node.ctx;
     
-    throw new Error("Attribute access not implemented");
+    console.log(node);
+    
+    return block("attribute_access", node.lineno, {
+        "MODULE": this.convert(value),
+        "NAME": this.convert(attr)
+    });
+    
+    //throw new Error("Attribute access not implemented");
 }
 
 /*
@@ -3333,6 +3349,9 @@ BlockPyPrinter.prototype.resetPrinter = function() {
     this.main.model.execution.output.removeAll();
     this.printerSettings['width'] = Math.min(500, this.tag.width()-40);
     this.printerSettings['height'] = Math.min(500, this.tag.height()+40);
+    Sk.TurtleGraphics = {'target': this.tag[0], 
+                         'width': this.printerSettings['width'], 
+                         'height': this.printerSettings['height']};
 }
 
 /**
@@ -3436,6 +3455,8 @@ function BlockPyServer(main) {
     this.saveTimer = {};
     this.presentationTimer = null;
     
+    this.inProgressWalks = [];
+    
     this.createSubscriptions();
 }
 
@@ -3471,13 +3492,17 @@ BlockPyServer.prototype.createServerData = function() {
     var assignment = this.main.model.assignment;
     var d = new Date();
     var seconds = Math.round(d.getTime() / 1000);
-    return {
+    data = {
         'assignment_id': assignment.assignment_id,
         'course_id': assignment.course_id,
         'student_id': assignment.student_id,
         'version': assignment.version(),
         'timestamp': seconds
+    };
+    if (this.main.model.settings.log_id() != null) {
+        data['log_id'] = this.main.model.settings.log_id();
     }
+    return data;
 }
 
 BlockPyServer.prototype.setStatus = function(status, server_error) {
@@ -3631,6 +3656,56 @@ BlockPyServer.prototype.getHistory = function(callback) {
             {code: "a = 0\nprint", time: "20160801-110003"},
             {code: "a = 0\nprint(a)", time: "20160801-111102"}
         ])*/
+    }
+}
+
+BlockPyServer.prototype.walkOldCode = function() {
+    var server = this,
+        main = this.main;
+    if (this.inProgressWalks.length > 0) {
+        var response = this.inProgressWalks.pop();
+        console.log('Processing walk', response.log_id);
+        main.setCode(response.code, '__main__');
+        main.setCode(response.feedback, 'give_feedback');
+        main.model.assignment.assignment_id = response.assignment_id;
+        main.model.assignment.user_id = response.user_id;
+        main.model.settings.log_id(response.log_id);
+        main.components.engine.onExecutionEnd = function(newState) {
+            console.log(response.log_id, newState);
+            main.components.engine.onExecutionEnd = null;
+            setTimeout(function() {
+                server.walkOldCode()
+            }, 0);
+        };
+        console.log("Running");
+        main.components.engine.run();
+    } else {
+        var data = this.createServerData();
+        this.setStatus('Retrieving');
+        if (main.model.server_is_connected('walk_old_code')) {
+            $.post(server.main.model.constants.urls.walk_old_code, data, 
+                   function (response) {
+                       if (response.success) {
+                           if (response.more_to_do) {
+                            server.inProgressWalks = response.walks;
+                            server.walkOldCode();
+                           }
+                       } else {
+                           this.setStatus('Failure', response.message);
+                       }
+                   })
+            .fail(
+            function(response) {
+                console.error(response);
+                setTimeout(function() {
+                    server.walkOldCode()
+                }, 3000);
+            }
+            );
+            //server.defaultFailure.bind(server));
+        } else {
+            this.setStatus('Offline', "Server is not connected!");
+        }
     }
 }
 
@@ -4447,10 +4522,12 @@ BlockPyEditor.prototype.updateBlocks = function() {
         }
         // Update Model
         this.silenceModel = 2;
+        console.log("Silenced model from UB-start");
         this.main.setCode(newCode);
         // Update Text
         this.silenceText = true;
         this.setText(newCode);
+        console.log("Silenced model from UB-end");
     }
 }
 
@@ -4465,12 +4542,14 @@ BlockPyEditor.prototype.updateText = function() {
         var newCode = this.codeMirror.getValue();
         // Update Model
         this.silenceModel = 2;
+        console.log("Silenced model from UT-start");
         this.main.setCode(newCode);
         // Update Blocks
         this.silenceBlock = true;
         this.setBlocks(newCode);
         this.unhighlightLines();
         this.resetBlockSilence();
+        console.log("Silenced model from UT-end");
     }
     this.silenceText = false;
 }
@@ -4500,6 +4579,7 @@ BlockPyEditor.prototype.updateTextFromModel = function() {
         this.silenceText = true;
         this.setText(code);
     } else {
+        console.log("UTFM -= 1");
         this.silenceModel -= 1;
     }
 }
@@ -4518,6 +4598,7 @@ BlockPyEditor.prototype.updateBlocksFromModel = function() {
         this.setBlocks(code);
         this.resetBlockSilence();
     } else {
+        console.log("UBFM -= 1");
         this.silenceModel -= 1;
     }
 }
@@ -5560,6 +5641,13 @@ function BlockPyEngine(main) {
     //this.main.model.program.subscribe(this.analyze.bind(this))
 }
 
+BlockPyEngine.prototype.onExecutionEnd = null;
+BlockPyEngine.prototype.executionEnd_ = function() {
+    if (this.onExecutionEnd !== null) {
+        this.onExecutionEnd();
+    }
+};
+
 /**
  * Initializes the Python Execution engine and the Printer (console).
  */
@@ -5776,6 +5864,7 @@ BlockPyEngine.prototype.run = function() {
         !this.main.model.assignment.disable_algorithm_errors()) {
         var success = this.analyze();
         if (success === false) {
+            this.executionEnd_();
             return;
         }
     }
@@ -5796,6 +5885,7 @@ BlockPyEngine.prototype.run = function() {
     if (code.trim() == "") {
         feedback.emptyProgram();
         this.main.model.execution.status("error");
+        this.executionEnd_();
         return;
     }
     // Actually run the python code
@@ -5816,10 +5906,12 @@ BlockPyEngine.prototype.run = function() {
             engine.check(code, execution.trace(), execution.output(), execution.ast, module.$d);
             // Reenable "Run"
             engine.main.model.execution.status("waiting");
+            engine.executionEnd_();
         },
         function(error) {
             feedback.printError(error);
             engine.main.model.execution.status("error");
+            engine.executionEnd_();
             //server.logEvent('blockly_error', error);
         }
     );
@@ -6240,6 +6332,7 @@ BlockPyEngine.prototype.parseValue = function(property, value) {
                     };
     }
 }
+
 /**
  * A helper function for extending an array based
  * on an "addArray" and "removeArray". Any element
@@ -6299,6 +6392,8 @@ function BlockPy(settings, assignment, submission, programs) {
             // boolean
             'instructor': ko.observable(settings.instructor),
             'instructor_initial': ko.observable(settings.instructor),
+            // String
+            'log_id': ko.observable(null),
             // boolean
             'enable_blocks': ko.observable(settings.blocks_enabled),
             // boolean

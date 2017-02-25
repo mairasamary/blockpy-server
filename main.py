@@ -42,6 +42,14 @@ simple_formatter = logging.Formatter('%(message)s')
 handler.setFormatter(simple_formatter)
 student_interactions_logger.addHandler(handler)
 
+LOG_FILENAME = os.path.join(app.config['ROOT_DIRECTORY'], 'log/feedbackfull/feedbackfull.log')
+feedbackfull_logger = logging.getLogger('Feedbackfull')
+feedbackfull_logger.setLevel(logging.INFO)
+handler = logging.FileHandler(LOG_FILENAME, mode='a+', delay=True)
+handler.setLevel(logging.INFO)
+simple_formatter = logging.Formatter('%(message)s')
+handler.setFormatter(simple_formatter)
+feedbackfull_logger.addHandler(handler)
 
 # Assets
 from controllers.assets import assets
