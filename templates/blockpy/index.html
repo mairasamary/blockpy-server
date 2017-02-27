@@ -10,6 +10,19 @@ BlockPy
 {% block extrahead %}
 <script type='text/javascript'>
 </script>
+.videoWrapper {
+	position: relative;
+	padding-bottom: 56.25%; /* 16:9 */
+	padding-top: 25px;
+	height: 0;
+}
+.videoWrapper iframe {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+}
 
 <meta property="og:description" content="BlockPy is a web-based Python environment that lets you work with blocks, text, or both. Designed for Data Science and equipped with powerful tools like the State Explorer and Guided Feedback, the goal of BlockPy is to let you solve authentic, real-world problems." />
 {% endblock %}
@@ -26,7 +39,9 @@ BlockPy
                 
                 <div class='col-md-6'>
                 <br></br>
-                    <iframe width="854" height="480" src="https://www.youtube.com/embed/0Q92VJMlf_0" frameborder="0" allowfullscreen></iframe>
+                    <div class="videoWrapper">
+                    <iframe width="560" height="349" src="https://www.youtube.com/embed/0Q92VJMlf_0" frameborder="0" allowfullscreen></iframe>
+                    </div>
                     <!--<img src='{{ url_for("static", filename="images/blockly-corgi-logo-large.png") }}' />-->
                 </div>
             </div>
