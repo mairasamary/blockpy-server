@@ -36,7 +36,7 @@
         <lticm:property name="enabled">true</lticm:property>
       </lticm:options>
       <lticm:options name="course_navigation">
-        <lticm:property name="url">{{ url_for('courses.dashboard', _external=True) }}</lticm:property>
+        <lticm:property name="url">{{ url_for('blockpy.watch', _external=True) }}</lticm:property>
         <lticm:property name="text">BlockPy Dashboard</lticm:property>
         <lticm:property name="visibility">admins</lticm:property>
         <lticm:property name="default">enabled</lticm:property>

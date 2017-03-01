@@ -310,9 +310,7 @@ def process_history(history):
 @blueprint_blockpy.route('/watch/', methods=['GET', 'POST'])
 def watch():
     assignment_list = request.values.get('assignments', '')
-    if not assignment_list:
-        return jsonify(success=False, message="Need a comma separated list of assignments")
-    assignments = [int(aid) for aid in assignment_list.split(',')]
+    assignments = [int(aid) for aid in assignment_list.split(',') if len(aid) > 0]
     course_id = request.values.get('course_id',  g.course.id if 'course' in g else None)
     if course_id == None or course_id == "":
         return jsonify(success=False, message="No Course ID given!")

@@ -45,6 +45,9 @@ Assignment
                 'blocklyPath': {{ url_for('static', filename='blockly/')|tojson }},
                 'attachmentPoint': document.getElementById('blockpy-div'),
                 'instructor': (queryParams.mode == "instructor"),
+                'disable_algorithm_errors': (queryParams.algorithm_errors == "true"),
+                'disable_timeout_errors': (queryParams.timeout_errors == "true"),
+                'disable_typed_blocks': (queryParams.typed_blocks == "true"),
                 'urls': {
                     'import_datasets': {{ url_for('blockpy.load_corgis',path='')|tojson }}
                 }
@@ -53,9 +56,9 @@ Assignment
             {
                 'introduction': "Welcome to BlockPy. Try running the code below.",
                 'name': "Scratch Canvas",
-                'give_feedback': '',
-                'starting_code': 'x = 0',
-                'initial_view': 'Blocks',
+                'give_feedback': decodeURIComponent(queryParams.give_feedback || ""),
+                'starting_code': decodeURIComponent(queryParams.starting_code || ""),
+                'initial_view': queryParams.view || "Blocks",
                 'disable_algorithm_errors': false,
                 "importable": true,
                 'modules': {}
@@ -64,7 +67,7 @@ Assignment
             {},
             // programs
             {
-                '__main__': "x = 0\nprint(x)"
+                '__main__': decodeURIComponent(queryParams.code || "")
                 //$("#default-body").html()
             }
         )

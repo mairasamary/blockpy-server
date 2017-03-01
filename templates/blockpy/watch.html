@@ -32,6 +32,28 @@ Watch
 
 <script>
 
+/**
+* Add a URL parameter (or modify if already exists)
+* @param {url}   string  url 
+* @param {param} string  the key to set
+* @param {value} string  value 
+*/
+var addOrReplaceParam = function(url, param, value) {
+   param = encodeURIComponent(param);
+   var r = "([&?]|&amp;)" + param + "\\b(?:=(?:[^&#]*))*";
+   var a = document.createElement('a');
+   var regex = new RegExp(r);
+   var str = param + (value ? "=" + encodeURIComponent(value) : ""); 
+   a.href = url;
+   var q = a.search.replace(regex, "$1"+str);
+   if (q === a.search) {
+      a.search += (a.search ? "&" : "") + str;
+   } else {
+      a.search = q;
+   }
+   return a.href;
+}
+
 function median(args) {
   if (!args.length) {return 0};
   var numbers = args.slice(0).sort((a,b) => a - b);
@@ -223,9 +245,18 @@ $(document).ready(function() {
     {% endfor %}
     updateData();
 });
+
+url_root = {{ url_for('blockpy.watch', course_id=course_id)|tojson }};
 </script>
 
 <div class="alert alert-danger" id='error-box' role="alert" style="display:none"></div>
+
+<form id='al_form' method='get'>
+IDs:
+<input type='text' id='assignments' name='assignments' value="{{ request.values['assignments'] }}"></input>
+<input type='submit' id='reload' class='btn btn-default' value='Reload'></input>
+<span class="text-muted">Make sure they are comma-separated without spaces.</span>
+</form>
 
 {% for assignment in assignments %}
 <div class='row'>
