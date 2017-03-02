@@ -24,7 +24,7 @@ $(document).ready(function() {
 
 <h2>{{ submissions[0][2].title() }}</h2>
 Assignment ID: {{ submissions[0][2].id }}<br>
-Introduction: {{ submissions[0][2].body }}<br>
+Introduction: {{ submissions[0][2].body|safe }}<br>
 
 {% for submission, user, assignment in submissions %}
 <div class='row'>
@@ -32,7 +32,7 @@ Introduction: {{ submissions[0][2].body }}<br>
 <div class='col-md-12'>
 <h3>{{ user.name() }}</h1>
 User Email: {{ user.email }}<br>
-User ID: {{ submission.id }}<br>
+User ID: {{ user.id }}<br>
 Started: {{ submission.date_created.strftime("%I:%M:%S %p on %b %d, %Y") }}<br>
 Last Modified: {{ submission.date_modified.strftime("%I:%M:%S %p on %b %d, %Y") }}<br>
 Touches: {{ submission.version }}<br>
