@@ -305,6 +305,29 @@ def process_history(history):
                 total_duration += diff
         previous_time = parsed_time
     return total_duration
+    
+@blueprint_blockpy.route('/browse_submissions', methods=['GET', 'POST'])
+@blueprint_blockpy.route('/browse_submissions/', methods=['GET', 'POST'])
+def browse_submissions():
+    assignment_id = request.values.get('assignment_id', None)
+    if assignment_id is None:
+        return jsonify(success=False, message="No Assignment ID given!")
+    assignment_id = int(assignment_id)
+    course_id = request.values.get('course_id',  g.course.id if 'course' in g else None)
+    if course_id == None or course_id == "":
+        return jsonify(success=False, message="No Course ID given!")
+    if g.user is None or not g.user.is_instructor(int(course_id)):
+        return jsonify(success=False, message="You are not an instructor in this assignments' course.")
+    submissions = Submission.by_assignment(assignment_id, int(course_id))
+    formatter = HtmlFormatter(linenos=True, noclasses=True)
+    python_lexer = PythonLexer()
+    for submission, user, assignment in submissions:
+        submission.highlighted_code = highlight(submission.code, python_lexer, formatter)
+        submission.history = process_history([h['time'] for h in submission.get_history()])
+    return render_template('blockpy/browse_submissions.html', 
+                           course_id=course_id, 
+                           assignment_id=assignment_id,
+                           submissions=submissions)
 
 @blueprint_blockpy.route('/watch', methods=['GET', 'POST'])
 @blueprint_blockpy.route('/watch/', methods=['GET', 'POST'])
