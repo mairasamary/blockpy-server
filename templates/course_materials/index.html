@@ -37,6 +37,11 @@ Want to use our materials? Contact Dennis Kafura at <a href='mailto:kafura@cs.vt
 </p>
 
 <h3>More Information</h3>
+
+<div class='row'>
+
+<div class='col-md-8'>
+
 <p>
 The Computational Thinking curriculum is organized around several key ideas and practices.
 
@@ -51,7 +56,6 @@ Each class engages students in discussion, algorithm development, or programming
 Students are assigned into small (4-6 person) teams that are called "cohorts". Cohort members are seated together and are strongly encouraged to act as a small learning community - helping and encouraging each other. Each cohort writes, and the members sign, a "contract" stating the expectations of the cohort's members. The cohorts are multi-disciplinary; whenever possible no two students in a cohort are from the same academic major. The blending of disciplinary prospectives allows students to benefit from the intuitions and motifs of different academic majors while they are engaged in active learning.
 
   </li>
-INSERT PHOTOS OF COHORTS HERE
 
 
   <li> <b>Project-oriented:</b>
@@ -59,21 +63,18 @@ INSERT PHOTOS OF COHORTS HERE
 Projects are the primary means by which students demonstrate mastery of the course concepts and skills. In each project the student selects the data that they will use, defines the question(s) to be answered using this data, and employs the apprpriate tools or programming to answer the questions. The answers to the questions are the studentinterpretations of quantitative measures (e.g. means) or as visualizations (e.g., hisograms). There are four project across the semester. The class time in the last three weeks of the course are devoted to the final project. The final project is presented in the form of a 5-6 video that is graded by a published rubric. 
 
   </li>
-ADD HERE SOME IMAGES OF PROJECT FIRST SLIDES
 
   <li><b>Core Concepts:</b>
 
 The course is grounded in the student of two primary computing concepts: abstraction and algorithms. Abstraction enables a student to "see the world" as a collection of information properties relevant to needs of some problem-solver. By constructing algorithms, students develop the ability to automatically manipulate the abstraction to answer questions about the real world. The following "table of computational elements" concretely defines the computing concepts encountered in the class. In addition, students consider the social impacts of computing by examining how computing technology effects the lives of people and identifying apprpriate ethical principles that could be used to justify alternative uses of the technology.
 
   </li>
-INSERT TABLE OF ELEMENTS IMAGE HERE
 
   <li><b>Spiral Design:</b>
 
 The material in the course is unfolded in a spiral fashion. This organization allows students to see the core ideas - abstraction, algorithms, social impacts - at progressively more refined stages. The spiral structure is tied to the projects. Each cycle in the spiral ends with a (or the last cycle in two) project. An example of the progressive nature of the student's learning is illustrated by the projects: in the first (nano) project the student uses the algorithms enbedded in a visualization tool; in the second (micro) project the student writes comparable algorithms in a block-based language. The in the final two projects (mini and final) the students write similar algorithms in Python.
 
   </li>
-INSERT SPIRAL FIGURE HERE
 
   <li><b>Data Science context:</b>
 
@@ -83,7 +84,23 @@ A data science context is used to sustain student motivation. A wide variety dat
 
 Learning about computing and programming can seem a daunting challenge, especially to non-STEM students who have no prior experience and have a tenuous grasp on quantitative methods. Through the sprial design and carefully crafted tools the learning is incremental, allowing students to build skill and confidence as they proceed. A critical technology used in the course is BlockPy. Using BlockPy students begin programming in a syntactically safe block-based languge and then gradually progress to programming in a carefully selected sub-set of Python.
   </li>
+</ul>
+
   </p>
+</div>
+
+<div class='col-md-4'>
+<a href="{{ url_for('static', filename='images/ctatvt-cohorts.png') }}" target="_blank"><img src="{{ url_for('static', filename='images/ctatvt-cohorts.png') }}" class='img-responsive' alt='Students Work in Cohorts'></a><br>
+
+<a href="{{ url_for('static', filename='images/ctatvt-final-projects.png') }}" target="_blank"><img src="{{ url_for('static', filename='images/ctatvt-final-projects.png') }}" class='img-responsive' alt='Self-directed Final Project'></a><br>
+
+<a href="{{ url_for('static', filename='images/ctatvt-table-elements.png') }}" target="_blank"><img src="{{ url_for('static', filename='images/ctatvt-table-elements.png') }}" class='img-responsive' alt='Computational Table of Elements'></a><br>
+
+<a href="{{ url_for('static', filename='images/ctatvt-spiral-design.png') }}" target="_blank"><img src="{{ url_for('static', filename='images/ctatvt-spiral-design.png') }}" class='img-responsive' alt='Spiral Course Design'></a>
+
+</div>
+
+</div>
 
 <h3>Learning Objectives</h3>
 
@@ -115,10 +132,5 @@ The course explores the social impacts of computational systems using a number o
 
 <h3>Promotional Video</h3>
 <iframe width="480" height="270" src="https://www.youtube.com/embed/dYyis6WLVus" frameborder="0" allowfullscreen></iframe>
-
-<h3>Action Photos</h3>
-<p>
-Photos
-</p>
 
 {% endblock %}
