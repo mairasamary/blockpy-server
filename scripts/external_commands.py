@@ -82,7 +82,7 @@ class UpdateDatasets(Command):
                     extension = dataset_file.rsplit('.', 1)[1] if '.' in dataset_file else None
                     if extension in ('html',):
                         copy(complete_filepath, final_template_target)
-                    elif extension in ('db', 'jar', 'py', 'png', 'sql', 'json', 'js'):
+                    elif extension in ('db', 'jar', 'py', 'png', 'sql', 'json', 'js', 'csv'):
                         copy(complete_filepath, final_static_target)
                 if language == 'java':
                     doc_folder = os.path.join(final_source, 'docs/')
