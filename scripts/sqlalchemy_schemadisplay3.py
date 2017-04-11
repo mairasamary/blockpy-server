@@ -95,10 +95,14 @@ from sqlalchemy import Table, text
 
 def _render_table_html(table, metadata, show_indexes, show_datatypes):
     def format_col_type(col):
+        '''
+        #https://groups.google.com/forum/#!topic/sqlalchemy/GMYy7qhOMd8
         try:
             return col.type.get_col_spec()
         except NotImplementedError:
             return str(col.type)
+        '''
+        return str(col.type)
     def format_col_str(col):
          if show_datatypes:
              return "- %s : %s" % (col.name, format_col_type(col))
@@ -120,7 +124,7 @@ def _render_table_html(table, metadata, show_indexes, show_datatypes):
     return html
 
 def create_schema_graph(tables=None, metadata=None, show_indexes=True, show_datatypes=True, font="Bitstream-Vera Sans",
-    concentrate=True, relation_options={}, rankdir='TB'):
+    concentrate=True, relation_options={}, rankdir='LR'):
     relation_kwargs = {
         'fontsize':"7.0"
     }
@@ -135,7 +139,8 @@ def create_schema_graph(tables=None, metadata=None, show_indexes=True, show_data
     else:
         raise Exception("You need to specify at least tables or metadata")
     
-    graph = pydot.Dot(prog="dot",mode="ipsep",overlap="ipsep",sep="0.01",concentrate=str(concentrate), rankdir=rankdir)
+    graph = pydot.Dot(prog="dot",mode="ipsep",overlap="ipsep",sep="0.01",concentrate=str(concentrate), rankdir=rankdir,
+                      ratio='fill', size="16, 9" )
     for table in tables:
         graph.add_node(pydot.Node(str(table.name),
             shape="plaintext",

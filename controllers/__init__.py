@@ -61,6 +61,9 @@ app.register_blueprint(blueprint_book)
 from course_materials import blueprint_course_materials
 app.register_blueprint(blueprint_course_materials)
 
+from utilities import blueprint_utilities
+app.register_blueprint(blueprint_utilities)
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
     """ initial access page to the lti provider.  This page provides
