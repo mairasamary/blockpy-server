@@ -126,7 +126,7 @@ ko.components.register('code-line-widget', {
 mainModel = {
     code: ko.observable({{ code|tojson }}),
     submissionStatusColor: ko.observable('{{ "btn-success" if submission.correct else "btn-primary"}}'),
-    submissionStatusText: ko.observable('{{"Resubmit" if submission.correct else "Submit for grading"}}'),
+    submissionStatusText: ko.observable('{{"Submitted successfully; Click to resubmit" if submission.correct else "Submit for grading"}}'),
     submitExplanation: function() {
         mainModel.submissionStatusColor('btn-warning');
         mainModel.submissionStatusText('Submitting...');
@@ -141,7 +141,7 @@ mainModel = {
             success: function(data) {
                 if (data.success) {
                     mainModel.submissionStatusColor('btn-success');
-                    mainModel.submissionStatusText('Resubmit');
+                    mainModel.submissionStatusText('Submitted successfully; Click to resubmit');
                 } else {
                     mainModel.submissionStatusColor('btn-danger');
                     mainModel.submissionStatusText('Submission failed; Report this!');
@@ -302,7 +302,12 @@ For each of the following highlighted lines of your code, please write a few sen
 
 <div class="row">
 <hr>
-When you are satisfied with your answer, you must click the button below. It will not be graded immediately, so do not be anxious with whatever number you currently recieve.
+<ul>
+<li>When you are satisfied with your answer, you must click the button below.</li>
+<li>You can submit multiple times.</li>
+<li>It will not be graded immediately, so do not be anxious with whatever number you currently recieve.</li>
+<li>When the button is green, your work has been submitted successfully.</li>
+</ul>
 <div class="center-block">
 <button class="btn center-block" type="submit" data-bind="click: submitExplanation, css: submissionStatusColor, text: submissionStatusText"></button>
 </div>
