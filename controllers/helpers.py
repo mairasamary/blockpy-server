@@ -4,7 +4,10 @@ from pprint import pprint
 from functools import wraps, update_wrapper
 import calendar, datetime
 import json
-from HTMLParser import HTMLParser
+try:
+    from html.parser import HTMLParser
+except:
+    from HTMLParser import HTMLParser
 
 # Flask imports
 from flask import g, request, redirect, url_for, make_response, current_app
@@ -13,7 +16,7 @@ import flask_security
 from flask_security.core import current_user
 from flask import request as r
 
-from pylti.flask import LTI, LTIException
+from controllers.pylti.flask import LTI, LTIException
 
 from main import app
 
@@ -115,7 +118,6 @@ def crossdomain(origin=None, methods=None, headers=None,
         if methods is not None:
             return methods
         options_resp = current_app.make_default_options_response()
-        print options_resp.headers
         return options_resp.headers['allow']
 
     def decorator(f):

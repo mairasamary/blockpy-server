@@ -8,3 +8,4 @@ sqlalchemy
 pylti
 pyOpenSSL
 flask_assests
+oauth2

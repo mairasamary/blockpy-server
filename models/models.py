@@ -31,7 +31,7 @@ def string_to_datetime(astring):
 def ensure_dirs(path):
     try: 
         os.makedirs(path)
-    except OSError, e:
+    except OSError as e:
         if not os.path.isdir(path):
             app.logger.warning(e.args + (path, ) )
 
