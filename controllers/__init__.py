@@ -1,12 +1,11 @@
 import os
 
-from main import app
-
-from models.models import db, User, Course
 from flask import session, g, send_from_directory, request, jsonify, render_template
 from flask import redirect, url_for
 from flask_security.core import current_user
 
+from main import app
+from models.models import db, User, Course
 from controllers.helpers import admin_required
 
 @app.before_request
@@ -22,16 +21,16 @@ from admin import admin
 
 import security 
 
-from users import users
+from controllers.users import users
 app.register_blueprint(users)
 
-from courses import courses
+from controllers.courses import courses
 app.register_blueprint(courses)
 
-from assignments import blueprint_assignments
+from controllers.assignments import blueprint_assignments
 app.register_blueprint(blueprint_assignments)
 
-from assignment_groups import blueprint_assignment_group
+from controllers.assignment_groups import blueprint_assignment_group
 app.register_blueprint(blueprint_assignment_group)
 
 '''
@@ -39,29 +38,29 @@ from lti import lti_assignments
 app.register_blueprint(lti_assignments)
 '''
 
-from services import services
+from controllers.services import services
 app.register_blueprint(services)
 
-from blockpy import blueprint_blockpy
+from controllers.blockpy import blueprint_blockpy
 app.register_blueprint(blueprint_blockpy)
 
-from maze import blueprint_maze
+from controllers.maze import blueprint_maze
 app.register_blueprint(blueprint_maze)
 
-from explain import blueprint_explain
+from controllers.explain import blueprint_explain
 app.register_blueprint(blueprint_explain)
 
-from corgis import blueprint_corgis, blueprint_datasets
+from controllers.corgis import blueprint_corgis, blueprint_datasets
 app.register_blueprint(blueprint_corgis)
 app.register_blueprint(blueprint_datasets)
 
-from book import blueprint_book
+from controllers.book import blueprint_book
 app.register_blueprint(blueprint_book)
 
-from course_materials import blueprint_course_materials
+from controllers.course_materials import blueprint_course_materials
 app.register_blueprint(blueprint_course_materials)
 
-from utilities import blueprint_utilities
+from controllers.utilities import blueprint_utilities
 app.register_blueprint(blueprint_utilities)
 
 from pragmatics import blueprint_pragmatics
