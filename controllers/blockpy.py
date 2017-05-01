@@ -45,8 +45,16 @@ def load(lti=None, assignments=None, submissions=None, embed=False):
     """
     
     """
+    if "embed" in request.args:
+        embed = request.args.get("embed")
     if assignments is None or submissions is None:
         assignments, submissions = get_assignments_from_request()
+    if "assignment_id" in request.args:
+        assignment_id = request.args.get("assignment_id")
+    elif assignments:
+        assignment_id = assignments[0].id
+    else:
+        assignment_id = None
     if assignments:
         if submissions:
             course_id = submissions[0].course_id
@@ -69,6 +77,7 @@ def load(lti=None, assignments=None, submissions=None, embed=False):
                            course_id=course_id,
                            user_id=g.user.id if g.user is not None else -1,
                            embed=embed,
+                           assignment_id=assignment_id,
                            instructor_mode=instructor_mode)
                                
 
