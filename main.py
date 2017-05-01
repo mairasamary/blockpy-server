@@ -55,7 +55,7 @@ feedbackfull_logger.addHandler(handler)
 from controllers.assets import assets
 
 # Email
-from flask.ext.mail import Mail
+from flask_mail import Mail
 mail = Mail(app)
 
 import controllers

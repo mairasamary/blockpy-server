@@ -1,5 +1,5 @@
-from flask.ext.script import Command, Option
-from flask.ext.security.utils import encrypt_password
+from flask_script import Command, Option
+from flask_security.utils import encrypt_password
 from models.models import db
 from main import app
 import datetime

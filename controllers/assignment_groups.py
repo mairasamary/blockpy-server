@@ -1,7 +1,10 @@
 from pprint import pprint
 from lxml import etree
-from urllib import quote as url_quote
 import json
+try:
+    from urllib.parse import quote as url_quote
+except:
+    from urllib import quote as url_quote
 
 # Pygments, for reporting nicely formatted Python snippets
 from pygments import highlight

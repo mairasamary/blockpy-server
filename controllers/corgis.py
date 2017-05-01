@@ -19,7 +19,7 @@ from models.models import db, Assignment
 
 from controllers.helpers import lti
 
-from controllers.interaction_logger import StructuredEvent
+from interaction_logger import StructuredEvent
 
 blueprint_corgis = Blueprint('corgis', __name__, url_prefix='/corgis')
 

@@ -1,6 +1,6 @@
 import ast
 
-from module_white_list import MODULE_WHITE_LIST
+from controllers.ast_finder.module_white_list import MODULE_WHITE_LIST
 
 '''
 for loop

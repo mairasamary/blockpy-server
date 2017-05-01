@@ -1,7 +1,7 @@
 import sys, os
 
 from main import app
-from flask.ext.script import Manager, Server
+from flask_script import Manager, Server
 from scripts.db_commands import ResetDB, PopulateDB, DisplayDB, ExportCourse
 from scripts.external_commands import UpdateDatasets, UpdateBlockPy
 

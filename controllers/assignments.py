@@ -1,8 +1,12 @@
 from functools import wraps
 from pprint import pprint
+import json
+try:
+    from urllib.parse import quote as url_quote
+except:
+    from urllib import quote as url_quote
 
 from flask import Blueprint, g, session, render_template, url_for, request, jsonify
-from urllib import quote as url_quote
 
 from controllers.helpers import (lti, get_assignments_from_request, strip_tags, 
                                  get_lti_property, get_course_id, get_assignment_id)
@@ -13,7 +17,6 @@ import controllers.maze
 import controllers.explain
 import controllers.blockpy
 import controllers.corgis
-import controllers.json
 
 from models.models import (db, Assignment, AssignmentGroup, User, Course)
 

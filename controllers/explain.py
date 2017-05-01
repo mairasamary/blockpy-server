@@ -82,7 +82,7 @@ def delete():
     
     try:
         os.remove(full_file_path)
-    except OSError, e:
+    except OSError as e:
         app.logger.warning(e.args)
     
     any_files = bool(os.listdir(directory))

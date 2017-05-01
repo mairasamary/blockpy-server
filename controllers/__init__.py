@@ -10,7 +10,7 @@ from controllers.helpers import admin_required
 
 @app.before_request
 def load_user():
-    if current_user.is_authenticated():
+    if current_user.is_authenticated:
         g.user = current_user
         if 'lti_course' in session:
             g.course = Course.by_id(session['lti_course'])

@@ -53,7 +53,6 @@ def log_event():
     event = request.form.get('event', "")
     action = request.form.get('action', "")
     body = request.form.get('body', "")
-    print user_id
     external_interactions_logger = logging.getLogger('ExternalInteractions')
     external_interactions_logger.info(
         StructuredEvent(user_id, question_id, event, action, body)
