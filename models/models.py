@@ -9,9 +9,9 @@ import logging
 from main import app
 from interaction_logger import StructuredEvent
 
-from flask.ext.sqlalchemy import SQLAlchemy
+from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
-from flask.ext.security import UserMixin, RoleMixin, login_required
+from flask_security import UserMixin, RoleMixin, login_required
 from sqlalchemy import event, Integer, Date, ForeignKey, Column, Table,\
                        String, Boolean, DateTime, Text, ForeignKeyConstraint,\
                        cast, func, and_, or_

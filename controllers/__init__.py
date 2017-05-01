@@ -17,9 +17,9 @@ def load_user():
     else:
         g.user = None
 
-from admin import admin
+from controllers.admin import admin
 
-import security 
+import controllers.security 
 
 from controllers.users import users
 app.register_blueprint(users)

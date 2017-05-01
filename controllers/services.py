@@ -1,7 +1,7 @@
 import logging
 from pprint import pprint
 
-from flask.ext.wtf import Form
+from flask_wtf import Form
 from wtforms import IntegerField, BooleanField
 
 from flask import Blueprint, send_from_directory
@@ -12,12 +12,12 @@ from werkzeug.utils import secure_filename
 from sqlalchemy import Date, cast, func, desc, or_
 
 from main import app
-from helpers import crossdomain
+from controllers.helpers import crossdomain
 from interaction_logger import StructuredEvent
 
 services = Blueprint('services', __name__, url_prefix='/services')
 
-from service_libraries import weather as weather_service
+from controllers.service_libraries import weather as weather_service
 
 @services.route('/weather/', methods=['GET', "POST"])
 @services.route('/weather', methods=['GET', 'POST'])

@@ -2,7 +2,7 @@ import os
 import json
 from pprint import pprint
 
-from flask.ext.wtf import Form
+from flask_wtf import Form
 from wtforms import IntegerField, BooleanField
 
 from flask import Blueprint, send_from_directory

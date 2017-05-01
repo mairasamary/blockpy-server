@@ -6,7 +6,7 @@ import json
 import logging
 from pprint import pprint
 
-from flask.ext.wtf import Form
+from flask_wtf import Form
 from wtforms import IntegerField, BooleanField
 
 # Pygments, for reporting nicely formatted Python snippets

@@ -1,7 +1,7 @@
 from models.models import db, User, Role
 from main import app
 
-from flask.ext.security import SQLAlchemyUserDatastore, Security
+from flask_security import SQLAlchemyUserDatastore, Security
 from flask_security.forms import ConfirmRegisterForm
 
 from wtforms import BooleanField, TextField, validators

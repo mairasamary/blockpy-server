@@ -1,7 +1,7 @@
 from pprint import pprint
 from collections import defaultdict
 
-from flask.ext.wtf import Form
+from flask_wtf import Form
 from wtforms import IntegerField, BooleanField, TextField, SubmitField, SelectField
 
 from flask import Blueprint, send_from_directory

@@ -9,7 +9,7 @@ from pygments import highlight
 from pygments.lexers import PythonLexer
 from pygments.formatters import HtmlFormatter
 
-from flask.ext.wtf import Form
+from flask_wtf import Form
 from wtforms import IntegerField, BooleanField
 
 from pylti.common import LTI_PROPERTY_LIST 

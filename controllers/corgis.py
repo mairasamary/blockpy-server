@@ -3,7 +3,7 @@ import json
 from pprint import pprint
 import logging
 
-from flask.ext.wtf import Form
+from flask_wtf import Form
 from wtforms import IntegerField, BooleanField
 
 from flask import Blueprint, send_from_directory
@@ -19,7 +19,7 @@ from models.models import db, Assignment
 
 from controllers.helpers import lti
 
-from interaction_logger import StructuredEvent
+from controllers.interaction_logger import StructuredEvent
 
 blueprint_corgis = Blueprint('corgis', __name__, url_prefix='/corgis')
 

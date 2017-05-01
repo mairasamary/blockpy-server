@@ -1,4 +1,4 @@
-from flask.ext.assets import Bundle, Environment
+from flask_assets import Bundle, Environment
 from main import app
 
 bundles = {

@@ -17,7 +17,7 @@ from main import app
 from models.models import (User, Course, Assignment, AssignmentGroup, 
                            Submission, Log)
 
-from ast_finder.ast_finder import find_elements
+from controllers.ast_finder.ast_finder import find_elements
 
 blueprint_explain = Blueprint('explain', __name__, url_prefix='/explain')
 

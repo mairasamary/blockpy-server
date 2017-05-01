@@ -6,8 +6,8 @@ import csv
 import io
 
 # Import Flask
-from flask.ext.admin import Admin, BaseView, expose, form
-from flask.ext.admin.contrib.sqla import ModelView
+from flask_admin import Admin, BaseView, expose, form
+from flask_admin.contrib.sqla import ModelView
 from flask import g, Blueprint, request, url_for, render_template, Response
 from jinja2 import Markup
 
