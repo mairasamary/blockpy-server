@@ -11,7 +11,7 @@ from flask import Flask, redirect, url_for, session, request, jsonify, g,\
                   make_response, Response, render_template
 from werkzeug.utils import secure_filename
 
-from controllers.helpers import lti
+from controllers.helpers import lti, get_assignments_from_request
 
 from main import app
 from models.models import (User, Course, Assignment, AssignmentGroup, 
