@@ -64,6 +64,9 @@ app.register_blueprint(blueprint_course_materials)
 from utilities import blueprint_utilities
 app.register_blueprint(blueprint_utilities)
 
+from pragmatics import blueprint_pragmatics
+app.register_blueprint(blueprint_pragmatics)
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
     """ initial access page to the lti provider.  This page provides
