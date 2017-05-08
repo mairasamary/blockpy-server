@@ -9,6 +9,7 @@ from flask import Flask, render_template
 
 VERSION = '0.1.0'
 app = Flask(__name__)
+app.config['TEMPLATES_AUTO_RELOAD'] = True
 
 # Debugging
 LEVEL = logging.INFO
@@ -28,6 +29,7 @@ def attempt_json_load(data):
     except:
         return {}
 app.jinja_env.filters['json_load'] = attempt_json_load
+app.jinja_env.filters['list'] = list
 
 app.config.from_object('config.TestingConfig')
 

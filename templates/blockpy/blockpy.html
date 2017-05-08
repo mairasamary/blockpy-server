@@ -87,11 +87,13 @@ Assignment
     <div class='col-md-12 col-sm-12 col-xs-12'>
         <div class='center-block'>
         <button type="button" class='btn btn-default btn-sm' id='assignment-selector-first'>
-            <span class="glyphicon glyphicon-step-backward" aria-hidden="true">First
+            <span class="glyphicon glyphicon-step-backward" aria-hidden="true"></span>
+            First
         </button>
         
         <button type="button" class='btn btn-default btn-sm' id='assignment-selector-back'>
-            <span class="glyphicon glyphicon-chevron-left" aria-hidden="true">Back
+            <span class="glyphicon glyphicon-chevron-left" aria-hidden="true"></span>
+            Back
         </button>
         
         <select id='assignment-selector'>
@@ -105,11 +107,11 @@ Assignment
         </select> ({{ (100*((group|map(attribute='1.correct')|sum)  / (group|length)))|round|int }}% completed)
         
         <button type="button" class='btn btn-default btn-sm' id='assignment-selector-next'>
-            Next <span class="glyphicon glyphicon-chevron-right" aria-hidden="true">
+            Next <span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span>
         </button>
         
         <button type="button" class='btn btn-default btn-sm' id='assignment-selector-last'>
-            Last <span class="glyphicon glyphicon-step-forward" aria-hidden="true">
+            Last <span class="glyphicon glyphicon-step-forward" aria-hidden="true"></span>
         </button>
         </div>
     </div>

@@ -856,10 +856,12 @@ class Assignment(Base):
         return Submission.load(user_id, self.id, course_id, submission_url=submission_url)
         
 class CourseAssignment(Base):
+    __tablename__ = 'courseassignment'
     assignment_id = Column(Integer(), ForeignKey('assignment.id'))
     course_id = Column(Integer(), ForeignKey('course.id'))
         
 class AssignmentGroup(Base):
+    __tablename__ = 'assignmentgroup'
     name = Column(String(255), default="Untitled")
     owner_id = Column(Integer(), ForeignKey('user.id'))
     course_id = Column(Integer(), ForeignKey('course.id'))
@@ -960,6 +962,7 @@ class AssignmentGroup(Base):
                           .all())
         
 class AssignmentGroupMembership(Base):
+    __tablename__ = 'assignmentgroupmembership'
     assignment_group_id = Column(Integer(), ForeignKey('assignmentgroup.id'))
     assignment_id = Column(Integer(), ForeignKey('assignment.id'))
     position = Column(Integer())

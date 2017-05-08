@@ -73,7 +73,7 @@ def load(lti=None, assignments=None, submissions=None, embed=False):
         else:
             course_id = None
     return render_template('blockpy/blockpy.html',
-                           group=zip(assignments, submissions),
+                           group=list(zip(assignments, submissions)),
                            course_id=course_id,
                            user_id=g.user.id if g.user is not None else -1,
                            embed=embed,

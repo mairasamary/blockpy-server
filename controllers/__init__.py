@@ -63,7 +63,7 @@ app.register_blueprint(blueprint_course_materials)
 from controllers.utilities import blueprint_utilities
 app.register_blueprint(blueprint_utilities)
 
-from pragmatics import blueprint_pragmatics
+from controllers.pragmatics import blueprint_pragmatics
 app.register_blueprint(blueprint_pragmatics)
 
 @app.route('/', methods=['GET', 'POST'])

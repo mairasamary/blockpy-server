@@ -13,10 +13,10 @@ from controllers.helpers import (lti, get_assignments_from_request, strip_tags,
 
 from main import app
 
-import controllers.maze
-import controllers.explain
-import controllers.blockpy
-import controllers.corgis
+import controllers.maze as maze
+import controllers.explain as explain
+import controllers.blockpy as blockpy
+import controllers.corgis as corgis
 
 from models.models import (db, Assignment, AssignmentGroup, User, Course)
 
