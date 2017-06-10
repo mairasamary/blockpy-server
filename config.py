@@ -14,6 +14,7 @@ except IOError:
     secrets = {}
 
 class Config(object):
+    IS_PRODUCTION = False
     SITE_VERSION = 3
     DEBUG = False
     TESTING = False

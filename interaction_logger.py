@@ -22,3 +22,5 @@ class StructuredEvent(object):
             ('body', self.body),
             ('timestamp', self.timestamp)
         ]))
+    def __repr__(self):
+        return self.__str__()

@@ -1,7 +1,7 @@
 import json
 import os, sys
 import logging
-from logging import handlers
+import logging.config
 from random import randint
 import jinja2
 
@@ -10,16 +10,6 @@ from flask import Flask, render_template
 VERSION = '0.1.0'
 app = Flask(__name__)
 app.config['TEMPLATES_AUTO_RELOAD'] = True
-
-# Debugging
-LEVEL = logging.INFO
-root = logging.getLogger('SystemLogger')
-root.setLevel(LEVEL)
-ch = logging.StreamHandler(sys.stdout)
-ch.setLevel(LEVEL)
-formatter = logging.Formatter('%(name)s[%(levelname)s] - %(message)s')
-ch.setFormatter(formatter)
-root.addHandler(ch)
 
 # Modify Jinja2
 app.jinja_env.filters['zip'] = zip
@@ -33,25 +23,50 @@ app.jinja_env.filters['list'] = list
 
 app.config.from_object('config.TestingConfig')
 
-# Logging student interactions
-from interaction_logger import StructuredEvent
-LOG_FILENAME = os.path.join(app.config['ROOT_DIRECTORY'], 'log/student_interactions/student_interactions.log')
-student_interactions_logger = logging.getLogger('StudentInteractions')
-student_interactions_logger.setLevel(logging.INFO)
-handler = handlers.TimedRotatingFileHandler(LOG_FILENAME, when='D')
-handler.setLevel(logging.INFO)
-simple_formatter = logging.Formatter('%(message)s')
-handler.setFormatter(simple_formatter)
-student_interactions_logger.addHandler(handler)
-
-LOG_FILENAME = os.path.join(app.config['ROOT_DIRECTORY'], 'log/feedbackfull/feedbackfull.log')
-feedbackfull_logger = logging.getLogger('Feedbackfull')
-feedbackfull_logger.setLevel(logging.INFO)
-handler = logging.FileHandler(LOG_FILENAME, mode='a+', delay=True)
-handler.setLevel(logging.INFO)
-simple_formatter = logging.Formatter('%(message)s')
-handler.setFormatter(simple_formatter)
-feedbackfull_logger.addHandler(handler)
+STUDENT_INTERACTION_LOG = os.path.join(app.config['ROOT_DIRECTORY'], 
+                                       'log/student_interactions/student_interactions.log')
+LOGGING = {
+    'version': 1,
+    'handlers': {
+        'console':{
+            'class':'logging.StreamHandler',
+            'formatter':'basicFormatter'
+        }
+    },
+    'loggers': {
+        'SystemLogger': {
+            'level': 'INFO',
+            'handlers': ['console']
+        },
+        'StudentInteractions': {
+            'level': 'INFO',
+            'handlers': ['fileHandler']
+        }
+    },
+    'formatters': {
+        'basicFormatter': {
+            'format': '%(name)s[%(levelname)s] - %(message)s'
+        },
+        'simpleFormatter': {
+            'format': '%(message)s'
+        }
+    }
+}
+if app.config['IS_PRODUCTION']:
+    LOGGING['handlers']['fileHandler'] = {
+        'class': 'logging.handlers.TimedRotatingFileHandler',
+        'filename': STUDENT_INTERACTION_LOG,
+        'when': 'D',
+        'formatter': 'simpleFormatter'
+    }
+else:
+    LOGGING['handlers']['fileHandler'] = {
+        'class': 'logging.handlers.RotatingFileHandler',
+        'filename': STUDENT_INTERACTION_LOG,
+        'formatter': 'simpleFormatter'
+    }
+    
+logging.config.dictConfig(LOGGING)
 
 # Assets
 from controllers.assets import assets
