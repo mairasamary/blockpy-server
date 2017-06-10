@@ -1,0 +1,366 @@
+{% set navbar_invisible = true %}
+{% extends 'reduced_layout.html' %}
+{% set instructor_mode = true %}
+
+{% block title %}
+Code Explaining
+{% endblock %}
+
+{% block statusbar %}
+{% endblock %}
+
+{% block extrahead %}
+
+{% assets "code_explaining_css" %}
+    <link rel="stylesheet" href="{{ ASSET_URL }}" />
+{% endassets %}
+
+{% assets "code_explaining_js" %}
+    <script type="text/javascript" src="{{ ASSET_URL }}"></script>
+{% endassets %}
+
+<style>
+.CodeMirror {
+    border: 1px solid #eee;
+    height: auto;
+    max-height:200px;
+}
+.CodeMirror-scroll {
+    height: auto;
+    max-height:200px;
+}
+
+.editor-active-line {
+    background: #C4FBC4 !important;
+    color: #8a1f11 !important;
+}
+
+.editor-error-line {
+    background: #FBC4C4 !important;
+    color: #8a1f11 !important;
+}
+
+.list-group-hover .list-group-item.list-group-item-warning:hover  {
+    color: #8a6d3b;
+    background-color: #faf2cc;
+}
+.list-group-hover .list-group-item.list-group-item-success:hover  {
+    color: #3c763d;
+    background-color: #d0e9c6;
+}
+</style>
+
+<script>
+
+var questionBlockIndex = 0;
+function QuestionBlock(params) {
+    this.id = questionBlockIndex;
+    questionBlockIndex += 1;
+    this.title = params.title;
+    this.body = params.body;
+    this.protected = params.protected;
+    this.opened = params.opened;
+    this.expanded = params.expanded;
+    this.answers = params.answers;
+    this.submission = params.submission;
+    this.correct = params.correct;
+    var that = this;
+    this.target_id = "editor_" + this.id    
+    this.buildSummerNote = function() {
+        $("#"+that.target_id).summernote({
+            codemirror: { // codemirror options
+                theme: 'monokai'
+            },
+            onChange: function (e) { that.body(e) },
+            toolbar: [
+                ['style', ['bold', 'italic', 'underline', 'clear']],
+                ['font', ['fontname', 'fontsize']],
+                ['insert', ['link', 'table', 'ul', 'ol', 'image']],
+                ['misc', ['codeview', 'help']]
+            ]
+        }).code(that.body());
+        
+    };
+    this.toggleExpanded = function(data, event) {
+        that.expanded(!that.expanded());
+        event.stopPropagation();
+    };
+    this.toggleProtected = function() {
+        that.protected(!that.protected());
+        event.stopPropagation();
+    };
+    this.toggleOpened = function() {
+        that.opened(!that.opened());
+        event.stopPropagation();
+    };
+    this.headerClass = ko.pureComputed(function() {
+        if (that.opened()) {
+            return 'panel-default';
+        } else if (that.submission() == that.correct()) {
+            return 'panel-success';
+        } else if (that.submission()) {
+            return 'panel-danger';
+        } else {
+            return 'panel-default';
+        }
+    });
+    this.resizeLabel = ko.pureComputed(function() {
+        return 'glyphicon-resize-' + (that.expanded() ? 'full' : 'small');
+    });
+    this.openedLabel = ko.pureComputed(function() {
+        return 'glyphicon-eye-'+ (that.opened() ? 'open' : 'close');
+    });    
+    this.openedBtnLabel = ko.pureComputed(function() {
+        return 'btn-'+ (that.opened() ? 'info' : 'default');
+    });
+    this.protectedLabel = ko.pureComputed(function() {
+        return 'btn-'+ (that.protected() ? 'default' : 'info');
+    });
+    this.correctLabel = function(answer) {
+        {% if instructor_mode %}
+        return (!that.protected() && answer == that.correct()) ? 
+               'list-group-item-success': 'list-group-item-warning';
+        {% else %}
+        return (answer == that.submission()) ? 
+               'list-group-item-info': 'list-group-item-warning';
+        {% endif %}
+    };
+    this.canView = ko.pureComputed(function() {
+        {% if instructor_mode %}
+        return that.expanded();
+        {% else %}
+        return that.expanded() && that.opened();
+        {% endif %}
+    });
+    this.canEdit = ko.pureComputed(function() {
+        {% if instructor_mode %}
+        return that.expanded() && !that.protected();
+        {% else %}
+        return that.expanded() && !that.protected() && that.opened();
+        {% endif %}
+    });
+    this.chooseCorrect = function(answer, event) {
+        {% if instructor_mode %}
+        if (!that.protected()) {
+            that.correct(answer);
+        }
+        {% else %}
+        if (that.opened()) {
+            that.submission(answer);
+        }
+        {% endif %}
+        event.stopPropagation();
+    }
+    this.removeAnswer = function(viewModel) {
+        that.answers.remove(function(e) {
+            return viewModel == e()
+        });
+        event.stopPropagation();
+    }
+    this.addAnswer = function() {
+        that.answers.push(ko.observable("Answer #"+(1+that.answers().length)));
+    }
+    this.getStatus = ko.pureComputed(function() {
+        if (that.submission() == null) {
+            if (!that.opened()) {
+                return 'Closed'
+            } else {
+                return 'Not submitted'
+            }
+        } else if (that.opened()) {
+            return 'Submitted';
+        } else if (that.submission() == that.correct()) {
+            return 'Correct';
+        } else {
+            return 'Incorrect';
+        }
+    });
+    setTimeout(this.buildSummerNote, 0);
+}
+QuestionBlock.prototype.dispose = function() {
+    $("#"+that.target_id).summernote('destroy');
+};
+ko.components.register('question-block', {
+    viewModel: QuestionBlock,
+    template:
+        "<div class='col-md-offset-1 col-md-10' "+
+                    "col-lg-offset-2 col-lg-8 "+
+                    "col-sm-offset-1 col-sm-10 "+
+                    "col-xs-12'> "+
+            "<div class='panel' data-bind='css: headerClass'>"+
+                "<div class='panel-heading' data-bind='click: toggleExpanded'>"+
+                    "<span class='pull-right'>"+
+                        "<em data-bind='text: getStatus'></em> "+
+                        {% if instructor_mode %}
+                        "<button class='btn-xs' data-bind='click: toggleProtected, css: protectedLabel'>"+
+                            "<span class='glyphicon glyphicon-education'></span>"+
+                        "</button> "+
+                        "<button class='btn-xs' data-bind='click: toggleOpened, css: openedBtnLabel'>"+
+                            "<span class='glyphicon' data-bind='css: openedLabel'></span>"+
+                        "</button> "+
+                        "<button class='btn-xs btn-default' data-bind='click: toggleExpanded'>"+
+                            "<span class='glyphicon' data-bind='css: resizeLabel'></span>"+
+                        "</button> "+
+                        {% endif %}
+                    "</span> "+
+                    "<h3 class='panel-title' data-bind='text: title'>"+
+                    "</h3>"+
+                "</div>"+
+                "<div class='panel-body' data-bind='visible: canView'>"+
+                    "<div class='editor-area' data-bind='visible: canEdit'>"+
+                        "<div data-bind='attr: { id: target_id }'></div>"+
+                    "</div>"+
+                    "<div data-bind='html: body, visible: !canEdit()'></div>"+
+                    "<br data-bind='visible: expanded'>"+
+                    "<div class='list-group list-group-hover' data-bind='foreach: answers'>"+
+                        "<li class='list-group-item' "+
+                                    "data-bind='css: $parent.correctLabel($data), click: $parent.chooseCorrect'>"+
+                            //"<button class='btn-md btn-default btn' "+
+                            //        "data-bind=''>"+
+                                //"<span class='glyphicon glyphicon-ok'></span> "+
+                            //"</button> "+
+                            "<span data-bind='text: $data, visible: !$parent.canEdit()'></span>"+
+                            "<input data-bind='textInput: $rawData, visible: $parent.canEdit()'></input>"+
+                            "<button class='btn-xs btn-danger btn pull-right' "+
+                                   " data-bind='visible: $parent.canEdit(), click: $parent.removeAnswer'>"+
+                                "<span class='glyphicon glyphicon-minus'></span>"+
+                            "</button> "+
+                        "</li>"+
+                    "</div>"+
+                    "<button class='btn-md btn-success btn' "+
+                            "data-bind='visible: canEdit(), click: addAnswer'>"+
+                        "<span class='glyphicon glyphicon-plus'></span> Add Answer"+
+                    "</button> "+
+                    {% if instructor_mode %}
+                    "<button class='btn-md btn-default btn' type='button' data-toggle='modal' data-target='#response-modal'>"+
+                        "<span class='glyphicon glyphicon-stats'></span> Responses"+
+                    "</button> "+
+                    {% endif %}
+                    "<button class='btn-md btn-danger btn pull-right' data-bind='visible: canEdit()'>"+
+                        "<span class='glyphicon glyphicon-trash'></span> Remove Question"+
+                    "</button> "+
+                "</div>"+
+            "</div>"+
+        "</div>"
+});
+
+function makeQuestion(title, body, expanded, protected, opened, correct, submission, answers) {
+    return {
+        title: ko.observable(title),
+        body: ko.observable(body),
+        expanded: ko.observable(expanded),
+        protected: ko.observable(protected),
+        opened: ko.observable(opened),
+        correct: ko.observable(correct),
+        submission: ko.observable(submission),
+        answers: ko.observableArray(answers.map(function(a) { return ko.observable(a) }))
+    };
+}
+
+mainModel = {
+    questions: ko.observableArray([]),
+    addQuestion: function() {
+        this.questions.push(makeQuestion(
+            "Question #"+(this.questions().length+1),
+            "Type your question.",
+            true,
+            true,
+            true,
+            'Answer #1',
+            null,
+            ["Answer #1", "Answer #2", "Answer #3"]
+        ));
+    }
+};
+
+URL_MAP = {
+    'lis_result_sourcedid': "{{ session['lis_result_sourcedid'] if 'lis_result_sourcedid' in session else 'NOT IN SESSION'}}",
+    'save_questions': '{{ url_for("poll.save_questions")}}',
+    'load_questions': '{{ url_for("poll.load_questions")}}',
+    'submit_answers': '{{ url_for("poll.submit_answers")}}',
+    'summarize_answers': '{{ url_for("poll.summarize_answers")}}',
+    'log_event': '{{ url_for("blockpy.save_events") }}',
+};
+
+function refreshBindings(loop) {
+    mainModel.addQuestion();
+}
+
+var preloaded = false;
+$(document).ready(function() {
+    ko.applyBindings(mainModel);
+    {% if instructor_mode %}
+    refreshBindings(false);
+    mainModel.saveChanges = ko.computed(function() {
+        //console.log(ko.toJSON(mainModel));
+        if (preloaded) {
+            console.log(ko.toJSON(mainModel));
+        } else {
+            preloaded = true;
+        }
+    });
+    {% else %}
+    refreshBindings(true);
+    {% endif %}
+});
+ 
+</script>
+
+{% endblock %}
+
+{% block body %}
+
+<h1>Bark Back</h1>
+
+<div class="modal fade" tabindex="-1" role="dialog" id='response-modal'>
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title">Response Breakdown</h4>
+      </div>
+      <div class="modal-body">
+        <p>Graph will go here</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+<div class='row'>
+    <div class='col-md-12'>
+        {% if instructor_mode %}
+        <button class='btn-success btn' data-bind='click: addQuestion'>
+            <span class='glyphicon glyphicon-plus'></span>
+            Add Question
+        </button>
+        {% endif %}
+
+        <button class='btn-default btn'>
+            <span class='glyphicon glyphicon-refresh'></span>
+            Refresh Questions
+        </button>
+    </div>
+</div>
+
+<br>
+
+<!-- ko foreach: questions -->
+<div class='row' data-bind='component: { 
+    name: "question-block",
+    params: {
+        "title": title,
+        "body": body,
+        "protected": protected,
+        "opened": opened,
+        "expanded": expanded,
+        "answers": answers,
+        "submission": submission,
+        "correct": correct
+    }
+}'></div>
+<!-- /ko -->
+
+{% endblock %}

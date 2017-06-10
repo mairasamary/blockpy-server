@@ -58,12 +58,16 @@ bundles = {
         "libs/codemirror/htmlmixed.js",
         "libs/codemirror/xml.js",
         "libs/jquery.ui.widget.js",
-        "libs/knockout-3.4.0.js",
+        "libs/summernote/summernote.min.js",
+        "libs/summernote/summernote-ext-hint.js",
+        "libs/summernote/summernote-ext-video.js",
+        #"libs/knockout-3.4.0.js",
         "libs/jquery.fileupload.js",
         output='gen/code_explaining.js'),
     'code_explaining_css': Bundle(
         'libs/codemirror/codemirror.css',
         'libs/font-awesome.min.css',
+        "libs/summernote/summernote.css",
         "libs/jquery.fileupload.css",
         output='gen/code_explaining.css'),
 }

@@ -2,6 +2,15 @@
 
 {% block title %}Pragmatics of Pedagogical Datasets{% endblock %}
 
+{% block extrahead %}
+<style>
+.indent {
+    padding-left: 10px;
+}
+</style>
+
+{% endblock %}
+
 {% block body %}
 
 <h2>Pragmatics of Pedagogical Datasets</h2>
@@ -42,13 +51,28 @@
 <p>The following issues and ideas should be kept in mind throughout the process. Much of this advice holds true for any software engineering project. However, this does not make it less valuable to review, especially since in some cases conventional wisdom may not hold true.</p>
 
 <dl>
-<dt>1.1. Have a plan:</dt>
+<dt id='1-1-have-a-plan'>1.1. Have a plan:</dt>
 <dd><p>Datasets are organized for a number of reasons, such as to facilitate manipulation, to conserve space, to facilitate access across certain indexes or specific paths. Typically, the developer has the intended purpose of the dataset in mind, and this can guide the process. Pedagogical datasets can be organized for specific problems or for open-ended exploration. The former, where an instructor has problems and activities already in mind, can be much easier to develop for, since the instructor will have particular characteristics in mind. The latter, where students will explore the dataset and derive their own research questions, is more difficult to design.</p>
-<p>When designing open-ended datasets, the developer needs to provide a range of fields and values that can be used to explore many kinds of questions related to the dataset. I recommend a number of higher order strategies to make the students' experience as motivating as possible. First, try to intentionally lay out multiple obvious possible paths: imagine that you were using the dataset, and what kinds of questions you could conceivably want to answer with the data. Second, try to keep the paths diverse, so that students can explore different directions. Third, allow for serendipity &mdash; you may not have an immediate use case for some data that you find, but if the quality is high, consider including it anyway. Finally, accept that not every potential use-case will be covered &mdash; students may wish you had collected some other kind of data, but you will never be able to predict all possible student preferences.</p>
-<p><span class='label label-default'>Example: Crime Data</span> A primary path of questioning to design the State Crime dataset around is to facilitate research into the trend of crimes over time; however, with the right data collected, the dataset could be used to answer more wide-reaching questions related to public policy, enforcement strategies, and population habits. Incorporating the right statistics to allow students to explore all of these issues might make the dataset too big, but choosing a reasonable subset can make the dataset more widely appealing.</p>
+<p>When designing open-ended datasets, the developer needs to provide a range of fields and values that can be used to explore many kinds of questions related to the dataset. I recommend a number of higher order strategies to make the students' experience as motivating as possible:
+<ol>
+    <li>Intentionally lay out multiple obvious possible paths: imagine that you were using the dataset, and what kinds of questions you could conceivably want to answer with the data.</li>
+    <li>Keep the exploration paths diverse, so that students can explore different directions.</li>
+    <li>Allow for serendipity &mdash; you may not have an immediate use case for some data that you find, but if the quality is high, consider including it anyway.</li>
+    <li>Accept that not every potential use-case will be covered &mdash; students may wish you had collected some other kind of data, but you will never be able to predict all possible student preferences. Incorporating the right statistics to allow students to explore all of these issues might make the dataset too big, but choosing a reasonable subset can make the dataset more widely appealing.</li>
+</ol>
+</p>
+
+<p class='indent'><span class='label label-success'>Example: School Scores</span> The School Scores dataset provides SAT scores data across a number of different demographic characteristics including gender, economic background, and perforamnce in other subjects. The diversity of these characteristics has allowed many varied projects from students. Although the exact set of characteristics was heavily influenced by the availability of the data, each one was included based on the developer's expectation that the characteristic could be useful in a theoretical project.</p>
+
+<p class='indent'><span class='label label-danger'>Example: Cancer</span> Early versions of the Cancer dataset demonstrate the dangers of over-including data. The complete dataset was massive and could be indexed in a number of ways: by location, by cancer type, by age group, by gender, and by mortality type. Interacting with a dataset that contained so many indexes was a challenge for students. Although the dataset could theoretically serve a wider number of questions, instead students were hampered by its frustrating design.</p>
+
 </dd>
+
 <dt>1.2. Build for your audience:</dt>
 <dd><p>Typically, datasets are intentionally cleaned and organized so that they are as easy-to-use as possible. However, pedagogical datasets can be designed to provide structured difficulties, representing learning opportunities for novices to encounter specific classes of problems. The designer must consider the learning objectives and prior skills of their audience. In general, the goal is to remove all difficulties that are not explicitly related to the intended learning goals. For example, if a dataset incorporates null values for some observations, students need to know how to use conditionals to avoid plotting the null values &mdash; if the original lesson was simply about plotting lists of numbers, the learning objectives have suddenly been expanded (similar to the software engineering phenomenon of feature creep <span class="citation" data-cites="feature-creep"></span>). It is important to choose your learners' battles carefully, so that they struggle with the right aspects. It can be tempting to leave a flaw in the dataset and casually wave it off as "a learning experience", but this must be done with the learners' best interests in mind.</p>
+
+<p class='indent'><span class='label label-success'>Example: </span> </p>
+
 </dd>
 <dt>1.3. Iterate:</dt>
 <dd><p>As with any design project, you should work in an iterative manner. Expect to refine or discard earlier attempts. Decisions that seem reasonable early on may have surprising consequences when the results are brought to a learner. It is valuable to expose early iterations to expected users to gauge reaction.</p>

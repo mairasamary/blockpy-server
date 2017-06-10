@@ -4,12 +4,12 @@ from main import app
 from flask_security import SQLAlchemyUserDatastore, Security
 from flask_security.forms import ConfirmRegisterForm
 
-from wtforms import BooleanField, TextField, validators
+from wtforms import BooleanField, StringField, validators
 
 class ExtendedConfirmRegisterForm(ConfirmRegisterForm):
-    first_name = TextField('First Name', [validators.Required()])
-    last_name = TextField('Last Name', [validators.Required()])
-    proof = TextField('Instructor Proof (e.g., your university website)')
+    first_name = StringField('First Name', [validators.Required()])
+    last_name = StringField('Last Name', [validators.Required()])
+    proof = StringField('Instructor Proof (e.g., your university website)')
     
 # User registration, etc.
 user_datastore = SQLAlchemyUserDatastore(db, User, Role)

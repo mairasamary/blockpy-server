@@ -565,6 +565,12 @@ class Submission(Base):
                 break
         return code, available_elements
         
+    def load_poll(self):
+        if not self.code:
+            self.code = json.dumps([])
+            db.session.commit()
+        return json.loads(self.code)
+        
     @staticmethod
     def save_code(user_id, assignment_id, course_id, code, assignment_version, timestamp=''):
         submission = Submission.query.filter_by(user_id=user_id, 
@@ -616,7 +622,7 @@ class Submission(Base):
         name = time.strftime("%Y%m%d-%H%M%S")
         file_name = os.path.join(directory, name + extension)
         
-        with open(file_name, 'wb') as blockly_logfile:
+        with open(file_name, 'w') as blockly_logfile:
             blockly_logfile.write(self.code)
         # Single file logging
         student_interactions_logger = logging.getLogger('StudentInteractions')

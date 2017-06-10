@@ -17,6 +17,7 @@ import controllers.maze as maze
 import controllers.explain as explain
 import controllers.blockpy as blockpy
 import controllers.corgis as corgis
+import controllers.poll as poll
 
 from models.models import (db, Assignment, AssignmentGroup, User, Course)
 
@@ -35,6 +36,8 @@ def load(lti, lti_exception=None):
         return    maze.load(assignments=assignments, submissions=submissions, lti=lti,embed=embed)
     elif assignments[0].type == 'explain':
         return explain.load(assignments=assignments, submissions=submissions, lti=lti, embed=embed)
+    elif assignments[0].type == 'poll':
+        return poll.load(assignments=assignments, submissions=submissions, lti=lti, embed=embed)
     elif assignments[0].type in ('corgis (visualizer)', 'visualizer'):
         return corgis.redirect_language_index(language='visualizer', assignments=assignments, submissions=submissions, lti=lti, embed=embed)
     else:

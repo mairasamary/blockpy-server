@@ -1,6 +1,8 @@
 {% set reduced_layout = embed or 'iframe' == request.form.get('launch_presentation_document_target') %}
 {% extends 'layout.html' %}
 
+{% from 'utilities/assignment_groups.html' import assignment_group_header %}
+
 {% block title %}
 Assignment
 {% endblock %}
@@ -36,89 +38,11 @@ Assignment
 <span class='delete-on-load'>Loading! Please wait.</span>
 
 {% if group %}
-<script>
-    function markCorrect(assignmentId) {
-        var opt = $("#assignment-selector option[value='"+assignmentId+"']");
-        if (!opt.hasClass("correct-submission")) {
-            opt.html(opt.html()+" &#10004;");
-            opt.removeClass("incorrect-submission");
-            opt.addClass("correct-submission");
-            $("#assignment-selector-next").removeClass("btn-default").addClass("btn-success");
-        }
-    }
-    var URL_MAP = {
-        {% for assignment, submission in group %}
-            {{ assignment.id }}: "{{ url_for('blockpy.load', 
-                                        assignment_group_id= request.args.get("assignment_group_id"),
-                                        assignment_id=assignment.id,
-                                        embed=embed)|safe }}",
-        {% endfor %}
-    };
-    $(document).ready(function() {
-        $("#assignment-selector").change(function() {
-            document.location.href = URL_MAP[$("#assignment-selector").val()];
-        });
-        $("#assignment-selector-first").click(function() {
-            $("#assignment-selector").val({{ group[0][0].id }});
-            document.location.href = URL_MAP[$("#assignment-selector").val()];
-        });
-        $("#assignment-selector-last").click(function() {
-            $("#assignment-selector").val({{ group[-1][0].id }});
-            document.location.href = URL_MAP[$("#assignment-selector").val()];
-        });
-        $("#assignment-selector-next").click(function() {
-            $("#assignment-selector > option:selected")
-                .prop("selected", false)
-                .next()
-                .prop("selected", true);
-            document.location.href = URL_MAP[$("#assignment-selector").val()];
-        });
-        $("#assignment-selector-back").click(function() {
-            $("#assignment-selector > option:selected")
-                .prop("selected", false)
-                .prev()
-                .prop("selected", true);
-            document.location.href = URL_MAP[$("#assignment-selector").val()];
-        });
-    });
-</script>
-
-<div class='row' style='border: 1px solid #faebcc; background-color: #fcf8e3'>
-    <div class='col-md-12 col-sm-12 col-xs-12'>
-        <div class='center-block'>
-        <button type="button" class='btn btn-default btn-sm' id='assignment-selector-first'>
-            <span class="glyphicon glyphicon-step-backward" aria-hidden="true"></span>
-            First
-        </button>
-        
-        <button type="button" class='btn btn-default btn-sm' id='assignment-selector-back'>
-            <span class="glyphicon glyphicon-chevron-left" aria-hidden="true"></span>
-            Back
-        </button>
-        
-        <select id='assignment-selector'>
-        {% for assignment, submission in group|sort(attribute='0.name') %}
-            <option value='{{ assignment.id }}' 
-                    {% if assignment.id == assignment_id|int%}selected{% endif %}
-                    class='{% if not submission.correct %}in{% endif %}correct-submission'>
-                {{ assignment.name }} {% if submission.correct %} &#10004; {% endif %}
-            </option>
-        {% endfor %}
-        </select> ({{ (100*((group|map(attribute='1.correct')|sum)  / (group|length)))|round|int }}% completed)
-        
-        <button type="button" class='btn btn-default btn-sm' id='assignment-selector-next'>
-            Next <span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span>
-        </button>
-        
-        <button type="button" class='btn btn-default btn-sm' id='assignment-selector-last'>
-            Last <span class="glyphicon glyphicon-step-forward" aria-hidden="true"></span>
-        </button>
-        </div>
-    </div>
-</div>
+{{ assignment_group_header(group, assignment_id, embed) }}
 {% endif %}
 
 {% if not group %}
+<!-- Free floating open -->
 <div id="blockpy-div" style='height:100%'></div>
 <script>
     $(document).ready(function() {
@@ -187,7 +111,8 @@ $(document).ready(function() {
                     'save_success': {{ url_for('blockpy.save_correct')|tojson }},
                     'import_datasets': {{ url_for('blockpy.load_corgis',path='')|tojson }},
                     'get_history': {{ url_for('blockpy.get_history')|tojson }},
-                }
+                },
+                'completedCallback': markCorrect,
             },
             // assignment
             {

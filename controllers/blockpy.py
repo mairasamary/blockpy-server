@@ -5,6 +5,7 @@ import json
 import json
 import logging
 from pprint import pprint
+import base64
 
 from flask_wtf import Form
 from wtforms import IntegerField, BooleanField
@@ -140,7 +141,7 @@ def save_correct(lti, lti_exception=None):
     sub_blocks_folder = os.path.join(app.config['UPLOADS_DIR'], 'submission_blocks')
     image_path = os.path.join(sub_blocks_folder, str(submission.id)+'.png')
     if image != "":
-        converted_image = image[22:].decode('base64')
+        converted_image = base64.decode(image[22:])
         with open(image_path, 'wb') as image_file:
             image_file.write(converted_image);
         image_url = url_for('blockpy.get_submission_image', submission_id=submission.id, _external=True)

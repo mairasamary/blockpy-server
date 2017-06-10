@@ -213,9 +213,12 @@ AbstractInterpreter.prototype.BUILTINS = {'print': {"type": 'None'},
                                 'sum': {"type": "Num"},
                                 'round': {"type": "Num"},
                                 'range': {"type": "List", "subtype": {"type": "Num"} },
+                                'input': {"type": "String"},
                                 'xrange': {"type": "List", "subtype": {"type": "Num"} },
                                 'reversed': {"type": "List"},
                                 'len': {"type": "Num"},
+                                'type': {"type": "Any"},
+                                'dir': {"type": "List"},
                                 'True': {"type": "Bool"}, 
                                 'False': {"type": "Bool"}, 
                                 'None': {"type": 'None'}}
@@ -230,6 +233,9 @@ AbstractInterpreter.MODULES = {
         'get_forecasted_reports': [{"temperature": 'Num', "humidity": "Num", "wind": "Num"}],
         'get_all_forecasted_temperatures': [{'city': 'str', 'forecasts': ['int']}],
         'get_highs_lows': {'highs': ['Num'], 'lows': ['Num']}
+    },
+    'image': {
+        
     },
     'stocks': {
         'get_current': 'float',
@@ -939,8 +945,8 @@ PythonToBlocks.prototype.convertBody = function(node, is_top_level) {
     // Final result list
     var children = [], // The complete set of peers
         root = null, // The top of the current peer
-        current = null,
-        levelIndex = this.levelIndex; // The bottom of the current peer
+        current = null, // The bottom of the current peer
+        levelIndex = this.levelIndex; 
         
     function addPeer(peer) {
         if (root == null) {
@@ -979,6 +985,7 @@ PythonToBlocks.prototype.convertBody = function(node, is_top_level) {
         skipped_line,
         commentCount,
         previousHeight = null,
+        previousWasStatement = false;
         visitedFirstLine = false;
         
     // Iterate through each node
@@ -1039,10 +1046,14 @@ PythonToBlocks.prototype.convertBody = function(node, is_top_level) {
         // Handle skipped line
         } else if (is_top_level && skipped_line && visitedFirstLine) {
             addPeer(newChild);
+        // The previous line was not a Peer
+        } else if (is_top_level && !previousWasStatement) {
+            addPeer(newChild);
         // Otherwise, always embed it in there.
         } else {
             nestChild(newChild);
         }
+        previousWasStatement = newChild.constructor !== Array;
         
         visitedFirstLine = true;
     }
@@ -1075,6 +1086,8 @@ PythonToBlocks.prototype.convertBody = function(node, is_top_level) {
     
     
     finalizePeers();
+    
+    console.log(children);
     
     this.levelIndex -= 1;
     
@@ -2159,6 +2172,8 @@ PythonToBlocks.prototype.Call = function(node) {
                             {"inline": "true"
                             }, { "@items": args.length})];
                     }
+                case "input":
+                    return block("text_input", node.lineno, {"MESSAGE": this.Str_value(args[0])});
                 case "abs":
                     return block("math_single", node.lineno, {"OP": "ABS"}, {"NUM": this.convert(args[0])})
                 case "round":
@@ -3574,6 +3589,32 @@ Blockly.Python['controls_if_better'] = function(block) {
   return code;
 };
 
+Blockly.Blocks['text_input'] = {
+  init: function() {
+    this.appendDummyInput()
+        .appendField("input")
+        .appendField(this.newQuote_(true))
+        .appendField(new Blockly.FieldTextInput("with prompt"), "MESSAGE")
+        .appendField(this.newQuote_(false));
+    this.setOutput(true, "String");
+    this.setColour(230);
+    this.setTooltip('');
+    this.setHelpUrl('');
+  },
+  newQuote_: function(open) {
+    if (open == this.RTL) {
+      var file = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAKCAQAAAAqJXdxAAAAqUlEQVQI1z3KvUpCcRiA8ef9E4JNHhI0aFEacm1o0BsI0Slx8wa8gLauoDnoBhq7DcfWhggONDmJJgqCPA7neJ7p934EOOKOnM8Q7PDElo/4x4lFb2DmuUjcUzS3URnGib9qaPNbuXvBO3sGPHJDRG6fGVdMSeWDP2q99FQdFrz26Gu5Tq7dFMzUvbXy8KXeAj57cOklgA+u1B5AoslLtGIHQMaCVnwDnADZIFIrXsoXrgAAAABJRU5ErkJggg==';
+    } else {
+      var file = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAKCAQAAAAqJXdxAAAAn0lEQVQI1z3OMa5BURSF4f/cQhAKjUQhuQmFNwGJEUi0RKN5rU7FHKhpjEH3TEMtkdBSCY1EIv8r7nFX9e29V7EBAOvu7RPjwmWGH/VuF8CyN9/OAdvqIXYLvtRaNjx9mMTDyo+NjAN1HNcl9ZQ5oQMM3dgDUqDo1l8DzvwmtZN7mnD+PkmLa+4mhrxVA9fRowBWmVBhFy5gYEjKMfz9AylsaRRgGzvZAAAAAElFTkSuQmCC';
+    }
+    return new Blockly.FieldImage(file, 12, 12, '"');
+  }
+};
+Blockly.Python['text_input'] = function(block) {
+  var message = block.getFieldValue('MESSAGE');
+  var code = 'input('+Blockly.Python.quote_(message)+')';
+  return [code, Blockly.JavaScript.ORDER_NONE];
+};
 Blockly.Blocks['dicts_create_with'] = {
     /**
      * Block for creating a dict with any number of elements of any type.
@@ -3979,6 +4020,43 @@ BlockPyPrinter.prototype.printHtml = function(chart, value) {
 }
 
 /**
+ * Creates an Input box for receiving input() from the user.
+ * 
+ * @param {String} promptMessage - a message to render before the input
+ * @returns {String} Returns the handle on the message box.
+ */
+BlockPyPrinter.prototype.printInput = function(promptMessage) {
+    // Should probably be accessing the model instead of a component...
+    var stepNumber = this.main.components.engine.executionBuffer.step;
+    var lineNumber = this.main.components.engine.executionBuffer.line_number;
+    // Perform any necessary cleaning
+    if (promptMessage !== "\n") {
+        var encodedText = encodeHTML(promptMessage);
+        if (!(this.main.model.settings.mute_printer())) {
+            var inputForm = $("<input type='text' />");
+            var inputMsg = $("<samp></samp>",  {"html": encodedText})
+            var inputBtn = $("<button></button>", {"html": "Enter"});
+            var inputBox = $("<div></div>",
+                    {
+                        'data-toggle': 'tooltip',
+                        'class': 'blockpy-printer-output',
+                        'data-placement': 'left',
+                        'data-step': stepNumber,                                
+                        'title': "Step "+stepNumber + ", Line "+lineNumber
+                    });
+            inputBox.append(inputMsg)
+                    .append($("<br>"))
+                    .append(inputForm)
+                    .append(inputBtn);
+            this.tag.append(inputBox);
+            inputBox.tooltip();
+            return {'input': inputForm, 'button': inputBtn, 'promise': true};
+        }
+    }
+    return {'promise': false}
+}
+
+/**
  * An automatically generated file, based on interface.html.
  * An interesting problem in web development is managing HTML
  * code in JS files. Rather than embedding string literals and
@@ -4112,7 +4190,7 @@ BlockPyServer.prototype.logEvent = function(event_name, action, body) {
     }
 }
 
-BlockPyServer.prototype.markSuccess = function(success) {
+BlockPyServer.prototype.markSuccess = function(success, callback) {
     var data = this.createServerData();
     var server = this,
         model = this.main.model;
@@ -4124,7 +4202,15 @@ BlockPyServer.prototype.markSuccess = function(success) {
         server.setStatus('Saving');
         if (model.server_is_connected('save_success')) {
             $.post(model.constants.urls.save_success, data, 
-                   server.defaultResponse.bind(server))
+                function(response) {
+                   if (response.success) {
+                        server.setStatus('Saved');
+                        callback(data);
+                    } else {
+                        console.error(response);
+                        server.setStatus('Error', response.message);
+                    }
+                })
              .fail(server.defaultFailure.bind(server));
         } else {
             server.setStatus('Offline', "Server is not connected!");
@@ -4247,7 +4333,7 @@ BlockPyServer.prototype.walkOldCode = function() {
                             server.walkOldCode();
                            }
                        } else {
-                           this.setStatus('Failure', response.message);
+                           server.setStatus('Failure', response.message);
                        }
                    })
             .fail(
@@ -6182,6 +6268,7 @@ BlockPyEngine.prototype.loadEngine = function() {
     Sk.afterSingleExecution = this.step.bind(this);
     // Definitely use a prompt
     Sk.inputfunTakesPrompt = true;
+    Sk.inputfun = this.inputFunction.bind(this);
     
     // Keeps track of the tracing while the program is executing; destroyed afterwards.
     this.executionBuffer = {};
@@ -6201,6 +6288,36 @@ BlockPyEngine.prototype.readFile = function(filename) {
         throw "File not found: '" + filename + "'";
     }
     return Sk.builtinFiles["files"][filename];
+}
+
+/**
+ * Creates and registers a Promise from the Input box
+ * 
+ */
+BlockPyEngine.prototype.inputFunction = function(promptMessage) {
+    var printer = this.main.components.printer;
+    var result = printer.printInput(promptMessage);
+    if (result.promise) {
+        var resolveOnClick;
+        var submittedPromise = new Promise(function(resolve, reject) {
+            resolveOnClick = resolve;
+        });
+        var submitForm = function() {
+            resolveOnClick(result.input.val());
+            result.input.prop('disabled', true);
+            result.button.prop('disabled', true);
+        };
+        result.button.click(submitForm);
+        result.input.keyup(function(e) {
+            if (e.keyCode == 13) {
+                submitForm();
+            }
+        });
+        result.input.focus();
+        return submittedPromise;
+    } else {
+        return "";
+    }
 }
 
 /**
@@ -6844,13 +6961,13 @@ BlockPyEngine.prototype.check = function(student_code, traceTable, output, ast, 
                 engine.disposeEnvironment();
                 console.log(error.tp$name, error.tp$name == "Success");
                 if (error.tp$name == "Success") {
-                    server.markSuccess(1.0);
+                    server.markSuccess(1.0, model.settings.completedCallback);
                     engine.main.components.feedback.complete();
                 } else if (error.tp$name == "Feedback") {
                     server.markSuccess(0.0);
                     engine.main.components.feedback.instructorFeedback("Incorrect Answer", error.args.v[0].v);
                 } else if (error.tp$name == "Finished") {
-                    server.markSuccess(1.0);
+                    server.markSuccess(1.0, model.settings.completedCallback);
                     engine.main.components.feedback.finished();
                 } else {
                     console.error(error);
@@ -7058,7 +7175,9 @@ function BlockPy(settings, assignment, submission, programs) {
             // boolean
             'developer': ko.observable(settings.developer || false),
             // boolean
-            'mute_printer': ko.observable(false)
+            'mute_printer': ko.observable(false),
+            // function
+            'completedCallback': settings.completedCallback,
         },
         'execution': {
             // 'waiting', 'running'

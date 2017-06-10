@@ -301,7 +301,7 @@ def verify_request_common(consumers, url, method, headers, params):
         if not consumer:
             raise oauth2.Error('Invalid consumer.')
         oauth_server.verify_request(oauth_request, consumer, None)
-    except oauth2.Error:
+    except oauth2.Error as e:
         print("ERR", e.message)
         # Rethrow our own for nice error handling (don't print
         # error message as it will contain the key

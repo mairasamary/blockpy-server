@@ -159,7 +159,6 @@ def get_assignments_from_request():
     submission_url = request.form.get('lis_result_sourcedid', '')
     # Assignment group or individual assignment?
     if assignment_group_id is not None:
-        print("AGI", int(assignment_group_id))
         group = AssignmentGroup.by_id(int(assignment_group_id) if assignment_group_id != None else None)
         assignments = group.get_assignments()
         submissions = [a.get_submission(user_id, course_id=course_id, submission_url=submission_url) for a in assignments]

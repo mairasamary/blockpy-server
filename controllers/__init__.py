@@ -50,6 +50,9 @@ app.register_blueprint(blueprint_maze)
 from controllers.explain import blueprint_explain
 app.register_blueprint(blueprint_explain)
 
+from controllers.poll import blueprint_poll
+app.register_blueprint(blueprint_poll)
+
 from controllers.corgis import blueprint_corgis, blueprint_datasets
 app.register_blueprint(blueprint_corgis)
 app.register_blueprint(blueprint_datasets)
