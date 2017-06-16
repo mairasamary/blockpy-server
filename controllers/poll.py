@@ -51,7 +51,6 @@ def load(lti=lti, lti_exception=None, assignments=None, submissions=None, embed=
                            
 @blueprint_poll.route('/save_questions/', methods=['GET', 'POST'])
 @blueprint_poll.route('/save_questions', methods=['GET', 'POST'])
-@lti(request='session', app=app)
 def save_questions(lti=lti):
     assignment_id = request.form.get('assignment_id', None)
     course_id = request.values.get('course_id', g.course.id if 'course' in g else None)

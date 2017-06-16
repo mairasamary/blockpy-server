@@ -249,10 +249,17 @@ ko.components.register('question-block', {
 
 // TODO: Get max ID + 1 from existing
 var questionBlockIndex = -1;
-function makeQuestion(title, body, expanded, protected, opened, correct, submission, answers) {
-    questionBlockIndex += 1;
+function makeQuestion(title, body, expanded, protected, opened, correct, submission, answers, id) {
+    if (id == undefined) {
+        questionBlockIndex += 1;
+        id = questionBlockIndex;
+    } else {
+        if (id > questionBlockIndex) {
+            questionBlockIndex = id+1;
+        }
+    }
     return {
-        id: questionBlockIndex,
+        id: id,
         title: ko.observable(title),
         body: ko.observable(body),
         expanded: ko.observable(expanded),
@@ -273,8 +280,22 @@ function getServerData() {
 }
 
 var preloaded = false;
-MainModel = function() {
+var loading = false;
+function MainModel(data) {
     this.questions = ko.observableArray([]);
+    /*
+    var mainModelMapping = {
+        questions: {
+            key: function(data) {
+                return ko.utils.unwrapObservable(data.id);
+            },
+            create: function(options) {
+                return new 
+            }
+        }
+    };
+    ko.mapping.fromJSON(data, mainModelMapping, this);*/
+    
     this.addQuestion = function() {
         this.questions.push(makeQuestion(
             "Question #"+(this.questions().length+1),
@@ -297,7 +318,7 @@ MainModel = function() {
     this.allChanges = ko.computed(function() {
         return ko.toJSON(self.questions());
     }).subscribe(function(data) {
-        if (preloaded) {
+        if (preloaded && !loading) {
             self.saveQuestions(data);
         } else {
             preloaded = true;
@@ -312,11 +333,51 @@ MainModel = function() {
            });
     };
     this.loadQuestions = function(body) {
+        loading = true;
         newBody = JSON.parse(body);
-        
+        var seenIds = [];
+        newBody.forEach(function(value, index) {
+            var needle = value.id;
+            var question = self.questions().find(function(q) {
+                return q.id == needle;
+            });
+            console.log("Found", question)
+            if (question == undefined) {
+                question = makeQuestion(
+                    value.title,
+                    value.body,
+                    value.expanded, 
+                    value.protected, 
+                    value.opened, 
+                    value.correct, 
+                    value.submission, 
+                    value.answers
+                )
+                self.questions.push(question);
+            } else {
+                question.title(value.title);
+                question.body(value.body);
+                question.expanded(value.expanded);
+                question.protected(value.protected);
+                question.opened(value.opened);
+                question.correct(value.correct);
+                question.submission(value.submission);
+                question.answers(value.answers.map(function(a) { return ko.observable(a) }));
+            }
+            seenIds.push(question.id);
+            loading = false;
+        });
+        self.questions.remove(function(q) {
+            return -1 == $.inArray(q.id, seenIds);
+        });
     };
     this.refreshBindings = function (loop) {
-        this.addQuestion();
+        $.post(URL_MAP['load_questions'], getServerData(),
+            function(data) {
+                if (data.success) {
+                    self.loadQuestions(data.body);
+                }
+            });
     }
 };
 
@@ -374,7 +435,7 @@ $(document).ready(function() {
         {% endif %}
 
         <button class='btn-default btn'>
-            <span class='glyphicon glyphicon-refresh'></span>
+            <span class='glyphicon glyphicon-refresh' data-bind='click: refreshBindings'></span>
             Refresh Questions
         </button>
     </div>
