@@ -51,12 +51,27 @@ def load(lti=lti, lti_exception=None, assignments=None, submissions=None, embed=
                            
 @blueprint_poll.route('/save_questions/', methods=['GET', 'POST'])
 @blueprint_poll.route('/save_questions', methods=['GET', 'POST'])
-def save_questions():
-    pass
+@lti(request='session', app=app)
+def save_questions(lti=lti):
+    assignment_id = request.form.get('assignment_id', None)
+    course_id = request.values.get('course_id', g.course.id if 'course' in g else None)
+    if None in (assignment_id, course_id):
+        return jsonify(success=False, message="No Assignment ID or Course ID given!")
+    if not g.user.is_instructor(int(course_id)):
+        return jsonify(success=False, message="You are not an instructor in this assignments' course.")
+    body = request.form.get('body', '')
+    Assignment.edit(assignment_id=assignment_id, presentation=body, type='poll')
+    return jsonify(success=True)
+    
 @blueprint_poll.route('/load_questions/', methods=['GET', 'POST'])
 @blueprint_poll.route('/load_questions', methods=['GET', 'POST'])
 def load_questions():
-    pass
+    assignment_id = request.form.get('assignment_id', None)
+    course_id = request.values.get('course_id', g.course.id if 'course' in g else None)
+    if None in (assignment_id, course_id):
+        return jsonify(success=False, message="No Assignment ID or Course ID given!")
+    assignment = Assignment.by_id(assignment_id)
+    return jsonify(success=True, body = assignment.body)
 @blueprint_poll.route('/submit_answers/', methods=['GET', 'POST'])
 @blueprint_poll.route('/submit_answers', methods=['GET', 'POST'])
 def submit_answers():

@@ -627,7 +627,8 @@ class Submission(Base):
         # Single file logging
         student_interactions_logger = logging.getLogger('StudentInteractions')
         student_interactions_logger.info(
-            StructuredEvent(self.user_id, self.assignment_id, 'code', 'set', self.code, timestamp=timestamp)
+            StructuredEvent(self.user_id, self.assignment_id, 'code', 'set', 
+                            self.code, timestamp=timestamp)
         )
         
     def get_history(self):
@@ -711,7 +712,7 @@ class Assignment(Base):
              give_feedback=None, on_step=None, starting_code=None, 
              parsons=None, text_first=None,
              modules=None, importable=False,
-             disable_algorithm_errors=False):
+             disable_algorithm_errors=False, type='blockpy'):
         assignment = Assignment.by_id(assignment_id)
         if name is not None:
             assignment.name = name
@@ -746,14 +747,15 @@ class Assignment(Base):
             settings['modules']['removed'] = [m for m in Assignment.BUILTIN_MODULES 
                                               if m not in kept_modules and m != 'Separator']
             assignment.settings = json.dumps(settings)
-        assignment.type = 'blockpy'
+        assignment.type = type
         if parsons is True:
             assignment.mode = 'parsons'
             assignment.version += 1
         elif assignment.mode == "parsons":
+            # I'll be honest, I don't know what's going on here.
             assignment.mode = 'parsons'
             assignment.version += 1
-        elif parsons is False:
+        elif parsons is False and assignment.type == 'blockpy':
             assignment.mode = 'blocks'
             assignment.version += 1
         if text_first is True:

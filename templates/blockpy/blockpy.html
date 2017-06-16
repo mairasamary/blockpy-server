@@ -38,7 +38,12 @@ Assignment
 <span class='delete-on-load'>Loading! Please wait.</span>
 
 {% if group %}
-{{ assignment_group_header(group, assignment_id, embed) }}
+{{ assignment_group_header(group, assignment_id, embed, 'blockpy.load') }}
+<script>
+    $(document).ready(function() {
+        loadNavigation();
+    });
+</script>
 {% endif %}
 
 {% if not group %}
@@ -112,7 +117,7 @@ $(document).ready(function() {
                     'import_datasets': {{ url_for('blockpy.load_corgis',path='')|tojson }},
                     'get_history': {{ url_for('blockpy.get_history')|tojson }},
                 },
-                'completedCallback': markCorrect,
+                'completedCallback': function(data) { markCorrect(data.assignment_id) },
             },
             // assignment
             {

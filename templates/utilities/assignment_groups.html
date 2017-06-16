@@ -1,6 +1,11 @@
-{% macro assignment_group_header(group, assignment_id, embed) %}
+{% macro assignment_group_header(group, assignment_id, embed, page_type) %}
 
 <script>
+    /*
+     * Increment completed counter by 1
+     * Disable next/first/etc. butttons when at end
+     * Display message when completed all
+     */
     function markCorrect(assignmentId) {
         var opt = $("#assignment-selector option[value='"+assignmentId+"']");
         if (!opt.hasClass("correct-submission")) {
@@ -12,13 +17,13 @@
     }
     var URL_MAP = {
         {% for assignment, submission in group %}
-            {{ assignment.id }}: "{{ url_for('blockpy.load', 
+            {{ assignment.id }}: "{{ url_for(page_type, 
                                         assignment_group_id= request.args.get("assignment_group_id"),
                                         assignment_id=assignment.id,
                                         embed=embed)|safe }}",
         {% endfor %}
     };
-    $(document).ready(function() {
+    function loadNavigation() {
         $("#assignment-selector").change(function() {
             document.location.href = URL_MAP[$("#assignment-selector").val()];
         });
@@ -44,10 +49,12 @@
                 .prop("selected", true);
             document.location.href = URL_MAP[$("#assignment-selector").val()];
         });
-    });
+        console.log("TESTING");
+    }
 </script>
 
-<div class='row' style='border: 1px solid #faebcc; background-color: #fcf8e3'>
+<div id='test'>
+<div class='row' style='border: 1px solid #faebcc; background-color: #fcf8e3; margin-right: 0px'>
     <div class='col-md-12 col-sm-12 col-xs-12'>
         <div class='center-block'>
         <button type="button" class='btn btn-default btn-sm' id='assignment-selector-first'>
@@ -80,5 +87,9 @@
         </div>
     </div>
 </div>
+</div>
+<script>
+test = $("#test").html();
+</script>
 
 {% endmacro %}

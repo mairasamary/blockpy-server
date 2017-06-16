@@ -461,7 +461,8 @@ Maze.drawMap = function() {
  */
 Maze.init = function() {
   // Render the Soy template.
-  document.body.innerHTML = Maze.soy.start({}, null,
+  //document.body.innerHTML = Maze.soy.start({}, null,
+  document.getElementById('maze-body').innerHTML = Maze.soy.start({}, null,
       {lang: BlocklyGames.LANG,
        level: BlocklyGames.LEVEL,
        maxLevel: BlocklyGames.MAX_LEVEL,

@@ -1,5 +1,7 @@
 {% extends 'reduced_layout.html' %}
 
+{% from 'utilities/assignment_groups.html' import assignment_group_header %}
+
 {% block title %}
 Blockly Maze
 {% endblock %}
@@ -20,7 +22,7 @@ Blockly Maze
 <script>
 URL_ROOT = "{{ url_for('static', filename='') }}";
 LEVEL_SET = {{ level }};
-URL_MAP = { 
+MAZE_URL_MAP = { 
     'save_code': '{{ url_for("blockpy.save_code")}}',
     'save_success': '{{ url_for("blockpy.save_correct")}}',
     'load_success': {{ "true" if submission.correct else "false" }},
@@ -37,10 +39,10 @@ function reportChange() {
 }
 function reportSuccess() {
     markSuccess();
-    var data = {'assignment_id': "{{ assignment.id }}", 
+    var data = {'assignment_id': "{{ assignment_id }}", 
                 'course_id': {{ (course_id if course_id != None else submission.course_id)|tojson }},
                 'status': '1'};
-    $.post(URL_MAP.save_success, data, function(response) {
+    $.post(MAZE_URL_MAP.save_success, data, function(response) {
         if (response.success) {
             alertBox("Success reported").delay(200).fadeOut("slow");
         } else {
@@ -53,10 +55,12 @@ function reportSuccess() {
 }
 function loadEverything() {
 $(document).ready(function() {
+    console.log("ON READY");
+    $("body").prepend(test);
     $("#runButton").parent().prev().html(
         "<span id='success-report'></span><br><span id='status-report'></span>"
     );
-    if (URL_MAP.load_success) {
+    if (MAZE_URL_MAP.load_success) {
         markSuccess();
     }
     var result = {{ submission.code.replace('\n', '\\n')|tojson }}
@@ -73,7 +77,7 @@ $(document).ready(function() {
             'filename': '__main__',
             'code': answer
             };
-        $.post(URL_MAP.save_code, data, function(response) {
+        $.post(MAZE_URL_MAP.save_code, data, function(response) {
             if (response.success) {
                 alertBox("Saved").delay(200).fadeOut("slow");
             } else {
@@ -84,6 +88,9 @@ $(document).ready(function() {
             alertBox("Saving failed");
         });
     });
+    $("body").css("overflow-y", "hidden");
+    loadNavigation();
+    Blockly.getMainWorkspace().resize()
 });
 };
 </script>
@@ -91,5 +98,12 @@ $(document).ready(function() {
 {% endblock %}
 
 {% block body %}
+
+{% if group %}
+{{ assignment_group_header(group, assignment_id, embed, 'maze.load') }}
+{% endif %}
+
+<div id='maze-body'>
+</div>
 
 {% endblock %}

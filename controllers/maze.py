@@ -11,6 +11,12 @@ blueprint_maze = Blueprint('maze', __name__, url_prefix='/maze')
 def load(lti=lti, lti_exception=None, assignments=None, submissions=None, embed=False):
     if assignments is None or submissions is None:
         assignments, submissions = get_assignments_from_request()
+    if "assignment_id" in request.args:
+        assignment_id = request.args.get("assignment_id")
+    elif assignments:
+        assignment_id = assignments[0].id
+    else:
+        assignment_id = None
     if assignments:
         if submissions:
             course_id = submissions[0].course_id
@@ -23,10 +29,17 @@ def load(lti=lti, lti_exception=None, assignments=None, submissions=None, embed=
             course_id = int(request.values.get('course_id'))
         else:
             course_id = None
+    for assignment, submission in zip(assignments, submissions):
+        if assignment_id == None:
+            break
+        elif assignment.id == int(assignment_id):
+            break
     return render_template('maze/maze.html',
-                                   assignment= assignments[0], 
-                                   submission= submissions[0],
-                                   level=assignments[0].name,
+                                   group=list(zip(assignments, submissions)),
+                                   assignment=assignment,
+                                   submission= submission,
+                                   assignment_id = assignment.id,
+                                   level=assignment.name,
                                    embed=embed,
                                    course_id=course_id,
                                    user_id=g.user.id)

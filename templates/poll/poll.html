@@ -3,7 +3,7 @@
 {% set instructor_mode = true %}
 
 {% block title %}
-Code Explaining
+Bark Back
 {% endblock %}
 
 {% block statusbar %}
@@ -52,10 +52,9 @@ Code Explaining
 
 <script>
 
-var questionBlockIndex = 0;
+
 function QuestionBlock(params) {
-    this.id = questionBlockIndex;
-    questionBlockIndex += 1;
+    this.id = params.id;
     this.title = params.title;
     this.body = params.body;
     this.protected = params.protected;
@@ -64,6 +63,7 @@ function QuestionBlock(params) {
     this.answers = params.answers;
     this.submission = params.submission;
     this.correct = params.correct;
+    this.parent = params.parent;
     var that = this;
     this.target_id = "editor_" + this.id    
     this.buildSummerNote = function() {
@@ -157,6 +157,9 @@ function QuestionBlock(params) {
         });
         event.stopPropagation();
     }
+    this.removeQuestion = function(e) {
+        that.parent.removeQuestion(that);
+    }
     this.addAnswer = function() {
         that.answers.push(ko.observable("Answer #"+(1+that.answers().length)));
     }
@@ -178,7 +181,7 @@ function QuestionBlock(params) {
     setTimeout(this.buildSummerNote, 0);
 }
 QuestionBlock.prototype.dispose = function() {
-    $("#"+that.target_id).summernote('destroy');
+    $("#"+this.target_id).summernote('destroy');
 };
 ko.components.register('question-block', {
     viewModel: QuestionBlock,
@@ -236,7 +239,7 @@ ko.components.register('question-block', {
                         "<span class='glyphicon glyphicon-stats'></span> Responses"+
                     "</button> "+
                     {% endif %}
-                    "<button class='btn-md btn-danger btn pull-right' data-bind='visible: canEdit()'>"+
+                    "<button class='btn-md btn-danger btn pull-right' data-bind='visible: canEdit(), click: removeQuestion'>"+
                         "<span class='glyphicon glyphicon-trash'></span> Remove Question"+
                     "</button> "+
                 "</div>"+
@@ -244,8 +247,12 @@ ko.components.register('question-block', {
         "</div>"
 });
 
+// TODO: Get max ID + 1 from existing
+var questionBlockIndex = -1;
 function makeQuestion(title, body, expanded, protected, opened, correct, submission, answers) {
+    questionBlockIndex += 1;
     return {
+        id: questionBlockIndex,
         title: ko.observable(title),
         body: ko.observable(body),
         expanded: ko.observable(expanded),
@@ -257,9 +264,18 @@ function makeQuestion(title, body, expanded, protected, opened, correct, submiss
     };
 }
 
-mainModel = {
-    questions: ko.observableArray([]),
-    addQuestion: function() {
+function getServerData() {
+    return {
+        'assignment_id': {{ assignment.id|tojson }},
+        'course_id': {{ course_id if course_id != None else submission.course_id|tojson }},
+        'student_id': {{ g.user.id|tojson if g.user != None else -1}},
+    }
+}
+
+var preloaded = false;
+MainModel = function() {
+    this.questions = ko.observableArray([]);
+    this.addQuestion = function() {
         this.questions.push(makeQuestion(
             "Question #"+(this.questions().length+1),
             "Type your question.",
@@ -270,6 +286,37 @@ mainModel = {
             null,
             ["Answer #1", "Answer #2", "Answer #3"]
         ));
+    };
+    var self = this;
+    this.removeQuestion = function(element) {
+        self.questions.remove(function(e) {
+            console.log(e, element, e.id, element.id)
+            return e.id == element.id;
+        });
+    };
+    this.allChanges = ko.computed(function() {
+        return ko.toJSON(self.questions());
+    }).subscribe(function(data) {
+        if (preloaded) {
+            self.saveQuestions(data);
+        } else {
+            preloaded = true;
+        }
+    });
+    this.saveQuestions = function(body) {
+        var data = getServerData();
+        data['body'] = body;
+        $.post(URL_MAP['save_questions'], data,
+           function (response) {
+            // Response
+           });
+    };
+    this.loadQuestions = function(body) {
+        newBody = JSON.parse(body);
+        
+    };
+    this.refreshBindings = function (loop) {
+        this.addQuestion();
     }
 };
 
@@ -282,25 +329,13 @@ URL_MAP = {
     'log_event': '{{ url_for("blockpy.save_events") }}',
 };
 
-function refreshBindings(loop) {
-    mainModel.addQuestion();
-}
-
-var preloaded = false;
 $(document).ready(function() {
+    mainModel = new MainModel();
     ko.applyBindings(mainModel);
     {% if instructor_mode %}
-    refreshBindings(false);
-    mainModel.saveChanges = ko.computed(function() {
-        //console.log(ko.toJSON(mainModel));
-        if (preloaded) {
-            console.log(ko.toJSON(mainModel));
-        } else {
-            preloaded = true;
-        }
-    });
+    mainModel.refreshBindings(false);
     {% else %}
-    refreshBindings(true);
+    mainModel.refreshBindings(true);
     {% endif %}
 });
  
@@ -358,7 +393,9 @@ $(document).ready(function() {
         "expanded": expanded,
         "answers": answers,
         "submission": submission,
-        "correct": correct
+        "correct": correct,
+        "parent": $parent,
+        "id": id
     }
 }'></div>
 <!-- /ko -->

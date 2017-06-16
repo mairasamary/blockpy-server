@@ -4205,10 +4205,14 @@ BlockPyServer.prototype.markSuccess = function(success, callback) {
                 function(response) {
                    if (response.success) {
                         server.setStatus('Saved');
-                        callback(data);
+                        if (success) {
+                            callback(data);
+                        }
                     } else {
                         console.error(response);
                         server.setStatus('Error', response.message);
+                        callback(data);
+                        console.log(data, callback);
                     }
                 })
              .fail(server.defaultFailure.bind(server));

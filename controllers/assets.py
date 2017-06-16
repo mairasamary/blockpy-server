@@ -62,6 +62,7 @@ bundles = {
         "libs/summernote/summernote-ext-hint.js",
         "libs/summernote/summernote-ext-video.js",
         #"libs/knockout-3.4.0.js",
+        'libs/knockout.mapping-latest.js',
         "libs/jquery.fileupload.js",
         output='gen/code_explaining.js'),
     'code_explaining_css': Bundle(
