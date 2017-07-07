@@ -1,6 +1,6 @@
 {% set navbar_invisible = true %}
 {% extends 'reduced_layout.html' %}
-{% set instructor_mode = true %}
+{% set instructor_mode = false %}
 
 {% block title %}
 Bark Back
@@ -61,7 +61,6 @@ function QuestionBlock(params) {
     this.opened = params.opened;
     this.expanded = params.expanded;
     this.answers = params.answers;
-    this.submission = params.submission;
     this.correct = params.correct;
     this.parent = params.parent;
     var that = this;
@@ -103,6 +102,9 @@ function QuestionBlock(params) {
         } else {
             return 'panel-default';
         }
+    });
+    this.submission = ko.pureComputed(function() {
+        return mainModel.getSubmission(that.id);
     });
     this.resizeLabel = ko.pureComputed(function() {
         return 'glyphicon-resize-' + (that.expanded() ? 'full' : 'small');
@@ -146,7 +148,7 @@ function QuestionBlock(params) {
         }
         {% else %}
         if (that.opened()) {
-            that.submission(answer);
+            mainModel.setSubmission(that.id, answer);
         }
         {% endif %}
         event.stopPropagation();
@@ -249,7 +251,7 @@ ko.components.register('question-block', {
 
 // TODO: Get max ID + 1 from existing
 var questionBlockIndex = -1;
-function makeQuestion(title, body, expanded, protected, opened, correct, submission, answers, id) {
+function makeQuestion(title, body, expanded, protected, opened, correct, answers, id) {
     if (id == undefined) {
         questionBlockIndex += 1;
         id = questionBlockIndex;
@@ -266,7 +268,6 @@ function makeQuestion(title, body, expanded, protected, opened, correct, submiss
         protected: ko.observable(protected),
         opened: ko.observable(opened),
         correct: ko.observable(correct),
-        submission: ko.observable(submission),
         answers: ko.observableArray(answers.map(function(a) { return ko.observable(a) }))
     };
 }
@@ -281,20 +282,10 @@ function getServerData() {
 
 var preloaded = false;
 var loading = false;
+var QUESTION_WEIGHT = .8;
 function MainModel(data) {
     this.questions = ko.observableArray([]);
-    /*
-    var mainModelMapping = {
-        questions: {
-            key: function(data) {
-                return ko.utils.unwrapObservable(data.id);
-            },
-            create: function(options) {
-                return new 
-            }
-        }
-    };
-    ko.mapping.fromJSON(data, mainModelMapping, this);*/
+    this.submissions = new ko.observableArray([]);
     
     this.addQuestion = function() {
         this.questions.push(makeQuestion(
@@ -304,17 +295,35 @@ function MainModel(data) {
             true,
             true,
             'Answer #1',
-            null,
             ["Answer #1", "Answer #2", "Answer #3"]
         ));
     };
     var self = this;
+    this.setSubmission = function(key, value) {
+        var submission = self.submissions().find(function(q) {
+            return q.key == key;
+        });
+        if (submission) {
+            submission.value(value);
+        } else {
+            var submission = {key: key, value: ko.observable(value)}
+            self.submissions.push(submission);
+        }
+    };
+    this.getSubmission = function(key, value) {
+        var submission = self.submissions().find(function(q) {
+            return q.key == key;
+        });
+        if (submission) {
+            return submission.value();
+        }
+    };
     this.removeQuestion = function(element) {
         self.questions.remove(function(e) {
-            console.log(e, element, e.id, element.id)
             return e.id == element.id;
         });
     };
+    {% if instructor_mode %}
     this.allChanges = ko.computed(function() {
         return ko.toJSON(self.questions());
     }).subscribe(function(data) {
@@ -332,6 +341,42 @@ function MainModel(data) {
             // Response
            });
     };
+    {% endif %}
+    this.calculateScore = function() {
+        var questions = self.questions();
+        var total = questions.length;
+        var submissions = self.submissions();
+        var correct = submissions.map(function(item) {
+            var question = questions.find(function(q) {
+                return q.id == item.key;
+            });
+            console.log(question.correct(), item.value());
+            if (question) {
+                if (question.correct() == item.value()) {
+                    return 1;
+                } else {
+                    return 1*QUESTION_WEIGHT;
+                }
+            } else {
+                return 0;
+            }
+        });
+        correct = correct.reduce(function(t, i) { return t+i; });
+        return correct / total;
+    };
+    this.submissionChanges = ko.computed(function() {
+        return ko.toJSON(self.submissions());
+    }).subscribe(function(answers) {
+        var data = getServerData();
+        data['submissions'] = answers;
+        data['score'] = self.calculateScore();
+        $.post(URL_MAP['submit_answers'], data,
+           function (response) {
+                if (response.success) {
+                    console.log(response);
+                }
+           });
+    });
     this.loadQuestions = function(body) {
         loading = true;
         newBody = JSON.parse(body);
@@ -341,7 +386,6 @@ function MainModel(data) {
             var question = self.questions().find(function(q) {
                 return q.id == needle;
             });
-            console.log("Found", question)
             if (question == undefined) {
                 question = makeQuestion(
                     value.title,
@@ -349,8 +393,7 @@ function MainModel(data) {
                     value.expanded, 
                     value.protected, 
                     value.opened, 
-                    value.correct, 
-                    value.submission, 
+                    value.correct,
                     value.answers
                 )
                 self.questions.push(question);
@@ -361,7 +404,6 @@ function MainModel(data) {
                 question.protected(value.protected);
                 question.opened(value.opened);
                 question.correct(value.correct);
-                question.submission(value.submission);
                 question.answers(value.answers.map(function(a) { return ko.observable(a) }));
             }
             seenIds.push(question.id);
@@ -453,7 +495,6 @@ $(document).ready(function() {
         "opened": opened,
         "expanded": expanded,
         "answers": answers,
-        "submission": submission,
         "correct": correct,
         "parent": $parent,
         "id": id

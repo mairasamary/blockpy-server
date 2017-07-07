@@ -74,7 +74,17 @@ def load_questions():
 @blueprint_poll.route('/submit_answers/', methods=['GET', 'POST'])
 @blueprint_poll.route('/submit_answers', methods=['GET', 'POST'])
 def submit_answers():
-    pass
+    assignment_id = request.form.get('assignment_id', None)
+    course_id = request.values.get('course_id', g.course.id if 'course' in g else None)
+    if None in (assignment_id, course_id):
+        return jsonify(success=False, message="No Assignment ID or Course ID given!")
+    assignment_version = int(request.form.get('version', -1))
+    answer = request.form.get('submissions', '')
+    Submission.save_code(g.user.id, int(assignment_id), int(course_id), answer, assignment_version)
+    
+    answer = float(request.form.get('score', '0'))
+    
+    return jsonify(success=True)
 @blueprint_poll.route('/summarize_answers/', methods=['GET', 'POST'])
 @blueprint_poll.route('/summarize_answers', methods=['GET', 'POST'])
 def summarize_answers():

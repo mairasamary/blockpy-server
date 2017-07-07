@@ -34,6 +34,10 @@ LOGGING = {
         }
     },
     'loggers': {
+        'Feedbackfull': {
+            'level': 'INFO',
+            'handlers': ['FeedbackHandler']
+        },
         'SystemLogger': {
             'level': 'INFO',
             'handlers': ['console']
@@ -60,10 +64,16 @@ if app.config['IS_PRODUCTION']:
         'formatter': 'simpleFormatter'
     }
 else:
+    LOG_FILENAME = os.path.join(app.config['ROOT_DIRECTORY'], 'log/feedbackfull/feedbackfull.log')
     LOGGING['handlers']['fileHandler'] = {
         'class': 'logging.handlers.RotatingFileHandler',
         'filename': STUDENT_INTERACTION_LOG,
         'formatter': 'simpleFormatter'
+    }
+    LOGGING['handlers']['FeedbackHandler'] = {
+        'filename': LOG_FILENAME,
+        'formatter': 'simpleFormatter',
+        'class': 'logging.handlers.RotatingFileHandler'
     }
     
 logging.config.dictConfig(LOGGING)
