@@ -1,3 +1,5 @@
+env/
+
 static/.webassets-cache/
 static/gen/
 static/corgis/
@@ -14,6 +16,7 @@ logs/
 queued_logs/
 backups/
 
+kennel.wsgi
 certs/
 secrets.json
 consumer_key.pem
