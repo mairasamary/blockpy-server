@@ -23,6 +23,8 @@ app.jinja_env.filters['list'] = list
 
 app.config.from_object('config.TestingConfig')
 
+ERROR_LOG = os.path.join(app.config['ROOT_DIRECTORY'],
+                         'log/errors.log')
 STUDENT_INTERACTION_LOG = os.path.join(app.config['ROOT_DIRECTORY'], 
                                        'log/student_interactions/student_interactions.log')
 LOGGING = {
@@ -31,6 +33,11 @@ LOGGING = {
         'console':{
             'class':'logging.StreamHandler',
             'formatter':'basicFormatter'
+        },
+        'errorHandler': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': ERROR_LOG,
+            'formatter': 'basicFormatter'
         }
     },
     'loggers': {
@@ -47,6 +54,10 @@ LOGGING = {
             'handlers': ['fileHandler']
         }
     },
+    'root': {
+        'level': 'WARNING',
+        'handlers': ['console', 'errorHandler']
+    },
     'formatters': {
         'basicFormatter': {
             'format': '%(name)s[%(levelname)s] - %(message)s'
@@ -56,6 +67,7 @@ LOGGING = {
         }
     }
 }
+LOG_FILENAME = os.path.join(app.config['ROOT_DIRECTORY'], 'log/feedbackfull/feedbackfull.log')
 if app.config['IS_PRODUCTION']:
     LOGGING['handlers']['fileHandler'] = {
         'class': 'logging.handlers.TimedRotatingFileHandler',
@@ -64,19 +76,21 @@ if app.config['IS_PRODUCTION']:
         'formatter': 'simpleFormatter'
     }
 else:
-    LOG_FILENAME = os.path.join(app.config['ROOT_DIRECTORY'], 'log/feedbackfull/feedbackfull.log')
     LOGGING['handlers']['fileHandler'] = {
         'class': 'logging.handlers.RotatingFileHandler',
         'filename': STUDENT_INTERACTION_LOG,
         'formatter': 'simpleFormatter'
     }
-    LOGGING['handlers']['FeedbackHandler'] = {
-        'filename': LOG_FILENAME,
-        'formatter': 'simpleFormatter',
-        'class': 'logging.handlers.RotatingFileHandler'
-    }
+    LOGGING
+LOGGING['handlers']['FeedbackHandler'] = {
+    'filename': LOG_FILENAME,
+    'formatter': 'simpleFormatter',
+    'class': 'logging.handlers.RotatingFileHandler'
+}
     
 logging.config.dictConfig(LOGGING)
+
+logging.getLogger('StudentInteractions').info("TESTING")
 
 # Assets
 from controllers.assets import assets

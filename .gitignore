@@ -1,3 +1,5 @@
+kennel.sock
+
 env/
 
 static/.webassets-cache/
@@ -8,6 +10,7 @@ static/uploads/
 templates/corgis/
 !templates/corgis/generic.html
 
+database/
 main.db
 test.db
 
