@@ -5,10 +5,31 @@
  */
 
 /**
+ * Remove duplicate values from an array, preserving order.
+ * Creates a new array, so is non-destructive.
+ * Courtesy:
+ * https://stackoverflow.com/questions/1584370/how-to-merge-two-arrays-in-javascript-and-de-duplicate-items
+ *
+ * @param {Array} array - The array to uniquify. Elements compared with ===.
+ */
+function arrayUnique(array) {
+    var a = array.concat();
+    for(var i=0; i<a.length; ++i) {
+        for(var j=i+1; j<a.length; ++j) {
+            if(a[i] === a[j])
+                a.splice(j--, 1);
+        }
+    }
+
+    return a;
+}
+
+/**
  * A helper function for extending an array based
  * on an "addArray" and "removeArray". Any element
  * found in removeArray is removed from the first array
  * and all the elements of addArray are added.
+ * Any duplicate items are removed.
  * Creates a new array, so is non-destructive.
  *
  * @param {Array} array - the array to manipulate
@@ -20,7 +41,7 @@ function expandArray(array, addArray, removeArray) {
     var copyArray = array.filter(function(item) {
         return removeArray.indexOf(item) === -1;
     });
-    return copyArray.concat(addArray);
+    return arrayUnique(copyArray.concat(addArray));
 }
 
 /**
@@ -6501,11 +6522,17 @@ function BlockPyCorgis(main) {
     this.main = main;
     
     this.loadedDatasets = [];
-    
+    this.loadDatasets();
+}
+
+BlockPyCorgis.prototype.loadDatasets = function() {
     // Load in each the datasets
-    var corgis = this;
+    var corgis = this,
+        model = this.main.model,
+        editor = this.main.components.editor,
+        server = this.main.components.server;
     var imports = [];
-    this.main.model.assignment.modules().forEach(function(name) {
+    model.assignment.modules().forEach(function(name) {
         var post_prefix = name.substring(7).replace(/\s/g, '_').toLowerCase();
         if (!(name in BlockPyEditor.CATEGORY_MAP)) {
             imports.push.apply(imports, corgis.importDataset(post_prefix, name));
@@ -6514,14 +6541,14 @@ function BlockPyCorgis(main) {
     
     // When datasets are loaded, update the toolbox.
     $.when.apply($, imports).done(function() {
-        if (main.model.settings.editor() == "Blocks") {
-            main.components.editor.updateBlocksFromModel();
+        if (model.settings.editor() == "Blocks") {
+            editor.updateBlocksFromModel();
         }
-        main.components.editor.updateToolbox(true);
+        editor.updateToolbox(true);
     }).fail(function(e) {
         console.error(e);
     }).always(function() {
-        main.components.server.finalizeSubscriptions();
+        server.finalizeSubscriptions();
     });
 }
 
@@ -6622,6 +6649,7 @@ var set_button_loaded = function(btn) {
        .text("Loaded")
        .attr("aria-pressed", "true");
 }
+
 /**
  * An object for displaying the user's coding logs (their history).
  * A lightweight component, its only job is to open a dialog.
@@ -8075,16 +8103,17 @@ BlockPy.prototype.initModelMethods = function() {
             case 'Error': return ['label-danger', 'Error'];
         }
     }, this.model);
+    // Helper function to map Execution status messages to UI elements
     this.model.execution_status_class = ko.computed(function() {
         switch (this.execution.status()) {
-            default: case 'idle': return ['label-default', 'Ready'];
-            case 'running': return ['label-info', 'Running'];
-            case 'changing': return ['label-info', 'Changing'];
-            case 'verifying': return ['label-info', 'Verifying'];
-            case 'parsing': return ['label-info', 'Parsing'];
-            case 'analyzing': return ['label-info', 'Analyzing'];
-            case 'student': return ['label-info', 'Student'];
-            case 'instructor': return ['label-info', 'Instructor'];
+            default: case 'idle': return ['label-success', 'Ready'];
+            case 'running': return ['label-warning', 'Running'];
+            case 'changing': return ['label-warning', 'Changing'];
+            case 'verifying': return ['label-warning', 'Verifying'];
+            case 'parsing': return ['label-warning', 'Parsing'];
+            case 'analyzing': return ['label-warning', 'Analyzing'];
+            case 'student': return ['label-warning', 'Student'];
+            case 'instructor': return ['label-warning', 'Instructor'];
             case 'complete': return ['label-success', 'Idle'];
             
         }
@@ -8209,6 +8238,7 @@ BlockPy.prototype.setAssignment = function(settings, assignment, programs) {
     // Reload blockly
     // Reload CodeMirror
     this.model.settings.server_connected(true)
+    this.components.corgis.loadDatasets();
 }
 
 /**
