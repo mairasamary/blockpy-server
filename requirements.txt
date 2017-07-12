@@ -17,3 +17,5 @@ pygments
 httplib2
 tqdm
 pydot
+six
+bcrypt

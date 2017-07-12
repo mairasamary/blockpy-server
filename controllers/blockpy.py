@@ -79,14 +79,56 @@ def load(lti=None, assignments=None, submissions=None, embed=False):
             course_id = int(request.values.get('course_id'))
         else:
             course_id = None
+    group = list(zip(assignments, submissions))
     return render_template('blockpy/blockpy.html',
-                           group=list(zip(assignments, submissions)),
+                           group=group,
                            course_id=course_id,
                            user_id=g.user.id if g.user is not None else -1,
                            embed=embed,
                            assignment_id=assignment_id,
                            instructor_mode=instructor_mode)
-                               
+                           
+@blueprint_blockpy.route('/load_assignment/', methods=['GET', 'POST'])
+@blueprint_blockpy.route('/load_assignment', methods=['GET', 'POST'])
+def load_assignment(lti=lti):
+    assignment_id = request.values.get('assignment_id', None)
+    course_id = request.values.get('course_id',  g.course.id if 'course' in g else None)
+    if None in (assignment_id, course_id) or course_id == "":
+        return jsonify(success=False, message="No Assignment ID or Course ID given!")
+    user_id = g.user.id if g.user != None else -1
+    assignment = Assignment.by_id(assignment_id)
+    submission = assignment.get_submission(user_id, course_id=course_id)
+    interface = 'Text' if assignment.mode.lower() == 'text' else 'Blocks'
+    settings = json.loads(assignment.settings)
+    added_modules = settings['modules']['added'] if 'modules' in settings else []
+    removed_modules = settings['modules']['removed'] if 'modules' in settings else []
+    return jsonify(success=True,
+                   settings = {
+                        'editor': interface,
+                    },
+                   assignment = {
+                        'assignment_id': assignment.id,
+                        'course_id': course_id if course_id != None else submission.course_id,
+                        'student_id': user_id,
+                        'introduction': assignment.body,
+                        'name': assignment.name,
+                        'version': assignment.version,
+                        'initial_view': interface,
+                        'give_feedback': assignment.give_feedback,
+                        'parsons': assignment.mode == 'parsons', 
+                        'starting_code': assignment.starting_code,
+                        'importable': settings.get('importable', False),
+                        'disable_algorithm_errors': settings.get('disable_algorithm_errors', False),
+                        'modules': {
+                            'added': added_modules,
+                            'removed': removed_modules,
+                        },
+                    },
+                    programs = {
+                        '__main__': submission.code,
+                        'starting_code': assignment.starting_code,
+                        'give_feedback': assignment.give_feedback,
+                    })
 
 @blueprint_blockpy.route('/save_code/', methods=['GET', 'POST'])
 @blueprint_blockpy.route('/save_code', methods=['GET', 'POST'])

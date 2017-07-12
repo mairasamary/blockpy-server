@@ -1,4 +1,109 @@
 /**
+ * BlockPy version 3.1
+ * This file was automatically combined using a script.
+ * You should edit individual files in the src/* folder.
+ */
+
+/**
+ * A helper function for extending an array based
+ * on an "addArray" and "removeArray". Any element
+ * found in removeArray is removed from the first array
+ * and all the elements of addArray are added.
+ * Creates a new array, so is non-destructive.
+ *
+ * @param {Array} array - the array to manipulate
+ * @param {Array} addArray - the elements to add to the array
+ * @param {Array} removeArray - the elements to remove from the array
+ * @return {Array} The modified array
+ */
+function expandArray(array, addArray, removeArray) {
+    var copyArray = array.filter(function(item) {
+        return removeArray.indexOf(item) === -1;
+    });
+    return copyArray.concat(addArray);
+}
+
+/**
+ * Deeply clones a node
+ * @param {Node} node A node to clone
+ * @return {Node} A clone of the given node and all its children
+ */
+function cloneNode(node) {
+    // If the node is a text node, then re-create it rather than clone it
+    var clone = node.nodeType == 3 ? document.createTextNode(node.nodeValue) : node.cloneNode(false);
+ 
+    // Recurse     
+    var child = node.firstChild;
+    while(child) {
+        clone.appendChild(cloneNode(child));
+        child = child.nextSibling;
+    }
+     
+    return clone;
+}
+
+/**
+ * Indents the given string by 4 spaces. This correctly handles multi-line strings.
+ *
+ * @param {String} str - The string to be manipulated.
+ * @returns {String} The string with four spaces added at the start of every new line.
+ */
+function indent(str) {
+  return str.replace(/^(?=.)/gm, '    ');
+}
+
+/**
+ * Return a random integer between [`min`, `max`].
+ * 
+ * @param {number} min - The lowest possible integer.
+ * @param {number} max - The highest possible integer (inclusive).
+ * @returns {number} A random integer.
+ */
+function randomInteger(min,max) {
+    return Math.floor(Math.random()*(max-min+1)+min);
+}
+
+/**
+ * Encodes some text so that it can be safely written into an HTML box.
+ * This includes replacing special HTML characters (&, <, >, etc.).
+ *
+ * @param {string} str - The text to be converted.
+ * @return {string} The HTML-safe text.
+ */
+function encodeHTML(str) {
+    return str.replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;')
+              .replace(/"/g, '&quot;')
+              .replace(/'/g, '&apos;');
+}
+
+/**
+ * Shuffle the blocks in the workspace
+ */
+Blockly.WorkspaceSvg.prototype.shuffle = function() {
+    var metrics = this.getMetrics();
+    var width = metrics.viewWidth / 2,
+        height = metrics.viewHeight;
+    var blocks = this.getTopBlocks(false);
+    var y = 5, x = 0,
+        maximal_increase = height/blocks.length;
+    for (var i = 0; i < blocks.length; i++){
+        // Get a block
+        var block = blocks[i];
+        var properties = block.getRelativeToSurfaceXY();
+        if (i == 0) {
+            x = 5;
+        } else {
+            x = -properties.x+randomInteger(10, width);
+        }
+        block.moveBy(x, 
+                     -properties.y+y);
+        y = y + randomInteger(5, maximal_increase);
+    }
+}
+
+/**
  * A dictionary of improved explanations for Python errors. These are shown to users
  * alongside the regular errors to hopefully increase clarity.
  */
@@ -159,21 +264,27 @@ function arrayContains(needle, haystack) {
 
 function AbstractInterpreter(code, filename) {
     NodeVisitor.apply(this, Array.prototype.slice.call(arguments));
-    
+}
+AbstractInterpreter.prototype = new NodeVisitor();
+
+AbstractInterpreter.prototype.processCode = function(code, filename) {
     // Code
-    this.code = code;
-    this.source = code !== "" ? this.code.split("\n") : [];
-    this.filename = filename || '__main__';
+    this.source = code !== "" ? code.split("\n") : [];
+    filename = filename || '__main__';
     
     // Attempt parsing - might fail!
     try {
-        var parse = Sk.parse(this.filename, this.code);
-        this.ast = Sk.astFromParse(parse.cst, this.filename, parse.flags);
+        var parse = Sk.parse(filename, code);
+        var ast = Sk.astFromParse(parse.cst, filename, parse.flags);
+        this.processAst(ast);
     } catch (error) {
         this.report = {"error": error, "message": "Parsing error"};
         return;
     }
-    
+};
+
+AbstractInterpreter.prototype.processAst = function(ast) {
+    this.ast = ast;
     // Handle loops
     this.loopStackId = 0
     this.loopHierarchy = {};
@@ -191,6 +302,7 @@ function AbstractInterpreter(code, filename) {
     
     this.variables = {};
     this.variableTypes = {};
+    this.variablesNonBuiltin = {};
     for (var name in this.BUILTINS) {
         this.setVariable(name, this.BUILTINS[name]);
     }
@@ -206,8 +318,6 @@ function AbstractInterpreter(code, filename) {
     //console.log(this.variables)
     this.postProcess();
 }
-
-AbstractInterpreter.prototype = new NodeVisitor();
 
 AbstractInterpreter.prototype.BUILTINS = {'print': {"type": 'None'}, 
                                 'sum': {"type": "Num"},
@@ -339,6 +449,7 @@ AbstractInterpreter.prototype.postProcess = function() {
         if (!(name in this.BUILTINS)) {
             //console.log("STARTING", name, this.source)
             var trace = this.variables[name];
+            this.variablesNonBuiltin[name] = trace.slice();
             if (name == "___") {
                 this.report["Unconnected blocks"].push({"position": trace[0].position})
             }
@@ -1087,8 +1198,6 @@ PythonToBlocks.prototype.convertBody = function(node, is_top_level) {
     
     finalizePeers();
     
-    console.log(children);
-    
     this.levelIndex -= 1;
     
     return children;
@@ -1723,7 +1832,6 @@ PythonToBlocks.prototype.BoolOp = function(node) {
 }
 
 PythonToBlocks.prototype.binaryOperator = function(op) {
-    console.log(op._astname);
     switch (op.name) {
         case "Add": return "ADD";
         case "Sub": return "MINUS";
@@ -1829,7 +1937,15 @@ PythonToBlocks.prototype.Dict = function(node) {
 PythonToBlocks.prototype.Set = function(node)
 {
     var elts = node.elts;
-    throw new Error("Sets are not implemented");
+    var ctx = node.ctx;
+    
+    return block("set_create", node.lineno, {}, 
+        this.convertElements("ADD", elts)
+    , {
+        "inline": elts.length > 3 ? "false" : "true", 
+    }, {
+        "@items": elts.length
+    });
 }
 
 /*
@@ -2346,10 +2462,13 @@ PythonToBlocks.prototype.Name_str = function(node)
     return this.identifier(id);
 }
 
-PythonToBlocks.prototype.convertElements = function(key, values) {
+PythonToBlocks.prototype.convertElements = function(key, values, plusser) {
+    if (plusser === undefined) {
+        plusser = 0;
+    }
     var output = {};
     for (var i = 0; i < values.length; i++) {
-        output[key+i] = this.convert(values[i]);
+        output[key+(plusser+i)] = this.convert(values[i]);
     }
     return output;
 }
@@ -2363,7 +2482,7 @@ PythonToBlocks.prototype.List = function(node) {
     var elts = node.elts;
     var ctx = node.ctx;
     
-    return block("lists_create_with", node.lineno, {}, 
+    return block("lists_create", node.lineno, {}, 
         this.convertElements("ADD", elts)
     , {
         "inline": elts.length > 3 ? "false" : "true", 
@@ -2381,7 +2500,13 @@ PythonToBlocks.prototype.Tuple = function(node)
     var elts = node.elts;
     var ctx = node.ctx;
     
-    throw new Error("Tuples not implemented");
+    return block("tuple_create", node.lineno, {}, 
+        this.convertElements("ADD", elts)
+    , {
+        "inline": elts.length > 3 ? "false" : "true", 
+    }, {
+        "@items": elts.length
+    });
 }
 
 /*
@@ -2547,6 +2672,759 @@ Not
 UAdd
 USub
 */
+/**
+ * Skulpt Module for holding the Instructor API.
+ *
+ * This module is loaded in by getting the functions' source code from toString.
+ * Isn't that crazy?
+ *
+ * @param {String} name - The name of the module (should always be 'instructor')
+ *
+ */
+var $sk_mod_instructor = function(name) {
+    // Main module object that gets returned at the end.
+    var mod = {};
+    
+    /**
+     * Skulpt Exception that forces the program to exit, but gracefully.
+     * 
+     * @param {Array} args - A list of optional arguments to pass to the Exception.
+     *                       Usually this will include a message for the user.
+     */
+    Sk.builtin.GracefulExit = function (args) {
+        var o;
+        if (!(this instanceof Sk.builtin.GracefulExit)) {
+            o = Object.create(Sk.builtin.GracefulExit.prototype);
+            o.constructor.apply(o, arguments);
+            return o;
+        }
+        Sk.builtin.Exception.apply(this, arguments);
+    };
+    Sk.abstr.setUpInheritance("GracefulExit", Sk.builtin.GracefulExit, Sk.builtin.Exception);
+    
+    /**
+     * Give complimentary feedback to the user
+     */
+    mod.compliment = new Sk.builtin.func(function(message) {
+        Sk.builtin.pyCheckArgs("compliment", arguments, 1, 1);
+        Sk.builtin.pyCheckType("message", "string", Sk.builtin.checkString(message));
+        Sk.executionReports.instructor.compliments.push(Sk.ffi.remapToJS(message));
+    });
+    /**
+     * Mark problem as completed
+     */
+    mod.complete = new Sk.builtin.func(function() {
+        Sk.builtin.pyCheckArgs("complete", arguments, 0, 0);
+        Sk.executionReports.instructor.complete = true;
+        throw new Sk.builtin.GracefulExit();
+    });
+    /**
+     * Let user know about an issue
+     */
+    mod.complaint = new Sk.builtin.func(function(message, line) {
+        Sk.builtin.pyCheckArgs("compliment", arguments, 1, 2);
+        Sk.builtin.pyCheckType("message", "string", Sk.builtin.checkString(message));
+        if (line !== undefined) {
+            Sk.builtin.pyCheckType("line", "integer", Sk.builtin.checkInt(line));
+        }
+        Sk.executionReports.instructor.complaint = {
+            'name': 'Instructor Feedback',
+            'message': Sk.ffi.remapToJs(message),
+            'line': line
+        }
+        throw new Sk.builtin.GracefulExit();
+    });
+    
+    /**
+     * Prevent a certain kind of error from percolating.
+     */
+    mod.suppress = new Sk.builtin.func(function(type, subtype) {
+        Sk.builtin.pyCheckArgs("suppress", arguments, 1, 2);
+        Sk.builtin.pyCheckType("type", "string", Sk.builtin.checkString(type));
+        type = Sk.ffi.remapToJs(type);
+        if (subtype !== undefined) {
+            Sk.builtin.pyCheckType("subtype", "string", Sk.builtin.checkString(subtype));
+            subtype = Sk.ffi.remapToJs(subtype);
+            if (Sk.feedbackSuppressions[type] === false) {
+                Sk.feedbackSuppressions[type] = {subtype: true};
+            } else if (Sk.feedbackSuppressions[type] !== false) {
+                Sk.feedbackSuppressions[type][subtype] = true;
+            }
+        } else {
+            Sk.feedbackSuppressions[type] = true;
+        }
+    });
+    
+    // get_ast()
+    // get_trace()
+    // get_types()
+    // get_types_raw()
+    
+    //Enhanced feedback functions and objects starts here
+    mod.Ast = Sk.misceval.buildClass(mod, function($gbl, $loc) {
+        $loc.__init__ = new Sk.builtin.func(function(self) {
+            var parser = Sk.executionReports['parser'];
+            if (parser.success) {
+                self.ast = parser.ast;
+            } else {
+                self.ast = null;
+            }
+            console.log("Parser AST", self.ast);
+        });
+    }, 'Ast', []);
+    
+    mod.Types = Sk.misceval.buildClass(mod, function($gbl, $loc) {
+        $loc.__init__ = new Sk.builtin.func(function(self) {
+            var analyzer = Sk.executionReports['analyzer'];
+            if (analyzer.success) {
+                self.types = analyzer.variables;
+            } else {
+                self.types = null;
+            }
+            console.log("AI Types", self.types);
+        });
+    }, 'Types', []);
+    mod.Behavior = Sk.misceval.buildClass(mod, function($gbl, $loc) {
+        $loc.__init__ = new Sk.builtin.func(function(self) {
+            var analyzer = Sk.executionReports['analyzer'];
+            if (analyzer.success) {
+                self.behavior = analyzer.behavior;
+            } else {
+                self.behavior = null;
+            }
+            console.log("AI Behavior", self.behavior);
+        });
+    }, 'Behavior', []);
+    
+    mod.Trace = Sk.misceval.buildClass(mod, function($gbl, $loc) {
+        $loc.__init__ = new Sk.builtin.func(function(self) {
+            var student = Sk.executionReports['student'];
+            if (student.success) {
+                self.trace = student.trace;
+            } else {
+                self.trace = null;
+            }
+            console.log("Runtime Trace", self.trace);
+        });
+    }, 'Trace', []);
+    
+    mod.Issues = Sk.misceval.buildClass(mod, function($gbl, $loc) {
+        $loc.__init__ = new Sk.builtin.func(function(self) {
+            var analyzer = Sk.executionReports['analyzer'];
+            if (analyzer.success) {
+                self.issues = analyzer.issues;
+            } else {
+                self.issues = null;
+            }
+            console.log("AI Issues", self.issues);
+        });
+    }, 'Issues', []);
+    
+    //---- Everything below this line is old stuff
+    
+    /**
+     * Skulpt Exception that represents a Feedback object, to be rendered to the user
+     * when the feedback system finds a problem.
+     * 
+     * @param {Array} args - A list of optional arguments to pass to the Exception.
+     *                       Usually this will include a message for the user.
+     */
+    Sk.builtin.Feedback = function (args) {
+        var o;
+        if (!(this instanceof Sk.builtin.Feedback)) {
+            o = Object.create(Sk.builtin.Feedback.prototype);
+            o.constructor.apply(o, arguments);
+            return o;
+        }
+        Sk.builtin.Exception.apply(this, arguments);
+    };
+    Sk.abstr.setUpInheritance("Feedback", Sk.builtin.Feedback, Sk.builtin.Exception);
+    
+    /**
+     * Skulpt Exception that represents a Success object, to be thrown when the user
+     * completes their program successfully.
+     *
+     ** @param {Array} args - A list of optional arguments to pass to the Exception.
+     *                       Usually this will be empty.
+     */
+    Sk.builtin.Success = function (args) {
+        var o;
+        if (!(this instanceof Sk.builtin.Success)) {
+            o = Object.create(Sk.builtin.Success.prototype);
+            o.constructor.apply(o, arguments);
+            return o;
+        }
+        Sk.builtin.Exception.apply(this, arguments);
+    };
+    Sk.abstr.setUpInheritance("Success", Sk.builtin.Success, Sk.builtin.Exception);
+    
+    /**
+     * Skulpt Exception that represents a Finished object, to be thrown when the user
+     * completes their program successfully, but isn't in a problem with a "solution".
+     * This is useful for open-ended canvases where we still want to capture the students'
+     * code in Canvas.
+     *
+     ** @param {Array} args - A list of optional arguments to pass to the Exception.
+     *                       Usually this will be empty.
+     */
+    Sk.builtin.Finished = function (args) {
+        var o;
+        if (!(this instanceof Sk.builtin.Finished)) {
+            o = Object.create(Sk.builtin.Finished.prototype);
+            o.constructor.apply(o, arguments);
+            return o;
+        }
+        Sk.builtin.Exception.apply(this, arguments);
+    };
+    Sk.abstr.setUpInheritance("Finished", Sk.builtin.Finished, Sk.builtin.Exception);
+    
+    /**
+     * A Skulpt function that throws a Feedback exception, allowing us to give feedback
+     * to the user through the Feedback panel. This function call is done for aesthetic
+     * reasons, so that we are calling a function instead of raising an error. Still,
+     * exceptions allow us to break out of the control flow immediately, like a 
+     * return, so they are a good mechanism to use under the hood.
+     * 
+     * @param {String} message - The message to display to the user.
+     */
+    mod.set_feedback = new Sk.builtin.func(function(message) {
+        Sk.builtin.pyCheckArgs("set_feedback", arguments, 1, 1);
+        Sk.builtin.pyCheckType("message", "string", Sk.builtin.checkString(message));
+        throw new Sk.builtin.Feedback(message.v);
+    });
+    
+    /**
+     * A Skulpt function that throws a Success exception. This will terminate the
+     * feedback analysis, but reports that the students' code was successful.
+     * This function call is done for aesthetic reasons, so that we are calling a
+     * function instead of raising an error. Still, exceptions allow us to break
+     * out of the control flow immediately, like a return would, so they are a
+     * good mechanism to use under the hood.
+     */
+    mod.set_success = new Sk.builtin.func(function() {
+        Sk.builtin.pyCheckArgs("set_success", arguments, 0, 0);
+        throw new Sk.builtin.Success();
+    });
+    
+    /**
+     * A Skulpt function that throws a Finished exception. This will terminate the
+     * feedback analysis, but reports that the students' code was successful.
+     * This function call is done for aesthetic reasons, so that we are calling a
+     * function instead of raising an error. Still, exceptions allow us to break
+     * out of the control flow immediately, like a return would, so they are a
+     * good mechanism to use under the hood.
+     */
+    mod.set_finished = new Sk.builtin.func(function() {
+        Sk.builtin.pyCheckArgs("set_finished", arguments, 0, 0);
+        throw new Sk.builtin.Finished();
+    });
+    
+    // Memoization of previous parses - some mild redundancy to save time
+    // TODO: There's no evidence this is good, and could be a memory hog on big
+    // programs. Someone should investigate this. The assumption is that multiple
+    // helper functions might be using parses. But shouldn't we trim old parses?
+    // Perhaps a timed cache would work better.
+    var parses = {};
+    
+    /**
+     * Given source code as a string, return a flat list of all of the AST elements
+     * in the parsed source code.
+     *
+     * TODO: There's redundancy here, since the source code was previously parsed
+     * to run the file and to execute it. We should probably be able to do this just
+     * once and shave off time.
+     *
+     * @param {String} source - Python source code.
+     * @returns {Array.<Object>}
+     */
+    function getParseList(source) {
+        if (!(source in parses)) {
+            var parse = Sk.parse("__main__", source);
+            parses[source] = Sk.astFromParse(parse.cst, "__main__", parse.flags);
+        }
+        var ast = parses[source];
+        return (new NodeVisitor()).recursive_walk(ast);
+    }
+
+    /**
+     * Given source code as a string, return a list of all of the AST elements
+     * that are Num (aka numeric literals) but that are not inside List elements.
+     *
+     * @param {String} source - Python source code.
+     * @returns {Array.number} The list of JavaScript numeric literals that were found.
+     */
+    function getNonListNums(source) {
+        if (!(source in parses)) {
+            var parse = Sk.parse("__main__", source);
+            parses[source] = Sk.astFromParse(parse.cst, "__main__", parse.flags);
+        }
+        var ast = parses[source];
+        var visitor = new NodeVisitor();
+        var insideList = false;
+        var nums = [];
+        visitor.visit_List = function(node) {
+            insideList = true;
+            this.generic_visit(node);
+            insideList = false;
+        }
+        visitor.visit_Num = function(node) {
+            if (!insideList) {
+                nums.push(node.n);
+            }
+            this.generic_visit(node);
+        }
+        visitor.visit(ast);
+        return nums;
+    }
+    
+    /**
+     * Given source code as a string, return a list of all of the AST elements
+     * that are being printed (using the print function) but are not variables.
+     *
+     * @param {String} source - Python source code.
+     * @returns {Array.<Object>} The list of AST elements that were found.
+     */
+    function getPrintedNonProperties(source) {
+        if (!(source in parses)) {
+            var parse = Sk.parse("__main__", source);
+            parses[source] = Sk.astFromParse(parse.cst, "__main__", parse.flags);
+        }
+        var ast = parses[source];
+        var visitor = new NodeVisitor();
+        var nonVariables = [];
+        visitor.visit_Call = function(node) {
+            var func = node.func;
+            var args = node.args;
+            if (func._astname == 'Name' && func.id.v == 'print') {
+                for (var i =0; i < args.length; i+= 1) {
+                    if (args[i]._astname != "Name") {
+                        nonVariables.push(args[i]);
+                    }
+                }
+            }
+            this.generic_visit(node);
+        }
+        visitor.visit(ast);
+        return nonVariables;
+    }
+    
+    /**
+     * Skulpt function to iterate through the final state of
+     * all the variables in the program, and check to see if they have
+     * a given value.
+     */
+    mod.get_value_by_name = new Sk.builtin.func(function(name) {
+        Sk.builtin.pyCheckArgs("get_value_by_name", arguments, 1, 1);
+        Sk.builtin.pyCheckType("name", "string", Sk.builtin.checkString(name));
+        name = name.v;
+        var final_values = Sk.builtins._final_values;
+        if (name in final_values) {
+            return final_values[name];
+        } else {
+            return Sk.builtin.none.none$;
+        }
+    });
+    mod.get_value_by_type = new Sk.builtin.func(function(type) {
+        Sk.builtin.pyCheckArgs("get_value_by_type", arguments, 1, 1);
+        
+        var final_values = Sk.builtins._final_values;
+        var result = [];
+        for (var property in final_values) {
+            if (final_values[property].tp$name == type.tp$name) {
+                result.push(final_values[property]);
+            }
+        }
+        return Sk.builtin.list(result);
+    });
+    
+    mod.parse_json = new Sk.builtin.func(function(blob) {
+        Sk.builtin.pyCheckArgs("parse_json", arguments, 1, 1);
+        Sk.builtin.pyCheckType("blob", "string", Sk.builtin.checkString(blob));
+        blob = blob.v;
+        return Sk.ffi.remapToPy(JSON.parse(blob));
+    });
+    mod.get_property = new Sk.builtin.func(function(name) {
+        Sk.builtin.pyCheckArgs("get_property", arguments, 1, 1);
+        Sk.builtin.pyCheckType("name", "string", Sk.builtin.checkString(name));
+        name = name.v;
+        var trace = Sk.builtins._trace;
+        if (trace.length <= 0) {
+            return Sk.builtin.none.none$;
+        }
+        var properties = trace[trace.length-1]["properties"];
+        for (var i = 0, len = properties.length; i < len; i += 1) {
+            if (properties[i]['name'] == name) {
+                return Sk.ffi.remapToPy(properties[i])
+            }
+        }
+        return Sk.builtin.none.none$;
+    });
+    
+    mod.calls_function = new Sk.builtin.func(function(source, name) {
+        Sk.builtin.pyCheckArgs("calls_function", arguments, 2, 2);
+        Sk.builtin.pyCheckType("source", "string", Sk.builtin.checkString(source));
+        Sk.builtin.pyCheckType("name", "string", Sk.builtin.checkString(name));
+        
+        source = source.v;
+        name = name.v;
+        
+        var ast_list = getParseList(source);
+        
+        var count = 0;
+        for (var i = 0, len = ast_list.length; i < len; i = i+1) {
+            if (ast_list[i]._astname == 'Call') {
+                if (ast_list[i].func._astname == 'Attribute') {
+                    count += Sk.ffi.remapToJs(ast_list[i].func.attr) == name | 0;
+                } else if (ast_list[i].func._astname == 'Name') {
+                    count += Sk.ffi.remapToJs(ast_list[i].func.id) == name | 0;
+                }   
+            }
+        }
+        
+        return Sk.ffi.remapToPy(count > 0);
+    });
+    
+    mod.count_components = new Sk.builtin.func(function(source, component) {
+        Sk.builtin.pyCheckArgs("count_components", arguments, 2, 2);
+        Sk.builtin.pyCheckType("source", "string", Sk.builtin.checkString(source));
+        Sk.builtin.pyCheckType("component", "string", Sk.builtin.checkString(component));
+        
+        source = source.v;
+        component = component.v;
+        
+        var ast_list = getParseList(source);
+        
+        var count = 0;
+        for (var i = 0, len = ast_list.length; i < len; i = i+1) {
+            if (ast_list[i]._astname == component) {
+                count = count+1;
+            }
+        }
+        
+        return Sk.ffi.remapToPy(count);
+    });
+    
+    mod.no_nonlist_nums = new Sk.builtin.func(function(source) {
+        Sk.builtin.pyCheckArgs("no_nonlist_nums", arguments, 1, 1);
+        Sk.builtin.pyCheckType("source", "string", Sk.builtin.checkString(source));
+        
+        source = source.v;
+        
+        var num_list = getNonListNums(source);
+        
+        var count = 0;
+        for (var i = 0, len = num_list.length; i < len; i = i+1) {
+            if (num_list[i].v != 0 && num_list[i].v != 1) {
+                return Sk.ffi.remapToPy(true);
+            }
+        }
+        return Sk.ffi.remapToPy(false);
+    });
+
+    mod.only_printing_properties = new Sk.builtin.func(function(source) {
+        Sk.builtin.pyCheckArgs("only_printing_properties", arguments, 1, 1);
+        Sk.builtin.pyCheckType("source", "string", Sk.builtin.checkString(source));
+        
+        source = source.v;
+        
+        var non_var_list = getPrintedNonProperties(source);
+        return Sk.ffi.remapToPy(non_var_list.length == 0);
+    });
+    
+    //Enhanced feedback functions and objects starts here
+    //variable used for easy reidentification of nodes so we don't have to recreate every node type
+    var flatTree = [];
+    //variable used for accumulating interrupting feedback AS A LIST OF PYTHON OBJECTS
+    var accInterruptFeedback = [];
+    //variable used for accumulating complementary feedback AS A LIST OF PYTHON OBJECTS
+    var accCompFeedback = [];
+    /**
+     * Given source code as a string, generate a flatTree and store it in the local variable.
+     * This function is meant to be used to avoid extra coding by recreating every AST node type
+     *
+     * @param {String} source - Python source code.
+     */
+    function generateFlatTree(source){
+        if (!(source in parses)) {
+            var parse = Sk.parse("__main__", source);
+            parses[source] = Sk.astFromParse(parse.cst, "__main__", parse.flags);
+        }
+        //Tree's already been built, don't do anything else
+        if(flatTree.length > 0){
+            return;
+        }
+        var ast = parses[source];
+        var visitor = new NodeVisitor();
+        visitor.visit = function(node){
+            flatTree.push(node);
+            /** Visit a node. **/
+            var method_name = 'visit_' + node._astname;
+            console.log(flatTree.length - 1 + ": " + node._astname)
+            if (method_name in this) {
+                return this[method_name](node);
+            } else {
+                return this.generic_visit(node);
+            }
+        }
+        visitor.visit(ast);
+    }
+
+    function isSkBuiltin(obj){
+        return (obj instanceof Sk.builtin.dict) ||
+            (obj instanceof Sk.builtin.list) ||
+            (obj instanceof Sk.builtin.tuple) ||
+            (obj instanceof Sk.builtin.bool) ||
+            (obj instanceof Sk.builtin.int_) ||
+            (obj instanceof Sk.builtin.float_) ||
+            (obj instanceof Sk.builtin.lng);
+    }
+    /**
+     * Should theoretically belong in Sk.ffi, but I put it here instead to not mess up the skulpt files
+     * like the normal Sk.ffi.remapToPy, it doesn't work for functions or more complex objects, but it handles
+     * cases where the types in obj ore a mix of python SIMPLE objects and SIMPLE normal javascript objects
+     * @param {object} obj - the object to be converted
+     * @return {Sk.builtin.???} - returns the corresponding python object, dropping all functions and things it can't convert
+    **/
+    function mixedRemapToPy(obj){
+        var k;
+        var kvs;
+        var i;
+        var arr;
+        if(isSkBuiltin(obj)){
+            return obj;
+        }else if (Object.prototype.toString.call(obj) === "[object Array]") {
+            arr = [];
+            for (i = 0; i < obj.length; ++i) {
+                var subval = obj[i];
+                if(!isSkBuiltin(subval)){
+                    arr.push(Sk.ffi.mixedRemapToPy(subval));
+                }else{
+                    arr.push(subval)
+                }
+            }
+            return new Sk.builtin.list(arr);
+        } else if (obj === null) {
+            return Sk.builtin.none.none$;
+        } else if (typeof obj === "object") {
+            if(!isSkBuiltin(obj)){
+                kvs = [];
+                for (k in obj) {
+                    if(!isSkBuiltin(k)){
+                        kvs.push(Sk.ffi.mixedRemapToPy(k));
+                    }else{
+                        kvs.push(k);
+                    }
+                    kvs.push(Sk.ffi.mixedRemapToPy(obj[k]));
+                }
+                return new Sk.builtin.dict(kvs);
+            }else{
+                return obj;
+            }
+        } else if (typeof obj === "string") {
+            return new Sk.builtin.str(obj);
+        } else if (typeof obj === "number") {
+            return Sk.builtin.assk$(obj);
+        } else if (typeof obj === "boolean") {
+            return new Sk.builtin.bool(obj);
+        }
+    }
+
+    /**
+     * Given source code as a string, generates the mock AST nodes the instructor will be using
+     * note that this function doesn't return anything.
+     * @param {String} source - Python source code.
+     * @param {mod.AstNode} - returns the python version of the root node
+    **/
+    mod.parse_program = new Sk.builtin.func(function(source) {
+        Sk.builtin.pyCheckArgs("parse_program", arguments, 1, 1);
+        Sk.builtin.pyCheckType("source", "string", Sk.builtin.checkString(source));
+        source = source.v;
+        generateFlatTree(source);
+        return Sk.misceval.callsimOrSuspend(mod.AstNode, 0);
+    });
+
+    /**@TODO: make this function affect the UI
+     * Given a feedback string, records the corrective feedback string for later printing
+     * @param {string} feedback - the piece of feedback to save
+    **/
+    mod.add_interrupt_feedback = new Sk.builtin.func(function(feedback) {
+        Sk.builtin.pyCheckArgs("add_iterupt_feedback", arguments, 1, 1);
+        Sk.builtin.pyCheckType("feedback", "string", Sk.builtin.checkString(feedback));
+        accInterruptFeedback.push(feedback);
+    });
+    /**@TODO: make this function affect the UI
+     * Given a feedback string, records the complementary feedback string for later printing
+     * @param {string} feedback - the piece of feedback to save
+    **/
+    mod.add_comp_feedback = new Sk.builtin.func(function(feedback) {
+        Sk.builtin.pyCheckArgs("add_comp_feedback", arguments, 1, 1);
+        Sk.builtin.pyCheckType("feedback", "string", Sk.builtin.checkString(feedback));
+        accCompFeedback.push(feedback);
+    });
+
+    /**
+     * This resolves all of the feedback and posts it to the appropriate places
+     * @TODO: actually implement this functionality
+    **/
+    mod.post_feedback = new Sk.builtin.func(function() {
+        var allFeedback = accInterruptFeedback.concat(accCompFeedback);
+        completePythonAll = Sk.builtin.list(allFeedback);
+        jsPureFeedback = Sk.ffi.remapToJs(completePythonAll);
+        console.log("" + jsPureFeedback);
+    });
+
+    /**
+     * Python representation of the AST nodes w/o recreating the entire thing. This class assumes that parse_program
+     * is called first
+     * @property {number} self.id - the javascript id number of this object
+     * @property {string} self.type - the javascript string representing the type of the node (_astname)
+     * @property {Sk.abstr.(s/g)attr} id - the python version of self.id
+     * @property {Sk.abstr.(s/g)attr} type - the python version of self.type
+    **/
+    mod.AstNode = Sk.misceval.buildClass(mod, function($gbl, $loc) {
+        $loc.__init__ = new Sk.builtin.func(function(self, id) {
+            self.id = Sk.ffi.remapToJs(id);//note that id is passed from PYTHON as a default type already
+            self.type = flatTree[self.id]._astname;
+            Sk.abstr.sattr(self, 'type', Sk.ffi.remapToPy(self.type), true);
+            var thisNode = flatTree[self.id];
+        });
+        
+        /**
+         * This function dynamically looks to see if the ast node has a given property and does
+         * remapping where it can
+         * @param {obj} self - the javascript object representing the python AST node (which is also a python object)
+         * @param {string} key - the property the user is trying to look up
+        **/
+        $loc.__getattr__ = new Sk.builtin.func(function(self, key) {
+            console.log("getattr");
+            var actualAstNode = flatTree[self.id];
+            key = Sk.ffi.remapToJs(key);
+            if(key in actualAstNode){
+                var field = actualAstNode[key];
+                //@TODO: check for flag to see if chain assignments are allowed, otherwise return first item
+                if(actualAstNode._astname == "Assign" && key == "targets"){//this means its an assignment node
+                    var childId = flatTree.indexOf(field[0]);//get the relevant node
+                    return Sk.misceval.callsimOrSuspend(mod.AstNode, childId);
+                }else if(field.constructor === Array){
+                    console.log("array handling");
+                    var astNodeCount = 0
+                    var fieldArray = [];
+                    //this will likely always be a mixed array
+                    for(var i = 0; i < field.length; i++){
+                        var subfield = field[i];
+                        //if AST node, use callism and push new object
+                        if(subfield instanceof Object && "_astname" in subfield){//an AST node)
+                            var childId = flatTree.indexOf(subfield);//get the relevant node
+                            console.log(childId);
+                            fieldArray.push(Sk.misceval.callsimOrSuspend(mod.AstNode, childId));
+                        }else{//else smart remap
+                            console.log(subfield);
+                            var tranSubfield = mixedRemapToPy(subfield);
+                            if(tranSubfield != undefined){
+                                console.log(tranSubfield);
+                                fieldArray.push(tranSubfield);
+                            }
+                        }
+                    }
+                    return new Sk.builtin.list(fieldArray);
+                }else if('v' in field){//probably already a python object
+                    return field;
+                }else if(field instanceof Object && "_astname" in field){//an AST node
+                    var childId = flatTree.indexOf(field);//get the relevant node
+                    return Sk.misceval.callsimOrSuspend(mod.AstNode, childId);
+                }
+            }
+            return Sk.ffi.remapToPy(null);
+        });
+
+        /**
+         * Given the python Name ast node (variable) and self (which is automatically filled), checks
+         * the AST on the javascript side to see if the node has the specified variable using the name
+         * @TODO: change this so it can handle any data type as opposed to just numbers and ast nodes
+         * @param {???} self - the javascript reference of this object, which is self in python.
+         * @param {mod.AstNode} pyAstNode - the python object representing the variable node to look for
+        **/
+        $loc.has = new Sk.builtin.func(function(self, pyAstNode) {
+            var rawVariableName = null;
+            var rawNum = null;
+            var nodeId = self.id;
+            var thisNode = flatTree[nodeId];
+            //got a number instead of an AST node
+            if(Sk.builtin.checkNumber(pyAstNode)){
+                rawNum = Sk.ffi.remapToJs(pyAstNode);
+            }else{//assume it's an AST node
+                //@TODO: should handle exceptions/do type checking
+                var otherId = Sk.ffi.remapToJs(pyAstNode.id);
+                var otherNode = flatTree[otherId];
+                if(otherNode._astname != "Name"){
+                    return Sk.ffi.remapToPy(false);
+                }
+                rawVariableName = Sk.ffi.remapToJs(otherNode.id);
+            }
+
+            var hasVar = false;
+            var visitor = new NodeVisitor();
+            if(rawVariableName != null){
+                visitor.visit_Name = function(node){
+                    var otherRawName = Sk.ffi.remapToJs(node.id);
+                    if(rawVariableName == otherRawName){
+                        hasVar = true;
+                        return;
+                    }
+                    return this.generic_visit(node);
+                }
+            }
+
+            if(rawNum != null){
+                visitor.visit_Num = function(node){
+                    var otherNum = Sk.ffi.remapToJs(node.n);
+                    if(rawNum == otherNum){
+                        hasVar = true;
+                        return;
+                    }
+                    return this.generic_visit(node);
+                }
+            }
+
+            visitor.visit(flatTree[nodeId]);
+            return Sk.ffi.remapToPy(hasVar);
+        });
+
+        /**
+         * Given a type of ast node as a string, returns all in the ast that are nodes of the specified "type"
+         * valid options include BinOp, For, Call, If, Compare, Assign, Expr, note that these ARE case sensitive
+         * @param {???} self - the javascript reference of this object, which is self in python.
+         * @param {Sk.builtin.str} type - the python string representing the "type" of node to look for
+        **/
+        $loc.find_all = new Sk.builtin.func(function(self, type) {
+            var items = [];
+            var visitor = new NodeVisitor();
+            var currentId = self.id - 1;
+            var funcName = 'visit_' + Sk.ffi.remapToJs(type);
+            visitor.visit = function(node) {
+                currentId += 1;
+                /** Visit a node. **/
+                var method_name = 'visit_' + node._astname;
+                if (method_name in this) {
+                    return this[method_name](node);
+                } else {
+                    return this.generic_visit(node);
+                }
+            }
+            visitor[funcName] = function(node){
+                var skulptNode = Sk.misceval.callsimOrSuspend(mod.AstNode, currentId);
+                items.push(skulptNode);
+                return this.generic_visit(node);
+            }
+            var nodeId = self.id;
+            visitor.visit(flatTree[nodeId]);
+            //Don't use Sk.ffi because the objects in the array are already python objects
+            return new Sk.builtin.list(items);
+        });
+    });
+    return mod;
+}
+
 /*
 Blockly.Blocks['classics_get_all'] = {
   init: function() {
@@ -2577,6 +3455,747 @@ function newBlock(name) {
     block.render();
 }
 
+/**
+ * Decode an XML DOM and create blocks on the workspace, clearing out old blocks.
+ * @param {!Element} xml XML DOM.
+ * @param {!Blockly.Workspace} workspace The workspace.
+ */
+Blockly.Xml.domToWorkspaceDestructive = function(xml, workspace, errorXml) {
+  if (xml instanceof Blockly.Workspace) {
+    var swap = xml;
+    xml = workspace;
+    workspace = swap;
+    console.warn('Deprecated call to Blockly.Xml.domToWorkspace, ' +
+                 'swap the arguments.');
+  }
+  var width;  // Not used in LTR.
+  if (workspace.RTL) {
+    width = workspace.getWidth();
+  }
+  Blockly.Field.startCache();
+  // Safari 7.1.3 is known to provide node lists with extra references to
+  // children beyond the lists' length.  Trust the length, do not use the
+  // looping pattern of checking the index for an object.
+  var childCount = xml.childNodes.length;
+  var existingGroup = Blockly.Events.getGroup();
+  if (!existingGroup) {
+    Blockly.Events.setGroup(true);
+  }
+  Blockly.Events.disable();
+  while (workspace.topBlocks_.length) {
+    workspace.topBlocks_[0].dispose();
+  }
+  workspace.variableList.length = 0;
+  Blockly.Events.enable();
+
+  // Disable workspace resizes as an optimization.
+  if (workspace.setResizesEnabled) {
+    workspace.setResizesEnabled(false);
+  }
+  for (var i = 0; i < childCount; i++) {
+    var xmlChild = xml.childNodes[i];
+    var name = xmlChild.nodeName.toLowerCase();
+    if (name == 'block' ||
+        (name == 'shadow' && !Blockly.Events.recordUndo)) {
+      // Allow top-level shadow blocks if recordUndo is disabled since
+      // that means an undo is in progress.  Such a block is expected
+      // to be moved to a nested destination in the next operation.
+      var block = Blockly.Xml.domToBlock(xmlChild, workspace);
+      var blockX = parseInt(xmlChild.getAttribute('x'), 10);
+      var blockY = parseInt(xmlChild.getAttribute('y'), 10);
+      if (!isNaN(blockX) && !isNaN(blockY)) {
+        block.moveBy(workspace.RTL ? width - blockX : blockX, blockY);
+      }
+    } else if (name == 'shadow') {
+      goog.asserts.fail('Shadow block cannot be a top-level block.');
+    }
+  }
+  if (!existingGroup) {
+    Blockly.Events.setGroup(false);
+  }
+  Blockly.Field.stopCache();
+
+  workspace.updateVariableList(false);
+  // Re-enable workspace resizing.
+  if (workspace.setResizesEnabled) {
+    workspace.setResizesEnabled(true);
+  }      
+}
+
+
+function PLUS_MINUS_updateShape(listItemName, startMessage) {
+    return function() {
+        var that = this;
+        function addField(field, block, e) {
+            var rect = field.fieldGroup_.getBoundingClientRect();
+            var yPosition = e.clientY;
+            if (yPosition < rect.top+rect.height/2) {
+                var input = that.appendValueInput(listItemName + that.itemCount_);
+                that.itemCount_ += 1;
+            } else {
+                if (that.itemCount_ > 0) {
+                    that.itemCount_ -= 1;
+                    that.removeInput(listItemName + that.itemCount_)
+                }
+            }
+        }
+        if (!this.getInput('START')) {
+            var clickablePlusMinus = new Blockly.FieldClickImage("images/plus-minus-button.svg", 12, 24, '+', addField, '-2px');
+            //clickablePlusMinus.imageElement_.style.y = '-2px';
+            this.appendDummyInput('START')
+                .appendField(startMessage)
+                .appendField(clickablePlusMinus);
+        }
+        // Add new inputs.
+        for (var i = 0; i < this.itemCount_; i++) {
+          if (!this.getInput(listItemName + i)) {
+            var input = this.appendValueInput(listItemName + i);
+          }
+        }
+        // Remove deleted inputs.
+        while (this.getInput(listItemName + i)) {
+          this.removeInput(listItemName + i);
+          i++;
+        }
+    }
+}
+Blockly.Blocks['class_creation'] = {
+  init: function() {
+    this.appendDummyInput()
+        .appendField("Create class")
+        .appendField(new Blockly.FieldVariable("new class"), "CLASS");
+    
+    this.appendDummyInput()
+        .appendField("Inherits from")
+        .appendField(new Blockly.FieldVariable("j"), "NAME")
+        .appendField(",")
+        .appendField(new Blockly.FieldVariable("k"), "NAME");
+  
+    this.appendStatementInput("BODY")
+        .setCheck(null);
+    this.setPreviousStatement(true, null);
+    this.setNextStatement(true, null);
+    this.setColour(230);
+    this.setTooltip('');
+    this.setHelpUrl('http://www.example.com/');
+  }
+};
+Blockly.Python['class_creation'] = function(block) {
+  var class_name = Blockly.Python.variableDB_.getName(block.getFieldValue('CLASS'), Blockly.Variables.NAME_TYPE) || '___';
+  var body = Blockly.Python.statementToCode(block, 'BODY') ||
+      Blockly.Python.PASS;
+  // TODO: Assemble Python into code variable.
+  var code = 'class ' + class_name + ':\n' + body;
+  return code;
+};
+
+Blockly.Blocks['attribute_access'] = {
+  init: function() {
+    this.appendValueInput("MODULE")
+        .setCheck(null);
+    this.appendValueInput("NAME")
+        .setCheck(null)
+        .appendField(".");
+    this.setInputsInline(true);
+    this.setOutput(true, null);
+    this.setColour(230);
+    this.setTooltip('');
+    this.setHelpUrl('');
+  }
+};
+
+Blockly.Python['attribute_access'] = function(block) {
+  var value_module = Blockly.Python.valueToCode(block, 'MODULE', Blockly.Python.ORDER_ATOMIC);
+  var value_name = Blockly.Python.valueToCode(block, 'NAME', Blockly.Python.ORDER_ATOMIC);
+  // TODO: Assemble JavaScript into code variable.
+  var code = value_module+'.'+value_name;
+  // TODO: Change ORDER_NONE to the correct strength.
+  return [code, Blockly.Python.ORDER_NONE];
+};
+Blockly.Blocks['comment_single'] = {
+  init: function() {
+    this.appendDummyInput()
+        .appendField("Comment:")
+        .appendField(new Blockly.FieldTextInput("will be ignored"), "BODY");
+    this.setInputsInline(true);
+    this.setPreviousStatement(true, null);
+    this.setNextStatement(true, null);
+    this.setColour(60);
+    this.setTooltip('This is a comment, which will be ignored when you execute your code.');
+    this.setHelpUrl('');
+  }
+};
+
+Blockly.Python['comment_single'] = function(block) {
+  var text_body = block.getFieldValue('BODY');
+  // TODO: Assemble JavaScript into code variable.
+  var code = '# '+text_body+'\n';
+  return code;
+};
+
+Blockly.Blocks['string_multiline'] = {
+  // Container.
+  init: function() {
+    this.appendDummyInput()
+        .appendField('Multiline String:');
+    this.appendDummyInput()
+        .appendField(this.newQuote_(true))
+        .appendField(new Blockly.FieldTextArea(''), 'TEXT')
+        .appendField(this.newQuote_(false));
+    this.setColour(Blockly.Blocks.texts.HUE);
+    this.setOutput(true, 'String');
+  },
+  newQuote_: function(open) {
+    if (open == this.RTL) {
+      var file = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAKCAQAAAAqJXdxAAAAqUlEQVQI1z3KvUpCcRiA8ef9E4JNHhI0aFEacm1o0BsI0Slx8wa8gLauoDnoBhq7DcfWhggONDmJJgqCPA7neJ7p934EOOKOnM8Q7PDElo/4x4lFb2DmuUjcUzS3URnGib9qaPNbuXvBO3sGPHJDRG6fGVdMSeWDP2q99FQdFrz26Gu5Tq7dFMzUvbXy8KXeAj57cOklgA+u1B5AoslLtGIHQMaCVnwDnADZIFIrXsoXrgAAAABJRU5ErkJggg==';
+    } else {
+      var file = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAKCAQAAAAqJXdxAAAAn0lEQVQI1z3OMa5BURSF4f/cQhAKjUQhuQmFNwGJEUi0RKN5rU7FHKhpjEH3TEMtkdBSCY1EIv8r7nFX9e29V7EBAOvu7RPjwmWGH/VuF8CyN9/OAdvqIXYLvtRaNjx9mMTDyo+NjAN1HNcl9ZQ5oQMM3dgDUqDo1l8DzvwmtZN7mnD+PkmLa+4mhrxVA9fRowBWmVBhFy5gYEjKMfz9AylsaRRgGzvZAAAAAElFTkSuQmCC';
+    }
+    return new Blockly.FieldImage(file, 12, 12, '"');
+  }
+};
+
+Blockly.Python['string_multiline'] = function(block) {
+  var text_body = block.getFieldValue('TEXT');
+  // TODO: Assemble JavaScript into code variable.
+  var code = '"""'+text_body+'"""\n';
+  return [code, Blockly.Python.ORDER_ATOMIC];
+};
+Blockly.Blocks['list_comprehension'] = {
+  init: function() {
+    this.appendValueInput("body")
+        .setCheck(null)
+        .appendField("[");
+    this.appendValueInput("var")
+        .setCheck(null)
+        .appendField("for");
+    this.appendValueInput("list")
+        .setCheck(null)
+        .appendField("in");
+    this.appendDummyInput()
+        .appendField("]");
+    this.setInputsInline(true);
+    this.setOutput(true, null);
+    this.setTooltip('');
+    this.setHelpUrl('http://www.example.com/');
+  }
+};
+Blockly.Python['list_comprehension'] = function(block) {
+  var value_body = Blockly.Python.valueToCode(block, 'body', Blockly.Python.ORDER_ATOMIC) || '___';
+  var value_var = Blockly.Python.valueToCode(block, 'var', Blockly.Python.ORDER_ATOMIC) || '___';
+  var value_list = Blockly.Python.valueToCode(block, 'list', Blockly.Python.ORDER_ATOMIC) || '___';
+  // TODO: Assemble Python into code variable.
+  var code = '['+value_body+' for '+value_var+' in '+value_list+']';
+  // TODO: Change ORDER_NONE to the correct strength.
+  return [code, Blockly.Python.ORDER_NONE];
+};
+Blockly.Blocks['dicts_create_with'] = {
+    /**
+     * Block for creating a dict with any number of elements of any type.
+     * @this Blockly.Block
+     */
+    init: function() {
+        console.log("init");
+        this.setInputsInline(false);
+        this.setColour(Blockly.Blocks.dicts.HUE);
+        this.itemCount_ = 1;
+        this.updateShape_();
+        this.setOutput(true, 'dict');
+        this.setTooltip(Blockly.Msg.DICTS_CREATE_WITH_TOOLTIP);
+    },
+    /**
+     * Create XML to represent dict inputs.
+     * @return {Element} XML storage element.
+     * @this Blockly.Block
+     */
+    mutationToDom: function(workspace) {
+        var container = document.createElement('mutation');
+        container.setAttribute('items', this.itemCount_);
+        return container;
+    },
+    /**
+     * Parse XML to restore the dict inputs.
+     * @param {!Element} xmlElement XML storage element.
+     * @this Blockly.Block
+     */
+    domToMutation: function(xmlElement) {
+        this.itemCount_ = parseInt(xmlElement.getAttribute('items'), 10);
+        this.updateShape_();
+    },
+    fixEmpty_: function() {
+        if (this.itemCount_ > 0) {
+            this.getInput("START").fieldRow[0].setText("dictionary of");
+        } else {
+            this.getInput("START").fieldRow[0].setText(Blockly.Msg.DICTS_CREATE_EMPTY_TITLE);
+        }
+    },
+    addRow: function(i) {
+        if (!this.getInput('VALUE'+i)) {
+            this.appendValueInput('VALUE' + i)
+                .setCheck(null)
+                .setAlign(Blockly.ALIGN_RIGHT)
+                .appendField(
+                      new Blockly.FieldTextInput(
+                          Blockly.Msg.DICTS_CREATE_WITH_ITEM_KEY),
+                     'KEY'+i)
+               .appendField(Blockly.Msg.DICTS_CREATE_WITH_ITEM_MAPPING);
+        }
+    },
+    /**
+     * Modify this block to have the correct number of inputs.
+     * @private
+     * @this Blockly.Block
+     */
+    updateShape_: function() {
+        var that = this;
+        function addField(field, block, e) {
+            var rect = field.fieldGroup_.getBoundingClientRect();
+            var yPosition = e.clientY;
+            if (yPosition < rect.top+rect.height/2) {
+                that.itemCount_ += 1;
+                that.addRow(that.itemCount_);
+            } else {
+                if (that.itemCount_ > 0) {
+                    that.removeInput('VALUE' + that.itemCount_);
+                    that.itemCount_ -= 1;
+                }
+            }
+            that.fixEmpty_();
+        }
+        var clickablePlusMinus = new Blockly.FieldClickImage("images/plus_minus_v.png", 24, 24, '+', addField, '-2px');
+        // Rebuild block.
+        if (!this.getInput("START")) {
+            this.appendDummyInput('START')
+                .appendField("dictionary of")
+                .appendField(clickablePlusMinus);
+        }
+        this.fixEmpty_();
+        for (var i = 1; i <= this.itemCount_; i++) {
+            this.addRow(i);
+        }
+    }
+};
+Blockly.Python.dicts_create_with = function(block) {
+    var value_keys = Blockly.Python.valueToCode(block, 'keys', Blockly.   Python.ORDER_ATOMIC);
+    // TODO: Assemble Python into code variable.
+    var code = new Array(block.itemCount_);
+  
+    for (var n = 1; n <= block.itemCount_; n++) {
+        var key = Blockly.Python.quote_(block.getFieldValue('KEY' + n));
+        var value = Blockly.Python.valueToCode(block, 'VALUE' + n,
+                Blockly.Python.ORDER_NONE) || '___';
+        code[n-1] = key +": "+ value;
+    }
+    code = '{' + code.join(', ') + '}';
+    return [code, Blockly.Python.ORDER_ATOMIC];
+};
+
+
+Blockly.Blocks['controls_if_better'] = {
+  /**
+   * Block for if/elseif/else condition.
+   * @this Blockly.Block
+   */
+  init: function() {
+    this.setHelpUrl(Blockly.Msg.CONTROLS_IF_HELPURL);
+    this.setColour(Blockly.Blocks.logic.HUE);
+    this.appendValueInput('IF0')
+        .setCheck('Boolean')
+        .appendField(Blockly.Msg.CONTROLS_IF_MSG_IF);
+    this.appendStatementInput('DO0')
+        .appendField(Blockly.Msg.CONTROLS_IF_MSG_THEN);
+    this.setPreviousStatement(true);
+    this.setNextStatement(true);
+    this.updateShape_();
+    // Assign 'this' to a variable for use in the tooltip closure below.
+    var thisBlock = this;
+    this.setTooltip(function() {
+      if (!thisBlock.elseifCount_ && !thisBlock.elseCount_) {
+        return Blockly.Msg.CONTROLS_IF_TOOLTIP_1;
+      } else if (!thisBlock.elseifCount_ && thisBlock.elseCount_) {
+        return Blockly.Msg.CONTROLS_IF_TOOLTIP_2;
+      } else if (thisBlock.elseifCount_ && !thisBlock.elseCount_) {
+        return Blockly.Msg.CONTROLS_IF_TOOLTIP_3;
+      } else if (thisBlock.elseifCount_ && thisBlock.elseCount_) {
+        return Blockly.Msg.CONTROLS_IF_TOOLTIP_4;
+      }
+      return '';
+    });
+    this.elseifCount_ = 0;
+    this.elseCount_ = 0;
+  },
+  /**
+   * Create XML to represent the number of else-if and else inputs.
+   * @return {Element} XML storage element.
+   * @this Blockly.Block
+   */
+  mutationToDom: function() {
+    if (!this.elseifCount_ && !this.elseCount_) {
+      return null;
+    }
+    var container = document.createElement('mutation');
+    if (this.elseifCount_) {
+      container.setAttribute('elseif', this.elseifCount_);
+    }
+    if (this.elseCount_) {
+      container.setAttribute('else', 1);
+    }
+    return container;
+  },
+  /**
+   * Parse XML to restore the else-if and else inputs.
+   * @param {!Element} xmlElement XML storage element.
+   * @this Blockly.Block
+   */
+  domToMutation: function(xmlElement) {
+    this.elseifCount_ = parseInt(xmlElement.getAttribute('elseif'), 10) || 0;
+    this.elseCount_ = parseInt(xmlElement.getAttribute('else'), 10) || 0;
+    this.updateShape_();
+  },
+  /**
+   * Populate the mutator's dialog with this block's components.
+   * @param {!Blockly.Workspace} workspace Mutator's workspace.
+   * @return {!Blockly.Block} Root block in mutator.
+   * @this Blockly.Block
+   */
+   /*
+  decompose: function(workspace) {
+    var containerBlock = workspace.newBlock('controls_if_if');
+    containerBlock.initSvg();
+    var connection = containerBlock.nextConnection;
+    for (var i = 1; i <= this.elseifCount_; i++) {
+      var elseifBlock = workspace.newBlock('controls_if_elseif');
+      elseifBlock.initSvg();
+      connection.connect(elseifBlock.previousConnection);
+      connection = elseifBlock.nextConnection;
+    }
+    if (this.elseCount_) {
+      var elseBlock = workspace.newBlock('controls_if_else');
+      elseBlock.initSvg();
+      connection.connect(elseBlock.previousConnection);
+    }
+    return containerBlock;
+  },*/
+  /**
+   * Reconfigure this block based on the mutator dialog's components.
+   * @param {!Blockly.Block} containerBlock Root block in mutator.
+   * @this Blockly.Block
+   *//*
+  compose: function(containerBlock) {
+    var clauseBlock = containerBlock.nextConnection.targetBlock();
+    // Count number of inputs.
+    this.elseifCount_ = 0;
+    this.elseCount_ = 0;
+    var valueConnections = [null];
+    var statementConnections = [null];
+    var elseStatementConnection = null;
+    while (clauseBlock) {
+      switch (clauseBlock.type) {
+        case 'controls_if_elseif':
+          this.elseifCount_++;
+          valueConnections.push(clauseBlock.valueConnection_);
+          statementConnections.push(clauseBlock.statementConnection_);
+          break;
+        case 'controls_if_else':
+          this.elseCount_++;
+          elseStatementConnection = clauseBlock.statementConnection_;
+          break;
+        default:
+          throw 'Unknown block type.';
+      }
+      clauseBlock = clauseBlock.nextConnection &&
+          clauseBlock.nextConnection.targetBlock();
+    }
+    this.updateShape_();
+    // Reconnect any child blocks.
+    for (var i = 1; i <= this.elseifCount_; i++) {
+      Blockly.Mutator.reconnect(valueConnections[i], this, 'IF' + i);
+      Blockly.Mutator.reconnect(statementConnections[i], this, 'DO' + i);
+    }
+    Blockly.Mutator.reconnect(elseStatementConnection, this, 'ELSE');
+  },*/
+  /**
+   * Store pointers to any connected child blocks.
+   * @param {!Blockly.Block} containerBlock Root block in mutator.
+   * @this Blockly.Block
+   *//*
+  saveConnections: function(containerBlock) {
+    var clauseBlock = containerBlock.nextConnection.targetBlock();
+    var i = 1;
+    while (clauseBlock) {
+      switch (clauseBlock.type) {
+        case 'controls_if_elseif':
+          var inputIf = this.getInput('IF' + i);
+          var inputDo = this.getInput('DO' + i);
+          clauseBlock.valueConnection_ =
+              inputIf && inputIf.connection.targetConnection;
+          clauseBlock.statementConnection_ =
+              inputDo && inputDo.connection.targetConnection;
+          i++;
+          break;
+        case 'controls_if_else':
+          var inputDo = this.getInput('ELSE');
+          clauseBlock.statementConnection_ =
+              inputDo && inputDo.connection.targetConnection;
+          break;
+        default:
+          throw 'Unknown block type.';
+      }
+      clauseBlock = clauseBlock.nextConnection &&
+          clauseBlock.nextConnection.targetBlock();
+    }
+  },*/
+  /**
+   * Modify this block to have the correct number of inputs.
+   * @private
+   * @this Blockly.Block
+   */
+  updateShape_: function() {
+    // Delete everything.
+    if (!this.getInput('CONTROLS')) {
+        function changeShape(field, block, e) {
+            var rect = field.fieldGroup_.getBoundingClientRect();
+            var xPosition = e.clientX;
+            if (xPosition < rect.left+rect.width/3) {
+                console.log("ELSE");
+            } else if (xPosition < 2 *rect.left+rect.width/3) {
+                console.log("MINUS ELIF");
+            } else {
+                console.log("PLUS ELIF");
+            }
+        }
+        //var clickablePlusMinus = new Blockly.FieldClickImage("images/plus_minus_h.png", 24, 12, '', addField, '-0px');
+        var clickableCheck = new Blockly.FieldClickImage("images/plus_minus_blue.png", 36, 24, '', changeShape, '-2px');
+        //clickablePlusMinus.imageElement_.style.y = '-2px';
+        this.appendDummyInput('CONTROLS')
+            .appendField(clickableCheck)
+            //.appendField(clickablePlusMinus);
+    }
+    
+    if (this.getInput('ELSE')) {
+      this.removeInput('ELSE');
+    }
+    var i = 1;
+    while (this.getInput('IF' + i)) {
+      this.removeInput('IF' + i);
+      this.removeInput('DO' + i);
+      i++;
+    }
+    // Rebuild block.
+    for (var i = 1; i <= this.elseifCount_; i++) {
+      this.appendValueInput('IF' + i)
+          .setCheck('Boolean')
+          .appendField(Blockly.Msg.CONTROLS_IF_MSG_ELSEIF);
+      this.appendStatementInput('DO' + i)
+          .appendField(Blockly.Msg.CONTROLS_IF_MSG_THEN);
+    }
+    if (this.elseCount_) {
+      this.appendStatementInput('ELSE')
+          .appendField(Blockly.Msg.CONTROLS_IF_MSG_ELSE);
+    }
+  }
+};
+
+Blockly.Python['controls_if_better'] = function(block) {
+  // If/elseif/else condition.
+  var n = 0;
+  var code = '', branchCode, conditionCode;
+  do {
+    conditionCode = Blockly.Python.valueToCode(block, 'IF' + n,
+      Blockly.Python.ORDER_NONE) || '___';
+    branchCode = Blockly.Python.statementToCode(block, 'DO' + n) ||
+        Blockly.Python.PASS;
+    code += (n == 0 ? 'if ' : 'elif ' ) + conditionCode + ':\n' + branchCode;
+
+    ++n;
+  } while (block.getInput('IF' + n));
+
+  if (block.getInput('ELSE')) {
+    branchCode = Blockly.Python.statementToCode(block, 'ELSE') ||
+        Blockly.Python.PASS;
+    code += 'else:\n' + branchCode;
+  }
+  return code;
+};
+Blockly.Blocks['text_input'] = {
+  init: function() {
+    this.appendDummyInput()
+        .appendField("input")
+        .appendField(this.newQuote_(true))
+        .appendField(new Blockly.FieldTextInput("with prompt"), "MESSAGE")
+        .appendField(this.newQuote_(false));
+    this.setOutput(true, "String");
+    this.setColour(230);
+    this.setTooltip('');
+    this.setHelpUrl('');
+  },
+  newQuote_: function(open) {
+    if (open == this.RTL) {
+      var file = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAKCAQAAAAqJXdxAAAAqUlEQVQI1z3KvUpCcRiA8ef9E4JNHhI0aFEacm1o0BsI0Slx8wa8gLauoDnoBhq7DcfWhggONDmJJgqCPA7neJ7p934EOOKOnM8Q7PDElo/4x4lFb2DmuUjcUzS3URnGib9qaPNbuXvBO3sGPHJDRG6fGVdMSeWDP2q99FQdFrz26Gu5Tq7dFMzUvbXy8KXeAj57cOklgA+u1B5AoslLtGIHQMaCVnwDnADZIFIrXsoXrgAAAABJRU5ErkJggg==';
+    } else {
+      var file = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAKCAQAAAAqJXdxAAAAn0lEQVQI1z3OMa5BURSF4f/cQhAKjUQhuQmFNwGJEUi0RKN5rU7FHKhpjEH3TEMtkdBSCY1EIv8r7nFX9e29V7EBAOvu7RPjwmWGH/VuF8CyN9/OAdvqIXYLvtRaNjx9mMTDyo+NjAN1HNcl9ZQ5oQMM3dgDUqDo1l8DzvwmtZN7mnD+PkmLa+4mhrxVA9fRowBWmVBhFy5gYEjKMfz9AylsaRRgGzvZAAAAAElFTkSuQmCC';
+    }
+    return new Blockly.FieldImage(file, 12, 12, '"');
+  }
+};
+Blockly.Python['text_input'] = function(block) {
+  var message = block.getFieldValue('MESSAGE');
+  var code = 'input('+Blockly.Python.quote_(message)+')';
+  return [code, Blockly.JavaScript.ORDER_NONE];
+};
+Blockly.Python['lists_create'] = function(block) {
+    // Create a list with any number of elements of any type.
+  var elements = new Array(block.itemCount_);
+  console.log(block.itemCount_)
+  for (var i = 0; i < block.itemCount_; i++) {
+    elements[i] = Blockly.Python.valueToCode(block, 'ADD' + i,
+        Blockly.Python.ORDER_NONE) || '___';
+  }
+  var code = '[' + elements.join(', ') + ']';
+  return [code, Blockly.Python.ORDER_ATOMIC];
+}
+Blockly.Blocks['lists_create'] = {
+  /**
+   * Block for creating a list with any number of elements of any type.
+   * @this Blockly.Block
+   */
+  init: function() {
+    this.setHelpUrl(Blockly.Msg.LISTS_CREATE_WITH_HELPURL);
+    this.setColour(Blockly.Blocks.lists.HUE);
+    this.itemCount_ = 3;
+    this.updateShape_();
+    this.setOutput(true, 'Array');
+    this.setInputsInline(true);
+    this.setTooltip(Blockly.Msg.LISTS_CREATE_WITH_TOOLTIP);
+  },
+  /**
+   * Create XML to represent list inputs.
+   * @return {!Element} XML storage element.
+   * @this Blockly.Block
+   */
+  mutationToDom: function() {
+    var container = document.createElement('mutation');
+    container.setAttribute('items', this.itemCount_);
+    return container;
+  },
+  /**
+   * Parse XML to restore the list inputs.
+   * @param {!Element} xmlElement XML storage element.
+   * @this Blockly.Block
+   */
+  domToMutation: function(xmlElement) {
+    this.itemCount_ = parseInt(xmlElement.getAttribute('items'), 10);
+    this.updateShape_();
+  },
+  /**
+   * Modify this block to have the correct number of inputs.
+   * @private
+   * @this Blockly.Block
+   */
+  updateShape_: PLUS_MINUS_updateShape('ADD', "create list of")
+};
+Blockly.Python['set_create'] = function(block) {
+    // Create a list with any number of elements of any type.
+  var elements = new Array(block.itemCount_);
+  console.log(block.itemCount_)
+  for (var i = 0; i < block.itemCount_; i++) {
+    elements[i] = Blockly.Python.valueToCode(block, 'ADD' + i,
+        Blockly.Python.ORDER_NONE) || '___';
+  }
+  var code = '{' + elements.join(', ') + '}';
+  return [code, Blockly.Python.ORDER_ATOMIC];
+}
+Blockly.Blocks['set_create'] = {
+  /**
+   * Block for creating a list with any number of elements of any type.
+   * @this Blockly.Block
+   */
+  init: function() {
+    this.setHelpUrl(Blockly.Msg.LISTS_CREATE_WITH_HELPURL);
+    this.setColour(Blockly.Blocks.lists.HUE);
+    this.itemCount_ = 3;
+    this.updateShape_();
+    this.setOutput(true, 'Set');
+    this.setInputsInline(true);
+    this.setTooltip(Blockly.Msg.LISTS_CREATE_WITH_TOOLTIP);
+  },
+  /**
+   * Create XML to represent list inputs.
+   * @return {!Element} XML storage element.
+   * @this Blockly.Block
+   */
+  mutationToDom: function() {
+    var container = document.createElement('mutation');
+    container.setAttribute('items', this.itemCount_);
+    return container;
+  },
+  /**
+   * Parse XML to restore the list inputs.
+   * @param {!Element} xmlElement XML storage element.
+   * @this Blockly.Block
+   */
+  domToMutation: function(xmlElement) {
+    this.itemCount_ = parseInt(xmlElement.getAttribute('items'), 10);
+    this.updateShape_();
+  },
+  /**
+   * Modify this block to have the correct number of inputs.
+   * @private
+   * @this Blockly.Block
+   */
+  updateShape_: PLUS_MINUS_updateShape('ADD', "create set of")
+};
+Blockly.Blocks['controls_forEach'] = {
+  /**
+   * Block for 'for each' loop.
+   * @this Blockly.Block
+   */
+  init: function() {
+    this.jsonInit({
+      "message0": "for each item %1 in list %2 : ", //Blockly.Msg.CONTROLS_FOREACH_TITLE,
+      "args0": [
+        {
+          "type": "input_value",
+          "name": "VAR",
+          "check": "Tuple"
+        },
+        {
+          "type": "input_value",
+          "name": "LIST",
+          "check": "Array"
+        }
+      ],
+      "inputsInline": true,
+      "previousStatement": null,
+      "nextStatement": null,
+      "colour": Blockly.Blocks.loops.HUE,
+      "helpUrl": Blockly.Msg.CONTROLS_FOREACH_HELPURL
+    });
+    this.appendStatementInput('DO')
+        .appendField(Blockly.Msg.CONTROLS_FOREACH_INPUT_DO);
+    this.setInputsInline(true);
+    // Assign 'this' to a variable for use in the tooltip closure below.
+    var thisBlock = this;
+    this.setTooltip(function() {
+      return Blockly.Msg.CONTROLS_FOREACH_TOOLTIP.replace('%1',
+          Blockly.Python.valueToCode(thisBlock, 'VAR', Blockly.Python.ORDER_RELATIONAL) || '___');
+    });
+  },
+  customContextMenu: Blockly.Blocks['controls_for'].customContextMenu
+};
+
+Blockly.Python['controls_forEach'] = function(block) {
+  // For each loop.
+  var variable0 = Blockly.Python.valueToCode(block, 'VAR',
+      Blockly.Python.ORDER_RELATIONAL) || '___';
+  var argument0 = Blockly.Python.valueToCode(block, 'LIST',
+      Blockly.Python.ORDER_RELATIONAL) || '___';
+  var branch = Blockly.Python.statementToCode(block, 'DO');
+  branch = Blockly.Python.addLoopTrap(branch, block.id) ||
+      Blockly.Python.PASS;
+  var code = 'for ' + variable0 + ' in ' + argument0 + ':\n' + branch;
+  return code;
+};
 var DAYS = [
     ["Monday", "MON"],
     ["Tuesday", "TUE"],
@@ -2830,260 +4449,62 @@ Blockly.Python['datetime_check_time'] = function(block) {
     var code = "parking.time_compare(" + operator+", "+left + ',' + hour + ',' + minute + ',' +meridian + ")";
     return [code, Blockly.Python.ORDER_ATOMIC];
 };
+Blockly.Python['tuple_create'] = function(block) {
+    // Create a list with any number of elements of any type.
+    var elements = new Array(block.itemCount_);
+    for (var i = 0; i < block.itemCount_; i++) {
+        elements[i] = (Blockly.Python.valueToCode(block, 'ADD' + i,
+            Blockly.Python.ORDER_NONE) || '___' );
+    }
+    var code = elements.join(', ');
+    if (block.itemCount_ == 1) {
+        code = '(' + code + ',)';
+    } else {
+        code = '(' + code + ')';
+    }
+    return [code, Blockly.Python.ORDER_ATOMIC];
+}
 
-Blockly.Blocks['controls_forEach'] = {
+Blockly.Blocks['tuple_create'] = {
   /**
-   * Block for 'for each' loop.
+   * Block for creating a list with any number of elements of any type.
    * @this Blockly.Block
    */
   init: function() {
-    this.jsonInit({
-      "message0": "for each item %1 in list %2 : ", //Blockly.Msg.CONTROLS_FOREACH_TITLE,
-      "args0": [
-        {
-          "type": "input_value",
-          "name": "VAR",
-          "check": "Tuple"
-        },
-        {
-          "type": "input_value",
-          "name": "LIST",
-          "check": "Array"
-        }
-      ],
-      "inputsInline": true,
-      "previousStatement": null,
-      "nextStatement": null,
-      "colour": Blockly.Blocks.loops.HUE,
-      "helpUrl": Blockly.Msg.CONTROLS_FOREACH_HELPURL
-    });
-    this.appendStatementInput('DO')
-        .appendField(Blockly.Msg.CONTROLS_FOREACH_INPUT_DO);
+    this.setHelpUrl(Blockly.Msg.LISTS_CREATE_WITH_HELPURL);
+    this.setColour(Blockly.Blocks.lists.HUE+10);
+    this.itemCount_ = 3;
+    this.updateShape_();
+    this.setOutput(true, 'Tuple');
     this.setInputsInline(true);
-    // Assign 'this' to a variable for use in the tooltip closure below.
-    var thisBlock = this;
-    this.setTooltip(function() {
-      return Blockly.Msg.CONTROLS_FOREACH_TOOLTIP.replace('%1',
-          Blockly.Python.valueToCode(thisBlock, 'VAR', Blockly.Python.ORDER_RELATIONAL) || '___');
-    });
+    this.setTooltip(Blockly.Msg.LISTS_CREATE_WITH_TOOLTIP);
   },
-  customContextMenu: Blockly.Blocks['controls_for'].customContextMenu
-};
-
-Blockly.Python['controls_forEach'] = function(block) {
-  // For each loop.
-  var variable0 = Blockly.Python.valueToCode(block, 'VAR',
-      Blockly.Python.ORDER_RELATIONAL) || '___';
-  var argument0 = Blockly.Python.valueToCode(block, 'LIST',
-      Blockly.Python.ORDER_RELATIONAL) || '___';
-  var branch = Blockly.Python.statementToCode(block, 'DO');
-  branch = Blockly.Python.addLoopTrap(branch, block.id) ||
-      Blockly.Python.PASS;
-  var code = 'for ' + variable0 + ' in ' + argument0 + ':\n' + branch;
-  return code;
-};
-
-Blockly.Blocks['class_creation'] = {
-  init: function() {
-    this.appendDummyInput()
-        .appendField("Create class")
-        .appendField(new Blockly.FieldVariable("new class"), "CLASS");
-    
-    this.appendDummyInput()
-        .appendField("Inherits from")
-        .appendField(new Blockly.FieldVariable("j"), "NAME")
-        .appendField(",")
-        .appendField(new Blockly.FieldVariable("k"), "NAME");
-  
-    this.appendStatementInput("BODY")
-        .setCheck(null);
-    this.setPreviousStatement(true, null);
-    this.setNextStatement(true, null);
-    this.setColour(230);
-    this.setTooltip('');
-    this.setHelpUrl('http://www.example.com/');
-  }
-};
-Blockly.Python['class_creation'] = function(block) {
-  var class_name = Blockly.Python.variableDB_.getName(block.getFieldValue('CLASS'), Blockly.Variables.NAME_TYPE) || '___';
-  var body = Blockly.Python.statementToCode(block, 'BODY') ||
-      Blockly.Python.PASS;
-  // TODO: Assemble Python into code variable.
-  var code = 'class ' + class_name + ':\n' + body;
-  return code;
-};
-
-Blockly.Blocks['list_comprehension'] = {
-  init: function() {
-    this.appendValueInput("body")
-        .setCheck(null)
-        .appendField("[");
-    this.appendValueInput("var")
-        .setCheck(null)
-        .appendField("for");
-    this.appendValueInput("list")
-        .setCheck(null)
-        .appendField("in");
-    this.appendDummyInput()
-        .appendField("]");
-    this.setInputsInline(true);
-    this.setOutput(true, null);
-    this.setTooltip('');
-    this.setHelpUrl('http://www.example.com/');
-  }
-};
-Blockly.Python['list_comprehension'] = function(block) {
-  var value_body = Blockly.Python.valueToCode(block, 'body', Blockly.Python.ORDER_ATOMIC) || '___';
-  var value_var = Blockly.Python.valueToCode(block, 'var', Blockly.Python.ORDER_ATOMIC) || '___';
-  var value_list = Blockly.Python.valueToCode(block, 'list', Blockly.Python.ORDER_ATOMIC) || '___';
-  // TODO: Assemble Python into code variable.
-  var code = '['+value_body+' for '+value_var+' in '+value_list+']';
-  // TODO: Change ORDER_NONE to the correct strength.
-  return [code, Blockly.Python.ORDER_NONE];
-};
-
-/**
- * Decode an XML DOM and create blocks on the workspace, clearing out old blocks.
- * @param {!Element} xml XML DOM.
- * @param {!Blockly.Workspace} workspace The workspace.
- */
-Blockly.Xml.domToWorkspaceDestructive = function(xml, workspace, errorXml) {
-  if (xml instanceof Blockly.Workspace) {
-    var swap = xml;
-    xml = workspace;
-    workspace = swap;
-    console.warn('Deprecated call to Blockly.Xml.domToWorkspace, ' +
-                 'swap the arguments.');
-  }
-  var width;  // Not used in LTR.
-  if (workspace.RTL) {
-    width = workspace.getWidth();
-  }
-  Blockly.Field.startCache();
-  // Safari 7.1.3 is known to provide node lists with extra references to
-  // children beyond the lists' length.  Trust the length, do not use the
-  // looping pattern of checking the index for an object.
-  var childCount = xml.childNodes.length;
-  var existingGroup = Blockly.Events.getGroup();
-  if (!existingGroup) {
-    Blockly.Events.setGroup(true);
-  }
-  Blockly.Events.disable();
-  while (workspace.topBlocks_.length) {
-    workspace.topBlocks_[0].dispose();
-  }
-  workspace.variableList.length = 0;
-  Blockly.Events.enable();
-
-  // Disable workspace resizes as an optimization.
-  if (workspace.setResizesEnabled) {
-    workspace.setResizesEnabled(false);
-  }
-  for (var i = 0; i < childCount; i++) {
-    var xmlChild = xml.childNodes[i];
-    var name = xmlChild.nodeName.toLowerCase();
-    if (name == 'block' ||
-        (name == 'shadow' && !Blockly.Events.recordUndo)) {
-      // Allow top-level shadow blocks if recordUndo is disabled since
-      // that means an undo is in progress.  Such a block is expected
-      // to be moved to a nested destination in the next operation.
-      var block = Blockly.Xml.domToBlock(xmlChild, workspace);
-      var blockX = parseInt(xmlChild.getAttribute('x'), 10);
-      var blockY = parseInt(xmlChild.getAttribute('y'), 10);
-      if (!isNaN(blockX) && !isNaN(blockY)) {
-        block.moveBy(workspace.RTL ? width - blockX : blockX, blockY);
-      }
-    } else if (name == 'shadow') {
-      goog.asserts.fail('Shadow block cannot be a top-level block.');
-    }
-  }
-  if (!existingGroup) {
-    Blockly.Events.setGroup(false);
-  }
-  Blockly.Field.stopCache();
-
-  workspace.updateVariableList(false);
-  // Re-enable workspace resizing.
-  if (workspace.setResizesEnabled) {
-    workspace.setResizesEnabled(true);
-  }      
-}
-
-Blockly.Blocks['comment_single'] = {
-  init: function() {
-    this.appendDummyInput()
-        .appendField("Comment:")
-        .appendField(new Blockly.FieldTextInput("will be ignored"), "BODY");
-    this.setInputsInline(true);
-    this.setPreviousStatement(true, null);
-    this.setNextStatement(true, null);
-    this.setColour(60);
-    this.setTooltip('This is a comment, which will be ignored when you execute your code.');
-    this.setHelpUrl('');
-  }
-};
-
-Blockly.Python['comment_single'] = function(block) {
-  var text_body = block.getFieldValue('BODY');
-  // TODO: Assemble JavaScript into code variable.
-  var code = '# '+text_body+'\n';
-  return code;
-};
-
-Blockly.Blocks['string_multiline'] = {
-  // Container.
-  init: function() {
-    this.appendDummyInput()
-        .appendField('Multiline String:');
-    this.appendDummyInput()
-        .appendField(this.newQuote_(true))
-        .appendField(new Blockly.FieldTextArea(''), 'TEXT')
-        .appendField(this.newQuote_(false));
-    this.setColour(Blockly.Blocks.texts.HUE);
-    this.setOutput(true, 'String');
+  /**
+   * Create XML to represent list inputs.
+   * @return {!Element} XML storage element.
+   * @this Blockly.Block
+   */
+  mutationToDom: function() {
+    var container = document.createElement('mutation');
+    container.setAttribute('items', this.itemCount_);
+    return container;
   },
-  newQuote_: function(open) {
-    if (open == this.RTL) {
-      var file = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAKCAQAAAAqJXdxAAAAqUlEQVQI1z3KvUpCcRiA8ef9E4JNHhI0aFEacm1o0BsI0Slx8wa8gLauoDnoBhq7DcfWhggONDmJJgqCPA7neJ7p934EOOKOnM8Q7PDElo/4x4lFb2DmuUjcUzS3URnGib9qaPNbuXvBO3sGPHJDRG6fGVdMSeWDP2q99FQdFrz26Gu5Tq7dFMzUvbXy8KXeAj57cOklgA+u1B5AoslLtGIHQMaCVnwDnADZIFIrXsoXrgAAAABJRU5ErkJggg==';
-    } else {
-      var file = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAKCAQAAAAqJXdxAAAAn0lEQVQI1z3OMa5BURSF4f/cQhAKjUQhuQmFNwGJEUi0RKN5rU7FHKhpjEH3TEMtkdBSCY1EIv8r7nFX9e29V7EBAOvu7RPjwmWGH/VuF8CyN9/OAdvqIXYLvtRaNjx9mMTDyo+NjAN1HNcl9ZQ5oQMM3dgDUqDo1l8DzvwmtZN7mnD+PkmLa+4mhrxVA9fRowBWmVBhFy5gYEjKMfz9AylsaRRgGzvZAAAAAElFTkSuQmCC';
-    }
-    return new Blockly.FieldImage(file, 12, 12, '"');
-  }
+  /**
+   * Parse XML to restore the list inputs.
+   * @param {!Element} xmlElement XML storage element.
+   * @this Blockly.Block
+   */
+  domToMutation: function(xmlElement) {
+    this.itemCount_ = parseInt(xmlElement.getAttribute('items'), 10);
+    this.updateShape_();
+  },
+  /**
+   * Modify this block to have the correct number of inputs.
+   * @private
+   * @this Blockly.Block
+   */
+  updateShape_: PLUS_MINUS_updateShape('ADD', "create tuple of")
 };
-
-Blockly.Python['string_multiline'] = function(block) {
-  var text_body = block.getFieldValue('TEXT');
-  // TODO: Assemble JavaScript into code variable.
-  var code = '"""'+text_body+'"""\n';
-  return [code, Blockly.Python.ORDER_ATOMIC];
-};
-
-Blockly.Blocks['attribute_access'] = {
-  init: function() {
-    this.appendValueInput("MODULE")
-        .setCheck(null);
-    this.appendValueInput("NAME")
-        .setCheck(null)
-        .appendField(".");
-    this.setInputsInline(true);
-    this.setOutput(true, null);
-    this.setColour(230);
-    this.setTooltip('');
-    this.setHelpUrl('');
-  }
-};
-
-Blockly.Python['attribute_access'] = function(block) {
-  var value_module = Blockly.Python.valueToCode(block, 'MODULE', Blockly.Python.ORDER_ATOMIC);
-  var value_name = Blockly.Python.valueToCode(block, 'NAME', Blockly.Python.ORDER_ATOMIC);
-  // TODO: Assemble JavaScript into code variable.
-  var code = value_module+'.'+value_name;
-  // TODO: Change ORDER_NONE to the correct strength.
-  return [code, Blockly.Python.ORDER_NONE];
-};
-
-
 /**
  * Turtles!
  */
@@ -3099,7 +4520,7 @@ Blockly.Blocks['turtle_create'] = {
 };
 Blockly.Python['turtle_create'] = function(block) {
     Blockly.Python.definitions_['import_turtle'] = 'import turtle';
-  var code = 'turtle.Turtle()\n';
+  var code = 'turtle.Turtle()';
   // TODO: Change ORDER_NONE to the correct strength.
   return [code, Blockly.Python.ORDER_NONE];
 };
@@ -3276,520 +4697,39 @@ PythonToBlocks.KNOWN_ATTR_FUNCTIONS['right'] = function(func, args, keywords, st
                     "TURTLE": this.convert(func.value)
                 }, {"inline": "true"})];
 }
+Blockly.Python['text_count'] = function(block) {
+  var value_haystack = Blockly.Python.valueToCode(block, 'HAYSTACK', Blockly.Python.ORDER_ATOMIC) || '___';
+  var value_needle = Blockly.Python.valueToCode(block, 'NEEDLE', Blockly.Python.ORDER_ATOMIC) || '___';
+  var code = value_haystack + '.count(' + value_needle + ')';
+  // TODO: Change ORDER_NONE to the correct strength.
+  return [code, Blockly.Python.ORDER_NONE];
+};
 
-Blockly.Python['lists_create'] = function(block) {
-    // Create a list with any number of elements of any type.
-  var elements = new Array(block.itemCount_);
-  for (var i = 1; i <= block.itemCount_; i++) {
-    elements[i-1] = Blockly.Python.valueToCode(block, 'ADD' + i,
-        Blockly.Python.ORDER_NONE) || '___';
-  }
-  var code = '[' + elements.join(', ') + ']';
-  return [code, Blockly.Python.ORDER_ATOMIC];
-}
-Blockly.Blocks['lists_create'] = {
-  /**
-   * Block for creating a list with any number of elements of any type.
-   * @this Blockly.Block
-   */
+Blockly.Blocks['text_count'] = {
   init: function() {
-    this.setHelpUrl(Blockly.Msg.LISTS_CREATE_WITH_HELPURL);
-    this.setColour(Blockly.Blocks.lists.HUE);
-    this.itemCount_ = 3;
-    this.updateShape_();
-    this.setOutput(true, 'Array');
+    this.appendValueInput("HAYSTACK")
+        .setCheck(null)
+        .appendField("in");
+    this.appendValueInput("NEEDLE")
+        .setCheck(null)
+        .appendField("count # of");
     this.setInputsInline(true);
-    this.setTooltip(Blockly.Msg.LISTS_CREATE_WITH_TOOLTIP);
-  },
-  /**
-   * Create XML to represent list inputs.
-   * @return {!Element} XML storage element.
-   * @this Blockly.Block
-   */
-  mutationToDom: function() {
-    var container = document.createElement('mutation');
-    container.setAttribute('items', this.itemCount_);
-    return container;
-  },
-  /**
-   * Parse XML to restore the list inputs.
-   * @param {!Element} xmlElement XML storage element.
-   * @this Blockly.Block
-   */
-  domToMutation: function(xmlElement) {
-    this.itemCount_ = parseInt(xmlElement.getAttribute('items'), 10);
-    this.updateShape_();
-  },
-  /**
-   * Modify this block to have the correct number of inputs.
-   * @private
-   * @this Blockly.Block
-   */
-  updateShape_: function() {
-    var that = this;
-    function addField(field, block, e) {
-        var rect = field.fieldGroup_.getBoundingClientRect();
-        var yPosition = e.clientY;
-        if (yPosition < rect.top+rect.height/2) {
-            that.itemCount_ += 1;
-            var input = that.appendValueInput('ADD' + that.itemCount_);
-        } else {
-            if (that.itemCount_ > 0) {
-                that.removeInput('ADD' + that.itemCount_)
-                that.itemCount_ -= 1;
-            }
-        }
-    }
-    function popField() {
-        if (that.itemCount_ > 0) {
-            that.removeInput('ADD' + that.itemCount_)
-            that.itemCount_ -= 1;
-        }
-    }
-    if (!this.getInput('START')) {
-        var clickablePlusMinus = new Blockly.FieldClickImage("https://cdn.pixabay.com/photo/2012/04/02/14/00/plus-24572_960_720.png", 24, 24, '+', addField, '-2px');
-        //clickablePlusMinus.imageElement_.style.y = '-2px';
-        this.appendDummyInput('START')
-            .appendField("create list of")
-            .appendField(clickablePlusMinus);
-    }
-    // Add new inputs.
-    for (var i = 1; i <= this.itemCount_; i++) {
-      if (!this.getInput('ADD' + i)) {
-        var input = this.appendValueInput('ADD' + i);
-      }
-    }
-  }
-};
-
-Blockly.Blocks['controls_if_better'] = {
-  /**
-   * Block for if/elseif/else condition.
-   * @this Blockly.Block
-   */
-  init: function() {
-    this.setHelpUrl(Blockly.Msg.CONTROLS_IF_HELPURL);
-    this.setColour(Blockly.Blocks.logic.HUE);
-    this.appendValueInput('IF0')
-        .setCheck('Boolean')
-        .appendField(Blockly.Msg.CONTROLS_IF_MSG_IF);
-    this.appendStatementInput('DO0')
-        .appendField(Blockly.Msg.CONTROLS_IF_MSG_THEN);
-    this.setPreviousStatement(true);
-    this.setNextStatement(true);
-    this.updateShape_();
-    // Assign 'this' to a variable for use in the tooltip closure below.
-    var thisBlock = this;
-    this.setTooltip(function() {
-      if (!thisBlock.elseifCount_ && !thisBlock.elseCount_) {
-        return Blockly.Msg.CONTROLS_IF_TOOLTIP_1;
-      } else if (!thisBlock.elseifCount_ && thisBlock.elseCount_) {
-        return Blockly.Msg.CONTROLS_IF_TOOLTIP_2;
-      } else if (thisBlock.elseifCount_ && !thisBlock.elseCount_) {
-        return Blockly.Msg.CONTROLS_IF_TOOLTIP_3;
-      } else if (thisBlock.elseifCount_ && thisBlock.elseCount_) {
-        return Blockly.Msg.CONTROLS_IF_TOOLTIP_4;
-      }
-      return '';
-    });
-    this.elseifCount_ = 0;
-    this.elseCount_ = 0;
-  },
-  /**
-   * Create XML to represent the number of else-if and else inputs.
-   * @return {Element} XML storage element.
-   * @this Blockly.Block
-   */
-  mutationToDom: function() {
-    if (!this.elseifCount_ && !this.elseCount_) {
-      return null;
-    }
-    var container = document.createElement('mutation');
-    if (this.elseifCount_) {
-      container.setAttribute('elseif', this.elseifCount_);
-    }
-    if (this.elseCount_) {
-      container.setAttribute('else', 1);
-    }
-    return container;
-  },
-  /**
-   * Parse XML to restore the else-if and else inputs.
-   * @param {!Element} xmlElement XML storage element.
-   * @this Blockly.Block
-   */
-  domToMutation: function(xmlElement) {
-    this.elseifCount_ = parseInt(xmlElement.getAttribute('elseif'), 10) || 0;
-    this.elseCount_ = parseInt(xmlElement.getAttribute('else'), 10) || 0;
-    this.updateShape_();
-  },
-  /**
-   * Populate the mutator's dialog with this block's components.
-   * @param {!Blockly.Workspace} workspace Mutator's workspace.
-   * @return {!Blockly.Block} Root block in mutator.
-   * @this Blockly.Block
-   */
-   /*
-  decompose: function(workspace) {
-    var containerBlock = workspace.newBlock('controls_if_if');
-    containerBlock.initSvg();
-    var connection = containerBlock.nextConnection;
-    for (var i = 1; i <= this.elseifCount_; i++) {
-      var elseifBlock = workspace.newBlock('controls_if_elseif');
-      elseifBlock.initSvg();
-      connection.connect(elseifBlock.previousConnection);
-      connection = elseifBlock.nextConnection;
-    }
-    if (this.elseCount_) {
-      var elseBlock = workspace.newBlock('controls_if_else');
-      elseBlock.initSvg();
-      connection.connect(elseBlock.previousConnection);
-    }
-    return containerBlock;
-  },*/
-  /**
-   * Reconfigure this block based on the mutator dialog's components.
-   * @param {!Blockly.Block} containerBlock Root block in mutator.
-   * @this Blockly.Block
-   *//*
-  compose: function(containerBlock) {
-    var clauseBlock = containerBlock.nextConnection.targetBlock();
-    // Count number of inputs.
-    this.elseifCount_ = 0;
-    this.elseCount_ = 0;
-    var valueConnections = [null];
-    var statementConnections = [null];
-    var elseStatementConnection = null;
-    while (clauseBlock) {
-      switch (clauseBlock.type) {
-        case 'controls_if_elseif':
-          this.elseifCount_++;
-          valueConnections.push(clauseBlock.valueConnection_);
-          statementConnections.push(clauseBlock.statementConnection_);
-          break;
-        case 'controls_if_else':
-          this.elseCount_++;
-          elseStatementConnection = clauseBlock.statementConnection_;
-          break;
-        default:
-          throw 'Unknown block type.';
-      }
-      clauseBlock = clauseBlock.nextConnection &&
-          clauseBlock.nextConnection.targetBlock();
-    }
-    this.updateShape_();
-    // Reconnect any child blocks.
-    for (var i = 1; i <= this.elseifCount_; i++) {
-      Blockly.Mutator.reconnect(valueConnections[i], this, 'IF' + i);
-      Blockly.Mutator.reconnect(statementConnections[i], this, 'DO' + i);
-    }
-    Blockly.Mutator.reconnect(elseStatementConnection, this, 'ELSE');
-  },*/
-  /**
-   * Store pointers to any connected child blocks.
-   * @param {!Blockly.Block} containerBlock Root block in mutator.
-   * @this Blockly.Block
-   *//*
-  saveConnections: function(containerBlock) {
-    var clauseBlock = containerBlock.nextConnection.targetBlock();
-    var i = 1;
-    while (clauseBlock) {
-      switch (clauseBlock.type) {
-        case 'controls_if_elseif':
-          var inputIf = this.getInput('IF' + i);
-          var inputDo = this.getInput('DO' + i);
-          clauseBlock.valueConnection_ =
-              inputIf && inputIf.connection.targetConnection;
-          clauseBlock.statementConnection_ =
-              inputDo && inputDo.connection.targetConnection;
-          i++;
-          break;
-        case 'controls_if_else':
-          var inputDo = this.getInput('ELSE');
-          clauseBlock.statementConnection_ =
-              inputDo && inputDo.connection.targetConnection;
-          break;
-        default:
-          throw 'Unknown block type.';
-      }
-      clauseBlock = clauseBlock.nextConnection &&
-          clauseBlock.nextConnection.targetBlock();
-    }
-  },*/
-  /**
-   * Modify this block to have the correct number of inputs.
-   * @private
-   * @this Blockly.Block
-   */
-  updateShape_: function() {
-    // Delete everything.
-    if (!this.getInput('CONTROLS')) {
-        function changeShape(field, block, e) {
-            var rect = field.fieldGroup_.getBoundingClientRect();
-            var xPosition = e.clientX;
-            if (xPosition < rect.left+rect.width/3) {
-                console.log("ELSE");
-            } else if (xPosition < 2 *rect.left+rect.width/3) {
-                console.log("MINUS ELIF");
-            } else {
-                console.log("PLUS ELIF");
-            }
-        }
-        //var clickablePlusMinus = new Blockly.FieldClickImage("images/plus_minus_h.png", 24, 12, '', addField, '-0px');
-        var clickableCheck = new Blockly.FieldClickImage("images/plus_minus_blue.png", 36, 24, '', changeShape, '-2px');
-        //clickablePlusMinus.imageElement_.style.y = '-2px';
-        this.appendDummyInput('CONTROLS')
-            .appendField(clickableCheck)
-            //.appendField(clickablePlusMinus);
-    }
-    
-    if (this.getInput('ELSE')) {
-      this.removeInput('ELSE');
-    }
-    var i = 1;
-    while (this.getInput('IF' + i)) {
-      this.removeInput('IF' + i);
-      this.removeInput('DO' + i);
-      i++;
-    }
-    // Rebuild block.
-    for (var i = 1; i <= this.elseifCount_; i++) {
-      this.appendValueInput('IF' + i)
-          .setCheck('Boolean')
-          .appendField(Blockly.Msg.CONTROLS_IF_MSG_ELSEIF);
-      this.appendStatementInput('DO' + i)
-          .appendField(Blockly.Msg.CONTROLS_IF_MSG_THEN);
-    }
-    if (this.elseCount_) {
-      this.appendStatementInput('ELSE')
-          .appendField(Blockly.Msg.CONTROLS_IF_MSG_ELSE);
-    }
-  }
-};
-
-Blockly.Python['controls_if_better'] = function(block) {
-  // If/elseif/else condition.
-  var n = 0;
-  var code = '', branchCode, conditionCode;
-  do {
-    conditionCode = Blockly.Python.valueToCode(block, 'IF' + n,
-      Blockly.Python.ORDER_NONE) || '___';
-    branchCode = Blockly.Python.statementToCode(block, 'DO' + n) ||
-        Blockly.Python.PASS;
-    code += (n == 0 ? 'if ' : 'elif ' ) + conditionCode + ':\n' + branchCode;
-
-    ++n;
-  } while (block.getInput('IF' + n));
-
-  if (block.getInput('ELSE')) {
-    branchCode = Blockly.Python.statementToCode(block, 'ELSE') ||
-        Blockly.Python.PASS;
-    code += 'else:\n' + branchCode;
-  }
-  return code;
-};
-
-Blockly.Blocks['text_input'] = {
-  init: function() {
-    this.appendDummyInput()
-        .appendField("input")
-        .appendField(this.newQuote_(true))
-        .appendField(new Blockly.FieldTextInput("with prompt"), "MESSAGE")
-        .appendField(this.newQuote_(false));
-    this.setOutput(true, "String");
+    this.setOutput(true, null);
     this.setColour(230);
     this.setTooltip('');
     this.setHelpUrl('');
-  },
-  newQuote_: function(open) {
-    if (open == this.RTL) {
-      var file = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAKCAQAAAAqJXdxAAAAqUlEQVQI1z3KvUpCcRiA8ef9E4JNHhI0aFEacm1o0BsI0Slx8wa8gLauoDnoBhq7DcfWhggONDmJJgqCPA7neJ7p934EOOKOnM8Q7PDElo/4x4lFb2DmuUjcUzS3URnGib9qaPNbuXvBO3sGPHJDRG6fGVdMSeWDP2q99FQdFrz26Gu5Tq7dFMzUvbXy8KXeAj57cOklgA+u1B5AoslLtGIHQMaCVnwDnADZIFIrXsoXrgAAAABJRU5ErkJggg==';
-    } else {
-      var file = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAKCAQAAAAqJXdxAAAAn0lEQVQI1z3OMa5BURSF4f/cQhAKjUQhuQmFNwGJEUi0RKN5rU7FHKhpjEH3TEMtkdBSCY1EIv8r7nFX9e29V7EBAOvu7RPjwmWGH/VuF8CyN9/OAdvqIXYLvtRaNjx9mMTDyo+NjAN1HNcl9ZQ5oQMM3dgDUqDo1l8DzvwmtZN7mnD+PkmLa+4mhrxVA9fRowBWmVBhFy5gYEjKMfz9AylsaRRgGzvZAAAAAElFTkSuQmCC';
-    }
-    return new Blockly.FieldImage(file, 12, 12, '"');
   }
 };
-Blockly.Python['text_input'] = function(block) {
-  var message = block.getFieldValue('MESSAGE');
-  var code = 'input('+Blockly.Python.quote_(message)+')';
-  return [code, Blockly.JavaScript.ORDER_NONE];
-};
-Blockly.Blocks['dicts_create_with'] = {
-    /**
-     * Block for creating a dict with any number of elements of any type.
-     * @this Blockly.Block
-     */
-    init: function() {
-        console.log("init");
-        this.setInputsInline(false);
-        this.setColour(Blockly.Blocks.dicts.HUE);
-        this.itemCount_ = 1;
-        this.updateShape_();
-        this.setOutput(true, 'dict');
-        this.setTooltip(Blockly.Msg.DICTS_CREATE_WITH_TOOLTIP);
-    },
-    /**
-     * Create XML to represent dict inputs.
-     * @return {Element} XML storage element.
-     * @this Blockly.Block
-     */
-    mutationToDom: function(workspace) {
-        var container = document.createElement('mutation');
-        container.setAttribute('items', this.itemCount_);
-        return container;
-    },
-    /**
-     * Parse XML to restore the dict inputs.
-     * @param {!Element} xmlElement XML storage element.
-     * @this Blockly.Block
-     */
-    domToMutation: function(xmlElement) {
-        this.itemCount_ = parseInt(xmlElement.getAttribute('items'), 10);
-        this.updateShape_();
-    },
-    fixEmpty_: function() {
-        if (this.itemCount_ > 0) {
-            this.getInput("START").fieldRow[0].setText("dictionary of");
-        } else {
-            this.getInput("START").fieldRow[0].setText(Blockly.Msg.DICTS_CREATE_EMPTY_TITLE);
-        }
-    },
-    addRow: function(i) {
-        if (!this.getInput('VALUE'+i)) {
-            this.appendValueInput('VALUE' + i)
-                .setCheck(null)
-                .setAlign(Blockly.ALIGN_RIGHT)
-                .appendField(
-                      new Blockly.FieldTextInput(
-                          Blockly.Msg.DICTS_CREATE_WITH_ITEM_KEY),
-                     'KEY'+i)
-               .appendField(Blockly.Msg.DICTS_CREATE_WITH_ITEM_MAPPING);
-        }
-    },
-    /**
-     * Modify this block to have the correct number of inputs.
-     * @private
-     * @this Blockly.Block
-     */
-    updateShape_: function() {
-        var that = this;
-        function addField(field, block, e) {
-            var rect = field.fieldGroup_.getBoundingClientRect();
-            var yPosition = e.clientY;
-            if (yPosition < rect.top+rect.height/2) {
-                that.itemCount_ += 1;
-                that.addRow(that.itemCount_);
-            } else {
-                if (that.itemCount_ > 0) {
-                    that.removeInput('VALUE' + that.itemCount_);
-                    that.itemCount_ -= 1;
-                }
-            }
-            that.fixEmpty_();
-        }
-        var clickablePlusMinus = new Blockly.FieldClickImage("images/plus_minus_v.png", 24, 24, '+', addField, '-2px');
-        // Rebuild block.
-        if (!this.getInput("START")) {
-            this.appendDummyInput('START')
-                .appendField("dictionary of")
-                .appendField(clickablePlusMinus);
-        }
-        this.fixEmpty_();
-        for (var i = 1; i <= this.itemCount_; i++) {
-            this.addRow(i);
-        }
+
+PythonToBlocks.KNOWN_ATTR_FUNCTIONS['count'] = function(func, args, keywords, starargs, kwargs, node) {
+    if (args.length != 1) {
+        throw new Error("Incorrect number of arguments to string.count!");
     }
-};
-Blockly.Python.dicts_create_with = function(block) {
-    var value_keys = Blockly.Python.valueToCode(block, 'keys', Blockly.   Python.ORDER_ATOMIC);
-    // TODO: Assemble Python into code variable.
-    var code = new Array(block.itemCount_);
-  
-    for (var n = 1; n <= block.itemCount_; n++) {
-        var key = Blockly.Python.quote_(block.getFieldValue('KEY' + n));
-        var value = Blockly.Python.valueToCode(block, 'VALUE' + n,
-                Blockly.Python.ORDER_NONE) || '___';
-        code[n-1] = key +": "+ value;
-    }
-    code = '{' + code.join(', ') + '}';
-    return [code, Blockly.Python.ORDER_ATOMIC];
-};
-
-
-/**
- * Return a random integer between [`min`, `max`].
- * 
- * @param {number} min - The lowest possible integer.
- * @param {number} max - The highest possible integer (inclusive).
- * @returns {number} A random integer.
- */
-function randomInteger(min,max) {
-    return Math.floor(Math.random()*(max-min+1)+min);
+    return block("text_count", func.lineno, {}, { 
+                    "NEEDLE": this.convert(args[0]),
+                    "HAYSTACK": this.convert(func.value)
+                }, {"inline": "true"});
 }
-
-/**
- * Indents the given string
- * @param {string} str  The string to be indented.
- * @param {number} numOfIndents  The amount of indentations to place at the
- *     beginning of each line of the string.
- * @param {number=} opt_spacesPerIndent  Optional.  If specified, this should be
- *     the number of spaces to be used for each tab that would ordinarily be
- *     used to indent the text.  These amount of spaces will also be used to
- *     replace any tab characters that already exist within the string.
- * @return {string}  The new string with each line beginning with the desired
- *     amount of indentation.
- */
-function indent(str, numOfIndents, opt_spacesPerIndent) {
-  str = str.replace(/^(?=.)/gm, new Array(numOfIndents + 1).join('\t'));
-  numOfIndents = new Array(opt_spacesPerIndent + 1 || 0).join(' '); // re-use
-  return opt_spacesPerIndent
-    ? str.replace(/^\t+/g, function(tabs) {
-        return tabs.replace(/./g, numOfIndents);
-    })
-    : str;
-}
-
-/**
- * Encodes some text so that it can be safely written into an HTML box.
- * This includes replacing special HTML characters (&, <, >, etc.).
- *
- * @param {string} str - The text to be converted.
- * @return {string} The HTML-safe text.
- */
-function encodeHTML(str) {
-    return str.replace(/&/g, '&amp;')
-              .replace(/</g, '&lt;')
-              .replace(/>/g, '&gt;')
-              .replace(/"/g, '&quot;')
-              .replace(/'/g, '&apos;');
-}
-
-/**
- * Shuffle the blocks in the workspace
- */
-Blockly.WorkspaceSvg.prototype.shuffle = function() {
-    var metrics = this.getMetrics();
-    var width = metrics.viewWidth / 2,
-        height = metrics.viewHeight;
-    var blocks = this.getTopBlocks(false);
-    var y = 5, x = 0,
-        maximal_increase = height/blocks.length;
-    for (var i = 0; i < blocks.length; i++){
-        // Get a block
-        var block = blocks[i];
-        var properties = block.getRelativeToSurfaceXY();
-        if (i == 0) {
-            x = 5;
-        } else {
-            x = -properties.x+randomInteger(10, width);
-        }
-        block.moveBy(x, 
-                     -properties.y+y);
-        y = y + randomInteger(5, maximal_increase);
-    }
-}
-
 /**
  * A utility object for quickly and conveniently generating dialog boxes.
  * Unfortunately, this doesn't dynamically create new boxes; it reuses the same one
@@ -3853,8 +4793,8 @@ function LocalStorageWrapper(namespace) {
  * @param {String} value - The value.
  */
 LocalStorageWrapper.prototype.set =  function(key, value) {
-    localStorage.setItem(namespace+"_"+key+"_value", value);
-    localStorage.setItem(namespace+"_"+key+"_timestamp", $.now());
+    localStorage.setItem(this.namespace+"_"+key+"_value", value);
+    localStorage.setItem(this.namespace+"_"+key+"_timestamp", $.now());
 };
 
 /**
@@ -3863,8 +4803,8 @@ LocalStorageWrapper.prototype.set =  function(key, value) {
  * @param {String} key - The name of the key to remove.
  */
 LocalStorageWrapper.prototype.remove = function(key) {
-    localStorage.removeItem(namespace+"_"+key+"_value");
-    localStorage.removeItem(namespace+"_"+key+"_timestamp");
+    localStorage.removeItem(this.namespace+"_"+key+"_value");
+    localStorage.removeItem(this.namespace+"_"+key+"_timestamp");
 };
 
 /**
@@ -3873,7 +4813,24 @@ LocalStorageWrapper.prototype.remove = function(key) {
  * @param {String} key - The name of the key to retrieve the value for.
  */
 LocalStorageWrapper.prototype.get = function(key) {
-    return localStorage.getItem(namespace+"_"+key+"_value");
+    return localStorage.getItem(this.namespace+"_"+key+"_value");
+};
+
+/**
+ * A method for retrieving the value associated with the given key.
+ * If the key does not exist, then the default value is used instead.
+ * This default will be set.
+ *
+ * @param {String} key - The name of the key to retrieve the value for.
+ * @param {String} defaultValue - The default value to use. Must be a string.
+ */
+LocalStorageWrapper.prototype.getDefault = function(key, defaultValue) {
+    if (this.has(key)) {
+        return this.get(key);
+    } else {
+        this.set(key, defaultValue);
+        return defaultValue;
+    }
 };
 
 /**
@@ -3882,7 +4839,7 @@ LocalStorageWrapper.prototype.get = function(key) {
  * @param {String} key - The key to test existence for.
  */
 LocalStorageWrapper.prototype.has = function(key) {
-    return localStorage.getItem(namespace+"_"+key+"_value") !== null;
+    return localStorage.getItem(this.namespace+"_"+key+"_value") !== null;
 };
 
 /**
@@ -3894,7 +4851,7 @@ LocalStorageWrapper.prototype.has = function(key) {
  * @param {Integer} server_time - The server's time as an epoch (in milliseconds)
  */
 LocalStorageWrapper.prototype.is_new = function(key, server_time) {
-    var stored_time = localStorage.getItem(namespace+"_"+key+"_timestamp");
+    var stored_time = localStorage.getItem(this.namespace+"_"+key+"_timestamp");
     return (server_time >= stored_time+5000);
 };
 /**
@@ -3925,8 +4882,8 @@ BlockPyPrinter.prototype.resetPrinter = function() {
     this.printerSettings['width'] = Math.min(500, this.tag.width()-40);
     this.printerSettings['height'] = Math.min(500, this.tag.height()+40);
     Sk.TurtleGraphics = {'target': this.tag[0], 
-                         'width': this.printerSettings['width'], 
-                         'height': this.printerSettings['height']};
+                         'width': this.printerSettings['width']-40, 
+                         'height': this.printerSettings['height']-40};
 }
 
 /**
@@ -4067,7 +5024,7 @@ BlockPyPrinter.prototype.printInput = function(promptMessage) {
  * The BlockPyInterface global can be seen as a constant
  * representation of the default interface.
  */
-BlockPyInterface = "<div class='blockpy-content container-fluid' style='background-color :#fcf8e3; border: 1px solid #faebcc; '>    <div class='blockpy-popup modal fade' style='display:none'>        <div class='modal-dialog' style='width:750px'>            <div class='modal-content' id='modal-message' >                <div class='modal-header'>                    <button type='button' class='close' data-dismiss='modal' aria-hidden='true'>&times;</button>                    <h4 class='modal-title'>Dynamic Content</h4>                </div>                <div class='modal-body' style='width:100%; height:400px; white-space:pre-wrap'>                </div>                <div class='modal-footer'>                    <button type='button' class='btn btn-white' data-dismiss='modal'>Close</button>                </div>                </div>        </div>    </div>    <canvas id='capture-canvas' style='display:none'></canvas>    <div class='row blockpy-top-row' style='padding-bottom: 10px; border-bottom: 1px solid #faebcc; '>        <div class='blockpy-content-top col-md-9 col-sm-9'>            <span class='blockpy-alert pull-right text-muted' data-bind=\"visible: false, text: status.text\"></span>            <strong>BlockPy: </strong>             <span class='blockpy-presentation-name'                  data-bind='text: assignment.name'></span>            <div class='blockpy-presentation' data-bind=\"html: assignment.introduction\">            </div>        </div>        <div class='blockpy-content-topright col-md-3 col-sm-3'>            <span class='text-muted' data-bind=\"visible: status.dataset_loading().length\">Loading Dataset!</span>            <span class='pull-right label label-default blockpy-status-box'                  data-bind=\"css: status_server_class()[0],                             text: status_server_class()[1],                             attr: { 'data-original-title': status.server_error }\"                  data-toggle=\"tooltip\" data-placement=\"left\">Loading</span>            <br>            <button type='button' class='btn btn-default btn-xs pull-right'                    data-bind=\"css: {active: settings.show_settings},                               click: showHideSettings\"                    >                <span class='glyphicon glyphicon-wrench'></span>            </button>            <div class='pull-right' data-bind=\"visible: settings.show_settings\">                Disable Semantic Errors: <input type='checkbox' data-bind=\"checked: settings.disable_semantic_errors\"><br>                Disable Timeout: <input type='checkbox' data-bind=\"checked: settings.disable_timeout\"><br>                Disable Typed Blocks: <input type='checkbox' data-bind=\"checked: settings.disable_variable_types\"><br>                                <label class='blockpy-toolbar-auto-upload' data-bind=\"visible: settings.instructor\">                Auto-save:                <input type='checkbox' data-bind=\"checked:settings.auto_upload\"><br>                </label>                                <label class='blockpy-toolbar-instructor-mode' data-bind=\"visible: settings.instructor_initial\">                Instructor mode:                 <input type='checkbox' data-bind=\"checked:settings.instructor\"><br>                </label>            </div>            <!--<img src=\"images/corgi.png\" class='img-responsive' />-->        </div>    </div>    <div class='row blockpy-middle-row' style=''>        <div class='blockpy-content-left col-md-6 col-sm-6'             style='padding:10px'>            <strong>Printer</strong>            <div class='blockpy-printer blockpy-printer-default'>            </div>        </div>        <div class='blockpy-content-right col-md-6 col-sm-6 bubble'             style='padding:10px'>            <div class='blockpy-feedback'>                <button type='button' class='btn btn-sm btn-default blockpy-feedback-trace pull-right'                         data-bind=\"visible: !execution.show_trace() && (status.error() == 'feedback' || status.error() == 'no errors'|| status.error() == 'complete')\">                    <span class='glyphicon glyphicon-circle-arrow-down'></span> Trace Variables                </button>                                <strong>Feedback: </strong>                <span class='label blockpy-feedback-status' data-bind=\"css: status_feedback_class()[0], text: status_feedback_class()[1]\">Runtime Error</span>                <br>                <pre class='blockpy-feedback-original'></pre>                <strong class='blockpy-feedback-title'></strong>                <div class='blockpy-feedback-body'><i>Run your code to get feedback.</i></div>                <div class='blockpy-code-trace'></div>                                <!-- ko if: execution.show_trace -->                <div class=\"blockpy-feedback-traces\">                                <div>                    <button type='button' class='btn btn-default' data-bind=\"click: moveTraceFirst\">                        <span class='glyphicon glyphicon-step-backward'></span>                    </button>                    <button type='button' class='btn btn-default' data-bind=\"click: moveTraceBackward\">                        <span class='glyphicon glyphicon-backward'></span>                    </button>                    Step <span data-bind='text: execution.trace_step()'></span>                    / <span data-bind='text: execution.last_step()-1'></span>                    (<span data-bind='text: current_trace().line == -1 ? \"The end\" : \"Line \"+current_trace().line'></span>)                    <button type='button' class='btn btn-default' data-bind=\"click: moveTraceForward\">                        <span class='glyphicon glyphicon-forward'></span>                    </button>                    <button type='button' class='btn btn-default' data-bind=\"click: moveTraceLast\">                        <span class='glyphicon glyphicon-step-forward'></span>                    </button>                </div>                                <table class='table table-condensed table-striped table-bordered table-hover'>                    <thead>                        <tr><th>Name</th><th>Type</th><th>Value</th></tr>                    </thead>                    <tbody data-bind=\"foreach: current_trace().properties\">                        <tr data-bind=\"visible: name != '__file__' && name != '__path__'\">                            <td data-bind=\"text: name\"></td>                            <td data-bind=\"text: type\"></td>                            <td>                                <code data-bind=\"text: value\"></code>                                <!-- ko if: type == \"List\" -->                                <a href=\"\" data-bind=\"click: $root.viewExactValue(type, exact_value)\">                                <span class='glyphicon glyphicon-new-window'></span>                                </a>                                <!-- /ko -->                            </td>                        </tr>                    </tbody>                </table>                                </div>                <!-- /ko -->                            </div>        </div>    </div>    <div class=\"row blockpy-toolbar-row\"         style='background-color :#fcf8e3; padding-bottom: 10px; border: 1px solid #faebcc'>        <div class='col-md-12 col-sm-12 blockpy-toolbar btn-toolbar' role='toolbar'>                        <button type='button' class='btn blockpy-run' style='float:left',                data-bind='css: execution.status() == \"running\" ? \"btn-info\" :                                execution.status() == \"error\" ? \"btn-danger\" : \"btn-success\" ' >                <span class='glyphicon glyphicon-play'></span> Run            </button>                        <div class=\"btn-group\" data-toggle=\"buttons\" data-bind=\"visible: !assignment.upload()\">                <label class=\"btn btn-default blockpy-mode-set-blocks\"                        data-bind=\"css: {active: settings.editor() == 'Blocks'}\">                    <span class='glyphicon glyphicon-th-large'></span>                    <input type=\"radio\" name=\"blockpy-mode-set\" autocomplete=\"off\" checked> Blocks                </label>                <label class=\"btn btn-default blockpy-mode-set-instructor\"                       data-bind=\"visible: settings.instructor,                                  css: {active: settings.editor() == 'Upload'}\">                    <span class='glyphicon glyphicon-list-alt'></span>                    <input type=\"radio\" name=\"blockpy-mode-set\" autocomplete=\"off\"> Instructor                </label>                <label class=\"btn btn-default blockpy-mode-set-split\"                       data-bind=\"css: {active: settings.editor() == 'Split'}\">                    <span class='glyphicon glyphicon-resize-horizontal'></span>                    <input type=\"radio\" name=\"blockpy-mode-set\" autocomplete=\"off\"> Split                </label>                <label class=\"btn btn-default blockpy-mode-set-text\"                        data-bind=\"css: {active: settings.editor() == 'Text'}\">                    <span class='glyphicon glyphicon-pencil'></span>                    <input type=\"radio\" name=\"blockpy-mode-set\" autocomplete=\"off\"> Text                </label>            </div>            <button type='button' class='btn btn-default blockpy-toolbar-reset' data-bind=\"visible: !assignment.upload()\">                <span class='glyphicon glyphicon-refresh'></span> Reset            </button>            <!--<button type='button' class='btn btn-default blockpy-toolbar-capture'>                <span class='glyphicon glyphicon-picture'></span> Capture            </button>-->            <button type='button' class='btn btn-default blockpy-toolbar-import' data-bind=\"visible: !assignment.upload() && (assignment.importable() || settings.instructor())\">                <span class='glyphicon glyphicon-cloud-download'></span> Import Datasets            </button>            <label class=\"btn btn-default btn-file\">                Upload <input class=\"blockpy-toolbar-upload\" type=\"file\" style=\"display: none;\">            </label>            <button type='button' class='btn btn-default blockpy-toolbar-history' data-bind=\"visible: !assignment.upload() && (assignment.importable() || settings.instructor())\">                <span class='glyphicon glyphicon-hourglass'></span> History            </button>            <!--            <button type='button' class='btn btn-default blockpy-toolbar-english'>                <span class='glyphicon glyphicon-list-alt'></span> English            </button>            -->                        <select data-bind=\"visible: settings.instructor() & !assignment.upload(), value: settings.filename\"                    class=\"blockpy-toolbar-filename-picker\">                <option value='__main__' selected>Student Code</option>                <option value='starting_code'>Starting Code</option>                <option value='give_feedback'>Generate Feedback</option>            </select>                        </div>    </div>    <div class='row blockpy-content-bottom'         style='padding-bottom: 10px; border: 1px solid #faebcc'>        <div class='blockpy-editor col-md-12 col-sm-12'>            <div class='blockpy-blocks blockpy-editor-menu'                  style='height:100%'>                <div class='blockly-div' style='height:450px; width: 100%' '></div>                <!-- <div class='blockly-area'></div> -->            </div>            <div class='blockpy-text blockpy-editor-menu' style='height: 450px'>                <div class='blockpy-text-sidebar' style='width:150px; height: 100%; float:left; background-color: #ddd'>                <!--                <button type='button' class='btn btn-default blockpy-text-insert-if'>Decision (If)</button>                <button type='button' class='btn btn-default blockpy-text-insert-if-else'>Decision (If/Else)</button>                -->                </div>                <textarea class='codemirror-div language-python'                           style='height:100%'></textarea>            </div>            <div class='blockpy-instructor blockpy-editor-menu form-inline'>                <!-- Name -->                <br>                <form class=\"form-inline\" style='display:inline-block'>                <label>Name:</label>                <input type='text' class='blockpy-presentation-name-editor form-control'                       data-bind='textInput: assignment.name'>                 </form>                <br>                <br>                                <label>Introduction:</label>                <div class='blockpy-presentation-body-editor'>                 </div>                                <!-- Parsons -->                <label class='blockpy-presentation-parsons-check'>                Parsons:                <input type='checkbox' class='form-control' data-bind=\"checked:assignment.parsons\">                </label>                 <br>                                <!-- Importable Datasets -->                <label class='blockpy-presentation-importable-check'>                Able to import datasets:                <input type='checkbox' class='form-control' data-bind=\"checked:assignment.importable\">                </label>                 <br>                                <!-- Algorithm Errors -->                <label class='blockpy-presentation-importable-check'>                Disable Algorithm Errors:                <input type='checkbox' class='form-control' data-bind=\"checked:assignment.disable_algorithm_errors\">                </label>                 <br>                                <!-- Initial mode -->                <label class='blockpy-presentation-text-first'>                Initial View:                <select data-bind=\"value: assignment.initial_view\">                    <option value=\"Blocks\" selected>Blocks</option>                    <option value=\"Text\">Text</option>                    <option value=\"Instructor\">Instructor</option>                    <option value=\"Upload\">Upload</option>                </select>                </label>                <br>                                <label>Available Modules</lable>                <select class='blockpy-available-modules' multiple='multiple'                        data-bind=\"selectedOptions: assignment.modules\">                    <option>Properties</option>                    <option>Decisions</option>                    <option>Iteration</option>                    <option>Functions</option>                    <option>Calculation</option>                    <option>Output</option>                    <option>Turtles</option>                    <option>Python</option>                    <option>Values</option>                    <option>Lists</option>                    <option>Dictionaries</option>                    <option>Data - Parking</option>                            </div>            <div class='blockpy-upload blockpy-editor-menu'>            </div>        </div>    </div>    <div>        <div class='blockpy-content-right col-md-5 col-sm-5 alert alert-info'>            <div class='panel panel-default'>                <div class='panel-heading'>Data Explorer</div>                <div class='panel-body'>                <div class='blockpy-explorer'>                    <table><tr>                    <!-- Step: X of Y (Line: Z) -->                    <td colspan='4'>                        <div class='blockpy-explorer-run-hide'>                            <i>Run your code to explore it.</i>                        </div>                        <div class='blockpy-explorer-status'>                            <strong>Step: </strong>                            <span class='blockpy-explorer-step-span'>0</span> of                             <span class='blockpy-explorer-length-span'>0</span>                             (<strong>Line: </strong>                            <span class='blockpy-explorer-line-span'>0</span>)                        </div>                    </td>                    </tr><tr>                    <!-- First Previous Next Last -->                    <td style='width:25%'>                        <button type='button' class='btn btn-default blockpy-explorer-first'>                        <span class='glyphicon glyphicon-fast-backward'></span> First</button>                    </td><td style='width:25%'>                        <button type='button' class='btn btn-default blockpy-explorer-back'>                        <span class='glyphicon glyphicon-backward'></span> Back</button>                    </td><td style='width:25%'>                        <button type='button' class='btn btn-default blockpy-explorer-next'>                        Next <span class='glyphicon glyphicon-forward'></span></button>                    </td><td style='width:25%'>                        <button type='button' class='btn btn-default blockpy-explorer-last'>                        Last <span class='glyphicon glyphicon-fast-forward'></span> </button>                    </td>                    </tr></table>                    <!-- Printer -->                                        <!-- Modules -->                    <br><div>                        <strong>Loaded Modules: </strong>                        <i class='blockpy-explorer-modules'>None</i>                    </div>                    <!-- Actual Trace data -->                    <br><strong>Trace Table</strong>                    <br><table style='width: 100%'                            class='table table-condensed table-striped                                    table-bordered table-hover blockpy-explorer-table'>                        <!-- Property Type Value -->                        <tr>                            <th>Property</th>                            <th>Type</th>                            <th>Value</th>                        </tr>                    </table>                </div>                </div>            </div>        </div>    </div></div><!--<div class='blockpy-explorer-errors alert alert-danger alert-dismissible' role='alert'>                     <button type='button' class='blockpy-explorer-errors-hide close' aria-label='Close'><span  aria-hidden='true'>&times;</span></button>                     <div class='blockpy-explorer-errors-body'>                                     </div>-->";
+BlockPyInterface = "<div class='blockpy-content container-fluid' style='background-color :#fcf8e3; border: 1px solid #faebcc; '>    <div class='blockpy-popup modal fade' style='display:none'>        <div class='modal-dialog' style='width:750px'>            <div class='modal-content' id='modal-message' >                <div class='modal-header'>                    <button type='button' class='close' data-dismiss='modal' aria-hidden='true'>&times;</button>                    <h4 class='modal-title'>Dynamic Content</h4>                </div>                <div class='modal-body' style='width:100%; height:400px; white-space:pre-wrap'>                </div>                <div class='modal-footer'>                    <button type='button' class='btn btn-white' data-dismiss='modal'>Close</button>                </div>                </div>        </div>    </div>    <canvas id='capture-canvas' style='display:none'></canvas>    <div class='row blockpy-top-row' style='padding-bottom: 10px; border-bottom: 1px solid #faebcc; '>        <div class='blockpy-content-top col-md-9 col-sm-9'>            <span class='blockpy-alert pull-right text-muted' data-bind=\"visible: false, text: status.text\"></span>            <strong>BlockPy: </strong>             <span class='blockpy-presentation-name'                  data-bind='text: assignment.name'></span>            <div class='blockpy-presentation' data-bind=\"html: assignment.introduction\">            </div>        </div>        <div class='blockpy-content-topright col-md-3 col-sm-3'>            <span class='text-muted' data-bind=\"visible: status.dataset_loading().length\">Loading Dataset!</span>            <span class='pull-right label label-default blockpy-status-box'                  data-bind=\"css: status_server_class()[0],                             text: status_server_class()[1],                             attr: { 'data-original-title': status.server_error }\"                  data-toggle=\"tooltip\" data-placement=\"left\">Loading</span>            <small class='pull-right text-muted'>Server: </small>            <br>            <span class='pull-right label label-default'                  data-bind=\"css: execution_status_class()[0],                             text: execution_status_class()[1],                             attr: { 'data-original-title': execution.status }\"                  data-toggle=\"tooltip\" data-placement=\"left\">Loading</span>            <small class='pull-right text-muted'>Execution: </small>            <br>            <button type='button' class='btn btn-default btn-xs pull-right'                    data-bind=\"css: {active: settings.show_settings},                               click: showHideSettings\"                    >                <span class='glyphicon glyphicon-wrench'></span>            </button>            <div class='pull-right' data-bind=\"visible: settings.show_settings\">                <!--Disable Semantic Errors: <input type='checkbox' data-bind=\"checked: settings.disable_semantic_errors\"><br>-->                Disable Timeout: <input type='checkbox' data-bind=\"checked: settings.disable_timeout\"><br>                <!--Disable Typed Blocks: <input type='checkbox' data-bind=\"checked: settings.disable_variable_types\"><br>-->                                <label class='blockpy-toolbar-auto-upload' data-bind=\"visible: settings.instructor\">                Auto-save:                <input type='checkbox' data-bind=\"checked:settings.auto_upload\"><br>                </label>                                <label class='blockpy-toolbar-instructor-mode' data-bind=\"visible: settings.instructor_initial\">                Instructor mode:                 <input type='checkbox' data-bind=\"checked:settings.instructor\"><br>                </label>            </div>            <!--<img src=\"images/corgi.png\" class='img-responsive' />-->        </div>    </div>    <div class='row blockpy-middle-row' style=''>        <div class='blockpy-content-left col-md-6 col-sm-6'             style='padding:10px'>            <strong>Printer</strong>            <div class='blockpy-printer blockpy-printer-default'>            </div>        </div>        <div class='blockpy-content-right col-md-6 col-sm-6 bubble'             style='padding:10px'>            <div class='blockpy-feedback'>                <button type='button' class='btn btn-sm btn-default blockpy-feedback-trace pull-right'                         data-bind=\"visible: !execution.show_trace() && (status.error() == 'feedback' || status.error() == 'no errors'|| status.error() == 'complete')\">                    <span class='glyphicon glyphicon-circle-arrow-down'></span> Trace Variables                </button>                                <strong>Feedback: </strong>                <span class='label blockpy-feedback-status' data-bind=\"css: status_feedback_class()[0], text: status_feedback_class()[1]\">Runtime Error</span>                <br>                <pre class='blockpy-feedback-original'></pre>                <strong class='blockpy-feedback-title'></strong>                <div class='blockpy-feedback-body'><i>Run your code to get feedback.</i></div>                <div class='blockpy-code-trace'></div>                                <!-- ko if: execution.show_trace -->                <div class=\"blockpy-feedback-traces\">                                <div>                    <button type='button' class='btn btn-default' data-bind=\"click: moveTraceFirst\">                        <span class='glyphicon glyphicon-step-backward'></span>                    </button>                    <button type='button' class='btn btn-default' data-bind=\"click: moveTraceBackward\">                        <span class='glyphicon glyphicon-backward'></span>                    </button>                    Step <span data-bind='text: execution.trace_step()'></span>                    / <span data-bind='text: execution.last_step()-1'></span>                    (<span data-bind='text: current_trace().line == -1 ? \"The end\" : \"Line \"+current_trace().line'></span>)                    <button type='button' class='btn btn-default' data-bind=\"click: moveTraceForward\">                        <span class='glyphicon glyphicon-forward'></span>                    </button>                    <button type='button' class='btn btn-default' data-bind=\"click: moveTraceLast\">                        <span class='glyphicon glyphicon-step-forward'></span>                    </button>                </div>                                <table class='table table-condensed table-striped table-bordered table-hover'>                    <thead>                        <tr><th>Name</th><th>Type</th><th>Value</th></tr>                    </thead>                    <tbody data-bind=\"foreach: current_trace().properties\">                        <tr data-bind=\"visible: name != '__file__' && name != '__path__'\">                            <td data-bind=\"text: name\"></td>                            <td data-bind=\"text: type\"></td>                            <td>                                <code data-bind=\"text: value\"></code>                                <!-- ko if: type == \"List\" -->                                <a href=\"\" data-bind=\"click: $root.viewExactValue(type, exact_value)\">                                <span class='glyphicon glyphicon-new-window'></span>                                </a>                                <!-- /ko -->                            </td>                        </tr>                    </tbody>                </table>                                </div>                <!-- /ko -->                            </div>        </div>    </div>    <div class=\"row blockpy-toolbar-row\"         style='background-color :#fcf8e3; padding-bottom: 10px; border: 1px solid #faebcc'>        <div class='col-md-12 col-sm-12 blockpy-toolbar btn-toolbar' role='toolbar'>                        <button type='button' class='btn blockpy-run' style='float:left',                data-bind='css: execution.status() == \"running\" ? \"btn-info\" :                                execution.status() == \"error\" ? \"btn-danger\" : \"btn-success\" ' >                <span class='glyphicon glyphicon-play'></span> Run            </button>                        <div class=\"btn-group\" data-toggle=\"buttons\" data-bind=\"visible: !assignment.upload()\">                <label class=\"btn btn-default blockpy-mode-set-blocks\"                        data-bind=\"css: {active: settings.editor() == 'Blocks'}\">                    <span class='glyphicon glyphicon-th-large'></span>                    <input type=\"radio\" name=\"blockpy-mode-set\" autocomplete=\"off\" checked> Blocks                </label>                <label class=\"btn btn-default blockpy-mode-set-instructor\"                       data-bind=\"visible: settings.instructor,                                  css: {active: settings.editor() == 'Upload'}\">                    <span class='glyphicon glyphicon-list-alt'></span>                    <input type=\"radio\" name=\"blockpy-mode-set\" autocomplete=\"off\"> Instructor                </label>                <label class=\"btn btn-default blockpy-mode-set-split\"                       data-bind=\"css: {active: settings.editor() == 'Split'}\">                    <span class='glyphicon glyphicon-resize-horizontal'></span>                    <input type=\"radio\" name=\"blockpy-mode-set\" autocomplete=\"off\"> Split                </label>                <label class=\"btn btn-default blockpy-mode-set-text\"                        data-bind=\"css: {active: settings.editor() == 'Text'}\">                    <span class='glyphicon glyphicon-pencil'></span>                    <input type=\"radio\" name=\"blockpy-mode-set\" autocomplete=\"off\"> Text                </label>            </div>            <button type='button' class='btn btn-default blockpy-toolbar-reset' data-bind=\"visible: !assignment.upload()\">                <span class='glyphicon glyphicon-refresh'></span> Reset            </button>            <!--<button type='button' class='btn btn-default blockpy-toolbar-capture'>                <span class='glyphicon glyphicon-picture'></span> Capture            </button>-->            <button type='button' class='btn btn-default blockpy-toolbar-import' data-bind=\"visible: !assignment.upload() && (assignment.importable() || settings.instructor())\">                <span class='glyphicon glyphicon-cloud-download'></span> Import Datasets            </button>            <label class=\"btn btn-default btn-file\">                Upload <input class=\"blockpy-toolbar-upload\" type=\"file\" style=\"display: none;\">            </label>            <button type='button' class='btn btn-default blockpy-toolbar-history' data-bind=\"visible: !assignment.upload() && (assignment.importable() || settings.instructor())\">                <span class='glyphicon glyphicon-hourglass'></span> History            </button>            <!--            <button type='button' class='btn btn-default blockpy-toolbar-english'>                <span class='glyphicon glyphicon-list-alt'></span> English            </button>            -->                        <select data-bind=\"visible: settings.instructor() & !assignment.upload(), value: settings.filename\"                    class=\"blockpy-toolbar-filename-picker\">                <option value='__main__' selected>Student Code</option>                <option value='starting_code'>Starting Code</option>                <option value='give_feedback'>Generate Feedback</option>            </select>                        </div>    </div>    <div class='row blockpy-content-bottom'         style='padding-bottom: 10px; border: 1px solid #faebcc'>        <div class='blockpy-editor col-md-12 col-sm-12'>            <div class='blockpy-blocks blockpy-editor-menu'                  style='height:100%'>                <div class='blockly-div' style='height:450px; width: 100%' '></div>                <!-- <div class='blockly-area'></div> -->            </div>            <div class='blockpy-text blockpy-editor-menu' style='height: 450px'>                <div class='blockpy-text-sidebar' style='width:150px; height: 100%; float:left; background-color: #ddd'>                <!--                <button type='button' class='btn btn-default blockpy-text-insert-if'>Decision (If)</button>                <button type='button' class='btn btn-default blockpy-text-insert-if-else'>Decision (If/Else)</button>                -->                </div>                <textarea class='codemirror-div language-python'                           style='height:100%'></textarea>            </div>            <div class='blockpy-instructor blockpy-editor-menu form-inline'>                <!-- Name -->                <br>                <form class=\"form-inline\" style='display:inline-block'>                <label>Name:</label>                <input type='text' class='blockpy-presentation-name-editor form-control'                       data-bind='textInput: assignment.name'>                 </form>                <br>                <br>                                <label>Introduction:</label>                <div class='blockpy-presentation-body-editor'>                 </div>                                <!-- Parsons -->                <label class='blockpy-presentation-parsons-check'>                Parsons:                <input type='checkbox' class='form-control' data-bind=\"checked:assignment.parsons\">                </label>                 <br>                                <!-- Importable Datasets -->                <label class='blockpy-presentation-importable-check'>                Able to import datasets:                <input type='checkbox' class='form-control' data-bind=\"checked:assignment.importable\">                </label>                 <br>                                <!-- Algorithm Errors -->                <label class='blockpy-presentation-importable-check'>                Disable Algorithm Errors:                <input type='checkbox' class='form-control' data-bind=\"checked:assignment.disable_algorithm_errors\">                </label>                 <br>                                <!-- Initial mode -->                <label class='blockpy-presentation-text-first'>                Initial View:                <select data-bind=\"value: assignment.initial_view\">                    <option value=\"Blocks\" selected>Blocks</option>                    <option value=\"Text\">Text</option>                    <option value=\"Instructor\">Instructor</option>                    <option value=\"Upload\">Upload</option>                </select>                </label>                <br>                                <label>Available Modules</lable>                <select class='blockpy-available-modules' multiple='multiple'                        data-bind=\"selectedOptions: assignment.modules\">                    <option>Properties</option>                    <option>Decisions</option>                    <option>Iteration</option>                    <option>Functions</option>                    <option>Calculation</option>                    <option>Output</option>                    <option>Turtles</option>                    <option>Python</option>                    <option>Values</option>                    <option>Lists</option>                    <option>Dictionaries</option>                    <option>Data - Parking</option>                            </div>            <div class='blockpy-upload blockpy-editor-menu'>            </div>        </div>    </div></div><!--<div class='blockpy-explorer-errors alert alert-danger alert-dismissible' role='alert'>                     <button type='button' class='blockpy-explorer-errors-hide close' aria-label='Close'><span  aria-hidden='true'>&times;</span></button>                     <div class='blockpy-explorer-errors-body'>                                     </div>-->";
 
 /**
  * Object for communicating with the external servers. This includes functionality for
@@ -4126,7 +5083,7 @@ BlockPyServer.prototype.createServerData = function() {
     var d = new Date();
     var seconds = Math.round(d.getTime() / 1000);
     data = {
-        'assignment_id': assignment.assignment_id,
+        'assignment_id': assignment.assignment_id(),
         'group_id': assignment.group_id,
         'course_id': assignment.course_id,
         'student_id': assignment.student_id,
@@ -4171,17 +5128,13 @@ BlockPyServer.prototype.defaultFailure = function(error, textStatus) {
 }
 
 BlockPyServer.prototype.logEvent = function(event_name, action, body) {
-    var data = this.createServerData();
-    data['event'] = event_name;
-    data['action'] = action;
-    if (body === undefined) {
-        data['body'] = '';
-    } else {
-        data['body'] = body;
-    }
-    
-    this.setStatus('Logging');
     if (this.main.model.server_is_connected('log_event')) {
+        var data = this.createServerData();
+        data['event'] = event_name;
+        data['action'] = action;
+        data['body'] = (body === undefined) ? '' : body;
+        this.setStatus('Logging');
+        // Trigger request
         $.post(this.main.model.constants.urls.log_event, data, 
                this.defaultResponse.bind(this))
          .fail(this.defaultFailure.bind(this));
@@ -4191,16 +5144,17 @@ BlockPyServer.prototype.logEvent = function(event_name, action, body) {
 }
 
 BlockPyServer.prototype.markSuccess = function(success, callback) {
-    var data = this.createServerData();
-    var server = this,
-        model = this.main.model;
-    data['code'] = model.programs.__main__;
-    data['status'] = success;
-    this.main.components.editor.getPngFromBlocks(function(pngData, img) {
-        data['image'] = pngData;
-        img.remove();
-        server.setStatus('Saving');
-        if (model.server_is_connected('save_success')) {
+    var model = this.main.model;
+    var server = this;
+    if (model.server_is_connected('save_success')) {
+        var data = this.createServerData();
+        data['code'] = model.programs.__main__;
+        data['status'] = success;
+        this.main.components.editor.getPngFromBlocks(function(pngData, img) {
+            data['image'] = pngData;
+            img.remove();
+            server.setStatus('Saving');
+            // Trigger request
             $.post(model.constants.urls.save_success, data, 
                 function(response) {
                    if (response.success) {
@@ -4216,31 +5170,31 @@ BlockPyServer.prototype.markSuccess = function(success, callback) {
                     }
                 })
              .fail(server.defaultFailure.bind(server));
-        } else {
-            server.setStatus('Offline', "Server is not connected!");
-        }
-    });
+        });
+    } else {
+        server.setStatus('Offline', "Server is not connected!");
+    }
 };
 
 BlockPyServer.prototype.saveAssignment = function() {
-    var data = this.createServerData();
     var model = this.main.model;
-    data['introduction'] = model.assignment.introduction();
-    data['parsons'] = model.assignment.parsons();
-    data['initial'] = model.assignment.initial_view();
-    data['importable'] = model.assignment.importable();
-    data['disable_algorithm_errors'] = model.assignment.disable_algorithm_errors();
-    data['name'] = model.assignment.name();
-    //data['disabled'] = disabled;
-    data['modules'] = model.assignment.modules().join(','); // TODO: hackish, broken if ',' is in name
-    
-    var server = this;
-    this.setStatus('Saving');
-    if (this.main.model.server_is_connected('save_assignment') && 
-        this.main.model.settings.auto_upload()) {
+    if (model.server_is_connected('save_assignment') && 
+        model.settings.auto_upload()) {
+        var data = this.createServerData();
+        data['introduction'] = model.assignment.introduction();
+        data['parsons'] = model.assignment.parsons();
+        data['initial'] = model.assignment.initial_view();
+        data['importable'] = model.assignment.importable();
+        data['disable_algorithm_errors'] = model.assignment.disable_algorithm_errors();
+        data['name'] = model.assignment.name();
+        data['modules'] = model.assignment.modules().join(','); // TODO: hackish, broken if ',' is in name
+        
+        var server = this;
+        this.setStatus('Saving');
         clearTimeout(this.presentationTimer);
+        // Trigger request
         this.presentationTimer = setTimeout(function() {
-            $.post(server.main.model.constants.urls.save_assignment, data, 
+            $.post(model.constants.urls.save_assignment, data, 
                    server.defaultResponseWithoutVersioning.bind(server))
              .fail(server.defaultFailure.bind(server));
         }, this.TIMER_DELAY);
@@ -4250,20 +5204,21 @@ BlockPyServer.prototype.saveAssignment = function() {
 }
 
 BlockPyServer.prototype.saveCode = function() {
-    var filename = this.main.model.settings.filename();
-    var data = this.createServerData();
-    data['filename'] = filename;
-    data['code'] = this.main.model.programs[filename]();
-    
-    var server = this;
-    this.setStatus('Saving');
-    if (this.main.model.server_is_connected('save_code') && 
-        this.main.model.settings.auto_upload()) {
+    var model = this.main.model;
+    if (model.server_is_connected('save_code') && 
+        model.settings.auto_upload()) {
+        var data = this.createServerData();
+        var filename = model.settings.filename();
+        data['filename'] = filename;
+        data['code'] = model.programs[filename]();
+        
+        var server = this;
+        this.setStatus('Saving');
         if (this.saveTimer[filename]) {
             clearTimeout(this.saveTimer[filename]);
         }
         this.saveTimer[filename] = setTimeout(function() {
-            $.post(server.main.model.constants.urls.save_code, data, 
+            $.post(model.constants.urls.save_code, data, 
                    filename == '__main__'
                     ? server.defaultResponse.bind(server)
                     : server.defaultResponseWithoutVersioning.bind(server))
@@ -4275,12 +5230,12 @@ BlockPyServer.prototype.saveCode = function() {
 }
 
 BlockPyServer.prototype.getHistory = function(callback) {
-    var data = this.createServerData();
     var model = this.main.model;
     
-    var server = this;
-    this.setStatus('Loading History');
     if (model.server_is_connected('get_history')) {
+        var data = this.createServerData();
+        var server = this;
+        this.setStatus('Loading History');
         $.post(model.constants.urls.get_history, data, 
                function(response) {
                 if (response.success) {
@@ -4295,13 +5250,6 @@ BlockPyServer.prototype.getHistory = function(callback) {
     } else {
         this.setStatus('Offline', "Server is not connected!");
         callback([]);
-        /*callback([
-            {code: "=", time: "20160801-105102"},
-            {code: "= 0", time: "20160801-105112"},
-            {code: "a = 0", time: "20160801-105502"},
-            {code: "a = 0\nprint", time: "20160801-110003"},
-            {code: "a = 0\nprint(a)", time: "20160801-111102"}
-        ])*/
     }
 }
 
@@ -4355,56 +5303,30 @@ BlockPyServer.prototype.walkOldCode = function() {
     }
 }
 
-/*
-BlockPyServer.prototype.load = function() {
-    var data = {
-        'question_id': this.model.question.question_id,
-        'student_id': this.model.question.student_id,
-        'context_id': this.model.question.context_id
-    };
-    var alertBox = this.alertBox;
-    var server = this, blockpy = this.blockpy;
-    if (this.model.urls.server !== false && this.model.urls.load_code !== false) {
-        $.post(this.model.urls.load_code, data, function(response) {
-            if (response.success) {
-                if (server.storage.has(data.question_id)) {
-                    if (server.storage.is_new(data.question_id, response.timestamp)) {
-                        var xml = server.storage.get(data.question_id);
-                        server.model.load(xml);
-                        server.save();
+BlockPyServer.prototype.loadAssignment = function(assignment_id) {
+    var model = this.main.model;
+    var server = this;
+    if (model.server_is_connected('load_assignment')) {
+        var data = this.createServerData();        
+        data['assignment_id'] = assignment_id;
+        this.setStatus('Reloading');
+        $.post(model.constants.urls.load_assignment, data, 
+                function(response) {
+                    if (response.success) {
+                        server.main.setAssignment(response.settings,
+                                                  response.assignment, 
+                                                  response.programs)
+                        server.setStatus('Loaded');
                     } else {
-                        server.storage.remove(data.question_id);
-                        if (response.code !== null) {
-                            server.model.load(response.code);
-                        }
+                        server.setStatus('Failure', response.message);
                     }
-                } else {
-                    if (response.code !== null) {
-                        server.model.load(response.code);
-                    }
-                }
-                if (response.completed) {
-                    blockpy.feedback.success('');
-                }
-                alertBox("Loaded").delay(200).fadeOut("slow");
-            } else {
-                console.error("Server Load Error", response.message);
-                alertBox("Loading failed");
-            }
-        }).fail(function() {
-            alertBox("Loading failed");
-        }).always(function() {
-            server.model.loaded = true;
-        });
+               })
+         .fail(server.defaultFailure.bind(server));
     } else {
-        server.model.loaded = true;
-        alertBox("Loaded").delay(200).fadeOut("slow");
-        if (this.model.urls.load_success === true) {
-            this.blockpy.feedback.success('');
-        }
+        this.setStatus('Offline', "Server is not connected!");
     }
-};
-*/
+}
+
 /**
  * An object for managing the blob of text at the top of a problem describing it.
  * This isn't a very busy component.
@@ -4531,9 +5453,6 @@ function BlockPyEditor(main, tag) {
     // Handle mode switching
     this.main.model.settings.editor.subscribe(function() {editor.setMode()});
     
-    // Handle level switching
-    this.main.model.settings.level.subscribe(function() {editor.setLevel()});
-    
     // Handle filename switching
     this.main.model.settings.filename.subscribe(function (name) {
         if (name == 'give_feedback') {
@@ -4582,6 +5501,7 @@ BlockPyEditor.prototype.initBlockly = function() {
     Blockly.captureDialog_ = this.copyImage.bind(this);
     
     // Enable static type checking! 
+    /*
     this.blockly.addChangeListener(function() {
         if (!editor.main.model.settings.disable_variable_types()) {
             var variables = editor.main.components.engine.analyzeVariables()
@@ -4603,6 +5523,7 @@ BlockPyEditor.prototype.initBlockly = function() {
             })
         }
     });
+    */
 
 
 };
@@ -4650,20 +5571,6 @@ BlockPyEditor.prototype.initText = function() {
     this.main.model.program.subscribe(function() {editor.updateTextFromModel()});
     // Ensure that it fills the editor area
     this.codeMirror.setSize(null, "100%");
-    
-    // Was toying with buttons for injecting code. These are deprecated now.
-    this.tag.find('.blockpy-text-insert-if').click(function() {
-        var line_number = blockpy.components.editor.codeMirror.getCursor().line;
-        var line = blockpy.components.editor.codeMirror.getLine(line_number);
-        var whitespace = line.match(/^(\s*)/)[1];
-        editor.codeMirror.replaceSelection("if ___:\n    "+whitespace+"pass");
-    });
-    this.tag.find('.blockpy-text-insert-if-else').click(function() {
-        var line_number = blockpy.components.editor.codeMirror.getCursor().line;
-        var line = blockpy.components.editor.codeMirror.getLine(line_number);
-        var whitespace = line.match(/^(\s*)/)[1];
-        editor.codeMirror.replaceSelection("if ___:\n    "+whitespace+"pass\n"+whitespace+"else:\n    "+whitespace+"pass");
-    });
 };
 
 /**
@@ -5334,6 +6241,9 @@ BlockPyEditor.CATEGORY_MAP = {
                     '<block type="math_number"></block>'+
                     '<block type="logic_boolean"></block>'+
                 '</category>',
+    'Tuples': '<category name="Tuples" colour="40">'+
+                '<block type="tuple_create"></block>'+
+              '</category>',
     'Lists':    '<category name="Lists" colour="30">'+
                     '<block type="lists_create"></block>'+
                     '<block type="lists_create_with">'+
@@ -6078,6 +6988,113 @@ BlockPyFeedback.prototype.printError = function(error) {
     this.main.components.server.logEvent('feedback', "Runtime", original);
 }
 
+
+/**
+ * Present any accumulated feedback
+ */
+BlockPyFeedback.prototype.presentFeedback = function() {
+    var report = this.main.model.execution.reports;
+    var suppress = this.main.model.execution.suppressions;
+    // Verifier
+    if (!suppress['verifier'] && !report['verifier'].success) {
+        this.emptyProgram();
+        return 'verifier';
+    }
+    // Parser
+    if (!suppress['parser'] && !report['parser'].success) {
+        var parserReport = report['parser'].error;
+        var codeLine = '.';
+        if (parserReport.args.v.length > 3) {
+            codeLine = ', where it says:<br><code>'+parserReport.args.v[3][2]+'</code>';
+        }
+        this.editorError(parserReport, "While attempting to process your Python code, I found a syntax error. In other words, your Python code has a mistake in it (e.g., mispelled a keyword, bad indentation, unnecessary symbol). You should check to make sure that you have written all of your code correctly. To me, it looks like the problem is on line "+ parserReport.args.v[2]+codeLine, parserReport.args.v[2]);
+        return 'parser';
+    }
+    // Analyzer
+    if (!suppress['analyzer']) {
+        if (!report['analyzer'].success) {
+            this.internalError(report['analyzer'].error, "Analyzer Error", "Error in analyzer. Please show the above message to an instructor!");
+        }
+        var wasPresented = this.presentAnalyzerFeedback();
+        if (wasPresented) {
+            return 'analyzer';
+        }
+    }
+    // Student runtime errors
+    if (!suppress['student']) {
+        if (!report['student'].success) {
+            this.printError(report['student'].error);
+            return 'student';
+        }
+    }
+    // Instructor
+    if (!report['instructor'].success) {
+        this.internalError(report['instructor'].error, "Instructor Feedback Error", "Error in instructor feedback. Please show the above message to an instructor!");
+        console.error(report['instructor'].error);
+        return 'instructor';
+    }
+    if (report['instructor'].compliments) {
+        this.compliment(report['instructor'].compliments);
+    }
+    var complaint = report['instructor'].complaint;
+    if (complaint) {
+        this.instructorFeedback(complaint.name, complaint.message, complaint.line);
+        return 'instructor';
+    }
+    if (report['instructor'].complete) {
+        this.complete();
+        return 'success';
+    }
+    this.noErrors()
+    return 'no errors';
+}
+
+BlockPyFeedback.prototype.presentAnalyzerFeedback = function() {
+    var report = this.main.model.execution.reports['analyzer'].issues;
+    var suppress = this.main.model.execution.suppressions['analyzer'] || {};
+    if (suppress === true) {
+        // Suppress all types of analyzer errors
+        return false;
+    } else if (report["Unconnected blocks"].length >= 1) {
+        var variable = report['Unconnected blocks'][0];
+        this.semanticError("Unconnected blocks", "It looks like you have unconnected blocks on line "+variable.position.line+". Before you run your program, you must make sure that all of your blocks are connected and that there are no unfilled holes.", variable.position.line)
+        return true;
+    } else if (report['Iteration variable is iteration list'].length >= 1) {
+        var variable = report['Iteration variable is iteration list'][0];
+        this.semanticError("Iteration Problem", "The property <code>"+variable.name+"</code> was iterated on line "+variable.position.line+", but you used the same variable as the iteration variable. You should choose a different variable name for the iteration variable. Usually, the iteration variable is the singular form of the iteration list (e.g., <code>for dog in dogs:</code>).", variable.position.line)
+        return true;
+    } else if (report["Undefined variables"].length >= 1) {
+        var variable = report["Undefined variables"][0];
+        this.semanticError("Initialization Problem", "The property <code>"+variable.name+"</code> was read on line "+variable.position.line+", but it was not given a value on a previous line. You cannot use a property until it has been initialized.", variable.position.line)
+        return true;
+    } else if (report["Possibly undefined variables"].length >= 1) {
+        var variable = report["Possibly undefined variables"][0];
+        this.semanticError("Initialization Problem", "The property <code>"+variable.name+"</code> was read on line "+variable.position.line+", but it was possibly not given a value on a previous line. You cannot use a property until it has been initialized. Check to make sure that this variable was declared in all of the branches of your decision.", variable.position.line);
+        return true;
+    } else if ( !suppress["Unread variables"] && 
+               report["Unread variables"].length >= 1) {
+        var variable = report["Unread variables"][0];
+        this.semanticError("Unused Property", "The property <code>"+variable.name+"</code> was set, but was never used after that.", null)
+        return true;
+    } else if (report["Overwritten variables"].length >= 1) {
+        var variable = report["Overwritten variables"][0];
+        this.semanticError("Overwritten Property", "The property <code>"+variable.name+"</code> was set, but before it could be read it was changed on line "+variable.position.line+". It is unnecessary to change an existing variable's value without reading it first.", variable.position.line)
+        return true;
+    } else if (report["Empty iterations"].length >= 1) {
+        var variable = report["Empty iterations"][0];
+        this.semanticError("Iterating over empty list", "The property <code>"+variable.name+"</code> was set as an empty list, and then you attempted to iterate over it on "+variable.position.line+". You should only iterate over non-empty lists.", variable.position.line)
+        return true;
+    } else if (report["Non-list iterations"].length >= 1) {
+        var variable = report["Non-list iterations"][0];
+        this.semanticError("Iterating over non-list", "The property <code>"+variable.name+"</code> is not a list, but you attempted to iterate over it on "+variable.position.line+". You should only iterate over non-empty lists.", variable.position.line)
+        return true;
+    } else if (report["Incompatible types"].length >= 1) {
+        var variable = report["Incompatible types"][0];
+        this.semanticError("Incompatible types", "You attempted to "+variable.operation+" a "+variable.left.type+" and a "+variable.right.type+" on line "+variable.position.line+". But you can't do that with that operator. Make sure both sides of the operator are the right type.", variable.position.line)
+        return true;
+    }
+    return false;
+}
 /**
  * An object that manages the main toolbar, including the different mode buttons.
  * This doesn't actually have many responsibilities after the initial load.
@@ -6154,12 +7171,12 @@ BlockPyToolbar.prototype.hidePrograms = function() {
 BlockPyToolbar.prototype.activateToolbar = function() {
     var main = this.main;
     this.tag.find('.blockpy-run').click(function() {
-        main.components.engine.run();
         main.components.server.logEvent('editor', 'run')
+        main.components.engine.on_run();
     });
     this.tags.mode_set_text.click(function() {
-        main.model.settings.editor("Text");
         main.components.server.logEvent('editor', 'text')
+        main.model.settings.editor("Text");
     });
     this.tag.find('.blockpy-toolbar-reset').click(function() {
         main.model.programs['__main__'](main.model.programs['starting_code']());
@@ -6170,8 +7187,8 @@ BlockPyToolbar.prototype.activateToolbar = function() {
         }
     });
     this.tag.find('.blockpy-mode-set-blocks').click(function() {
-        main.model.settings.editor("Blocks");
         main.components.server.logEvent('editor', 'blocks')
+        main.model.settings.editor("Blocks");
     });
     this.tag.find('.blockpy-mode-set-instructor').click(function() {
         main.model.settings.editor("Instructor");
@@ -6209,6 +7226,10 @@ BlockPyToolbar.prototype.activateToolbar = function() {
 /**
  * An object for executing Python code and passing the results along to interested components.
  *
+ * Interesting components:
+ *  Execution Buffer: Responsible for collecting the trace during program execution.
+ *                    This prevents Knockoutjs from updating the view during execution.
+ *
  * @constructor
  * @this {BlockPyEditor}
  * @param {Object} main - The main BlockPy instance
@@ -6216,66 +7237,67 @@ BlockPyToolbar.prototype.activateToolbar = function() {
  */
 function BlockPyEngine(main) {
     this.main = main;
+    this.configureSkulpt();
     
-    this.loadEngine();
-    
-    this.instructor_module = instructor_module('instructor');
-    
-    //this.main.model.program.subscribe(this.analyze.bind(this))
+    // Keeps track of the tracing while the program is executing
+    this.executionBuffer = {};
+    this.abstractInterpreter = new AbstractInterpreter();
 }
 
-/**
- * Definable function to be run when execution has fully ended,
- * whether it succeeds or fails.
- *
- */
-BlockPyEngine.prototype.onExecutionEnd = null;
-
-/**
- * Helper function that will attempt to call the defined onExecutionEnd,
- * but will do nothing if there is no function defined.
- */
-BlockPyEngine.prototype.executionEnd_ = function() {
-    if (this.onExecutionEnd !== null) {
-        this.onExecutionEnd();
-    }
-};
+BlockPyEngine.prototype.INSTRUCTOR_MODULE_CODE = 'var $builtinmodule = '+$sk_mod_instructor.toString();
 
 /**
  * Initializes the Python Execution engine and the Printer (console).
+ * This is typically called only once.
  */
-BlockPyEngine.prototype.loadEngine = function() {
-    var engine = this;
-    var printer = this.main.components.printer;
+BlockPyEngine.prototype.configureSkulpt = function() {
     // Skulpt settings
     // No connected services
     Sk.connectedServices = {}
-    // Limit execution to 5 seconds
-    Sk.execLimit = this.main.model.settings.disable_timeout() ? null : 5000;
-    
-    this.main.model.settings.disable_timeout.subscribe(function(newValue) {
-        Sk.execLimit = newValue ? null : 5000;
-    });
-    
     // Ensure version 3, so we get proper print handling
     Sk.python3 = true;
     // Major Skulpt configurations
+    var printer = this.main.components.printer;
     Sk.configure({
         // Function to handle the text outputted by Skulpt
         output: printer.print.bind(printer),
         // Function to handle loading in new files
         read: this.readFile.bind(this)
     });
-    // Identify the location to put new charts
-    Sk.console = printer.getConfiguration();
-    // Stepper! Executed after every statement.
-    Sk.afterSingleExecution = this.step.bind(this);
-    // Definitely use a prompt
+    // Create an input box
     Sk.inputfunTakesPrompt = true;
     Sk.inputfun = this.inputFunction.bind(this);
-    
-    // Keeps track of the tracing while the program is executing; destroyed afterwards.
-    this.executionBuffer = {};
+    // Access point for instructor data
+    Sk.executionReports = this.main.model.execution.reports;
+    Sk.feedbackSuppressions = this.main.model.execution.suppressions;
+}
+
+/**
+ *
+ */
+BlockPyEngine.prototype.setStudentEnvironment = function() {
+    // Limit execution to 5 seconds
+    Sk.execLimit = this.main.model.settings.disable_timeout() ? null : 5000;
+    // Identify the location to put new charts
+    Sk.console = this.main.components.printer.getConfiguration();
+    // Stepper! Executed after every statement.
+    Sk.afterSingleExecution = this.step.bind(this);
+    // Unlink the instructor module to prevent abuse
+    delete Sk.builtinFiles['files']['src/lib/instructor.js'];
+    // Unmute everything
+    Sk.skip_drawing = false;
+    this.main.model.settings.mute_printer(false);
+}
+BlockPyEngine.prototype.setInstructorEnvironment = function() {
+    // Instructors have no limits
+    Sk.execLimit = null;
+    // Stepper! Executed after every statement.
+    Sk.afterSingleExecution = null;
+    // Create the instructor module
+    Sk.builtinFiles['files']['src/lib/instructor.js'] = this.INSTRUCTOR_MODULE_CODE;
+    // Mute everything
+    Sk.skip_drawing = true;
+    this.main.model.settings.mute_printer(true);
 }
 
 /**
@@ -6296,6 +7318,7 @@ BlockPyEngine.prototype.readFile = function(filename) {
 
 /**
  * Creates and registers a Promise from the Input box
+ * @param {String} promptMessage - Message to display to the user.
  * 
  */
 BlockPyEngine.prototype.inputFunction = function(promptMessage) {
@@ -6330,7 +7353,7 @@ BlockPyEngine.prototype.inputFunction = function(promptMessage) {
  * hiding the trace button.
  *
  */
-BlockPyEngine.prototype.reset = function() {
+BlockPyEngine.prototype.resetExecution = function() {
     this.executionBuffer = {
         'trace': [],
         'step': 0,
@@ -6353,12 +7376,9 @@ BlockPyEngine.prototype.reset = function() {
  * @param {Number} lineNumber - The corresponding line number in the source code that is being executed.
  * @param {Number} columnNumber - The corresponding column number in the source code that is being executed. Think of it as the "X" position to the lineNumber's "Y" position.
  * @param {String} filename - The name of the python file being executed (e.g., "__main__.py").
- * @param {String} astType - Unused? TODO: What is this?
- * @param {String} ast - String-encoded JSON representation of the AST node associated with this element.
  */
-BlockPyEngine.prototype.step = function(variables, lineNumber, 
-                                       columnNumber, filename, astType, ast) {
-    if (filename == '<stdin>.py') {
+BlockPyEngine.prototype.step = function(variables, lineNumber, columnNumber, filename) {
+    if (filename == '__main__.py') {
         var currentStep = this.executionBuffer.step;
         var globals = this.parseGlobals(variables);
         this.executionBuffer.trace.push(
@@ -6382,607 +7402,231 @@ BlockPyEngine.prototype.step = function(variables, lineNumber,
 BlockPyEngine.prototype.lastStep = function() {
     var execution = this.main.model.execution;
     execution.trace(this.executionBuffer.trace);
-    this.main.model.execution.step(this.executionBuffer.step)
-    this.main.model.execution.last_step(this.executionBuffer.last_step)
-    this.main.model.execution.line_number(this.executionBuffer.line_number)
-    //this.executionBuffer = undefined;
+    execution.step(this.executionBuffer.step)
+    execution.last_step(this.executionBuffer.last_step)
+    execution.line_number(this.executionBuffer.line_number)
 }
 
 /**
- * Runs the AbstractInterpreter to get some static information about the code,
- * in particular the variables' types. This is needed for type checking.
- *
- * @returns {Object<String, AIType>} Maps variable names (as Strings) to types as constructed by the AbstractIntepreter.
+ * Activated whenever the Run button is clicked
  */
-BlockPyEngine.prototype.analyzeVariables = function() {
-    // Get the code
-    var code = this.main.model.programs['__main__']();
-    if (code.trim() == "") {
-        return {};
-    }
-    
-    var analyzer = new AbstractInterpreter(code);
-    report = analyzer.report;
-    return analyzer.variableTypes;
+BlockPyEngine.prototype.on_run = function() {
+    this.main.model.execution.status("running");
+    var engine = this;
+    engine.resetReports();
+    engine.verifyCode();
+    engine.updateParse();
+    engine.analyzeParse();
+    engine.runStudentCode(function() {
+        engine.runInstructorCode('give_feedback', function() {
+            var result = engine.main.components.feedback.presentFeedback();
+            if (result == 'success' || result == 'no errors') {
+                engine.main.components.server.markSuccess(1.0);
+            } else {
+                engine.main.components.server.markSuccess(0.0);
+            }
+            engine.main.model.execution.status("complete");
+        });
+    });
 }
-
 /**
- * Runs the AbstractInterpreter to get some static information about the code,
- * including potential semantic errors. It then parses that information to give
- * feedback.
- *
- * @returns {Boolean} Whether the code was successfully analyzed.
+ * Activated whenever the Python code changes
  */
-BlockPyEngine.prototype.analyze = function() {
-    this.main.model.execution.status("analyzing");
-    
-    var feedback = this.main.components.feedback;
-    
-    // Get the code
-    var code = this.main.model.programs['__main__']();
-    if (code.trim() == "") {
-        this.main.components.feedback.emptyProgram("You haven't written any code yet!");
-        //this.main.model.feedback.status("semantic");
+BlockPyEngine.prototype.on_step = function() {
+    this.main.model.execution.status("changing");
+    var FILENAME = 'on_step';
+    // TODO: Do we actually want to skip if this is the case?
+    // Skip if the instructor has not defined anything
+    if (!this.main.model.programs[FILENAME]().trim()) {
         return false;
     }
-    
-    var analyzer = new AbstractInterpreter(code);
-    this.main.model.execution.ast = analyzer.ast;
-    
-    report = analyzer.report;
-    // Syntax error
-    if (report.error !== false) {
-        console.log(report.error.args.v)
-        var codeLine = '.';
-        if (report.error.args.v.length > 3) {
-            codeLine = ', where it says:<br><code>'+report.error.args.v[3][2]+'</code>';
+    // On step does not perform parse analysis by default or run student code
+    var engine = this;
+    engine.resetReports();
+    engine.verifyCode();
+    engine.updateParse();
+    engine.runInstructorCode(FILENAME, function() {
+        engine.main.components.feedback.presentFeedback()
+        engine.main.model.execution.status("complete");
+    });
+}
+
+/**
+ * Reset reports and suppressions
+ */
+BlockPyEngine.prototype.resetReports = function() {
+    var report = this.main.model.execution.reports;
+    report['verifier'] = {};
+    report['parser'] = {};
+    report['analyzer'] = {};
+    report['student'] = {};
+    report['instructor'] = {};
+    var suppress = this.main.model.execution.suppressions;
+    suppress['verifier'] = false;
+    suppress['parser'] = false;
+    suppress['analyzer'] = false;
+    suppress['student'] = false;
+}
+
+BlockPyEngine.prototype.verifyCode = function() {
+    this.main.model.execution.status("verifying");
+    var report = this.main.model.execution.reports;
+    var FILENAME = '__main__';
+    var code = this.main.model.programs[FILENAME]();
+    // Make sure it has code
+    if (code.trim()) {
+        report['verifier'] = {
+            'success': true
         }
-        this.main.reportError('editor', report.error, "While attempting to process your Python code, I found a syntax error. In other words, your Python code has a mistake in it (e.g., mispelled a keyword, bad indentation, unnecessary symbol). You should check to make sure that you have written all of your code correctly. To me, it looks like the problem is on line "+ report.error.args.v[2]+codeLine, report.error.args.v[2]);
+    } else {
+        report['verifier'] = {
+            'success': false
+        }
+    }
+}
+
+/**
+ * Ensure that the parse information is up-to-date
+ */
+BlockPyEngine.prototype.updateParse = function() {
+    this.main.model.execution.status("parsing");
+    var FILENAME = '__main__';
+    var code = this.main.model.programs[FILENAME]();
+    var report = this.main.model.execution.reports;
+    // Attempt a parse
+    try {
+        var parse = Sk.parse(FILENAME, code);
+        var ast = Sk.astFromParse(parse.cst, FILENAME, parse.flags);
+    } catch (error) {
+        // Report the error
+        report['parser'] = {
+            'success': false,
+            'error': error
+        }
         return false;
     }
-        
-    if (report["Unconnected blocks"].length >= 1) {
-        var variable = report['Unconnected blocks'][0];
-        feedback.semanticError("Unconnected blocks", "It looks like you have unconnected blocks on line "+variable.position.line+". Before you run your program, you must make sure that all of your blocks are connected and that there are no unfilled holes.", variable.position.line)
-        return false;
-    } else if (report['Iteration variable is iteration list'].length >= 1) {
-        var variable = report['Iteration variable is iteration list'][0];
-        feedback.semanticError("Iteration Problem", "The property <code>"+variable.name+"</code> was iterated on line "+variable.position.line+", but you used the same variable as the iteration variable. You should choose a different variable name for the iteration variable. Usually, the iteration variable is the singular form of the iteration list (e.g., <code>for dog in dogs:</code>).", variable.position.line)
-        return false;
-    } else if (report["Undefined variables"].length >= 1) {
-        var variable = report["Undefined variables"][0];
-        feedback.semanticError("Initialization Problem", "The property <code>"+variable.name+"</code> was read on line "+variable.position.line+", but it was not given a value on a previous line. You cannot use a property until it has been initialized.", variable.position.line)
-        return false;
-    } else if (report["Possibly undefined variables"].length >= 1) {
-        var variable = report["Possibly undefined variables"][0];
-        feedback.semanticError("Initialization Problem", "The property <code>"+variable.name+"</code> was read on line "+variable.position.line+", but it was possibly not given a value on a previous line. You cannot use a property until it has been initialized. Check to make sure that this variable was declared in all of the branches of your decision.", variable.position.line);
-        return false;
-    } else if (report["Unread variables"].length >= 1) {
-        var variable = report["Unread variables"][0];
-        feedback.semanticError("Unused Property", "The property <code>"+variable.name+"</code> was set, but was never used after that.", null)
-        return false;
-    } else if (report["Overwritten variables"].length >= 1) {
-        var variable = report["Overwritten variables"][0];
-        feedback.semanticError("Overwritten Property", "The property <code>"+variable.name+"</code> was set, but before it could be read it was changed on line "+variable.position.line+". It is unnecessary to change an existing variable's value without reading it first.", variable.position.line)
-        return false;
-    } else if (report["Empty iterations"].length >= 1) {
-        var variable = report["Empty iterations"][0];
-        feedback.semanticError("Iterating over empty list", "The property <code>"+variable.name+"</code> was set as an empty list, and then you attempted to iterate over it on "+variable.position.line+". You should only iterate over non-empty lists.", variable.position.line)
-        return false;
-    } else if (report["Non-list iterations"].length >= 1) {
-        var variable = report["Non-list iterations"][0];
-        feedback.semanticError("Iterating over non-list", "The property <code>"+variable.name+"</code> is not a list, but you attempted to iterate over it on "+variable.position.line+". You should only iterate over non-empty lists.", variable.position.line)
-        return false;
-    } else if (report["Incompatible types"].length >= 1) {
-        var variable = report["Incompatible types"][0];
-        feedback.semanticError("Incompatible types", "You attempted to "+variable.operation+" a "+variable.left.type+" and a "+variable.right.type+" on line "+variable.position.line+". But you can't do that with that operator. Make sure both sides of the operator are the right type.", variable.position.line)
-        return false;
+    // Successful parse
+    report['parser'] = {
+        'success': true,
+        'ast': ast
     }
-    
     return true;
 }
 
-var GLOBAL_VALUE;
-
 /**
- * Runs the given python code, resetting the console and Trace Table.
+ * Run the abstract interpreter
  */
-BlockPyEngine.prototype.run = function() {
-    // Reset everything
-    this.reset();
-    
-    if (!this.main.model.settings.disable_semantic_errors() &&
-        !this.main.model.assignment.disable_algorithm_errors()) {
-        var success = this.analyze();
-        if (success === false) {
-            this.executionEnd_();
-            this.main.components.server.markSuccess(0.0);
-            return;
+BlockPyEngine.prototype.analyzeParse = function() {
+    this.main.model.execution.status("analyzing");
+    var report = this.main.model.execution.reports;
+    if (!report['parser']['success']) {
+        report['analyzer'] = {
+            'success': false,
+            'error': 'Parser was unsuccessful. Cannot run Abstract Interpreter'
+        }
+        return false;
+    }
+    var ast = report['parser']['ast'];
+    try {
+        this.abstractInterpreter.processAst(ast);
+    } catch (error) {
+        report['analyzer'] = {
+            'success': false,
+            'error': error
         }
     }
-    
-    Sk.builtins.value = new Sk.builtin.func(function() {
-        return Sk.ffi.remapToPy(GLOBAL_VALUE === undefined ? 5 : GLOBAL_VALUE);
-    });
-    Sk.builtins.set_value = new Sk.builtin.func(function(v) {
-        GLOBAL_VALUE = v.v;
-    });
-    
-    this.main.model.execution.status("running");
-    
-    var feedback = this.main.components.feedback;
-    
-    // Get the code
-    var code = this.main.model.programs['__main__']();
-    if (code.trim() == "") {
-        feedback.emptyProgram();
-        this.main.model.execution.status("error");
-        this.executionEnd_();
-        this.main.components.server.markSuccess(0.0);
-        return;
+    report['analyzer'] = {
+        'success': true,
+        'variables': this.abstractInterpreter.variableTypes,
+        'behavior': this.abstractInterpreter.variablesNonBuiltin,
+        'issues': this.abstractInterpreter.report
     }
-    // Actually run the python code
-    var executionPromise = Sk.misceval.asyncToPromise(function() {
-        return Sk.importMainWithBody("<stdin>", false, code, true);
-    });
-    
+    return true;
+}
+
+/**
+ * Run the student code
+ */
+BlockPyEngine.prototype.runStudentCode = function(after) {
+    this.main.model.execution.status("student");
+    var report = this.main.model.execution.reports;
     var engine = this;
-    var server = this.server;
-    var execution = this.main.model.execution;
-    executionPromise.then(
+    // Prepare execution
+    this.resetExecution();
+    this.setStudentEnvironment();
+    // Actually run the python code
+    var filename = '__main__';
+    var code = this.main.model.programs[filename]();
+    Sk.misceval.asyncToPromise(function() {
+        return Sk.importMainWithBody(filename, false, code, true);
+    }).then(
+        // Success
         function (module) {
-            // Run the afterSingleExecution one extra time for final state
-            Sk.afterSingleExecution(module.$d, -1, 0, "<stdin>.py");
+            Sk.afterSingleExecution(module.$d, -1, 0, filename+".py");
             engine.lastStep();
-            // Handle checks
-            feedback.noErrors()
-            engine.check(code, execution.trace(), execution.output(), execution.ast, module.$d);
-            // Reenable "Run"
-            engine.main.model.execution.status("waiting");
+            report['student'] = {
+                'success': true,
+                'trace': engine.executionBuffer.trace,
+                'module': module
+            }
+            after();
             engine.executionEnd_();
         },
-        function(error) {
-            feedback.printError(error);
-            engine.main.model.execution.status("error");
+        // Failure
+        function (error) {
+            report['student'] = {
+                'success': false,
+                'error': error
+            }
+            after();
             engine.executionEnd_();
-            server.markSuccess(0.0);
-            //server.logEvent('blockly_error', error);
         }
     );
 }
 
 /**
- * Indents the given string by 4 spaces. This correctly handles multi-line strings.
- *
- * @param {String} str - The string to be manipulated.
- * @returns {String} The string with four spaces added at the start of every new line.
+ * Run the instructor code
  */
-function indent(str) {
-  return str.replace(/^(?=.)/gm, '    ');
+BlockPyEngine.prototype.runInstructorCode = function(filename, after) {
+    this.main.model.execution.status("instructor");
+    var report = this.main.model.execution.reports;
+    // Prepare execution
+    this.setInstructorEnvironment();
+    // Actually run the python code
+    var studentCode = this.main.model.programs['__main__']();
+    var instructorCode = this.main.model.programs[filename]();
+    instructorCode = 'def run_code():\n'+indent(studentCode)+'\n'+instructorCode;
+    instructorCode = 'from instructor import *\n' + instructorCode;
+    var engine = this;
+    report['instructor'] = {};
+    Sk.misceval.asyncToPromise(function() {
+        return Sk.importMainWithBody(filename, false, instructorCode, true);
+    }).then(
+        // Success
+        function (module) {
+            report['instructor']['success'] = true;
+            after();
+        },
+        // Failure
+        function (error) {
+            if (error.tp$name === 'GracefulExit') {
+                report['instructor']['success'] = true;
+            } else {
+                report['instructor']['success'] = false;
+                report['instructor']['error'] = error;
+            }
+            after();
+        }
+    );
 }
+
 
 /**
- * Skulpt Module for holding the Instructor API.
+ * Consume a set of variables traced from the execution and parse out any
+ * global variables and modules.
  *
- * This module is a little hackish. We need to sit down and reevaluate the best way to
- * organize it and whether this particular structure is ideal. I suspect it should be
- * it's own proper JS file.
- *
- * @param {String} name - The name of the module (should always be 'instructor')
- *
+ * @param {Object} variables - a mapping of variable names to their Skupt value.
  */
-var instructor_module = function(name) {
-    // Main module object that gets returned at the end.
-    var mod = {};
-    
-    /**
-     * Skulpt Exception that represents a Feedback object, to be rendered to the user
-     * when the feedback system finds a problem.
-     * 
-     * @param {Array} args - A list of optional arguments to pass to the Exception.
-     *                       Usually this will include a message for the user.
-     */
-    Sk.builtin.Feedback = function (args) {
-        var o;
-        if (!(this instanceof Sk.builtin.Feedback)) {
-            o = Object.create(Sk.builtin.Feedback.prototype);
-            o.constructor.apply(o, arguments);
-            return o;
-        }
-        Sk.builtin.Exception.apply(this, arguments);
-    };
-    Sk.abstr.setUpInheritance("Feedback", Sk.builtin.Feedback, Sk.builtin.Exception);
-    
-    /**
-     * Skulpt Exception that represents a Success object, to be thrown when the user
-     * completes their program successfully.
-     *
-     ** @param {Array} args - A list of optional arguments to pass to the Exception.
-     *                       Usually this will be empty.
-     */
-    Sk.builtin.Success = function (args) {
-        var o;
-        if (!(this instanceof Sk.builtin.Success)) {
-            o = Object.create(Sk.builtin.Success.prototype);
-            o.constructor.apply(o, arguments);
-            return o;
-        }
-        Sk.builtin.Exception.apply(this, arguments);
-    };
-    Sk.abstr.setUpInheritance("Success", Sk.builtin.Success, Sk.builtin.Exception);
-    
-    /**
-     * Skulpt Exception that represents a Finished object, to be thrown when the user
-     * completes their program successfully, but isn't in a problem with a "solution".
-     * This is useful for open-ended canvases where we still want to capture the students'
-     * code in Canvas.
-     *
-     ** @param {Array} args - A list of optional arguments to pass to the Exception.
-     *                       Usually this will be empty.
-     */
-    Sk.builtin.Finished = function (args) {
-        var o;
-        if (!(this instanceof Sk.builtin.Finished)) {
-            o = Object.create(Sk.builtin.Finished.prototype);
-            o.constructor.apply(o, arguments);
-            return o;
-        }
-        Sk.builtin.Exception.apply(this, arguments);
-    };
-    Sk.abstr.setUpInheritance("Finished", Sk.builtin.Finished, Sk.builtin.Exception);
-    
-    /**
-     * A Skulpt function that throws a Feedback exception, allowing us to give feedback
-     * to the user through the Feedback panel. This function call is done for aesthetic
-     * reasons, so that we are calling a function instead of raising an error. Still,
-     * exceptions allow us to break out of the control flow immediately, like a 
-     * return, so they are a good mechanism to use under the hood.
-     * 
-     * @param {String} message - The message to display to the user.
-     */
-    mod.set_feedback = new Sk.builtin.func(function(message) {
-        Sk.builtin.pyCheckArgs("set_feedback", arguments, 1, 1);
-        Sk.builtin.pyCheckType("message", "string", Sk.builtin.checkString(message));
-        throw new Sk.builtin.Feedback(message.v);
-    });
-    
-    /**
-     * A Skulpt function that throws a Success exception. This will terminate the
-     * feedback analysis, but reports that the students' code was successful.
-     * This function call is done for aesthetic reasons, so that we are calling a
-     * function instead of raising an error. Still, exceptions allow us to break
-     * out of the control flow immediately, like a return would, so they are a
-     * good mechanism to use under the hood.
-     */
-    mod.set_success = new Sk.builtin.func(function() {
-        Sk.builtin.pyCheckArgs("set_success", arguments, 0, 0);
-        throw new Sk.builtin.Success();
-    });
-    
-    /**
-     * A Skulpt function that throws a Finished exception. This will terminate the
-     * feedback analysis, but reports that the students' code was successful.
-     * This function call is done for aesthetic reasons, so that we are calling a
-     * function instead of raising an error. Still, exceptions allow us to break
-     * out of the control flow immediately, like a return would, so they are a
-     * good mechanism to use under the hood.
-     */
-    mod.set_finished = new Sk.builtin.func(function() {
-        Sk.builtin.pyCheckArgs("set_finished", arguments, 0, 0);
-        throw new Sk.builtin.Finished();
-    });
-    
-    // Memoization of previous parses - some mild redundancy to save time
-    // TODO: There's no evidence this is good, and could be a memory hog on big
-    // programs. Someone should investigate this. The assumption is that multiple
-    // helper functions might be using parses. But shouldn't we trim old parses?
-    // Perhaps a timed cache would work better.
-    var parses = {};
-    
-    /**
-     * Given source code as a string, return a flat list of all of the AST elements
-     * in the parsed source code.
-     *
-     * TODO: There's redundancy here, since the source code was previously parsed
-     * to run the file and to execute it. We should probably be able to do this just
-     * once and shave off time.
-     *
-     * @param {String} source - Python source code.
-     * @returns {Array.<Object>}
-     */
-    function getParseList(source) {
-        if (!(source in parses)) {
-            var parse = Sk.parse("__main__", source);
-            parses[source] = Sk.astFromParse(parse.cst, "__main__", parse.flags);
-        }
-        var ast = parses[source];
-        return (new NodeVisitor()).recursive_walk(ast);
-    }
-    
-    /**
-     * Given source code as a string, return a list of all of the AST elements
-     * that are Num (aka numeric literals) but that are not inside List elements.
-     *
-     * @param {String} source - Python source code.
-     * @returns {Array.number} The list of JavaScript numeric literals that were found.
-     */
-    function getNonListNums(source) {
-        if (!(source in parses)) {
-            var parse = Sk.parse("__main__", source);
-            parses[source] = Sk.astFromParse(parse.cst, "__main__", parse.flags);
-        }
-        var ast = parses[source];
-        var visitor = new NodeVisitor();
-        var insideList = false;
-        var nums = [];
-        visitor.visit_List = function(node) {
-            insideList = true;
-            this.generic_visit(node);
-            insideList = false;
-        }
-        visitor.visit_Num = function(node) {
-            if (!insideList) {
-                nums.push(node.n);
-            }
-            this.generic_visit(node);
-        }
-        visitor.visit(ast);
-        return nums;
-    }
-    
-    /**
-     * Given source code as a string, return a list of all of the AST elements
-     * that are being printed (using the print function) but are not variables.
-     *
-     * @param {String} source - Python source code.
-     * @returns {Array.<Object>} The list of AST elements that were found.
-     */
-    function getPrintedNonProperties(source) {
-        if (!(source in parses)) {
-            var parse = Sk.parse("__main__", source);
-            parses[source] = Sk.astFromParse(parse.cst, "__main__", parse.flags);
-        }
-        var ast = parses[source];
-        var visitor = new NodeVisitor();
-        var nonVariables = [];
-        visitor.visit_Call = function(node) {
-            var func = node.func;
-            var args = node.args;
-            if (func._astname == 'Name' && func.id.v == 'print') {
-                for (var i =0; i < args.length; i+= 1) {
-                    if (args[i]._astname != "Name") {
-                        nonVariables.push(args[i]);
-                    }
-                }
-            }
-            this.generic_visit(node);
-        }
-        visitor.visit(ast);
-        return nonVariables;
-    }
-    
-    /**
-     * Skulpt function to iterate through the final state of
-     * all the variables in the program, and check to see if they have
-     * a given value.
-     */
-    mod.get_value_by_name = new Sk.builtin.func(function(name) {
-        Sk.builtin.pyCheckArgs("get_value_by_name", arguments, 1, 1);
-        Sk.builtin.pyCheckType("name", "string", Sk.builtin.checkString(name));
-        name = name.v;
-        var final_values = Sk.builtins._final_values;
-        if (name in final_values) {
-            return final_values[name];
-        } else {
-            return Sk.builtin.none.none$;
-        }
-    });
-    mod.get_value_by_type = new Sk.builtin.func(function(type) {
-        Sk.builtin.pyCheckArgs("get_value_by_type", arguments, 1, 1);
-        
-        var final_values = Sk.builtins._final_values;
-        var result = [];
-        for (var property in final_values) {
-            if (final_values[property].tp$name == type.tp$name) {
-                result.push(final_values[property]);
-            }
-        }
-        return Sk.builtin.list(result);
-    });
-    
-    mod.parse_json = new Sk.builtin.func(function(blob) {
-        Sk.builtin.pyCheckArgs("parse_json", arguments, 1, 1);
-        Sk.builtin.pyCheckType("blob", "string", Sk.builtin.checkString(blob));
-        blob = blob.v;
-        return Sk.ffi.remapToPy(JSON.parse(blob));
-    });
-    mod.get_property = new Sk.builtin.func(function(name) {
-        Sk.builtin.pyCheckArgs("get_property", arguments, 1, 1);
-        Sk.builtin.pyCheckType("name", "string", Sk.builtin.checkString(name));
-        name = name.v;
-        var trace = Sk.builtins._trace;
-        if (trace.length <= 0) {
-            return Sk.builtin.none.none$;
-        }
-        var properties = trace[trace.length-1]["properties"];
-        for (var i = 0, len = properties.length; i < len; i += 1) {
-            if (properties[i]['name'] == name) {
-                return Sk.ffi.remapToPy(properties[i])
-            }
-        }
-        return Sk.builtin.none.none$;
-    });
-    
-    mod.calls_function = new Sk.builtin.func(function(source, name) {
-        Sk.builtin.pyCheckArgs("calls_function", arguments, 2, 2);
-        Sk.builtin.pyCheckType("source", "string", Sk.builtin.checkString(source));
-        Sk.builtin.pyCheckType("name", "string", Sk.builtin.checkString(name));
-        
-        source = source.v;
-        name = name.v;
-        
-        var ast_list = getParseList(source);
-        
-        var count = 0;
-        for (var i = 0, len = ast_list.length; i < len; i = i+1) {
-            if (ast_list[i]._astname == 'Call') {
-                if (ast_list[i].func._astname == 'Attribute') {
-                    count += Sk.ffi.remapToJs(ast_list[i].func.attr) == name | 0;
-                } else if (ast_list[i].func._astname == 'Name') {
-                    count += Sk.ffi.remapToJs(ast_list[i].func.id) == name | 0;
-                }   
-            }
-        }
-        
-        return Sk.ffi.remapToPy(count > 0);
-    });
-    
-    mod.count_components = new Sk.builtin.func(function(source, component) {
-        Sk.builtin.pyCheckArgs("count_components", arguments, 2, 2);
-        Sk.builtin.pyCheckType("source", "string", Sk.builtin.checkString(source));
-        Sk.builtin.pyCheckType("component", "string", Sk.builtin.checkString(component));
-        
-        source = source.v;
-        component = component.v;
-        
-        var ast_list = getParseList(source);
-        
-        var count = 0;
-        for (var i = 0, len = ast_list.length; i < len; i = i+1) {
-            if (ast_list[i]._astname == component) {
-                count = count+1;
-            }
-        }
-        
-        return Sk.ffi.remapToPy(count);
-    });
-    
-    mod.no_nonlist_nums = new Sk.builtin.func(function(source) {
-        Sk.builtin.pyCheckArgs("no_nonlist_nums", arguments, 1, 1);
-        Sk.builtin.pyCheckType("source", "string", Sk.builtin.checkString(source));
-        
-        source = source.v;
-        
-        var num_list = getNonListNums(source);
-        
-        var count = 0;
-        for (var i = 0, len = num_list.length; i < len; i = i+1) {
-            if (num_list[i].v != 0 && num_list[i].v != 1) {
-                return Sk.ffi.remapToPy(true);
-            }
-        }
-        return Sk.ffi.remapToPy(false);
-    });
-    mod.only_printing_properties = new Sk.builtin.func(function(source) {
-        Sk.builtin.pyCheckArgs("only_printing_properties", arguments, 1, 1);
-        Sk.builtin.pyCheckType("source", "string", Sk.builtin.checkString(source));
-        
-        source = source.v;
-        
-        var non_var_list = getPrintedNonProperties(source);
-        return Sk.ffi.remapToPy(non_var_list.length == 0);
-    });
-    
-    return mod;
-}
-
-BlockPyEngine.prototype.setupEnvironment = function(student_code, traceTable, output, ast, final_values) {
-    var model = this.main.model;
-    this._backup_execution = Sk.afterSingleExecution;
-    Sk.afterSingleExecution = undefined;
-    Sk.builtins.get_output = new Sk.builtin.func(function() { 
-        Sk.builtin.pyCheckArgs("get_output", arguments, 0, 0);
-        return Sk.ffi.remapToPy(model.execution.output());
-    });
-    Sk.builtins.reset_output = new Sk.builtin.func(function() { 
-        Sk.builtin.pyCheckArgs("reset_output", arguments, 0, 0);
-        model.execution.output.removeAll();
-    });
-    Sk.builtins.log = new Sk.builtin.func(function(data) { 
-        Sk.builtin.pyCheckArgs("log", arguments, 1, 1);
-        console.log(data)
-    });
-    //Sk.builtins.trace = Sk.ffi.remapToPy(traceTable);
-    Sk.builtins._trace = traceTable;
-    Sk.builtins._final_values = final_values;
-    Sk.builtins.code = Sk.ffi.remapToPy(student_code);
-    Sk.builtins.set_success = this.instructor_module.set_success;
-    Sk.builtins.set_feedback = this.instructor_module.set_feedback;
-    Sk.builtins.set_finished = this.instructor_module.set_finished;
-    Sk.builtins.count_components = this.instructor_module.count_components;
-    Sk.builtins.no_nonlist_nums = this.instructor_module.no_nonlist_nums;
-    Sk.builtins.only_printing_properties = this.instructor_module.only_printing_properties;
-    Sk.builtins.calls_function = this.instructor_module.calls_function;
-    Sk.builtins.get_property = this.instructor_module.get_property;
-    Sk.builtins.get_value_by_name = this.instructor_module.get_value_by_name;
-    Sk.builtins.get_value_by_type = this.instructor_module.get_value_by_type;
-    Sk.builtins.parse_json = this.instructor_module.parse_json;
-    Sk.skip_drawing = true;
-    model.settings.mute_printer(true);
-}
-
-BlockPyEngine.prototype.disposeEnvironment = function() {
-    Sk.afterSingleExecution = this._backup_execution;
-    Sk.builtins.get_output = undefined;
-    Sk.builtins.reset_output = undefined;
-    Sk.builtins.log = undefined;
-    Sk.builtins._trace = undefined;
-    Sk.builtins.trace = undefined;
-    Sk.builtins.code = undefined;
-    Sk.builtins.set_success = undefined;
-    Sk.builtins.set_feedback = undefined;
-    Sk.builtins.set_finished = undefined;
-    Sk.builtins.count_components = undefined;
-    Sk.builtins.calls_function = undefined;
-    Sk.builtins.get_property = undefined;
-    Sk.builtins.get_value_by_name = undefined;
-    Sk.builtins.get_value_by_type = undefined;
-    Sk.builtins.no_nonlist_nums = undefined;
-    Sk.builtins.only_printing_properties = undefined;
-    Sk.builtins.parse_json = undefined;
-    Sk.skip_drawing = false;
-    GLOBAL_VALUE = undefined;
-    this.main.model.settings.mute_printer(false);
-}
-
-BlockPyEngine.prototype.check = function(student_code, traceTable, output, ast, final_values) {
-    var engine = this;
-    var server = this.main.components.server;
-    var model = this.main.model;
-    var on_run = model.programs['give_feedback']();
-    if (on_run !== undefined && on_run.trim() !== "") {
-        on_run = 'def run_code():\n'+indent(student_code)+'\n'+on_run;
-        this.setupEnvironment(student_code, traceTable, output, ast, final_values);
-        
-        var executionPromise = Sk.misceval.asyncToPromise(function() {
-            return Sk.importMainWithBody("<stdin>", false, on_run, true);
-        });
-        executionPromise.then(
-            function (module) {
-                engine.main.components.feedback.noErrors();
-                engine.disposeEnvironment();
-            }, function (error) {
-                engine.disposeEnvironment();
-                console.log(error.tp$name, error.tp$name == "Success");
-                if (error.tp$name == "Success") {
-                    server.markSuccess(1.0, model.settings.completedCallback);
-                    engine.main.components.feedback.complete();
-                } else if (error.tp$name == "Feedback") {
-                    server.markSuccess(0.0);
-                    engine.main.components.feedback.instructorFeedback("Incorrect Answer", error.args.v[0].v);
-                } else if (error.tp$name == "Finished") {
-                    server.markSuccess(1.0, model.settings.completedCallback);
-                    engine.main.components.feedback.finished();
-                } else {
-                    console.error(error);
-                    engine.main.components.feedback.internalError(error, "Feedback Error", "Error in instructor's feedback. Please show the above message to an instructor!");
-                    server.logEvent('blockly_instructor_error', ''+error);
-                    server.markSuccess(0.0);
-                }
-            });
-    }
-}
-
 BlockPyEngine.prototype.parseGlobals = function(variables) {
     var result = Array();
     var modules = Array();
@@ -7002,6 +7646,12 @@ BlockPyEngine.prototype.parseGlobals = function(variables) {
     return {"properties": result, "modules": modules};
 }
 
+/**
+ * Convert a Skulpt value into a more easily printable object.
+ * 
+ * @param {String} property
+ * @param {Object} value - the skulpt value
+ */
 BlockPyEngine.prototype.parseValue = function(property, value) {
     if (value == undefined) {
         return {'name': property,
@@ -7097,43 +7747,20 @@ BlockPyEngine.prototype.parseValue = function(property, value) {
 }
 
 /**
- * A helper function for extending an array based
- * on an "addArray" and "removeArray". Any element
- * found in removeArray is removed from the first array
- * and all the elements of addArray are added.
- * Creates a new array, so is non-destructive.
- *
- * @param {Array} array - the array to manipulate
- * @param {Array} addArray - the elements to add to the array
- * @param {Array} removeArray - the elements to remove from the array
- * @return {Array} The modified array
+ * Definable function to be run when execution has fully ended,
+ * whether it succeeds or fails.
  */
-function expandArray(array, addArray, removeArray) {
-    var copyArray = array.filter(function(item) {
-        return removeArray.indexOf(item) === -1;
-    });
-    return copyArray.concat(addArray);
-}
+BlockPyEngine.prototype.onExecutionEnd = null;
 
 /**
- * Deeply clones a node
- * @param {Node} node A node to clone
- * @return {Node} A clone of the given node and all its children
+ * Helper function that will attempt to call the defined onExecutionEnd,
+ * but will do nothing if there is no function defined.
  */
-function cloneNode(node) {
-    // If the node is a text node, then re-create it rather than clone it
-    var clone = node.nodeType == 3 ? document.createTextNode(node.nodeValue) : node.cloneNode(false);
- 
-    // Recurse     
-    var child = node.firstChild;
-    while(child) {
-        clone.appendChild(cloneNode(child));
-        child = child.nextSibling;
+BlockPyEngine.prototype.executionEnd_ = function() {
+    if (this.onExecutionEnd !== null) {
+        this.onExecutionEnd();
     }
-     
-    return clone;
-}
-
+};
 /**
  * Creates an instance of BlockPy
  *
@@ -7144,201 +7771,13 @@ function cloneNode(node) {
  * @param {Object} submission - Unused parameter.
  * @param {Object} programs - Includes the source code of any programs to be loaded
  */
-function BlockPy(settings, assignment, submission, programs) {
-    this.model = {
-        // User level settings
-        "settings": {
-            // Default mode when you open the screen is text
-            // 'text', 'blocks'
-            'editor': ko.observable(assignment.initial_view),
-            // Default mode when you open the screen is instructor
-            // boolean
-            'instructor': ko.observable(settings.instructor),
-            'instructor_initial': ko.observable(settings.instructor),
-            // String
-            'log_id': ko.observable(null),
-            // boolean
-            'enable_blocks': ko.observable(settings.blocks_enabled),
-            // boolean
-            'read_only': ko.observable(settings.read_only),
-            // string
-            'filename': ko.observable("__main__"),
-            // string
-            'level': ko.observable("level"),
-            // boolean
-            'show_settings': ko.observable(settings.show_settings),
-            // boolean
-            'disable_semantic_errors': ko.observable(settings.disable_semantic_errors ||
-                                                     assignment.disable_algorithm_errors || false),
-            // boolean
-            'disable_variable_types': ko.observable(settings.disable_variable_types),
-            // boolean
-            'disable_timeout': ko.observable(settings.disable_timeout || false),
-            // boolean
-            'auto_upload': ko.observable(true),
-            // boolean
-            'developer': ko.observable(settings.developer || false),
-            // boolean
-            'mute_printer': ko.observable(false),
-            // function
-            'completedCallback': settings.completedCallback,
-        },
-        'execution': {
-            // 'waiting', 'running'
-            'status': ko.observable('waiting'),
-            // integer
-            'step': ko.observable(0),
-            // integer
-            'last_step': ko.observable(0),
-            // list of string/list of int
-            'output': ko.observableArray([]),
-            // integer
-            'line_number': ko.observable(0),            
-            // array of simple objects
-            'trace': ko.observableArray([]),
-            // integer
-            'trace_step': ko.observable(0),
-            // object
-            'ast': {},
-            // boolean
-            'show_trace': ko.observable(false),
-        },
-        'status': {
-            // boolean
-            'loaded': ko.observable(false),
-            'text': ko.observable("Loading"),
-            // 'none', 'runtime', 'syntax', 'semantic', 'feedback', 'complete', 'editor'
-            'error': ko.observable('none'),
-            // "Loading", "Saving", "Ready", "Disconnected", "Error"
-            'server': ko.observable("Loading"),
-            // Some message from a server error can go here
-            'server_error': ko.observable(''),
-            // Dataset loading
-            'dataset_loading': ko.observableArray()
-        },
-        'constants': {
-            // string
-            'blocklyPath': settings.blocklyPath,
-            // boolean
-            'blocklyScrollbars': true,
-            // string
-            'attachmentPoint': settings.attachmentPoint,
-            // JQuery object
-            'container': null,
-            // Maps codes ('log_event', 'save_code') to URLs
-            'urls': settings.urls
-        },
-        // Assignment level settings
-        "assignment": {
-            'modules': ko.observableArray(expandArray(BlockPy.DEFAULT_MODULES, assignment.modules.added || [], assignment.modules.removed || [])),
-            'assignment_id': assignment.assignment_id,
-            'student_id': assignment.student_id,
-            'course_id': assignment.course_id,
-            'group_id': assignment.group_id,
-            'version': ko.observable(assignment.version),
-            //'lis_result_sourcedid': assignment.lis_result_sourcedid,
-            'name': ko.observable(assignment.name),
-            'introduction': ko.observable(assignment.introduction),
-            "initial_view": ko.observable(assignment.initial_view || 'Blocks'),
-            'parsons': ko.observable(assignment.parsons),
-            'upload': ko.observable(assignment.initial_view == 'Upload'),
-            'importable': ko.observable(assignment.importable || false),
-            'disable_algorithm_errors': ko.observable(assignment.disable_algorithm_errors || false)
-        },
-        "programs": {
-            "__main__": ko.observable(programs.__main__),
-            "starting_code": ko.observable(assignment.starting_code),
-            "give_feedback": ko.observable(assignment.give_feedback),
-            "answer": ko.observable(assignment.answer)
-        }
-    };
-    
-    // The code for the current active program file (e.g., "__main__")
-    this.model.program = ko.computed(function() {
-        return this.programs[this.settings.filename()]();
-    }, this.model) //.extend({ rateLimit: { method: "notifyWhenChangesStop", timeout: 400 } });
-    
-    // Whether this URL has been specified
-    this.model.server_is_connected = function(url) {
-        return this.constants.urls !== undefined && this.constants.urls[url] !== undefined;
-    };
-    
-    var modelSettings = this.model.settings;
-    this.model.showHideSettings = function() {
-        modelSettings.show_settings(!modelSettings.show_settings());
-    };
-    
-    // Helper function to map error statuses to UI elements
-    this.model.status_feedback_class = ko.computed(function() {
-        switch (this.status.error()) {
-            default: case 'none': return ['label-none', ''];
-            case 'runtime': return ['label-runtime-error', 'Runtime Error'];
-            case 'syntax': return ['label-syntax-error', 'Syntax Error'];
-            case 'editor': return ['label-syntax-error', 'Editor Error'];
-            case 'internal': return ['label-internal-error', 'Internal Error'];
-            case 'semantic': return ['label-semantic-error', 'Algorithm Error'];
-            case 'feedback': return ['label-feedback-error', 'Incorrect Answer'];
-            case 'complete': return ['label-problem-complete', 'Complete'];
-            case 'no errors': return ['label-no-errors', 'No errors'];
-        }
-    }, this.model);
-    
-    // Helper function to map Server error statuses to UI elements
-    this.model.status_server_class = ko.computed(function() {
-        switch (this.status.server()) {
-            default: case 'Loading': return ['label-default', 'Loading'];
-            case 'Offline': return ['label-default', 'Offline'];
-            case 'Out of date': return ['label-danger', 'Out of Date'];
-            case 'Loaded': return ['label-success', 'Loaded'];
-            case 'Logging': return ['label-primary', 'Logging'];
-            case 'Saving': return ['label-primary', 'Saving'];
-            case 'Saved': return ['label-success', 'Saved'];
-            case 'Disconnected': return ['label-danger', 'Disconnected'];
-            case 'Error': return ['label-danger', 'Error'];
-        }
-    }, this.model);
-    
-    // Program trace functions
-    var execution = this.model.execution;
-    this.model.moveTraceFirst = function(index) { 
-        execution.trace_step(0); };
-    this.model.moveTraceBackward = function(index) { 
-        var previous = Math.max(execution.trace_step()-1, 0);
-        execution.trace_step(previous); };
-    this.model.moveTraceForward = function(index) { 
-        var next = Math.min(execution.trace_step()+1, execution.last_step());
-        execution.trace_step(next); };
-    this.model.moveTraceLast = function(index) { 
-        execution.trace_step(execution.last_step()); };
-    this.model.current_trace = ko.pureComputed(function() {
-        return execution.trace()[Math.min(execution.trace().length-1, execution.trace_step())];
-    });
-    
-    /**
-     * Opens a new window to represent the exact value of a Skulpt object.
-     * Particularly useful for things like lists that can be really, really
-     * long.
-     * 
-     * @param {String} type - The type of the value
-     * @param {Object} exact_value - A Skulpt value to be rendered.
-     */
-    this.model.viewExactValue = function(type, exact_value) {
-        return function() {
-            if (type == "List") {
-                var output = exact_value.$r().v;
-                var result = (window.btoa?'base64,'+btoa(JSON.stringify(output)):JSON.stringify(output));
-                window.open('data:application/json;' + result);
-            }
-        }
+function BlockPy(settings, assignment, programs) {
+    this.localSettings = new LocalStorageWrapper('localSettings');
+    this.initModel(settings);
+    if (assignment !== undefined) {
+        this.setAssignment(settings, assignment, programs);
     }
-    
-    // For performance reasons, batch notifications for execution handling.
-    // I'm not even sure these have any value any more.
-    execution.trace.extend({ rateLimit: { timeout: 20, method: "notifyWhenChangesStop" } });
-    execution.step.extend({ rateLimit: { timeout: 20, method: "notifyWhenChangesStop" } });
-    execution.last_step.extend({ rateLimit: { timeout: 20, method: "notifyWhenChangesStop" } });
-    execution.line_number.extend({ rateLimit: { timeout: 20, method: "notifyWhenChangesStop" } });
-    
+    this.initModelMethods();
     this.initMain();
 }
 
@@ -7361,7 +7800,7 @@ BlockPy.DEFAULT_MODULES = ['Properties', 'Decisions',
 BlockPy.prototype.initMain = function() {
     this.turnOnHacks();
     this.initInterface();
-    this.initModel();
+    this.applyModel();
     this.initComponents();
     if (this.model.settings.developer()) {
         this.initDevelopment();
@@ -7386,7 +7825,7 @@ BlockPy.prototype.initInterface = function() {
  * Applys the KnockoutJS bindings to the model, instantiating the values into the
  * HTML.
  */
-BlockPy.prototype.initModel = function() {
+BlockPy.prototype.applyModel = function() {
     ko.applyBindings(this.model);
 }
 
@@ -7443,19 +7882,6 @@ BlockPy.prototype.initDevelopment = function () {
 }
 
 /**
- * Redundant method for reporting an error. If this is used anywhere, it should be
- * converted to direct calls to components.feedback.
- */
-BlockPy.prototype.reportError = function(component, original, message, line) {
-    if (component == 'editor') {
-        this.components.feedback.editorError(original, message, line);
-    } else if (component == 'syntax') {
-        this.components.feedback.syntaxError(original, message, line);
-    }
-    console.error(component, message)
-}
-
-/**
  * Helper function for setting the current code, optionally in the given filename.
  *
  * @param {String} code - The new Python source code to set.
@@ -7471,10 +7897,309 @@ BlockPy.prototype.setCode = function(code, name) {
     return original != this.model.programs[name]();
 }
 
-BlockPy.prototype.setAssignment = function(assignment, settings) {
+/**
+ * Initializes the model to its defaults
+ */
+BlockPy.prototype.initModel = function(settings) {
+    var getDefault = this.localSettings.getDefault.bind(this.localSettings);
+    this.model = {
+        // User level settings
+        'settings': {
+            // Default mode when you open the screen is text
+            // 'Text', 'Blocks', "Split"
+            'editor': ko.observable(getDefault('editor','Split')),
+            // Default mode when you open the screen is instructor
+            // boolean
+            'instructor': ko.observable(getDefault('instructor', "true")=="true"),
+            // Track the original value
+            // boolean
+            'instructor_initial': ko.observable(getDefault('instructor', "true")=="true"),
+            // Internal for Refresh mechanism to fix broken logs
+            // String
+            'log_id': ko.observable(null),
+            // boolean
+            'enable_blocks': ko.observable(true),
+            // Whether the canvas is read-only
+            // boolean
+            'read_only': ko.observable(false),
+            // The current filename that we are editing
+            // string
+            'filename': ko.observable("__main__"),
+            // boolean
+            'show_settings': ko.observable(false),
+            // boolean
+            'disable_semantic_errors': ko.observable(false),
+            // boolean
+            'disable_variable_types': ko.observable(false),
+            // boolean
+            'disable_timeout': ko.observable(false),
+            // boolean
+            'auto_upload': ko.observable(true),
+            // boolean
+            'developer': ko.observable(false),
+            // boolean
+            'mute_printer': ko.observable(false),
+            // function
+            'completedCallback': undefined,
+            // boolean
+            'server_connected': ko.observable(true)
+        },
+        // Assignment level settings
+        'assignment': {
+            'modules': ko.observableArray(BlockPy.DEFAULT_MODULES),
+            'assignment_id': ko.observable(null),
+            'student_id': null,
+            'course_id': null,
+            'group_id': null,
+            'version': ko.observable(0),
+            'name': ko.observable('Untitled'),
+            'introduction': ko.observable(''),
+            "initial_view": ko.observable('Split'),
+            'parsons': ko.observable(false),
+            'upload': ko.observable(false),
+            'importable': ko.observable(false),
+            'disable_algorithm_errors': ko.observable(false)
+        },
+        // Programs' actual code
+        'programs': {
+            "__main__": ko.observable(''),
+            "starting_code": ko.observable(''),
+            "give_feedback": ko.observable(''),
+            "on_step": ko.observable(''),
+            "answer": ko.observable('')
+        },
+        // Information about the current run of the program
+        'execution': {
+            // 'waiting', 'running'
+            'status': ko.observable('waiting'),
+            // integer
+            'step': ko.observable(0),
+            // integer
+            'last_step': ko.observable(0),
+            // list of string/list of int
+            'output': ko.observableArray([]),
+            // integer
+            'line_number': ko.observable(0),            
+            // array of simple objects
+            'trace': ko.observableArray([]),
+            // integer
+            'trace_step': ko.observable(0),
+            // boolean
+            'show_trace': ko.observable(false),
+            // object: strings => objects
+            'reports': {},
+            // objects: strings => boolean
+            'suppressions': {}
+            
+        },
+        // Internal and external status information
+        'status': {
+            // boolean
+            'loaded': ko.observable(false),
+            // Status text
+            // string
+            'text': ko.observable("Loading"),
+            // 'none', 'runtime', 'syntax', 'semantic', 'feedback', 'complete', 'editor'
+            'error': ko.observable('none'),
+            // "Loading", "Saving", "Ready", "Disconnected", "Error"
+            'server': ko.observable("Loading"),
+            // Some message from a server error can go here
+            'server_error': ko.observable(''),
+            // Dataset loading
+            // List of promises
+            'dataset_loading': ko.observableArray()
+        },
+        // Constant globals for this page, cannot be changed
+        'constants': {
+            // string
+            'blocklyPath': settings.blocklyPath,
+            // boolean
+            'blocklyScrollbars': true,
+            // string
+            'attachmentPoint': settings.attachmentPoint,
+            // JQuery object
+            'container': null,
+            // Maps codes ('log_event', 'save_code') to URLs
+            'urls': settings.urls
+        },
+    }
+}
+
+/**
+ * Define various helper methods that can be used in the view, based on 
+ * data from the model.
+ */
+BlockPy.prototype.initModelMethods = function() {
+    // The code for the current active program file (e.g., "__main__")
+    this.model.program = ko.computed(function() {
+        return this.programs[this.settings.filename()]();
+    }, this.model) //.extend({ rateLimit: { method: "notifyWhenChangesStop", timeout: 400 } });
+    
+    // Whether this URL has been specified
+    this.model.server_is_connected = function(url) {
+        return this.settings.server_connected() &&
+               this.constants.urls !== undefined && this.constants.urls[url] !== undefined;
+    };
+    
+    var modelSettings = this.model.settings;
+    this.model.showHideSettings = function() {
+        modelSettings.show_settings(!modelSettings.show_settings());
+    };
+    
+    // Helper function to map error statuses to UI elements
+    this.model.status_feedback_class = ko.computed(function() {
+        switch (this.status.error()) {
+            default: case 'none': return ['label-none', ''];
+            case 'runtime': return ['label-runtime-error', 'Runtime Error'];
+            case 'syntax': return ['label-syntax-error', 'Syntax Error'];
+            case 'editor': return ['label-syntax-error', 'Editor Error'];
+            case 'internal': return ['label-internal-error', 'Internal Error'];
+            case 'semantic': return ['label-semantic-error', 'Algorithm Error'];
+            case 'feedback': return ['label-feedback-error', 'Incorrect Answer'];
+            case 'complete': return ['label-problem-complete', 'Complete'];
+            case 'no errors': return ['label-no-errors', 'No errors'];
+        }
+    }, this.model);
+    
+    // Helper function to map Server error statuses to UI elements
+    this.model.status_server_class = ko.computed(function() {
+        switch (this.status.server()) {
+            default: case 'Loading': return ['label-default', 'Loading'];
+            case 'Offline': return ['label-default', 'Offline'];
+            case 'Out of date': return ['label-danger', 'Out of Date'];
+            case 'Loaded': return ['label-success', 'Loaded'];
+            case 'Logging': return ['label-primary', 'Logging'];
+            case 'Saving': return ['label-primary', 'Saving'];
+            case 'Saved': return ['label-success', 'Saved'];
+            case 'Disconnected': return ['label-danger', 'Disconnected'];
+            case 'Error': return ['label-danger', 'Error'];
+        }
+    }, this.model);
+    this.model.execution_status_class = ko.computed(function() {
+        switch (this.execution.status()) {
+            default: case 'idle': return ['label-default', 'Ready'];
+            case 'running': return ['label-info', 'Running'];
+            case 'changing': return ['label-info', 'Changing'];
+            case 'verifying': return ['label-info', 'Verifying'];
+            case 'parsing': return ['label-info', 'Parsing'];
+            case 'analyzing': return ['label-info', 'Analyzing'];
+            case 'student': return ['label-info', 'Student'];
+            case 'instructor': return ['label-info', 'Instructor'];
+            case 'complete': return ['label-success', 'Idle'];
+            
+        }
+    }, this.model);
+    
+    // Program trace functions
+    var execution = this.model.execution;
+    this.model.moveTraceFirst = function(index) { 
+        execution.trace_step(0); };
+    this.model.moveTraceBackward = function(index) { 
+        var previous = Math.max(execution.trace_step()-1, 0);
+        execution.trace_step(previous); };
+    this.model.moveTraceForward = function(index) { 
+        var next = Math.min(execution.trace_step()+1, execution.last_step());
+        execution.trace_step(next); };
+    this.model.moveTraceLast = function(index) { 
+        execution.trace_step(execution.last_step()); };
+    this.model.current_trace = ko.pureComputed(function() {
+        return execution.trace()[Math.min(execution.trace().length-1, execution.trace_step())];
+    });
+    
+    /**
+     * Opens a new window to represent the exact value of a Skulpt object.
+     * Particularly useful for things like lists that can be really, really
+     * long.
+     * 
+     * @param {String} type - The type of the value
+     * @param {Object} exact_value - A Skulpt value to be rendered.
+     */
+    this.model.viewExactValue = function(type, exact_value) {
+        return function() {
+            if (type == "List") {
+                var output = exact_value.$r().v;
+                var result = (window.btoa?'base64,'+btoa(JSON.stringify(output)):JSON.stringify(output));
+                window.open('data:application/json;' + result);
+            }
+        }
+    }
+    
+    // For performance reasons, batch notifications for execution handling.
+    // I'm not even sure these have any value any more.
+    execution.trace.extend({ rateLimit: { timeout: 20, method: "notifyWhenChangesStop" } });
+    execution.step.extend({ rateLimit: { timeout: 20, method: "notifyWhenChangesStop" } });
+    execution.last_step.extend({ rateLimit: { timeout: 20, method: "notifyWhenChangesStop" } });
+    execution.line_number.extend({ rateLimit: { timeout: 20, method: "notifyWhenChangesStop" } });
+}
+
+/**
+ * Restores any user interface items to their original states.
+ * This is used to manually reset anything that isn't tied automatically to
+ * the model.
+ */
+BlockPy.prototype.resetSystem = function() {
+    this.components.feedback.clear();
+    this.components.printer.resetPrinter();
+}
+
+/**
+ * Helper function for loading in an assignment.
+ */
+BlockPy.prototype.setAssignment = function(settings, assignment, programs) {
+    this.model.settings.server_connected(false);
+    this.resetSystem();
+    // Settings
+    this.model.settings['editor'](assignment.initial_view);
+    this.model.settings['instructor'](settings.instructor);
+    this.model.settings['instructor_initial'](settings.instructor);
+    this.model.settings['enable_blocks'](settings.blocks_enabled);
+    this.model.settings['read_only'](settings.read_only);
+    this.model.settings['show_settings'](settings.show_settings);
+    if (settings.filename) {
+        this.model.settings['filename'](settings.filename);
+    }
+    this.model.settings['disable_semantic_errors'](
+                    settings.disable_semantic_errors || 
+                    assignment.disable_algorithmic_errors || 
+                    false);
+    this.model.settings['disable_variable_types'](settings.disable_variable_types);
+    this.model.settings['disable_timeout'](settings.disable_timeout);
+    this.model.settings['developer'](settings.developer);
+    this.model.settings['completedCallback'] = settings.completedCallback;
+    // Assignment
+    if (assignment.modules) {
+        var new_modules = expandArray(this.model.assignment['modules'](), 
+                                    assignment.modules.added || [], 
+                                    assignment.modules.removed || []);
+        this.model.assignment['modules'](new_modules);
+    }
+    this.model.assignment['assignment_id'](assignment.assignment_id);
+    this.model.assignment['group_id'] = assignment.group_id;
+    this.model.assignment['student_id'] = assignment.student_id;
+    this.model.assignment['course_id'] = assignment.course_id;
+    this.model.assignment['version'](assignment.version);
+    this.model.assignment['name'](assignment.name);
+    this.model.assignment['introduction'](assignment.introduction);
+    if (assignment.initial_view) {
+        this.model.assignment['initial_view'](assignment.initial_view);
+    }
+    this.model.assignment['parsons'](assignment.parsons);
+    this.model.assignment['upload'](assignment.initial_view == 'Upload');
+    if (assignment.importable) {
+        this.model.assignment['importable'](assignment.importable);
+    }
+    if (assignment.disable_algorithm_errors) {
+        this.model.assignment['disable_algorithm_errors'](assignment.disable_algorithm_errors);
+    }
+    // Programs
+    this.model.programs['__main__'](programs.__main__);
+    this.model.programs['starting_code'](assignment.starting_code);
+    this.model.programs['give_feedback'](assignment.give_feedback);
+    this.model.programs['answer'](assignment.answer);
     // Update Model
     // Reload blockly
     // Reload CodeMirror
+    this.model.settings.server_connected(true)
 }
 
 /**

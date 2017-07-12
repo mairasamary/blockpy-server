@@ -46,120 +46,7 @@ Assignment
 </script>
 {% endif %}
 
-{% if not group %}
-<!-- Free floating open -->
-<div id="blockpy-div" style='height:100%'></div>
 <script>
-    $(document).ready(function() {
-        queryParams = getQueryParams();
-        blockpy = new BlockPy(
-            // settings
-            {
-                'editor': 'Blocks',
-                'blocklyPath': {{ url_for('static', filename='blockly/')|tojson }},
-                'attachmentPoint': document.getElementById('blockpy-div'),
-                'instructor': (queryParams.mode == "instructor"),
-                'disable_algorithm_errors': (queryParams.algorithm_errors == "true"),
-                'disable_timeout_errors': (queryParams.timeout_errors == "true"),
-                'disable_typed_blocks': (queryParams.typed_blocks == "true"),
-                'urls': {
-                    'import_datasets': {{ url_for('blockpy.load_corgis',path='')|tojson }}
-                }
-            },
-            // assignment
-            {
-                'introduction': "Welcome to BlockPy. Try running the code below.",
-                'name': "Scratch Canvas",
-                'give_feedback': decodeURIComponent(queryParams.give_feedback || ""),
-                'starting_code': decodeURIComponent(queryParams.starting_code || ""),
-                'initial_view': queryParams.view || "Blocks",
-                'disable_algorithm_errors': false,
-                "importable": true,
-                'modules': {}
-            },
-            // submission
-            {},
-            // programs
-            {
-                '__main__': decodeURIComponent(queryParams.code || "")
-                //$("#default-body").html()
-            }
-        )
-    });
-    </script>
-{% endif %}
-
-{% for assignment, submission in group %}
-{% if (request.args.get("assignment_id") == None and loop.first) or (assignment.id == request.args.get("assignment_id")|int) %}
-
-<!-- Main BlockPy canvas -->
-<div id="blockpy-div-{{loop.index}}" style='height:100%'></div>
-
-<script>
-/*
-Tracking code - safe to delete
-*/
-localStorage.setItem('user_id', "{{ user_id }}");
-
-$(document).ready(function() {
-    blockpy = new BlockPy(
-    // settings
-            {
-                'editor': "{{ 'Text' if assignment.mode|lower == 'text' else 'Blocks' }}",
-                'blocklyPath': {{ url_for('static', filename='blockly/')|tojson }},
-                'attachmentPoint': document.getElementById('blockpy-div-{{loop.index}}'),
-                'instructor': {{ 'true' if instructor_mode else 'false'}},
-                'urls': {
-                    'save_code': {{ url_for('blockpy.save_code')|tojson }},
-                    'log_event': {{ url_for('blockpy.save_events')|tojson }},
-                    'save_assignment': {{ url_for('blockpy.save_presentation')|tojson }},
-                    'save_success': {{ url_for('blockpy.save_correct')|tojson }},
-                    'import_datasets': {{ url_for('blockpy.load_corgis',path='')|tojson }},
-                    'get_history': {{ url_for('blockpy.get_history')|tojson }},
-                },
-                'completedCallback': function(data) { markCorrect(data.assignment_id) },
-            },
-            // assignment
-            {
-                'assignment_id': {{ assignment.id|tojson }},
-                'course_id': {{ course_id if course_id != None else submission.course_id|tojson }},
-                'student_id': {{ g.user.id|tojson if g.user != None else -1}},
-                'introduction': {{ assignment.body|tojson}},
-                'name': {{ assignment.name|tojson}},
-                'version': {{ assignment.version|tojson }},
-                'initial_view': "{{ "Text" if assignment.mode.lower() == "text" else "Blocks" }}",
-                'give_feedback': {{ assignment.give_feedback|tojson}},
-                'parsons': {{ 'true' if assignment.mode == 'parsons' else 'false' }}, 
-                'starting_code': {{ assignment.starting_code|tojson }},
-                {% set settings = assignment.settings|json_load %}
-                'importable': {{ "true" if settings.importable else "false" }},
-                'disable_algorithm_errors': {{ "true" if settings.disable_algorithm_errors else "false"}},
-                'modules': {
-                    'added': {{ settings.modules.added|tojson if settings.modules else "[]" }},
-                    'removed': {{ settings.modules.removed|tojson if settings.modules else "[]"}},
-                },
-            },
-            // submission
-            {},
-            // programs
-            {
-                '__main__': {{ submission.code|tojson }},
-                'starting_code': {{ assignment.starting_code|tojson }},
-                'give_feedback': {{ assignment.give_feedback|tojson }},
-            }
-        );
-});
-
-</script>
-
-{% endif %}
-{% endfor %}
-
-<script>
-$(document).ready(function() {
-    $('.delete-on-load').remove();
-});
-
 function getQueryParams(){
     try{
         url = window.location.href;
@@ -176,6 +63,118 @@ function getQueryParams(){
        return {};
     }
 }
+queryParams = getQueryParams();
+DEFAULT_ASSIGNMENT = {
+    'settings': {
+        'editor': 'Blocks',
+    },
+    'assignment': {
+        'introduction': "Welcome to BlockPy. Try running the code below.",
+        'name': "Scratch Canvas",
+        'give_feedback': decodeURIComponent(queryParams.give_feedback || ""),
+        'starting_code': decodeURIComponent(queryParams.starting_code || ""),
+        'initial_view': queryParams.view || "Blocks",
+        'disable_algorithm_errors': false,
+        "importable": true,
+        'modules': {}
+    },
+    'programs': {
+        '__main__': decodeURIComponent(queryParams.code || "")
+        //$("#default-body").html()
+    }
+}
+ASSIGNMENTS = {
+    {% for assignment, submission in group %}
+    {{ assignment.id}}: {
+        'settings': {
+            'editor': "{{ 'Text' if assignment.mode|lower == 'text' else 'Blocks' }}",
+        },
+        'assignment': {
+            'assignment_id': {{ assignment.id|tojson }},
+            'course_id': {{ course_id if course_id != None else submission.course_id|tojson }},
+            'student_id': {{ g.user.id|tojson if g.user != None else -1}},
+            'introduction': {{ assignment.body|tojson}},
+            'name': {{ assignment.name|tojson}},
+            'version': {{ assignment.version|tojson }},
+            'initial_view': "{{ "Text" if assignment.mode.lower() == "text" else "Blocks" }}",
+            'give_feedback': {{ assignment.give_feedback|tojson}},
+            'parsons': {{ 'true' if assignment.mode == 'parsons' else 'false' }}, 
+            'starting_code': {{ assignment.starting_code|tojson }},
+            {% set settings = assignment.settings|json_load %}
+            'importable': {{ "true" if settings.importable else "false" }},
+            'disable_algorithm_errors': {{ "true" if settings.disable_algorithm_errors else "false"}},
+            'modules': {
+                'added': {{ settings.modules.added|tojson if settings.modules else "[]" }},
+                'removed': {{ settings.modules.removed|tojson if settings.modules else "[]"}},
+            },
+        },
+        'programs': {
+            '__main__': {{ submission.code|tojson }},
+            'starting_code': {{ assignment.starting_code|tojson }},
+            'give_feedback': {{ assignment.give_feedback|tojson }},
+        }
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+}
+</script>
+
+
+<!-- Main BlockPy canvas -->
+<div id="blockpy-div" style='height:100%'></div>
+
+<script>
+function changeAssignment(id) {
+    var assignment;
+    if (id !== undefined) {
+        assignment = ASSIGNMENTS[id];
+    } else {
+        assignment = DEFAULT_ASSIGNMENT;
+    }
+    blockpy.setAssignment(assignment.settings, assignment.assignment, assignment.programs);
+}
+$(document).ready(function() {
+    blockpy = new BlockPy({
+        'blocklyPath': {{ url_for('static', filename='blockly/')|tojson }},
+        'attachmentPoint': document.getElementById('blockpy-div'),
+    {% if not group %}
+        'instructor': (queryParams.mode == "instructor"),
+        'disable_algorithm_errors': (queryParams.algorithm_errors == "true"),
+        'disable_timeout_errors': (queryParams.timeout_errors == "true"),
+        'disable_typed_blocks': (queryParams.typed_blocks == "true"),
+        'editor': 'Split',
+        'urls': {
+            'import_datasets': {{ url_for('blockpy.load_corgis',path='')|tojson }}
+        }
+    {% else %}
+        'instructor': {{ 'true' if instructor_mode else 'false'}},
+        'completedCallback': function(data) { markCorrect(data.assignment_id) },
+        'urls': {
+            'save_code': {{ url_for('blockpy.save_code')|tojson }},
+            'log_event': {{ url_for('blockpy.save_events')|tojson }},
+            'save_assignment': {{ url_for('blockpy.save_presentation')|tojson }},
+            'save_success': {{ url_for('blockpy.save_correct')|tojson }},
+            'load_assignment': {{ url_for('blockpy.load_assignment')|tojson }},
+            'import_datasets': {{ url_for('blockpy.load_corgis',path='')|tojson }},
+            'get_history': {{ url_for('blockpy.get_history')|tojson }},
+        }
+    {% endif %}
+    });
+    {% if not group %}
+    changeAssignment();
+    {% elif group and request.args.get("assignment_id") == None %}
+    changeAssignment({{ group[0][0].id }});
+    {% else %}
+    changeAssignment({{ request.args.get("assignment_id")|int}});
+    {% endif %}
+    altAssignmentChangingFunction = changeAssignment;
+});
+
+</script>
+
+<script>
+$(document).ready(function() {
+    $('.delete-on-load').remove();
+});
 </script>
 
 {% endblock %}

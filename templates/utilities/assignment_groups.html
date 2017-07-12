@@ -1,5 +1,5 @@
 {% macro assignment_group_header(group, assignment_id, embed, page_type) %}
-
+{% set sorted_group = group|sort(attribute='0.name') %}
 <script>
     /*
      * Increment completed counter by 1
@@ -9,14 +9,14 @@
     function markCorrect(assignmentId) {
         var opt = $("#assignment-selector option[value='"+assignmentId+"']");
         if (!opt.hasClass("correct-submission")) {
-            opt.html(opt.html()+" &#10004;");
+            opt.html("&#10004; "+opt.html());
             opt.removeClass("incorrect-submission");
             opt.addClass("correct-submission");
             $("#assignment-selector-next").removeClass("btn-default").addClass("btn-success");
         }
     }
     var URL_MAP = {
-        {% for assignment, submission in group %}
+        {% for assignment, submission in sorted_group %}
             {{ assignment.id }}: "{{ url_for(page_type, 
                                         assignment_group_id= request.args.get("assignment_group_id"),
                                         assignment_id=assignment.id,
@@ -24,32 +24,58 @@
         {% endfor %}
     };
     function loadNavigation() {
+        var loadNewAssignment = function() {
+            var id = $("#assignment-selector").val();
+            if (altAssignmentChangingFunction == undefined) {
+                document.location.href = URL_MAP[id];
+            } else {
+                altAssignmentChangingFunction(id);
+            }
+        }
         $("#assignment-selector").change(function() {
-            document.location.href = URL_MAP[$("#assignment-selector").val()];
+            loadNewAssignment();
         });
         $("#assignment-selector-first").click(function() {
-            $("#assignment-selector").val({{ group[0][0].id }});
-            document.location.href = URL_MAP[$("#assignment-selector").val()];
+            $("#assignment-selector").val({{ sorted_group[0][0].id }});
+            loadNewAssignment();
         });
         $("#assignment-selector-last").click(function() {
-            $("#assignment-selector").val({{ group[-1][0].id }});
-            document.location.href = URL_MAP[$("#assignment-selector").val()];
+            $("#assignment-selector").val({{ sorted_group[-1][0].id }});
+            loadNewAssignment();
         });
         $("#assignment-selector-next").click(function() {
             $("#assignment-selector > option:selected")
                 .prop("selected", false)
                 .next()
                 .prop("selected", true);
-            document.location.href = URL_MAP[$("#assignment-selector").val()];
+            loadNewAssignment();
         });
         $("#assignment-selector-back").click(function() {
             $("#assignment-selector > option:selected")
                 .prop("selected", false)
                 .prev()
                 .prop("selected", true);
-            document.location.href = URL_MAP[$("#assignment-selector").val()];
+            loadNewAssignment();
         });
-        console.log("TESTING");
+        // click to expand
+        function setAssignmentSelectorExpansion(state) {
+            if (state) {
+                var length = Math.min(5, $('#assignment-selector option').length);
+                $("#assignment-selector").attr("size", length.toString());
+                $("#assignment-selector").css("vertical-align", "top");
+            } else {
+                $("#assignment-selector").attr("size", "1");
+                $("#assignment-selector").css("vertical-align", "middle");
+            }
+        }
+        var state = localStorage.getItem("blockpy_assignmentSelectorExpanded")=="true";
+        setAssignmentSelectorExpansion(state);
+        $("#completion-rate").click(function() {
+            state = !(localStorage.getItem("blockpy_assignmentSelectorExpanded")=="true");
+            setAssignmentSelectorExpansion(state);
+            localStorage.setItem("blockpy_assignmentSelectorExpanded", (state).toString());
+        });
+        console.log(setAssignmentSelectorExpansion);
     }
 </script>
 
@@ -68,14 +94,15 @@
         </button>
         
         <select id='assignment-selector'>
-        {% for assignment, submission in group|sort(attribute='0.name') %}
+        {% for assignment, submission in sorted_group %}
             <option value='{{ assignment.id }}' 
                     {% if assignment.id == assignment_id|int%}selected{% endif %}
                     class='{% if not submission.correct %}in{% endif %}correct-submission'>
-                {{ assignment.name }} {% if submission.correct %} &#10004; {% endif %}
+                {% if submission.correct %} &#10004; {% endif %} {{ assignment.name }}
             </option>
         {% endfor %}
-        </select> ({{ (group|map(attribute='1.correct')|sum)}}/{{(group|length)}} completed)
+        </select>
+        <span id='completion-rate'>({{ (sorted_group|map(attribute='1.correct')|sum)}}/{{(sorted_group|length)}} completed)</span>
         
         <button type="button" class='btn btn-default btn-sm' id='assignment-selector-next'>
             Next <span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span>
