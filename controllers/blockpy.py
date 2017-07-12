@@ -5,13 +5,6 @@ import json
 import json
 import logging
 from pprint import pprint
-import base64
-
-def stringToBase64(s):
-    return base64.b64encode(s.encode('utf-8'))
-
-def base64ToString(b):
-    return base64.b64decode(b).decode('utf-8')
 
 from flask_wtf import Form
 from wtforms import IntegerField, BooleanField
@@ -167,11 +160,16 @@ def save_events(lti=lti):
     log = Log.new(event, action, assignment_id, user_id, body=body, timestamp=timestamp)
     return jsonify(success=True)
     
+def makeReport(assignment, submission)
+def makeGroupReport(group_id, user_id, course_id):
+    pass
+    
 @blueprint_blockpy.route('/save_correct/', methods=['GET', 'POST'])
 @blueprint_blockpy.route('/save_correct', methods=['GET', 'POST'])
 @lti()
 def save_correct(lti, lti_exception=None):
     assignment_id = request.values.get('assignment_id', None)
+    assignment_group_id = request.values.get('assignment_group_id', None)
     status = float(request.values.get('status', "0.0"))
     image = request.values.get('image', "")
     course_id = request.values.get('course_id', g.course.id if 'course' in g else None)
@@ -182,44 +180,12 @@ def save_correct(lti, lti_exception=None):
         submission = Submission.save_correct(g.user.id, assignment_id, course_id=int(course_id))
     else:
         submission = assignment.get_submission(g.user.id, course_id=course_id)
-    if submission.correct:
-        message = "Success!"
+    if assignment_group_id != None:
+        report = makeGroupReport(group, g.user.id, course_id)
     else:
-        message = "Incomplete"
-    sub_blocks_folder = os.path.join(app.config['UPLOADS_DIR'], 'submission_blocks')
-    image_path = os.path.join(sub_blocks_folder, str(submission.id)+'.png')
-    if image != "":
-        converted_image = stringToBase64(image[22:])
-        with open(image_path, 'wb') as image_file:
-            image_file.write(converted_image);
-        image_url = url_for('blockpy.get_submission_image', submission_id=submission.id, _external=True)
-    elif os.path.exists(image_path):
-        try:
-            os.remove(image_path)
-        except Exception:
-            app.logger.info("Could not delete")
-    lis_result_sourcedid = request.values.get('lis_result_sourcedid', submission.url) or None
-    url = url_for('blockpy.get_submission_code', submission_id=submission.id, _external=True)
-    if lis_result_sourcedid is None:
-        return jsonify(success=False, message="Not in a grading context.")
-    else:
-        session['lis_result_sourcedid'] = lis_result_sourcedid
-    if assignment.mode == 'maze':
-        lti.post_grade(float(submission.correct), "<h1>{0}</h1>".format(message), endpoint=lis_result_sourcedid);
-    else:
-        formatter = HtmlFormatter(linenos=True, noclasses=True)
-        code = highlight(submission.code, PythonLexer(), formatter)
-        potential_image = "Submitted Blocks:<br><img src='{0}'>".format(image_url) if image else ""
-        body = '''
-        <h1>{message}</h1>
-        <div>Latest work in progress: <a href='{url}' target='_blank'>View</a></div>
-        <div>Touches: {touches}</div>
-        {potential_image}
-        <br>
-        Submitted code:<br>
-        {code}
-        '''.format(message=message, url=url, touches=submission.version, code=code, potential_image=potential_image)
-        lti.post_grade(float(submission.correct), body, endpoint=lis_result_sourcedid)
+        report = makeReport()
+    lti.post_grade(float(submission.correct), report, endpoint=lis_result_sourcedid)
+        
     return jsonify(success=True)
     
 @blueprint_blockpy.route('/get_submission_code/', methods=['GET', 'POST'])

@@ -5065,6 +5065,8 @@ function BlockPyServer(main) {
     this.saveTimer = {};
     this.presentationTimer = null;
     
+    this.overlay = null;
+    
     // For managing "walks" that let us rerun stored code
     this.inProgressWalks = [];
     
@@ -5324,13 +5326,25 @@ BlockPyServer.prototype.walkOldCode = function() {
     }
 }
 
+/**
+ *
+ */
+BlockPyServer.prototype.showOverlay = function() {
+    this.overlay = $('<div class="blockpy-overlay"> </div>');
+    this.overlay.appendTo(document.body)
+}
+BlockPyServer.prototype.hideOverlay = function() {
+    this.overlay.remove();
+}
+
 BlockPyServer.prototype.loadAssignment = function(assignment_id) {
     var model = this.main.model;
     var server = this;
     if (model.server_is_connected('load_assignment')) {
         var data = this.createServerData();        
         data['assignment_id'] = assignment_id;
-        this.setStatus('Reloading');
+        this.setStatus('Loading');
+        this.showOverlay();
         $.post(model.constants.urls.load_assignment, data, 
                 function(response) {
                     if (response.success) {
@@ -5338,11 +5352,16 @@ BlockPyServer.prototype.loadAssignment = function(assignment_id) {
                                                   response.assignment, 
                                                   response.programs)
                         server.setStatus('Loaded');
+                        server.hideOverlay();
                     } else {
                         server.setStatus('Failure', response.message);
+                        server.hideOverlay();
                     }
                })
-         .fail(server.defaultFailure.bind(server));
+         .fail(function() {
+            server.hideOverlay();
+            server.defaultFailure()
+         });
     } else {
         this.setStatus('Offline', "Server is not connected!");
     }
@@ -7935,13 +7954,13 @@ BlockPy.prototype.initModel = function(settings) {
         'settings': {
             // Default mode when you open the screen is text
             // 'Text', 'Blocks', "Split"
-            'editor': ko.observable(getDefault('editor','Split')),
+            'editor': ko.observable(settings.editor || getDefault('editor','Split')),
             // Default mode when you open the screen is instructor
             // boolean
-            'instructor': ko.observable(getDefault('instructor', "true")=="true"),
+            'instructor': ko.observable(settings.instructor),
             // Track the original value
             // boolean
-            'instructor_initial': ko.observable(getDefault('instructor', "true")=="true"),
+            'instructor_initial': ko.observable(settings.instructor_initial),
             // Internal for Refresh mechanism to fix broken logs
             // String
             'log_id': ko.observable(null),

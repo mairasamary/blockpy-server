@@ -4,6 +4,7 @@ from pprint import pprint
 from functools import wraps, update_wrapper
 import calendar, datetime
 import json
+import base64
 try:
     from html.parser import HTMLParser
 except:
@@ -21,6 +22,12 @@ from controllers.pylti.flask import LTI, LTIException
 from main import app
 
 from models.models import (User, Course, AssignmentGroup, Assignment)
+
+def stringToBase64(s):
+    return base64.b64encode(s.encode('utf-8'))
+
+def base64ToString(b):
+    return base64.b64decode(b).decode('utf-8')
 
 def lti(request='any', *lti_args, **lti_kwargs):
     """

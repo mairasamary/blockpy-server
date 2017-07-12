@@ -36,26 +36,36 @@
             loadNewAssignment();
         });
         $("#assignment-selector-first").click(function() {
-            $("#assignment-selector").val({{ sorted_group[0][0].id }});
-            loadNewAssignment();
+            var original = $("#assignment-selector").val();
+            if (original != {{ sorted_group[0][0].id }}) {
+                $("#assignment-selector").val({{ sorted_group[0][0].id }});
+                loadNewAssignment();
+            }
         });
         $("#assignment-selector-last").click(function() {
-            $("#assignment-selector").val({{ sorted_group[-1][0].id }});
-            loadNewAssignment();
+            var original = $("#assignment-selector").val();
+            if (original != {{ sorted_group[-1][0].id }}) {
+                $("#assignment-selector").val({{ sorted_group[-1][0].id }});
+                loadNewAssignment();
+            }
         });
         $("#assignment-selector-next").click(function() {
-            $("#assignment-selector > option:selected")
-                .prop("selected", false)
-                .next()
-                .prop("selected", true);
-            loadNewAssignment();
+            var current = $("#assignment-selector > option:selected");
+            var next = current.next('option');
+            if (next.length) {
+                current.prop("selected", false);
+                next.prop("selected", true);
+                loadNewAssignment();
+            }
         });
         $("#assignment-selector-back").click(function() {
-            $("#assignment-selector > option:selected")
-                .prop("selected", false)
-                .prev()
-                .prop("selected", true);
-            loadNewAssignment();
+            var current = $("#assignment-selector > option:selected");
+            var prev = current.prev('option');
+            if (prev.length) {
+                current.prop("selected", false);
+                prev.prop("selected", true);
+                loadNewAssignment();
+            }
         });
         // click to expand
         function setAssignmentSelectorExpansion(state) {

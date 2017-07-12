@@ -5,6 +5,7 @@ import os
 import json
 from pprint import pprint
 import logging
+import base64
 
 from main import app
 from interaction_logger import StructuredEvent
@@ -21,6 +22,12 @@ db = SQLAlchemy(app)
 Model = db.Model
 relationship = db.relationship
 backref = db.backref
+
+def stringToBase64(s):
+    return base64.b64encode(s.encode('utf-8'))
+
+def base64ToString(b):
+    return base64.b64decode(b).decode('utf-8')
 
 def datetime_to_string(adatetime):
     return adatetime.isoformat() + 'Z'
@@ -608,6 +615,63 @@ class Submission(Base):
             submission.correct = True
         db.session.commit()
         return submission
+        
+    def get_report_blockpy(self, image=""):
+        if self.correct:
+            message = "Success!"
+        else:
+            message = "Incomplete"
+    
+    def save_block_image(self, image=""):
+        sub_blocks_folder = os.path.join(app.config['UPLOADS_DIR'], 'submission_blocks')
+        image_path = os.path.join(sub_blocks_folder, str(self.id)+'.png')
+        if image != "":
+            converted_image = stringToBase64(image[22:])
+            with open(image_path, 'wb') as image_file:
+                image_file.write(converted_image);
+            return url_for('blockpy.get_submission_image', submission_id=submission.id, _external=True)
+        elif os.path.exists(image_path):
+            try:
+                os.remove(image_path)
+            except Exception:
+                app.logger.info("Could not delete")
+        return None
+    
+    def get_report(self, image=""):
+        sub_blocks_folder = os.path.join(app.config['UPLOADS_DIR'], 'submission_blocks')
+        image_path = os.path.join(sub_blocks_folder, str(self.id)+'.png')
+        if image != "":
+            converted_image = stringToBase64(image[22:])
+            with open(image_path, 'wb') as image_file:
+                image_file.write(converted_image);
+            image_url = url_for('blockpy.get_submission_image', submission_id=submission.id, _external=True)
+        elif os.path.exists(image_path):
+            try:
+                os.remove(image_path)
+            except Exception:
+                app.logger.info("Could not delete")
+        lis_result_sourcedid = request.values.get('lis_result_sourcedid', submission.url) or None
+        url = url_for('blockpy.get_submission_code', submission_id=submission.id, _external=True)
+        if lis_result_sourcedid is None:
+            return jsonify(success=False, message="Not in a grading context.")
+        else:
+            session['lis_result_sourcedid'] = lis_result_sourcedid
+        if assignment.mode == 'maze':
+            lti.post_grade(float(submission.correct), "<h1>{0}</h1>".format(message), endpoint=lis_result_sourcedid);
+        else:
+            formatter = HtmlFormatter(linenos=True, noclasses=True)
+            code = highlight(submission.code, PythonLexer(), formatter)
+            potential_image = "Submitted Blocks:<br><img src='{0}'>".format(image_url) if image else ""
+            body = '''
+            <h1>{message}</h1>
+            <div>Latest work in progress: <a href='{url}' target='_blank'>View</a></div>
+            <div>Touches: {touches}</div>
+            {potential_image}
+            <br>
+            Submitted code:<br>
+            {code}
+            '''.format(message=message, url=url, touches=submission.version, code=code, potential_image=potential_image)
+            lti.post_grade(float(submission.correct), body, endpoint=lis_result_sourcedid)
         
     def log_code(self, extension='.py', timestamp=''):
         '''
