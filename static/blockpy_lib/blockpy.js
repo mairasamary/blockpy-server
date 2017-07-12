@@ -8143,6 +8143,15 @@ BlockPy.prototype.resetSystem = function() {
 }
 
 /**
+ * Function for initializing user, course, and assignment group info.
+ */
+BlockPy.prototype.setUserData = function(student_id, course_id, group_id) {
+    this.model.assignment['group_id'] = group_id;
+    this.model.assignment['student_id'] = student_id;
+    this.model.assignment['course_id'] = course_id;
+}
+
+/**
  * Helper function for loading in an assignment.
  */
 BlockPy.prototype.setAssignment = function(settings, assignment, programs) {

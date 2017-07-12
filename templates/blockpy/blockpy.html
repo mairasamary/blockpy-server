@@ -83,39 +83,6 @@ DEFAULT_ASSIGNMENT = {
         //$("#default-body").html()
     }
 }
-ASSIGNMENTS = {
-    {% for assignment, submission in group %}
-    {{ assignment.id}}: {
-        'settings': {
-            'editor': "{{ 'Text' if assignment.mode|lower == 'text' else 'Blocks' }}",
-        },
-        'assignment': {
-            'assignment_id': {{ assignment.id|tojson }},
-            'course_id': {{ course_id if course_id != None else submission.course_id|tojson }},
-            'student_id': {{ g.user.id|tojson if g.user != None else -1}},
-            'introduction': {{ assignment.body|tojson}},
-            'name': {{ assignment.name|tojson}},
-            'version': {{ assignment.version|tojson }},
-            'initial_view': "{{ "Text" if assignment.mode.lower() == "text" else "Blocks" }}",
-            'give_feedback': {{ assignment.give_feedback|tojson}},
-            'parsons': {{ 'true' if assignment.mode == 'parsons' else 'false' }}, 
-            'starting_code': {{ assignment.starting_code|tojson }},
-            {% set settings = assignment.settings|json_load %}
-            'importable': {{ "true" if settings.importable else "false" }},
-            'disable_algorithm_errors': {{ "true" if settings.disable_algorithm_errors else "false"}},
-            'modules': {
-                'added': {{ settings.modules.added|tojson if settings.modules else "[]" }},
-                'removed': {{ settings.modules.removed|tojson if settings.modules else "[]"}},
-            },
-        },
-        'programs': {
-            '__main__': {{ submission.code|tojson }},
-            'starting_code': {{ assignment.starting_code|tojson }},
-            'give_feedback': {{ assignment.give_feedback|tojson }},
-        }
-    }{% if not loop.last %},{% endif %}
-    {% endfor %}
-}
 </script>
 
 
@@ -123,15 +90,6 @@ ASSIGNMENTS = {
 <div id="blockpy-div" style='height:100%'></div>
 
 <script>
-function changeAssignment(id) {
-    var assignment;
-    if (id !== undefined) {
-        assignment = ASSIGNMENTS[id];
-    } else {
-        assignment = DEFAULT_ASSIGNMENT;
-    }
-    blockpy.setAssignment(assignment.settings, assignment.assignment, assignment.programs);
-}
 $(document).ready(function() {
     blockpy = new BlockPy({
         'blocklyPath': {{ url_for('static', filename='blockly/')|tojson }},
@@ -159,14 +117,20 @@ $(document).ready(function() {
         }
     {% endif %}
     });
+    blockpy.setUserData(
+        {{ g.user.id|tojson if g.user != None else -1}},
+        {{ course_id if course_id != None else submission.course_id|tojson }},
+        {{ request.args.get('assignment_group_id', None)|tojson }}
+        );
+    var server = blockpy.components.server;
     {% if not group %}
-    changeAssignment();
+    blockpy.setAssignment(DEFAULT_ASSIGNMENT.settings, DEFAULT_ASSIGNMENT.assignment, DEFAULT_ASSIGNMENT.programs);
     {% elif group and request.args.get("assignment_id") == None %}
-    changeAssignment({{ group[0][0].id }});
+    server.loadAssignment({{ group[0][0].id }});
     {% else %}
-    changeAssignment({{ request.args.get("assignment_id")|int}});
+    server.loadAssignment({{ request.args.get("assignment_id")|int}});
     {% endif %}
-    altAssignmentChangingFunction = changeAssignment;
+    altAssignmentChangingFunction = server.loadAssignment.bind(server);
 });
 
 </script>
