@@ -90,7 +90,6 @@ LOGGING['handlers']['FeedbackHandler'] = {
     
 logging.config.dictConfig(LOGGING)
 
-logging.getLogger('StudentInteractions').info("TESTING")
 
 # Assets
 from controllers.assets import assets
