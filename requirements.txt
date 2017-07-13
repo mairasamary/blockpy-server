@@ -6,7 +6,7 @@ flask-login
 flask-script
 flask-mail
 flask-wtf
-flask_assests
+flask-assets
 jinja2
 wtforms
 sqlalchemy

@@ -14,8 +14,8 @@ except IOError:
     secrets = {}
 
 class Config(object):
-    IS_PRODUCTION = False
-    SITE_VERSION = 3
+    IS_PRODUCTION = secrets.get('PRODUCTION', False)
+    SITE_VERSION = 4
     DEBUG = False
     TESTING = False
     CSRF_ENABLED = True
@@ -72,4 +72,4 @@ class TestingConfig(Config):
     PORT = 5001
     HOST = 'localhost'
     SITE_ROOT_URL = 'localhost:5001'
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///main.db'
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///database/main.db'
