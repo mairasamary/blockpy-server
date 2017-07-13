@@ -119,8 +119,8 @@ $(document).ready(function() {
     });
     blockpy.setUserData(
         {{ g.user.id|tojson if g.user != None else -1}},
-        {{ course_id if course_id != None else submission.course_id|tojson }},
-        {{ request.args.get('assignment_group_id', None)|tojson }}
+        {{ course_id|tojson if course_id != None else -1 }},
+        {{ group_id|tojson}}
         );
     var server = blockpy.components.server;
     {% if not group %}

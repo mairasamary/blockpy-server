@@ -9,11 +9,6 @@ from pprint import pprint
 from flask_wtf import Form
 from wtforms import IntegerField, BooleanField
 
-# Pygments, for reporting nicely formatted Python snippets
-from pygments import highlight
-from pygments.lexers import PythonLexer
-from pygments.formatters import HtmlFormatter
-
 from flask import Blueprint, send_from_directory
 from flask import Flask, redirect, url_for, session, request, jsonify, g,\
                   make_response, Response, render_template
@@ -23,9 +18,11 @@ from sqlalchemy import Date, cast, func, desc, or_
 
 from main import app
 
-from models.models import (db, Assignment, User, Submission, Log)
+from models.models import (db, Assignment, User, Submission, Log,
+                           AssignmentGroup)
 
-from controllers.helpers import lti, get_assignments_from_request
+from controllers.helpers import (lti, get_assignments_from_request, 
+                                 highlight_python_code)
 
 blueprint_blockpy = Blueprint('blockpy', __name__, url_prefix='/blockpy')
                            
@@ -49,6 +46,10 @@ def load(lti=None, assignments=None, submissions=None, embed=False):
         embed = request.args.get("embed")
     if assignments is None or submissions is None:
         assignments, submissions = get_assignments_from_request()
+    if "assignment_group_id" in request.args:
+        group_id = int(request.args.get("assignment_group_id"))
+    else:
+        group_id = None
     if "assignment_id" in request.args:
         assignment_id = request.args.get("assignment_id")
     elif assignments:
@@ -73,8 +74,10 @@ def load(lti=None, assignments=None, submissions=None, embed=False):
         else:
             course_id = None
     group = list(zip(assignments, submissions))
+    
     return render_template('blockpy/blockpy.html',
                            group=group,
+                           group_id=group_id,
                            course_id=course_id,
                            user_id=g.user.id if g.user is not None else -1,
                            embed=embed,
@@ -85,6 +88,7 @@ def load(lti=None, assignments=None, submissions=None, embed=False):
 @blueprint_blockpy.route('/load_assignment', methods=['GET', 'POST'])
 def load_assignment(lti=lti):
     assignment_id = request.values.get('assignment_id', None)
+    group_id = request.values.get('group_id', None)
     course_id = request.values.get('course_id',  g.course.id if 'course' in g else None)
     if None in (assignment_id, course_id) or course_id == "":
         return jsonify(success=False, message="No Assignment ID or Course ID given!")
@@ -103,6 +107,7 @@ def load_assignment(lti=lti):
                         'assignment_id': assignment.id,
                         'course_id': course_id if course_id != None else submission.course_id,
                         'student_id': user_id,
+                        'group_id': group_id,
                         'introduction': assignment.body,
                         'name': assignment.name,
                         'version': assignment.version,
@@ -159,17 +164,56 @@ def save_events(lti=lti):
         return jsonify(success=False, message="No Assignment ID given!")
     log = Log.new(event, action, assignment_id, user_id, body=body, timestamp=timestamp)
     return jsonify(success=True)
-    
-def makeReport(assignment, submission)
-def makeGroupReport(group_id, user_id, course_id):
-    pass
+
+def get_group_report(group_id, user_id, course_id):
+    group = AssignmentGroup.by_id(group_id)
+    assignments = group.get_assignments()
+    submissions = [a.get_submission(user_id, course_id=course_id) 
+                   for a in assignments]
+    completed = sum([s.correct for s in submissions])
+    total = len(assignments)
+    score = completed/total
+    overview = '''
+    <h1>Overview</h1>
+    Status: {completed}/{total} problems
+    Score: {score}%
+    '''.format(completed=completed, total=total, score=int(10000*score)/100)
+    return score, overview+'<br><br>'.join([
+        get_report(assignment.mode, 
+                        assignment.name, 
+                        submission, 
+                        submission.get_block_image())
+        for assignment, submission 
+        in zip(assignments, submissions)
+    ])
+def get_report(mode, name, submission, image=""):
+    url = url_for('blockpy.get_submission_code', submission_id=submission.id, _external=True)
+    status = "Success!" if submission.correct else "Incomplete"
+    if mode == 'maze':
+        return """
+        <h1>Maze {name}</h1>
+        <strong>Status:</strong><span> {status}</span>
+        """.format(name=name, status=status)
+    else:
+        code = highlight_python_code(submission.code)
+        if image:
+            image = "Submitted Blocks:<br><img src='{0}'>".format(image)
+        return '''
+        <h1>{message}</h1>
+        <div>Latest work in progress: <a href='{url}' target='_blank'>View</a></div>
+        <div>Touches: {touches}</div>
+        {image}
+        <br>
+        Submitted code:<br>
+        {code}
+        '''.format(message=status, url=url, touches=submission.version, code=code, image=image)
     
 @blueprint_blockpy.route('/save_correct/', methods=['GET', 'POST'])
 @blueprint_blockpy.route('/save_correct', methods=['GET', 'POST'])
 @lti()
 def save_correct(lti, lti_exception=None):
     assignment_id = request.values.get('assignment_id', None)
-    assignment_group_id = request.values.get('assignment_group_id', None)
+    assignment_group_id = request.values.get('group_id', None)
     status = float(request.values.get('status', "0.0"))
     image = request.values.get('image', "")
     course_id = request.values.get('course_id', g.course.id if 'course' in g else None)
@@ -180,13 +224,18 @@ def save_correct(lti, lti_exception=None):
         submission = Submission.save_correct(g.user.id, assignment_id, course_id=int(course_id))
     else:
         submission = assignment.get_submission(g.user.id, course_id=course_id)
+    lis_result_sourcedid = request.values.get('lis_result_sourcedid', submission.url) or None
+    if lis_result_sourcedid is None:
+        return jsonify(success=True, submitted=False, message="Not in a grading context.")
+    session['lis_result_sourcedid'] = lis_result_sourcedid
+    image_url = submission.save_block_image(image)
     if assignment_group_id != None:
-        report = makeGroupReport(group, g.user.id, course_id)
+        score, report = get_group_report(int(assignment_group_id), g.user.id, int(course_id))
     else:
-        report = makeReport()
-    lti.post_grade(float(submission.correct), report, endpoint=lis_result_sourcedid)
-        
-    return jsonify(success=True)
+        report = get_report(assignment.mode, assignment.name, submission, image=image_url)
+        score = float(submission.correct)
+    lti.post_grade(score, report, endpoint=lis_result_sourcedid)
+    return jsonify(success=True, submitted=True)
     
 @blueprint_blockpy.route('/get_submission_code/', methods=['GET', 'POST'])
 @blueprint_blockpy.route('/get_submission_code', methods=['GET', 'POST'])
