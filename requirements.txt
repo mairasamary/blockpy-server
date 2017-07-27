@@ -19,3 +19,4 @@ tqdm
 pydot
 six
 bcrypt
+python-slugify

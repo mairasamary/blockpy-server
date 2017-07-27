@@ -6,6 +6,8 @@ import json
 import logging
 from pprint import pprint
 
+from slugify import slugify
+
 from flask_wtf import Form
 from wtforms import IntegerField, BooleanField
 
@@ -167,17 +169,27 @@ def save_events(lti=lti):
 
 def get_group_report(group_id, user_id, course_id):
     group = AssignmentGroup.by_id(group_id)
-    assignments = group.get_assignments()
+    assignments = sorted(group.get_assignments(), key= lambda a: a.name)
     submissions = [a.get_submission(user_id, course_id=course_id) 
                    for a in assignments]
     completed = sum([s.correct for s in submissions])
     total = len(assignments)
     score = completed/total
+    table = "\n".join(
+        ["<li><a href='#{slug}'>{name}</a> - {completed}</li>".format(slug=slugify(a.name),
+                                                       name=a.name,
+                                                       completed= "Completed" if s.correct else "<strong>Incomplete</strong>")
+         for a,s in zip(assignments, submissions)]
+    )
     overview = '''
     <h1>Overview</h1>
-    Status: {completed}/{total} problems
-    Score: {score}%
-    '''.format(completed=completed, total=total, score=int(10000*score)/100)
+    <div>Status: {completed}/{total} problems</div>
+    <div>Score: {score}%</div>
+    <div>Contents:
+    <ol>
+        {table}
+    </ol></div>
+    '''.format(completed=completed, total=total, score=int(10000*score)/100, table=table)
     return score, overview+'<br><br>'.join([
         get_report(assignment.mode, 
                         assignment.name, 
@@ -191,22 +203,28 @@ def get_report(mode, name, submission, image=""):
     status = "Success!" if submission.correct else "Incomplete"
     if mode == 'maze':
         return """
-        <h1>Maze {name}</h1>
+        <h1 id='{slug}'>Maze {name}</h1>
         <strong>Status:</strong><span> {status}</span>
-        """.format(name=name, status=status)
+        """.format(name=name, status=status, slug=slugify(name))
     else:
         code = highlight_python_code(submission.code)
         if image:
             image = "Submitted Blocks:<br><img src='{0}'>".format(image)
+        time = process_history([h['time'] for h in submission.get_history()])
         return '''
-        <h1>{message}</h1>
+        <h1 id='{slug}'>{name}</h1>
+        <div>Status: {status}</div>
         <div>Latest work in progress: <a href='{url}' target='_blank'>View</a></div>
         <div>Touches: {touches}</div>
+        <div>Estimated Duration: {time:.2f} minutes</div>
         {image}
         <br>
         Submitted code:<br>
         {code}
-        '''.format(message=status, url=url, touches=submission.version, code=code, image=image)
+        '''.format(name=name, slug=slugify(name),
+                   status=status, url=url, time=time,
+                   touches=submission.version, code=code, 
+                   image=image)
     
 @blueprint_blockpy.route('/save_correct/', methods=['GET', 'POST'])
 @blueprint_blockpy.route('/save_correct', methods=['GET', 'POST'])
@@ -365,6 +383,7 @@ def fix_ghost_submission(lti, lti_exception=None):
 def replay_page():
     return render_template('blockpy/replay.html')
 
+GAP_THRESHOLD = 2*60
 def process_history(history):
     if len(history) <= 1:
         return 0
@@ -373,11 +392,11 @@ def process_history(history):
     for a_time in history:
         parsed_time = datetime.strptime(a_time[ :15], "%Y%m%d-%H%M%S")
         if previous_time != None:
-            diff = (parsed_time - previous_time).seconds/60.
-            if diff < 2:
+            diff = (parsed_time - previous_time).seconds
+            if diff < GAP_THRESHOLD:
                 total_duration += diff
         previous_time = parsed_time
-    return total_duration
+    return total_duration/60.
     
 @blueprint_blockpy.route('/browse_submissions', methods=['GET', 'POST'])
 @blueprint_blockpy.route('/browse_submissions/', methods=['GET', 'POST'])

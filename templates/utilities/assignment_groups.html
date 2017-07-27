@@ -124,6 +124,10 @@
     </div>
 </div>
 </div>
+{% for assignment, submission in sorted_group %}
+{{ submission.id }}
+{{ submission.correct }}
+{% endfor %}
 <script>
 test = $("#test").html();
 </script>
