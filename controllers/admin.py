@@ -4,10 +4,12 @@ import json
 from subprocess import call
 import csv
 import io
+import os.path as op
 
 # Import Flask
 from flask_admin import Admin, BaseView, expose, form
 from flask_admin.contrib.sqla import ModelView
+from flask_admin.contrib.fileadmin import FileAdmin
 from flask import g, Blueprint, request, url_for, render_template, Response
 from jinja2 import Markup
 
@@ -67,7 +69,9 @@ def _recurse_render_settings(item):
         
     
 def _render_settings(view, context, model, name):
-    body = "<pre>"
+    body = "<div>"+model.type+"</div>"
+    body += "<div>"+model.mode+"</div>"
+    body += "<pre>"
     if model.settings:
         try:
             body += _recurse_render_settings(json.loads(model.settings))
@@ -78,6 +82,14 @@ def _render_settings(view, context, model, name):
     
 def _render_code(view, context, model, name):
     return Markup("<pre>"+getattr(model, name)+"</pre>")
+    
+def _render_assignment_settings(view, context, model, name):
+    return Markup("<div>"+model.body+"</div>"+
+                  "<pre>"+model.give_feedback+"</pre>"+
+                  "<pre>"+model.starting_code+"</pre>")
+def _render_assignment_type(view, context, model, name):
+    return Markup("<div>"+model.type+"</div>"+
+                  "<div>"+model.mode+"</div>")
     
 def _smaller(view, context, model, name):
     return Markup("<small>"+getattr(model, name)+"</small>")
@@ -94,14 +106,24 @@ class RoleView(RegularView):
 class AssignmentView(RegularView):
     column_list = ('id', 'date_modified', 
                    'owner_id', 'course_id', 
-                   'name', 'type', 'body', 
-                   'give_feedback', 'starting_code', 'settings',
+                   'name', #'type', #'body', 
+                   'give_feedback', #'starting_code', 
+                   'settings',
                    #'visibility', 'disabled', 
-                   'mode', 'version'
+                   #'mode', 
+                   'version'
                    )
+    column_searchable_list = ('name', 'body')
+    form_widget_args  = {
+        'description': {
+            'style': 'width: 25%'
+        }
+    }
     column_formatters = { 'settings': _render_settings, 
-                          'give_feedback': _render_code,
-                          'starting_code': _render_code}
+                          #'type': _render_assignment_type,
+                          'give_feedback': _render_assignment_settings #_render_code,
+                          #'starting_code': _render_code
+                          }
 class AssignmentGroupView(RegularView):
     column_list = ('id', 'date_modified', 
                    'owner_id', 'course_id',
@@ -139,6 +161,8 @@ admin.add_view(ModelIdView(Settings, db.session, category='Tables'))
 admin.add_view(ModelIdView(Authentication, db.session, category='Tables'))
 admin.add_view(RoleView(Role, db.session, category='Tables'))
 admin.add_view(LogView(Log, db.session, category='Tables'))
+
+admin.add_view(FileAdmin(app.config['BLOCKLY_LOG_DIR'], '/code_logs/', name='Log Files'))
 
 @app.route('/admin/shutdown', methods=['GET', 'POST'])
 @admin_required

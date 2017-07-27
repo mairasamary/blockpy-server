@@ -5,10 +5,12 @@ import os
 import json
 from pprint import pprint
 import logging
+import base64
 
 from main import app
 from interaction_logger import StructuredEvent
 
+from flask import url_for
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from flask_security import UserMixin, RoleMixin, login_required
@@ -21,6 +23,12 @@ db = SQLAlchemy(app)
 Model = db.Model
 relationship = db.relationship
 backref = db.backref
+
+def stringToBase64(s):
+    return base64.b64encode(s)
+
+def base64ToString(b):
+    return base64.b64decode(b)
 
 def datetime_to_string(adatetime):
     return adatetime.isoformat() + 'Z'
@@ -608,6 +616,38 @@ class Submission(Base):
             submission.correct = True
         db.session.commit()
         return submission
+        
+    def get_report_blockpy(self, image=""):
+        if self.correct:
+            message = "Success!"
+        else:
+            message = "Incomplete"
+    
+    def get_block_image(self):
+        sub_blocks_folder = os.path.join(app.config['UPLOADS_DIR'], 'submission_blocks')
+        image_path = os.path.join(sub_blocks_folder, str(self.id)+'.png')
+        if os.path.exists(image_path):
+            return url_for('blockpy.get_submission_image', 
+                           submission_id=self.id, 
+                           _external=True)
+        return ""
+    
+    def save_block_image(self, image=""):
+        sub_blocks_folder = os.path.join(app.config['UPLOADS_DIR'], 'submission_blocks')
+        image_path = os.path.join(sub_blocks_folder, str(self.id)+'.png')
+        if image != "":
+            converted_image = base64ToString(image[22:])
+            with open(image_path, 'wb') as image_file:
+                image_file.write(converted_image);
+            return url_for('blockpy.get_submission_image', 
+                           submission_id=self.id, 
+                           _external=True)
+        elif os.path.exists(image_path):
+            try:
+                os.remove(image_path)
+            except Exception as e:
+                app.logger.info("Could not delete because:"+str(e))
+        return None
         
     def log_code(self, extension='.py', timestamp=''):
         '''

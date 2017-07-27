@@ -46,7 +46,7 @@ class Config(object):
     MAIL_SERVER = 'smtp.gmail.com'
     MAIL_PORT = 465
     MAIL_USE_SSL = True
-    MAIL_USERNAME = 'think.cs.vt.edu@gmail.com'
+    MAIL_USERNAME = 'vt.blockpy@gmail.com'
     MAIL_PASSWORD = secrets.get("EMAIL_PASSWORD")
     DEFAULT_MAIL_SENDER = 'Think/CT Admin'
     
@@ -62,6 +62,7 @@ class Config(object):
 
     
 DB_ACCESS_URL = 'postgresql://{username}:{password}@localhost/thinkdb'
+#DB_ACCESS_URL = 'mysql://{username}:{password}@localhost/thinkdb'
 
 class ProductionConfig(Config):
     DEBUG = False

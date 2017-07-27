@@ -1,5 +1,6 @@
 # Built-in imports
 from datetime import timedelta
+import re
 from pprint import pprint
 from functools import wraps, update_wrapper
 import calendar, datetime
@@ -8,6 +9,11 @@ try:
     from html.parser import HTMLParser
 except:
     from HTMLParser import HTMLParser
+    
+# Pygments, for reporting nicely formatted Python snippets
+from pygments import highlight
+from pygments.lexers import PythonLexer
+from pygments.formatters import HtmlFormatter
 
 # Flask imports
 from flask import g, request, redirect, url_for, make_response, current_app
@@ -227,3 +233,7 @@ def get_assignment_id(f):
             return jsonify(success=False, message="That assignment id does not belong to that course.")
         return f(*args, course_id=course_id, **kwargs)
     return decorated_function
+
+def highlight_python_code(code):
+    formatter = HtmlFormatter(linenos=True, noclasses=True)
+    return highlight(code, PythonLexer(), formatter)
