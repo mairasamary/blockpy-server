@@ -16,6 +16,7 @@ test.db
 
 tests/
 logs/
+log/
 queued_logs/
 backups/
 

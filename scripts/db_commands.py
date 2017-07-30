@@ -7,6 +7,13 @@ import random
 import json
 from pprint import pprint
 
+class CreateDB(Command):
+    def run(self, **kwargs):
+        print(db.engine)
+        print(dir(db.engine))
+        db.engine.echo = True
+        r = db.create_all()
+        print(r)
 class ResetDB(Command):
     """Drops all tables and recreates them"""
     def run(self, **kwargs):

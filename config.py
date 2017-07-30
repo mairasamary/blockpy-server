@@ -46,7 +46,7 @@ class Config(object):
     MAIL_SERVER = 'smtp.gmail.com'
     MAIL_PORT = 465
     MAIL_USE_SSL = True
-    MAIL_USERNAME = 'think.cs.vt.edu@gmail.com'
+    MAIL_USERNAME = 'vt.blockpy@gmail.com'
     MAIL_PASSWORD = secrets.get("EMAIL_PASSWORD")
     DEFAULT_MAIL_SENDER = 'Think/CT Admin'
     
@@ -61,11 +61,14 @@ class Config(object):
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     
+DB_ACCESS_URL = 'postgresql://{username}:{password}@localhost/thinkdb'
+#DB_ACCESS_URL = 'mysql://{username}:{password}@localhost/thinkdb'
+
 class ProductionConfig(Config):
     DEBUG = False
-    PORT = 5000
+    PORT = 5001
     #SITE_ROOT_URL = 'think.cs.vt.edu/blockpy'
-    SQLALCHEMY_DATABASE_URI = 'mysql://compthink:runestone@127.0.0.1/blockpy'
+    SQLALCHEMY_DATABASE_URI = DB_ACCESS_URL.format(username=secrets.get('DB_USER'), password=secrets.get('DB_PASS'))
     
 class TestingConfig(Config):
     DEBUG = True

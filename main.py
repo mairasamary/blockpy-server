@@ -7,6 +7,9 @@ import jinja2
 
 from flask import Flask, render_template
 
+with open('secrets.json') as secrets_file:
+    secrets = json.load(secrets_file)
+
 VERSION = '0.1.0'
 app = Flask(__name__)
 app.config['TEMPLATES_AUTO_RELOAD'] = True
@@ -21,7 +24,10 @@ def attempt_json_load(data):
 app.jinja_env.filters['json_load'] = attempt_json_load
 app.jinja_env.filters['list'] = list
 
-app.config.from_object('config.TestingConfig')
+if secrets['PRODUCTION']:
+    app.config.from_object('config.ProductionConfig')
+else:
+    app.config.from_object('config.TestingConfig')
 
 ERROR_LOG = os.path.join(app.config['ROOT_DIRECTORY'],
                          'log/errors.log')
@@ -89,7 +95,6 @@ LOGGING['handlers']['FeedbackHandler'] = {
 }
     
 logging.config.dictConfig(LOGGING)
-
 
 # Assets
 from controllers.assets import assets
