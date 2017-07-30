@@ -81,7 +81,7 @@
         }
         var state = localStorage.getItem("blockpy_assignmentSelectorExpanded")=="true";
         setAssignmentSelectorExpansion(state);
-        $("#completion-rate").click(function() {
+        $("#completion-box").click(function() {
             state = !(localStorage.getItem("blockpy_assignmentSelectorExpanded")=="true");
             setAssignmentSelectorExpansion(state);
             localStorage.setItem("blockpy_assignmentSelectorExpanded", (state).toString());
@@ -112,7 +112,7 @@
             </option>
         {% endfor %}
         </select>
-        <span>(<span id='completion-rate'>{{ (sorted_group|map(attribute='1.correct')|sum)}}</span>/{{(sorted_group|length)}} completed)</span></span>
+        <span id='completion-box'>(<span id='completion-rate'>{{ (sorted_group|map(attribute='1.correct')|sum)}}</span>/{{(sorted_group|length)}} completed)</span></span>
         
         <button type="button" class='btn btn-default btn-sm' id='assignment-selector-next'>
             Next <span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span>
