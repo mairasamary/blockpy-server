@@ -437,7 +437,7 @@ def watch():
         for aid in assignments:
             submissions = Submission.by_assignment(aid, int(course_id))
             completions = sum([int(sua[0].correct) for sua in submissions])
-            workings = len(Submission.get_latest(aid, int(course_id)))
+            workings = Submission.get_latest(aid, int(course_id))
             histories = [process_history([h['time'] for h in sua[0].get_history()])
                          for sua in submissions]
             touches = [int(sua[0].version) for sua in submissions]

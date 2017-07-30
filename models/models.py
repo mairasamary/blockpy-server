@@ -442,12 +442,12 @@ class Submission(Base):
                           
     @staticmethod
     def get_latest(assignment_id, course_id):
-        return (db.session.query(Submission, func.max(Submission.date_modified))
-                          .filter(Submission.course_id == course_id)
+        return (db.session.query(func.max(Submission.date_modified))
+                          .filter(Submission.course_id == course_id,
+                                  Submission.assignment_id == assignment_id)
                           .group_by(Submission.user_id)
                           .order_by(func.max(Submission.date_modified).desc())
-                          .having(Submission.assignment_id == assignment_id)
-                          .all())
+                          .count())
     
     @staticmethod
     def by_student(user_id, course_id):
