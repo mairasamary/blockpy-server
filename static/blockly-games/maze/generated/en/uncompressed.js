@@ -167,6 +167,7 @@
       "\js\lib-games.js",
       "\js\lib-interface.js",
       "\js\lib-dialogs.js",
+      "\js-read-only\blockly\generators\python.js",
       "\js-read-only\blockly\generators\javascript.js",
       "\maze\js\blocks.js",
       "\maze\js\maze.js"

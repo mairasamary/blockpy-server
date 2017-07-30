@@ -13,6 +13,7 @@
             opt.removeClass("incorrect-submission");
             opt.addClass("correct-submission");
             $("#assignment-selector-next").removeClass("btn-default").addClass("btn-success");
+            $('#completion-rate').html(parseInt($('#completion-rate').html(), 10)+1)
         }
     }
     var URL_MAP = {
@@ -26,7 +27,7 @@
     function loadNavigation() {
         var loadNewAssignment = function() {
             var id = $("#assignment-selector").val();
-            if (altAssignmentChangingFunction == undefined) {
+            if (typeof altAssignmentChangingFunction == "undefined") {
                 document.location.href = URL_MAP[id];
             } else {
                 altAssignmentChangingFunction(id);
@@ -111,7 +112,7 @@
             </option>
         {% endfor %}
         </select>
-        <span id='completion-rate'>({{ (sorted_group|map(attribute='1.correct')|sum)}}/{{(sorted_group|length)}} completed)</span>
+        <span>(<span id='completion-rate'>{{ (sorted_group|map(attribute='1.correct')|sum)}}</span>/{{(sorted_group|length)}} completed)</span></span>
         
         <button type="button" class='btn btn-default btn-sm' id='assignment-selector-next'>
             Next <span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span>

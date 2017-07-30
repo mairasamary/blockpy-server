@@ -19,6 +19,18 @@ Blockly Maze
     <script type="text/javascript" src="{{ ASSET_URL }}"></script>
 {% endassets %}
 
+<style>
+.embedded-data {
+    display: none;
+}
+.correct-submission {
+    background-color: #ded;
+}
+.incorrect-submission {
+    background-color: #edd;
+}
+</style>
+
 <script>
 URL_ROOT = "{{ url_for('static', filename='') }}";
 LEVEL_SET = {{ level }};
@@ -37,9 +49,13 @@ function markSuccess() {
 function reportChange() {
     
 }
+function markAssignmentReady() {
+    markCorrect("{{ assignment_id }}");
+}
 function reportSuccess() {
     markSuccess();
-    var data = {'assignment_id': "{{ assignment_id }}", 
+    var data = {'assignment_id': "{{ assignment_id }}",
+                'group_id': "{{ group_id }}",
                 'course_id': {{ (course_id if course_id != None else submission.course_id)|tojson }},
                 'status': '1'};
     $.post(MAZE_URL_MAP.save_success, data, function(response) {

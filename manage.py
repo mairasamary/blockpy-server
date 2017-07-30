@@ -14,7 +14,7 @@ context = (r"certs\server.crt", r"certs\server.key")
 manager = Manager(app)
 
 # Server commands context
-manager.add_command("secure", Server(ssl_context=context))
+manager.add_command("secure", Server(ssl_context=context, threaded=True))
 
 # Database Commands
 manager.add_command("reset_db", ResetDB())

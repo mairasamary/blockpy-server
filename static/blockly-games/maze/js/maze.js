@@ -1048,6 +1048,8 @@ Maze.execute = function() {
 
   Maze.log = [];
   var code = Blockly.JavaScript.workspaceToCode();
+  var pythonCode = Blockly.Python.workspaceToCode();
+  console.log(pythonCode);
   Maze.result = Maze.ResultType.UNSET;
   var interpreter = new Interpreter(code, Maze.initInterpreter);
 

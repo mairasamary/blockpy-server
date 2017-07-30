@@ -191,7 +191,7 @@ def get_group_report(group_id, user_id, course_id):
     </ol></div>
     '''.format(completed=completed, total=total, score=int(10000*score)/100, table=table)
     return score, overview+'<br><br>'.join([
-        get_report(assignment.mode, 
+        get_report(assignment.type, 
                         assignment.name, 
                         submission, 
                         submission.get_block_image())
@@ -250,7 +250,7 @@ def save_correct(lti, lti_exception=None):
     if assignment_group_id != None:
         score, report = get_group_report(int(assignment_group_id), g.user.id, int(course_id))
     else:
-        report = get_report(assignment.mode, assignment.name, submission, image=image_url)
+        report = get_report(assignment.type, assignment.name, submission, image=image_url)
         score = float(submission.correct)
     lti.post_grade(score, report, endpoint=lis_result_sourcedid)
     return jsonify(success=True, submitted=True)

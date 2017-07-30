@@ -7,10 +7,13 @@ blueprint_maze = Blueprint('maze', __name__, url_prefix='/maze')
 
 @blueprint_maze.route('/', methods=['GET', 'POST'])
 @blueprint_maze.route('/load', methods=['GET', 'POST'])
-@lti(request='initial')
 def load(lti=lti, lti_exception=None, assignments=None, submissions=None, embed=False):
     if assignments is None or submissions is None:
         assignments, submissions = get_assignments_from_request()
+    if "assignment_group_id" in request.args:
+        group_id = int(request.args.get("assignment_group_id"))
+    else:
+        group_id = None
     if "assignment_id" in request.args:
         assignment_id = request.args.get("assignment_id")
     elif assignments:
@@ -39,6 +42,7 @@ def load(lti=lti, lti_exception=None, assignments=None, submissions=None, embed=
                                    assignment=assignment,
                                    submission= submission,
                                    assignment_id = assignment.id,
+                                   group_id = group_id,
                                    level=assignment.name,
                                    embed=embed,
                                    course_id=course_id,

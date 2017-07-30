@@ -27,6 +27,7 @@ goog.provide('Maze.Blocks');
 
 goog.require('Blockly');
 goog.require('Blockly.JavaScript');
+goog.require('Blockly.Python');
 goog.require('BlocklyGames');
 
 
@@ -148,6 +149,7 @@ Blockly.JavaScript['maze_ifElse'] = function(block) {
              '} else {\n' + branch1 + '}\n';
   return code;
 };
+
 
 Blockly.Blocks['maze_forever'] = {
   /**
