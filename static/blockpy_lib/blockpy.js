@@ -974,6 +974,14 @@ AbstractInterpreter.prototype.BUILTINS = {
     'type': {"type": "Any"},
     'dir': {"type": "List"}
 };
+AbstractInterpreter.METHODS = {
+    "List": {
+        "append": {
+            "type": "Function",
+            "returns": {"type": "None"}
+        }
+    }
+}
 AbstractInterpreter.MODULES = {
     'weather': {
         'get_temperature': {"type": 'Num'},
@@ -2763,6 +2771,17 @@ Not
 UAdd
 USub
 */
+
+/**
+ * An automatically generated file, based on the files in `instructors/`.
+ * We need to have the python code in these files made available in the 
+ * JS files, so we load them in via a preprocessing step.
+ */
+
+var $INSTRUCTOR_MODULES_EXTENDED = {};
+
+$INSTRUCTOR_MODULES_EXTENDED["instructor_utility.py"] = "from instructor import *\n\ndef function_is_called(name):\n    ast = parse_program()\n    all_calls = ast.find_all('Call')\n    count = 0\n    for a_call in all_calls:\n        if a_call.func.ast_name == 'Attribute':\n            if a_call.func.attr == name:\n                count += 1\n        elif a_call.func.ast_name == 'Name':\n            if a_call.func.id == name:\n                count += 1\n    return count\n    \ndef no_nonlist_nums():\n    pass\n    \ndef only_printing_variables():\n    ast = parse_program()\n    all_calls = ast.find_all('Call')\n    count = 0\n    for a_call in all_calls:\n        if a_call.func.ast_name == 'Name' and a_call.func.id == \"print\":\n            for arg in a_call.args:\n                if arg.ast_name != \"Name\":\n                    return False\n    return True\n    \n'''\n    \n    mod.no_nonlist_nums = new Sk.builtin.func(function(source) {\n        Sk.builtin.pyCheckArgs(\"no_nonlist_nums\", arguments, 1, 1);\n        Sk.builtin.pyCheckType(\"source\", \"string\", Sk.builtin.checkString(source));\n        \n        source = source.v;\n        \n        var num_list = getNonListNums(source);\n        \n        var count = 0;\n        for (var i = 0, len = num_list.length; i < len; i = i+1) {\n            if (num_list[i].v != 0 && num_list[i].v != 1) {\n                return Sk.ffi.remapToPy(true);\n            }\n        }\n        return Sk.ffi.remapToPy(false);\n    });\n\n\n    \n    /**\n     * Given source code as a string, return a list of all of the AST elements\n     * that are Num (aka numeric literals) but that are not inside List elements.\n     *\n     * @param {String} source - Python source code.\n     * @returns {Array.number} The list of JavaScript numeric literals that were found.\n     */\n    function getNonListNums(source) {\n        if (!(source in parses)) {\n            var parse = Sk.parse(\"__main__\", source);\n            parses[source] = Sk.astFromParse(parse.cst, \"__main__\", parse.flags);\n        }\n        var ast = parses[source];\n        var visitor = new NodeVisitor();\n        var insideList = false;\n        var nums = [];\n        visitor.visit_List = function(node) {\n            insideList = true;\n            this.generic_visit(node);\n            insideList = false;\n        }\n        visitor.visit_Num = function(node) {\n            if (!insideList) {\n                nums.push(node.n);\n            }\n            this.generic_visit(node);\n        }\n        visitor.visit(ast);\n        return nums;\n    }\n    \n    \n '''"
+
 /**
  * Skulpt Module for holding the Instructor API.
  *
@@ -2799,9 +2818,7 @@ var $sk_mod_instructor = function(name) {
     mod.compliment = new Sk.builtin.func(function(message) {
         Sk.builtin.pyCheckArgs("compliment", arguments, 1, 1);
         Sk.builtin.pyCheckType("message", "string", Sk.builtin.checkString(message));
-        if(!Sk.executionReports.instructor.compliments){
-            Sk.executionReports.instructor.compliments = [];
-        }
+        
         Sk.executionReports.instructor.compliments.push(Sk.ffi.remapToJs(message));
     });
     /**
@@ -2815,8 +2832,8 @@ var $sk_mod_instructor = function(name) {
     /**
      * Let user know about an issue
      */
-    mod.correct = new Sk.builtin.func(function(message, priority, line) {
-        Sk.builtin.pyCheckArgs("correct", arguments, 1, 3);
+    mod.explain = new Sk.builtin.func(function(message, priority, line) {
+        Sk.builtin.pyCheckArgs("explain", arguments, 1, 3);
         Sk.builtin.pyCheckType("message", "string", Sk.builtin.checkString(message));
         if (priority != undefined){
             Sk.builtin.pyCheckType("message", "string", Sk.builtin.checkString(priority));
@@ -2857,10 +2874,18 @@ var $sk_mod_instructor = function(name) {
                 Sk.feedbackSuppressions[type][subtype] = true;
             } else if (Sk.feedbackSuppressions[type] !== false) {
                 Sk.feedbackSuppressions[type][subtype] = true;
-            }//@Austin Cory Bart @TODO: does this need a base case e.g. if Sk.feedbackSuppressions[type] === true, you set a boolean's field?
+            }
         } else {
             Sk.feedbackSuppressions[type] = true;
         }
+    });
+    
+    /**
+     * Logs feedback to javascript console
+     */
+    mod.log = new Sk.builtin.func(function(message) {
+        Sk.builtin.pyCheckArgs("log", arguments, 1, 1);
+        console.log(Sk.ffi.remapToJs(message));
     });
     
     // get_ast()
@@ -2868,365 +2893,65 @@ var $sk_mod_instructor = function(name) {
     // get_types()
     // get_types_raw()
     
-    //Enhanced feedback functions and objects starts here
-    mod.Ast = Sk.misceval.buildClass(mod, function($gbl, $loc) {
-        $loc.__init__ = new Sk.builtin.func(function(self) {
-            var parser = Sk.executionReports['parser'];
-            if (parser.success) {
-                self.ast = parser.ast;
+    var create_logger = function(phase, report_item) {
+        return new Sk.builtin.func(function() {
+            Sk.builtin.pyCheckArgs('log_'+report_item, arguments, 0, 0);
+            var report = Sk.executionReports[phase];
+            if (report.success) {
+                console.log(report[report_item]);
             } else {
-                self.ast = null;
+                console.log('Execution phase "'+phase+'" failed, '+report_item+' could not be found.');
             }
-            console.log("Parser AST", self.ast);
         });
-    }, 'Ast', []);
-    
-    mod.Types = Sk.misceval.buildClass(mod, function($gbl, $loc) {
-        $loc.__init__ = new Sk.builtin.func(function(self) {
-            var analyzer = Sk.executionReports['analyzer'];
-            if (analyzer.success) {
-                self.types = analyzer.variables;
-            } else {
-                self.types = null;
-            }
-            console.log("AI Types", self.types);
-        });
-    }, 'Types', []);
-    mod.Behavior = Sk.misceval.buildClass(mod, function($gbl, $loc) {
-        $loc.__init__ = new Sk.builtin.func(function(self) {
-            var analyzer = Sk.executionReports['analyzer'];
-            if (analyzer.success) {
-                self.behavior = analyzer.behavior;
-            } else {
-                self.behavior = null;
-            }
-            console.log("AI Behavior", self.behavior);
-        });
-    }, 'Behavior', []);
-    
-    mod.Trace = Sk.misceval.buildClass(mod, function($gbl, $loc) {
-        $loc.__init__ = new Sk.builtin.func(function(self) {
-            var student = Sk.executionReports['student'];
-            if (student.success) {
-                self.trace = student.trace;
-            } else {
-                self.trace = null;
-            }
-            console.log("Runtime Trace", self.trace);
-        });
-    }, 'Trace', []);
-    
-    mod.Issues = Sk.misceval.buildClass(mod, function($gbl, $loc) {
-        $loc.__init__ = new Sk.builtin.func(function(self) {
-            var analyzer = Sk.executionReports['analyzer'];
-            if (analyzer.success) {
-                self.issues = analyzer.issues;
-            } else {
-                self.issues = null;
-            }
-            console.log("AI Issues", self.issues);
-        });
-    }, 'Issues', []);
-    
-    //---- Everything below this line is old stuff
-    
-    /**
-     * Skulpt Exception that represents a Feedback object, to be rendered to the user
-     * when the feedback system finds a problem.
-     * 
-     * @param {Array} args - A list of optional arguments to pass to the Exception.
-     *                       Usually this will include a message for the user.
-     */
-    Sk.builtin.Feedback = function (args) {
-        var o;
-        if (!(this instanceof Sk.builtin.Feedback)) {
-            o = Object.create(Sk.builtin.Feedback.prototype);
-            o.constructor.apply(o, arguments);
-            return o;
-        }
-        Sk.builtin.Exception.apply(this, arguments);
     };
-    Sk.abstr.setUpInheritance("Feedback", Sk.builtin.Feedback, Sk.builtin.Exception);
-    
-    /**
-     * Skulpt Exception that represents a Success object, to be thrown when the user
-     * completes their program successfully.
-     *
-     ** @param {Array} args - A list of optional arguments to pass to the Exception.
-     *                       Usually this will be empty.
-     */
-    Sk.builtin.Success = function (args) {
-        var o;
-        if (!(this instanceof Sk.builtin.Success)) {
-            o = Object.create(Sk.builtin.Success.prototype);
-            o.constructor.apply(o, arguments);
-            return o;
-        }
-        Sk.builtin.Exception.apply(this, arguments);
-    };
-    Sk.abstr.setUpInheritance("Success", Sk.builtin.Success, Sk.builtin.Exception);
-    
-    /**
-     * Skulpt Exception that represents a Finished object, to be thrown when the user
-     * completes their program successfully, but isn't in a problem with a "solution".
-     * This is useful for open-ended canvases where we still want to capture the students'
-     * code in Canvas.
-     *
-     ** @param {Array} args - A list of optional arguments to pass to the Exception.
-     *                       Usually this will be empty.
-     */
-    Sk.builtin.Finished = function (args) {
-        var o;
-        if (!(this instanceof Sk.builtin.Finished)) {
-            o = Object.create(Sk.builtin.Finished.prototype);
-            o.constructor.apply(o, arguments);
-            return o;
-        }
-        Sk.builtin.Exception.apply(this, arguments);
-    };
-    Sk.abstr.setUpInheritance("Finished", Sk.builtin.Finished, Sk.builtin.Exception);
-    
-    /**
-     * A Skulpt function that throws a Feedback exception, allowing us to give feedback
-     * to the user through the Feedback panel. This function call is done for aesthetic
-     * reasons, so that we are calling a function instead of raising an error. Still,
-     * exceptions allow us to break out of the control flow immediately, like a 
-     * return, so they are a good mechanism to use under the hood.
-     * 
-     * @param {String} message - The message to display to the user.
-     */
-    mod.set_feedback = new Sk.builtin.func(function(message) {
-        Sk.builtin.pyCheckArgs("set_feedback", arguments, 1, 1);
-        Sk.builtin.pyCheckType("message", "string", Sk.builtin.checkString(message));
-        throw new Sk.builtin.Feedback(message.v);
-    });
-    
-    /**
-     * A Skulpt function that throws a Finished exception. This will terminate the
-     * feedback analysis, but reports that the students' code was successful.
-     * This function call is done for aesthetic reasons, so that we are calling a
-     * function instead of raising an error. Still, exceptions allow us to break
-     * out of the control flow immediately, like a return would, so they are a
-     * good mechanism to use under the hood.
-     */
-    mod.set_finished = new Sk.builtin.func(function() {
-        Sk.builtin.pyCheckArgs("set_finished", arguments, 0, 0);
-        throw new Sk.builtin.Finished();
-    });
-    
-    // Memoization of previous parses - some mild redundancy to save time
-    // TODO: There's no evidence this is good, and could be a memory hog on big
-    // programs. Someone should investigate this. The assumption is that multiple
-    // helper functions might be using parses. But shouldn't we trim old parses?
-    // Perhaps a timed cache would work better.
-    var parses = {};
-    
-    /**
-     * Given source code as a string, return a flat list of all of the AST elements
-     * in the parsed source code.
-     *
-     * TODO: There's redundancy here, since the source code was previously parsed
-     * to run the file and to execute it. We should probably be able to do this just
-     * once and shave off time.
-     *
-     * @param {String} source - Python source code.
-     * @returns {Array.<Object>}
-     */
-    function getParseList(source) {
-        if (!(source in parses)) {
-            var parse = Sk.parse("__main__", source);
-            parses[source] = Sk.astFromParse(parse.cst, "__main__", parse.flags);
-        }
-        var ast = parses[source];
-        return (new NodeVisitor()).recursive_walk(ast);
-    }
+    mod.log_ast = create_logger('parser', 'ast');
+    mod.log_variables = create_logger('analyzer', 'variables');
+    mod.log_behavior = create_logger('analyzer', 'behavior');
+    mod.log_issues = create_logger('analyzer', 'issues');
+    mod.log_trace = create_logger('analyzer', 'student');
 
-    /**
-     * Given source code as a string, return a list of all of the AST elements
-     * that are Num (aka numeric literals) but that are not inside List elements.
-     *
-     * @param {String} source - Python source code.
-     * @returns {Array.number} The list of JavaScript numeric literals that were found.
-     */
-    function getNonListNums(source) {
-        if (!(source in parses)) {
-            var parse = Sk.parse("__main__", source);
-            parses[source] = Sk.astFromParse(parse.cst, "__main__", parse.flags);
-        }
-        var ast = parses[source];
-        var visitor = new NodeVisitor();
-        var insideList = false;
-        var nums = [];
-        visitor.visit_List = function(node) {
-            insideList = true;
-            this.generic_visit(node);
-            insideList = false;
-        }
-        visitor.visit_Num = function(node) {
-            if (!insideList) {
-                nums.push(node.n);
-            }
-            this.generic_visit(node);
-        }
-        visitor.visit(ast);
-        return nums;
-    }
-    
-    /**
-     * Given source code as a string, return a list of all of the AST elements
-     * that are being printed (using the print function) but are not variables.
-     *
-     * @param {String} source - Python source code.
-     * @returns {Array.<Object>} The list of AST elements that were found.
-     */
-    function getPrintedNonProperties(source) {
-        if (!(source in parses)) {
-            var parse = Sk.parse("__main__", source);
-            parses[source] = Sk.astFromParse(parse.cst, "__main__", parse.flags);
-        }
-        var ast = parses[source];
-        var visitor = new NodeVisitor();
-        var nonVariables = [];
-        visitor.visit_Call = function(node) {
-            var func = node.func;
-            var args = node.args;
-            if (func._astname == 'Name' && func.id.v == 'print') {
-                for (var i =0; i < args.length; i+= 1) {
-                    if (args[i]._astname != "Name") {
-                        nonVariables.push(args[i]);
+    // Provides `student` as an object with all the data that the student declared.
+    mod.StudentData = Sk.misceval.buildClass(mod, function($gbl, $loc) {
+        $loc.__init__ = new Sk.builtin.func(function(self) {
+            //self.data = Sk.builtin.dict();
+            var newDict = Sk.builtin.dict();
+            Sk.abstr.sattr(self, 'data', newDict, true);
+            self.module = Sk.executionReports['student'].module;
+            if (self.module !== undefined) {
+                self.module = self.module.$d;
+                for (var key in self.module) {
+                    if (self.module.hasOwnProperty(key)) {
+                        newDict.mp$ass_subscript(Sk.ffi.remapToPy(key), 
+                                                 self.module[key]);
                     }
                 }
+            } else {
+                self.module = {};
             }
-            this.generic_visit(node);
-        }
-        visitor.visit(ast);
-        return nonVariables;
-    }
+        });
+        $loc.get_names_by_type = new Sk.builtin.func(function(self, type) {
+            Sk.builtin.pyCheckArgs("get_names_by_type", arguments, 2, 2);
+            var result = [];
+            for (var property in self.module) {
+                if (self.module[property].tp$name == type.tp$name) {
+                    result.push(Sk.ffi.remapToPy(property));
+                }
+            }
+            return Sk.builtin.list(result);
+        });
     
-    /**
-     * Skulpt function to iterate through the final state of
-     * all the variables in the program, and check to see if they have
-     * a given value.
-     */
-    mod.get_value_by_name = new Sk.builtin.func(function(name) {
-        Sk.builtin.pyCheckArgs("get_value_by_name", arguments, 1, 1);
-        Sk.builtin.pyCheckType("name", "string", Sk.builtin.checkString(name));
-        name = name.v;
-        var final_values = Sk.builtins._final_values;
-        if (name in final_values) {
-            return final_values[name];
-        } else {
-            return Sk.builtin.none.none$;
-        }
-    });
-
-    mod.get_value_by_type = new Sk.builtin.func(function(type) {
-        Sk.builtin.pyCheckArgs("get_value_by_type", arguments, 1, 1);
-        
-        var final_values = Sk.builtins._final_values;
-        var result = [];
-        for (var property in final_values) {
-            if (final_values[property].tp$name == type.tp$name) {
-                result.push(final_values[property]);
+        $loc.get_values_by_type = new Sk.builtin.func(function(self, type) {
+            Sk.builtin.pyCheckArgs("get_values_by_type", arguments, 2, 2);
+            var result = [];
+            for (var property in self.module) {
+                if (self.module[property].tp$name == type.tp$name) {
+                    result.push(self.module[property]);
+                }
             }
-        }
-        return Sk.builtin.list(result);
+            return Sk.builtin.list(result);
+        });
     });
-    
-    mod.parse_json = new Sk.builtin.func(function(blob) {
-        Sk.builtin.pyCheckArgs("parse_json", arguments, 1, 1);
-        Sk.builtin.pyCheckType("blob", "string", Sk.builtin.checkString(blob));
-        blob = blob.v;
-        return Sk.ffi.remapToPy(JSON.parse(blob));
-    });
-
-    mod.get_property = new Sk.builtin.func(function(name) {
-        Sk.builtin.pyCheckArgs("get_property", arguments, 1, 1);
-        Sk.builtin.pyCheckType("name", "string", Sk.builtin.checkString(name));
-        name = name.v;
-        var trace = Sk.builtins._trace;
-        if (trace.length <= 0) {
-            return Sk.builtin.none.none$;
-        }
-        var properties = trace[trace.length-1]["properties"];
-        for (var i = 0, len = properties.length; i < len; i += 1) {
-            if (properties[i]['name'] == name) {
-                return Sk.ffi.remapToPy(properties[i])
-            }
-        }
-        return Sk.builtin.none.none$;
-    });
-    
-    mod.calls_function = new Sk.builtin.func(function(source, name) {
-        Sk.builtin.pyCheckArgs("calls_function", arguments, 2, 2);
-        Sk.builtin.pyCheckType("source", "string", Sk.builtin.checkString(source));
-        Sk.builtin.pyCheckType("name", "string", Sk.builtin.checkString(name));
-        
-        source = source.v;
-        name = name.v;
-        
-        var ast_list = getParseList(source);
-        
-        var count = 0;
-        for (var i = 0, len = ast_list.length; i < len; i = i+1) {
-            if (ast_list[i]._astname == 'Call') {
-                if (ast_list[i].func._astname == 'Attribute') {
-                    count += Sk.ffi.remapToJs(ast_list[i].func.attr) == name | 0;
-                } else if (ast_list[i].func._astname == 'Name') {
-                    count += Sk.ffi.remapToJs(ast_list[i].func.id) == name | 0;
-                }   
-            }
-        }
-        
-        return Sk.ffi.remapToPy(count > 0);
-    });
-    
-    mod.count_components = new Sk.builtin.func(function(source, component) {
-        Sk.builtin.pyCheckArgs("count_components", arguments, 2, 2);
-        Sk.builtin.pyCheckType("source", "string", Sk.builtin.checkString(source));
-        Sk.builtin.pyCheckType("component", "string", Sk.builtin.checkString(component));
-        
-        source = source.v;
-        component = component.v;
-        
-        var ast_list = getParseList(source);
-        
-        var count = 0;
-        for (var i = 0, len = ast_list.length; i < len; i = i+1) {
-            if (ast_list[i]._astname == component) {
-                count = count+1;
-            }
-        }
-        
-        return Sk.ffi.remapToPy(count);
-    });
-    
-    mod.no_nonlist_nums = new Sk.builtin.func(function(source) {
-        Sk.builtin.pyCheckArgs("no_nonlist_nums", arguments, 1, 1);
-        Sk.builtin.pyCheckType("source", "string", Sk.builtin.checkString(source));
-        
-        source = source.v;
-        
-        var num_list = getNonListNums(source);
-        
-        var count = 0;
-        for (var i = 0, len = num_list.length; i < len; i = i+1) {
-            if (num_list[i].v != 0 && num_list[i].v != 1) {
-                return Sk.ffi.remapToPy(true);
-            }
-        }
-        return Sk.ffi.remapToPy(false);
-    });
-
-    mod.only_printing_properties = new Sk.builtin.func(function(source) {
-        Sk.builtin.pyCheckArgs("only_printing_properties", arguments, 1, 1);
-        Sk.builtin.pyCheckType("source", "string", Sk.builtin.checkString(source));
-        
-        source = source.v;
-        
-        var non_var_list = getPrintedNonProperties(source);
-        return Sk.ffi.remapToPy(non_var_list.length == 0);
-    });
+    mod.student = Sk.misceval.callsimOrSuspend(mod.StudentData);
     
     //Enhanced feedback functions and objects starts here
     //variable used for easy reidentification of nodes so we don't have to recreate every node type
@@ -3257,7 +2982,7 @@ var $sk_mod_instructor = function(name) {
             flatTree.push(node);
             /** Visit a node. **/
             var method_name = 'visit_' + node._astname;
-            console.log(flatTree.length - 1 + ": " + node._astname)
+            //console.log(flatTree.length - 1 + ": " + node._astname)
             if (method_name in this) {
                 return this[method_name](node);
             } else {
@@ -3303,7 +3028,7 @@ var $sk_mod_instructor = function(name) {
                 //for each object, convert it to a python object if it isn't one already
                 var subval = obj[i];
                 if(!isSkBuiltin(subval)){
-                    arr.push(Sk.ffi.mixedRemapToPy(subval));
+                    arr.push(mixedRemapToPy(subval));
                 }else{
                     arr.push(subval)
                 }
@@ -3317,9 +3042,9 @@ var $sk_mod_instructor = function(name) {
                 kvs = [];//Sk.builtin.dict uses an array of key-value,key-value...
                 for (k in obj) {
                     //convert the key if it needs to be converted
-                    kvs.push(Sk.ffi.mixedRemapToPy(k));
+                    kvs.push(mixedRemapToPy(k));
                     //covert corresponding value if it needs to be converted
-                    kvs.push(Sk.ffi.mixedRemapToPy(obj[k]));
+                    kvs.push(mixedRemapToPy(obj[k]));
                 }
                 //create the new dictionary
                 return new Sk.builtin.dict(kvs);
@@ -3332,8 +3057,34 @@ var $sk_mod_instructor = function(name) {
             return Sk.builtin.assk$(obj);
         } else if (typeof obj === "boolean") {
             return new Sk.builtin.bool(obj);
+        } else if(typeof obj === "function") {
+            return new Sk.builtin.str(obj.toString());
         }
     }
+    
+    /**
+     * This function coverts the output in the student report to a python 
+     * list and returns it.
+    **/
+    mod.get_output = new Sk.builtin.func(function() {
+        Sk.builtin.pyCheckArgs("get_output", arguments, 0, 0);
+        if (Sk.executionReports['student'].success) {
+            return mixedRemapToPy(Sk.executionReports['student']['output']());
+        } else {
+            return Sk.ffi.remapToPy([]);
+        }
+    });
+    
+    /**
+     * This function resets the output, particularly useful if the student
+     * code is going to be rerun.
+     */
+    mod.reset_output = new Sk.builtin.func(function() {
+        Sk.builtin.pyCheckArgs("reset_output", arguments, 0, 0);
+        if (Sk.executionReports['student'].success) {
+            Sk.executionReports['student']['output'].removeAll();
+        }
+    });
 
     /**
      * This function is called by instructors to construct the python version of the AST
@@ -3341,37 +3092,6 @@ var $sk_mod_instructor = function(name) {
     mod.parse_program = new Sk.builtin.func(function() {
         generateFlatTree(Sk.executionReports['verifier'].code);
         return Sk.misceval.callsimOrSuspend(mod.AstNode, 0);
-    });
-
-    /**@TODO: make this function affect the UI
-     * Given a feedback string, records the corrective feedback string for later printing
-     * @param {string} feedback - the piece of feedback to save
-    **/
-    mod.add_interrupt_feedback = new Sk.builtin.func(function(feedback) {
-        Sk.builtin.pyCheckArgs("add_iterupt_feedback", arguments, 1, 1);
-        Sk.builtin.pyCheckType("feedback", "string", Sk.builtin.checkString(feedback));
-        accInterruptFeedback.push(feedback);
-    });
-
-    /**@TODO: make this function affect the UI
-     * Given a feedback string, records the complementary feedback string for later printing
-     * @param {string} feedback - the piece of feedback to save
-    **/
-    mod.add_comp_feedback = new Sk.builtin.func(function(feedback) {
-        Sk.builtin.pyCheckArgs("add_comp_feedback", arguments, 1, 1);
-        Sk.builtin.pyCheckType("feedback", "string", Sk.builtin.checkString(feedback));
-        accCompFeedback.push(feedback);
-    });
-
-    /**
-     * This resolves all of the feedback and posts it to the appropriate places
-     * @TODO: actually implement this functionality
-    **/
-    mod.post_feedback = new Sk.builtin.func(function() {
-        var allFeedback = accInterruptFeedback.concat(accCompFeedback);
-        completePythonAll = Sk.builtin.list(allFeedback);
-        jsPureFeedback = Sk.ffi.remapToJs(completePythonAll);
-        console.log("" + jsPureFeedback);
     });
 
     mod.def_use_error = new Sk.builtin.func(function(py_node) {
@@ -3402,7 +3122,11 @@ var $sk_mod_instructor = function(name) {
             var analyzer = Sk.executionReports['analyzer'];
             var typesList = analyzer.variables;
             var name = Sk.ffi.remapToJs(node.id);
-            return Sk.ffi.remapToPy(typesList[name]["type"]);
+            if (typesList[name] === undefined) {
+                return Sk.ffi.remapToPy(null);
+            } else {
+                return Sk.ffi.remapToPy(typesList[name]["type"]);
+            }
         }else{
             return Sk.ffi.remapToPy(null);
         }
@@ -3467,12 +3191,26 @@ var $sk_mod_instructor = function(name) {
                         }
                     }
                     return new Sk.builtin.list(fieldArray);
-                }else if(field instanceof Object && 'v' in field){//probably already a python object
+                }else if(field instanceof Object && ('v' in field || 
+                        'n' in field || 's' in field)){//probably already a python object
                     return field;
                 }else if(field instanceof Object && "_astname" in field){//an AST node
                     var childId = flatTree.indexOf(field);//get the relevant node
                     return Sk.misceval.callsimOrSuspend(mod.AstNode, childId);
-                }else{//hope this is a basic type
+                }else{
+                    switch(key){//looking for a function
+                        case "ctx"://a load or store
+                        case "ops"://an operator
+                        case "op"://an operator
+                            //the above 3 cases are functions, extract the function name
+                            console.log("hitting switch: " + field);
+                            field = field.toString();
+                            field = field.substring(("function").length + 1, field.length - 4);
+                            return Sk.ffi.remapToPy(field);
+                        default:
+                            break;
+                    }
+                    //hope this is a basic type
                     return Sk.ffi.remapToPy(field);
                 }
             }
@@ -6187,7 +5925,9 @@ BlockPyEditor.prototype.previousLine = null;
  */
 BlockPyEditor.prototype.refreshHighlight = function() {
     if (this.previousLine !== null) {
-        this.codeMirror.addLineClass(this.previousLine, 'text', 'editor-error-line');
+        if (this.previousLine < this.codeMirror.lineCount()) {
+            this.codeMirror.addLineClass(this.previousLine, 'text', 'editor-error-line');
+        }
     }
     // TODO: Shouldn't this refresh the highlight in the block side too?
 }
@@ -6200,10 +5940,14 @@ BlockPyEditor.prototype.refreshHighlight = function() {
  */
 BlockPyEditor.prototype.highlightLine = function(line) {
     if (this.previousLine !== null) {
-        this.codeMirror.removeLineClass(this.previousLine, 'text', 'editor-active-line');
-        this.codeMirror.removeLineClass(this.previousLine, 'text', 'editor-error-line');
+        if (this.previousLine < this.codeMirror.lineCount()) {
+            this.codeMirror.removeLineClass(this.previousLine, 'text', 'editor-active-line');
+            this.codeMirror.removeLineClass(this.previousLine, 'text', 'editor-error-line');
+        }
     }
-    this.codeMirror.addLineClass(line, 'text', 'editor-active-line');
+    if (line < this.codeMirror.lineCount()) {
+        this.codeMirror.addLineClass(line, 'text', 'editor-active-line');
+    }
     this.previousLine = line;
 }
 
@@ -6215,8 +5959,10 @@ BlockPyEditor.prototype.highlightLine = function(line) {
  */
 BlockPyEditor.prototype.highlightError = function(line) {
     if (this.previousLine !== null) {
-        this.codeMirror.removeLineClass(this.previousLine, 'text', 'editor-active-line');
-        this.codeMirror.removeLineClass(this.previousLine, 'text', 'editor-error-line');
+        if (this.previousLine < this.codeMirror.lineCount()) {
+            this.codeMirror.removeLineClass(this.previousLine, 'text', 'editor-active-line');
+            this.codeMirror.removeLineClass(this.previousLine, 'text', 'editor-error-line');
+        }
     }
     if (line < this.codeMirror.lineCount()) {
         this.codeMirror.addLineClass(line, 'text', 'editor-error-line');
@@ -7473,17 +7219,23 @@ BlockPyEngine.prototype.setStudentEnvironment = function() {
     Sk.afterSingleExecution = this.step.bind(this);
     // Unlink the instructor module to prevent abuse
     delete Sk.builtinFiles['files']['src/lib/instructor.js'];
+    for (var module_name in $INSTRUCTOR_MODULES_EXTENDED) {
+        delete Sk.builtinFiles['files']['src/lib/'+module_name];
+    }
     // Unmute everything
     Sk.skip_drawing = false;
     this.main.model.settings.mute_printer(false);
 }
 BlockPyEngine.prototype.setInstructorEnvironment = function() {
     // Instructors have no limits
-    Sk.execLimit = null;
+    Sk.execLimit = undefined;
     // Stepper! Executed after every statement.
     Sk.afterSingleExecution = null;
     // Create the instructor module
     Sk.builtinFiles['files']['src/lib/instructor.js'] = this.INSTRUCTOR_MODULE_CODE;
+    for (var module_name in $INSTRUCTOR_MODULES_EXTENDED) {
+        Sk.builtinFiles['files']['src/lib/'+module_name] = $INSTRUCTOR_MODULES_EXTENDED[module_name];
+    }
     // Mute everything
     Sk.skip_drawing = true;
     this.main.model.settings.mute_printer(true);
@@ -7733,7 +7485,6 @@ BlockPyEngine.prototype.analyzeParse = function() {
         'behavior': this.abstractInterpreter.variablesNonBuiltin,
         'issues': this.abstractInterpreter.report
     }
-    console.log(report.analyzer)
     return true;
 }
 
@@ -7760,7 +7511,8 @@ BlockPyEngine.prototype.runStudentCode = function(after) {
             report['student'] = {
                 'success': true,
                 'trace': engine.executionBuffer.trace,
-                'module': module
+                'module': module,
+                'output': engine.main.model.execution.output
             }
             after();
             engine.executionEnd_();
@@ -7787,11 +7539,24 @@ BlockPyEngine.prototype.runInstructorCode = function(filename, after) {
     this.setInstructorEnvironment();
     // Actually run the python code
     var studentCode = this.main.model.programs['__main__']();
-    var instructorCode = this.main.model.programs[filename]();
-    instructorCode = 'def run_code():\n'+indent(studentCode)+'\n'+instructorCode;
-    instructorCode = 'from instructor import *\n' + instructorCode;
+    if (!report['parser'].success) {
+        studentCode = 'pass';
+    }
+    instructorCode = (
+        'from instructor import *\n'+
+        'def run_student():\n'+
+        '    try:\n'+
+        indent(indent(studentCode))+'\n'+
+        '    except Exception as error:\n'+
+        '        return error\n'+
+        '    return None\n'+
+        this.main.model.programs[filename]()
+    );
     var engine = this;
-    report['instructor'] = {};
+    report['instructor'] = {
+        'compliments': [],
+        //'complete': false // Actually, let's use undefined for now.
+    };
     Sk.misceval.asyncToPromise(function() {
         return Sk.importMainWithBody(filename, false, instructorCode, true);
     }).then(
