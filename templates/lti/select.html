@@ -12,23 +12,6 @@ Courses: Index
 
 <script type='text/javascript'>
 
-var groupBy = function(xs, inner_key, outer_key) {
-    var result = xs.reduce(function(rv, x) {
-        (rv[x[inner_key]] = rv[x[inner_key]] || []).push(x);
-        return rv;
-    }, {})
-    return Object.keys(result).map(function(value, index) {
-        result[value] = result[value].reduce(function (rv2, x2) {
-            (rv2[x2[outer_key]] = rv2[x2[outer_key]] || []).push(x2);
-            return rv2;
-        }, {});
-        var new_list = Object.keys(result[value]).map(function(v, i) {
-            return {'assignments': result[value][v], 'id': v, 'name': result[value][v][0].group_name};
-        });
-        return {'groups': new_list, 'id': value, 'name': new_list[0].assignments[0].course_name};
-    });
-};
-
 function findById(anArray, id, isFunc) {
     for (var i = 0, len = anArray.length; i < len; i++) {
         if (isFunc && anArray[i].id() === id) {
@@ -71,7 +54,7 @@ function MainModel() {
             'select': "{{ return_url }}?url={{url_for('assignments.load', assignment_id=assignment[0].id, _external=True, embed= menu == 'embed') | urlencode}}&return_type={{ 'lti_launch_url' if menu != 'embed' else 'iframe' }}&title={{ assignment[0].title()|urlencode }}&text=BlockPy%20Exercise&width=100%25&height=600", 
             'edit': "{{ url_for('assignments.load', assignment_id=assignment[0].id, course_id=assignment[0].course_id )|safe }}",
             'modified': ko.observable('{{ assignment[0].date_modified.strftime(" %I:%M%p on %a %d, %b %Y").replace(" 0", " ") }}'),
-            'body': ko.observable("{{ assignment[0].body|striptags|truncate(255) }}")
+            'body': ko.observable("{{ assignment[0].body|striptags|truncate(255) if assignment[0].type != 'poll' else '' }}")
         }{{ "," if not loop.last }}
         {% endfor %}
     ]);
@@ -82,7 +65,8 @@ function MainModel() {
             'groups': ko.observableArray([
             {% for group in course.groups %}
             {   'name': ko.observable({{ group.name|tojson }}),
-                'id': ko.observable({{ group.id|tojson }})
+                'id': ko.observable({{ group.id|tojson }}),
+                'select': ko.observable("{{ return_url }}?url={{url_for('assignments.load', assignment_group_id=group.id, _external=True, embed= menu == 'embed') | urlencode}}&return_type={{ 'lti_launch_url' if menu != 'embed' else 'iframe' }}&title={{ group.name|urlencode }}&text=BlockPy%20Exercise&width=100%25&height=600")
             }{{ "," if not loop.last }}
             {% endfor %}
             ])
@@ -103,11 +87,12 @@ function MainModel() {
                 mappedCourses[course_id] = {'id': course_id, 
                                             'name': new_course.name(),
                                             'groups': new_course.groups().map(function(elem) {
-                                                return {'id': elem.id(), 'name': elem.name(), 'assignments': []}
+                                                return {'id': elem.id(), 'name': elem.name(), 'assignments': [], 'select': elem.select()}
                                             })};
                 strayGroups[course_id] = {
                     'id': -1,
                     'name': 'Ungrouped Assignments',
+                    'select': '',
                     'assignments': []
                 };
                 mappedCourses[course_id].groups.push(strayGroups[course_id])
@@ -182,6 +167,7 @@ function MainModel() {
         var name = mainModel.createGroupName();
         $.post("{{ url_for('assignment_group.add_group') }}", {
             "course_id": course_id,
+            'menu': "{{ menu }}",
             "name": name
         }, function(data) {
             if (data.success) {
@@ -190,6 +176,7 @@ function MainModel() {
                 course.groups.push({
                     'id': ko.observable(data.id),
                     'name': ko.observable(data.name),
+                    'select': "{{ return_url }}?url="+data.select,
                     'assignments': ko.observableArray()
                 });
             } else {
@@ -446,6 +433,7 @@ tr.hover-remove-rows button.remove-button {
                     data-bind="click: $root.removeGroup.bind($data, $parent)">
                 <span class='glyphicon glyphicon-remove' aria-hidden="true"></span>
             </button>
+            <a data-bind="attr: { href: select }, visible: select" class="btn btn-primary">Select</a>
         </td>
     </tr>
     <!-- ko foreach: assignments -->

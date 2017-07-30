@@ -45,8 +45,13 @@ def add_group(lti=lti):
         return jsonify(success=False, message="You are not an instructor in this group's course.")
     # Perform action
     assignment_group = AssignmentGroup.new(owner_id=g.user.id, course_id=int(course_id), name=new_name)
+    
+    menu = request.values.get('menu', "select")
+    launch_type = 'lti_launch_url' if menu != 'embed' else 'iframe'
+    endpoint = 'assignments.load'
+    select = url_quote(url_for(endpoint, assignment_group_id=assignment_group.id, _external=True, embed= menu == 'embed'))+"&return_type="+launch_type+"&title="+url_quote(assignment_group.name)+"&text=BlockPy%20Exercise&width=100%25&height=600",
     # Result
-    return jsonify(success=True, id=assignment_group.id, name=assignment_group.name)
+    return jsonify(success=True, id=assignment_group.id, name=assignment_group.name, select=select)
     
 @blueprint_assignment_group.route('/remove', methods=['GET', 'POST'])
 @blueprint_assignment_group.route('/remove', methods=['GET', 'POST'])
