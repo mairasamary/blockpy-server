@@ -4,6 +4,7 @@ import logging
 import logging.config
 from random import randint
 import jinja2
+from natsort import natsorted
 
 from flask import Flask, render_template
 
@@ -23,6 +24,7 @@ def attempt_json_load(data):
         return {}
 app.jinja_env.filters['json_load'] = attempt_json_load
 app.jinja_env.filters['list'] = list
+app.jinja_env.filters['natsorted'] = natsorted
 
 if secrets['PRODUCTION']:
     app.config.from_object('config.ProductionConfig')

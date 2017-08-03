@@ -9,6 +9,7 @@ try:
     from html.parser import HTMLParser
 except:
     from HTMLParser import HTMLParser
+from natsort import natsorted
     
 # Pygments, for reporting nicely formatted Python snippets
 from pygments import highlight
@@ -166,7 +167,7 @@ def get_assignments_from_request():
     # Assignment group or individual assignment?
     if assignment_group_id is not None:
         group = AssignmentGroup.by_id(int(assignment_group_id) if assignment_group_id != None else None)
-        assignments = sorted(group.get_assignments(), key = lambda a: a.name)
+        assignments = natsorted(group.get_assignments(), key = lambda a: a.title())
         submissions = [a.get_submission(user_id, course_id=course_id, submission_url=submission_url) for a in assignments]
     elif assignment_id is not None:
         assignment = Assignment.by_id(int(assignment_id) if assignment_id != None else None)

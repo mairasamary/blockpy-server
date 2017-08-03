@@ -32,13 +32,14 @@ def load(lti=lti, lti_exception=None, assignments=None, submissions=None, embed=
             course_id = int(request.values.get('course_id'))
         else:
             course_id = None
-    for assignment, submission in zip(assignments, submissions):
+    group = list(zip(assignments, submissions))
+    for assignment, submission in group:
         if assignment_id == None:
             break
         elif assignment.id == int(assignment_id):
             break
     return render_template('maze/maze.html',
-                                   group=list(zip(assignments, submissions)),
+                                   group=group,
                                    assignment=assignment,
                                    submission= submission,
                                    assignment_id = assignment.id,

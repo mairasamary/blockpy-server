@@ -1006,7 +1006,7 @@ class AssignmentGroup(Base):
                           .join(AssignmentGroupMembership, 
                                 AssignmentGroupMembership.assignment_id == Assignment.id)
                           .filter(AssignmentGroupMembership.assignment_group_id==self.id)
-                          .order_by(AssignmentGroupMembership.position)
+                          .order_by(Assignment.name, AssignmentGroupMembership.position)
                           .all())
         
 class AssignmentGroupMembership(Base):

@@ -23,6 +23,8 @@ Courses: Index
     }
 </style>
 
+<script type='text/javascript' src="{{ url_for('static', filename='libs/naturalSort.js') }}"></script>
+
 <script type='text/javascript'>
 
 function findById(anArray, id, isFunc) {
@@ -41,11 +43,11 @@ var sortNames = function(a, b) {
         return 1;
     if (b.id == -1)
         return -1;
-    if (a.name < b.name)
-        return -1;
-    if (a.name > b.name)
-        return 1;
-    return 0;
+    if (typeof a.name === "function") {
+        return naturalSort(a.name(), b.name());
+    } else {
+        return naturalSort(a.name, b.name);
+    }
 }
 
 function MainModel() {
@@ -132,6 +134,9 @@ function MainModel() {
         });
         result.forEach(function(v, i) {
             v.groups.sort(sortNames);
+            v.groups.forEach(function(vv, ii) {
+                vv.assignments.sort(sortNames);
+            });
         });
         result.sort(sortNames);
         return result;

@@ -20,3 +20,4 @@ pydot
 six
 bcrypt
 python-slugify
+natsort
