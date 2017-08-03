@@ -111,7 +111,7 @@ function MainModel() {
                 mappedCourses[course_id] = {'id': course_id, 
                                             'name': new_course.name(),
                                             'groups': new_course.groups().map(function(elem) {
-                                                return {'id': elem.id(), 'name': elem.name(), 'assignments': [], 'select': elem.select()}
+                                                return {'id': elem.id(), 'name': elem.name(), 'assignments': [], 'select': elem.select}
                                             })};
                 strayGroups[course_id] = {
                     'id': -1,
