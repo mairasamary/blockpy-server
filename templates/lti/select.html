@@ -10,6 +10,19 @@ Courses: Index
 
 {% block extrahead %}
 
+<style>
+    .overlay {
+        position: absolute;
+        top: 0;
+        left:0;
+        background-color: rgba(255, 255, 255, .5);
+        z-index:1002;
+        overflow:auto;
+        width:100%;
+        height:100%;
+    }
+</style>
+
 <script type='text/javascript'>
 
 function findById(anArray, id, isFunc) {
@@ -37,6 +50,14 @@ var sortNames = function(a, b) {
 
 function MainModel() {
     var self = this;
+    var filteredCourse = localStorage.getItem('filteredCourse');
+    self.onServer = ko.observable(false);
+    self.filteredCourse = ko.observable(filteredCourse == null ? -1 : filteredCourse);
+    self.filteredCourse.subscribe(function(newValue) {
+        localStorage.setItem('filteredCourse', newValue);
+        self.createAssignmentCourse(newValue);
+        self.createGroupCourse(newValue);
+    });
     self.createAssignmentType = ko.observable('BlockPy');
     self.createAssignmentName = ko.observable('Day 1 - #1.1');
     self.createAssignmentLevel = ko.observable('Level 1');
@@ -81,9 +102,12 @@ function MainModel() {
         self.assignments().forEach(function(v, i) {
             var course_id = v.course_id(), 
                 group_id = v.group_id();
+            if (self.filteredCourse() != -1 && self.filteredCourse() != course_id) {
+                return;
+            }
             if (!(course_id in mappedCourses)) {
                 var new_course = findById(self.groups(), course_id, true);
-                console.log(self.groups(), course_id, new_course);
+                //console.log(self.groups(), course_id, new_course);
                 mappedCourses[course_id] = {'id': course_id, 
                                             'name': new_course.name(),
                                             'groups': new_course.groups().map(function(elem) {
@@ -114,11 +138,13 @@ function MainModel() {
     });
     
     self.moveMembership = function(assignment, old_group, new_group) {
+        self.onServer(true);
         $.post("{{ url_for('assignment_group.move_membership') }}", {
                 'new_group_id': new_group.id,
                 'old_group_id': old_group.id,
                 'assignment_id': assignment.id
            }, function(data) {
+            self.onServer(false);
             if (data.success) {
                 assignment.group_id(new_group.id);
             } else {
@@ -129,10 +155,12 @@ function MainModel() {
     
     self.moveCourse = function(assignment, old_course) {
         var new_course = this;
+        self.onServer(true);
         $.post("{{ url_for('assignments.move_course') }}", {
                 'new_course_id': new_course.id(),
                 'assignment_id': assignment.id
            }, function(data) {
+            self.onServer(false);
             if (data.success) {
                 assignment.course_id(new_course.id());
             } else {
@@ -146,10 +174,12 @@ function MainModel() {
         var course_id = course.id,
             group_id = group.id;
         if (new_name != null) {
+            self.onServer(true);
             $.post("{{ url_for('assignment_group.edit_group') }}", {
                 'new_name': new_name,
                 'assignment_group_id': group_id
             }, function(data) {
+                self.onServer(false);
                 if (data.success) {
                     // The group here is a clone of the real one, can't modify it!
                     var course = findById(self.groups(), course_id, true);
@@ -165,11 +195,13 @@ function MainModel() {
     self.addGroup = function() {
         var course_id = parseInt(mainModel.createGroupCourse());
         var name = mainModel.createGroupName();
+        self.onServer(true);
         $.post("{{ url_for('assignment_group.add_group') }}", {
             "course_id": course_id,
             'menu': "{{ menu }}",
             "name": name
         }, function(data) {
+            self.onServer(false);
             if (data.success) {
                 $("#group-create").modal('hide');
                 var course = findById(self.groups(), course_id, true);
@@ -194,9 +226,11 @@ function MainModel() {
         }
         var youSureHuh = confirm("Are you really sure you want to delete this group?");
         if (youSureHuh != null) {
+            self.onServer(true);
             $.post("{{ url_for('assignment_group.remove_group') }}", {
                 'assignment_group_id': group_id
             }, function(data) {
+                self.onServer(false);
                 if (data.success) {
                     var course = findById(self.groups(), course_id, true);
                     course.groups.remove(function(a_group) { return a_group.id() == group_id});
@@ -211,9 +245,11 @@ function MainModel() {
         var assignment_id = assignment.id;
         var youSureHuh = confirm("Are you really sure you want to delete this assignment?");
         if (youSureHuh != null) {
+            self.onServer(true);
             $.post("{{ url_for('assignments.remove_assignment') }}", {
                 'assignment_id': assignment_id
             }, function(data) {
+                self.onServer(false);
                 if (data.success) {
                     self.assignments.remove(function(item) { return item.id == assignment_id });
                 } else {
@@ -228,6 +264,7 @@ function MainModel() {
         var name = mainModel.createAssignmentName();
         var level = mainModel.createAssignmentLevel();
         var type = mainModel.createAssignmentType().toLowerCase();
+        self.onServer(true);
         $.post("{{ url_for('assignments.new_assignment') }}", {
             'menu': "{{ menu }}",
             'name': name,
@@ -235,6 +272,7 @@ function MainModel() {
             'level': level,
             'type': type
         }, function(data) {
+            self.onServer(false);
             $("#assignment-create").modal('hide');
             if (data.success) {
                 self.assignments.unshift({
@@ -257,9 +295,11 @@ function MainModel() {
     };
     
     self.refreshAssignment = function(assignment) {
+        self.onServer(true);
         $.post("{{ url_for('assignments.get_assignment') }}", {
             'assignment_id': assignment.id
         }, function(data) {
+            self.onServer(false);
             if (data.success) {
                 assignment.name(data.name);
                 assignment.title(data.title);
@@ -308,6 +348,8 @@ tr.hover-remove-rows button.remove-button {
 
 {% block body %}
 
+<div class='overlay' data-bind='visible: onServer'></div>
+<span class='pull-right text-muted' style='padding-top:10px' data-bind="visible: onServer">Loading</span>
 <h3>Select {{'an Assignment' if menu != 'embed' else 'an Ungraded Canvas'}}</h3>
 
 <div class="modal fade" id="assignment-create" tabindex="-1" role="dialog" aria-labelledby="assignment-create-label">
@@ -411,8 +453,12 @@ tr.hover-remove-rows button.remove-button {
         </td>
         <td colspan='3'>
             <label>
-                Show completed courses
-                <input type='checkbox' data-bind="checked: $root.showCompletedCourses">
+                Show
+                <select class="form-control" data-bind="value: filteredCourse">
+                    <option value="-1" selected>All Courses</option>
+                {% for course in editable_courses %}
+                    <option value="{{ course.id }}">{{ course.name }}</option>
+                {% endfor %}
             </label><br>
         </td>
     </tr>
