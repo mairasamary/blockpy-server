@@ -97,7 +97,9 @@ def load_assignment(lti=lti):
     user_id = g.user.id if g.user != None else -1
     assignment = Assignment.by_id(assignment_id)
     submission = assignment.get_submission(user_id, course_id=course_id)
-    interface = 'Text' if assignment.mode.lower() == 'text' else 'Blocks'
+    interface = ('Text' if assignment.mode.lower() == 'text' else 
+                 'Split' if assignment.mode.lower() == 'split' else
+                 'Blocks')
     settings = json.loads(assignment.settings)
     added_modules = settings['modules']['added'] if 'modules' in settings else []
     removed_modules = settings['modules']['removed'] if 'modules' in settings else []
