@@ -269,7 +269,10 @@ def get_submission_code(lti=lti):
     if not submission:
         return '#No submission found!'
     if g.user.is_grader(g.course.id) or submission.user_id == g.user.id:
-        return '<pre>'+submission.code+"</pre>" if submission.code else "#No code given!"
+        if submission.code:
+            return '<pre>'+highlight_python_code(submission.code)+"</pre>"
+        else:
+            return "#No code given!"
     else:
         return "Sorry, you do not have sufficient permissions to spy!"
         
