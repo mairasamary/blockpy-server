@@ -938,7 +938,7 @@ AbstractInterpreter.prototype.BUILTINS = {
         "type": "Function",
         "returns": {"type": "None"},
         "parameters": [
-            {"type": "Str", "var": true}
+            {"type": "Any", "var": true}
         ]
     },
     "sum": {
@@ -979,6 +979,13 @@ AbstractInterpreter.prototype.BUILTINS = {
         "parameters": [
             {"type": "Num"},
             {"type": "Num", "optional": true}
+        ]
+    },
+    "str": {
+        "type": "Function",
+        "returns": {"type": "Str"},
+        "parameters": [
+            {"type": "Any"}
         ]
     },
     'input': {"type": "Str"},
@@ -1737,7 +1744,7 @@ PythonToBlocks.prototype.If = function(node)
         }
     }
     
-    return block("controls_if", node.lineno, {
+    return block("controls_if_better", node.lineno, {
     }, IF_values, {
         "inline": "false"
     }, {
@@ -2594,7 +2601,7 @@ PythonToBlocks.prototype.List = function(node) {
     var elts = node.elts;
     var ctx = node.ctx;
     
-    return block("lists_create", node.lineno, {}, 
+    return block("lists_create_with", node.lineno, {}, 
         this.convertElements("ADD", elts)
     , {
         "inline": elts.length > 3 ? "false" : "true", 
@@ -3848,27 +3855,7 @@ Blockly.Blocks['controls_if_better'] = {
    * @this Blockly.Block
    */
   updateShape_: function() {
-    // Delete everything.
-    if (!this.getInput('CONTROLS')) {
-        function changeShape(field, block, e) {
-            var rect = field.fieldGroup_.getBoundingClientRect();
-            var xPosition = e.clientX;
-            if (xPosition < rect.left+rect.width/3) {
-                console.log("ELSE");
-            } else if (xPosition < 2 *rect.left+rect.width/3) {
-                console.log("MINUS ELIF");
-            } else {
-                console.log("PLUS ELIF");
-            }
-        }
-        //var clickablePlusMinus = new Blockly.FieldClickImage("images/plus_minus_h.png", 24, 12, '', addField, '-0px');
-        var clickableCheck = new Blockly.FieldClickImage("images/plus_minus_blue.png", 36, 24, '', changeShape, '-2px');
-        //clickablePlusMinus.imageElement_.style.y = '-2px';
-        this.appendDummyInput('CONTROLS')
-            .appendField(clickableCheck)
-            //.appendField(clickablePlusMinus);
-    }
-    
+    // Delete everything.    
     if (this.getInput('ELSE')) {
       this.removeInput('ELSE');
     }
@@ -6153,8 +6140,9 @@ BlockPyEditor.CATEGORY_MAP = {
                   '</category>',
     'Decisions': '<category name="Decisions" colour="330">'+
                     '<block type="controls_if_better"></block>'+
-                    '<block type="controls_if"></block>'+
-                    '<block type="controls_if"><mutation else="1"></mutation></block>'+
+                    '<block type="controls_if_better"><mutation else="1"></mutation></block>'+
+                    //'<block type="controls_if"></block>'+
+                    //'<block type="controls_if"><mutation else="1"></mutation></block>'+
                     '<block type="logic_compare"></block>'+
                     '<block type="logic_operation"></block>'+
                     '<block type="logic_negate"></block>'+
@@ -6213,7 +6201,7 @@ BlockPyEditor.CATEGORY_MAP = {
                 '<block type="tuple_create"></block>'+
               '</category>',
     'Lists':    '<category name="Lists" colour="30">'+
-                    '<block type="lists_create"></block>'+
+                    //'<block type="lists_create"></block>'+
                     '<block type="lists_create_with">'+
                         '<value name="ADD0">'+
                           '<block type="math_number"><field name="NUM">0</field></block>'+
