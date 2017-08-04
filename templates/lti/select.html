@@ -547,7 +547,7 @@ tr.hidden-group.active.hover-remove-rows td {
                     data-bind="click: $root.removeGroup.bind($data, $parent), clickBubble: false">
                 <span class='glyphicon glyphicon-remove' aria-hidden="true"></span>
             </button>
-            <a data-bind="attr: { href: select }, visible: select, clickBubble: false" class="btn btn-primary">Select</a>
+            <a data-bind="attr: { href: select }, visible: select, clickBubble: false, click: function() { return true;}" class="btn btn-primary">Select</a>
         </td>
     </tr>
     <!-- ko foreach: assignments -->
