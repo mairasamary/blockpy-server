@@ -174,6 +174,26 @@ function MainModel() {
         });
     };
     
+    var showHideMap = {};
+    self.toggleGroup = function(course, group, event) {
+        var course_id = course.id,
+            group_id = group.id;
+        if (group_id in showHideMap) {
+            showHideMap[group_id] = !showHideMap[group_id];
+        } else {
+            showHideMap[group_id] = false;
+        }
+        var visibilityGroup = $(".visibility-group-"+group_id),
+            visibilityGroupMaster = $(".visibility-group-master-"+group_id);
+        if (showHideMap[group_id]) {
+            visibilityGroupMaster.removeClass("hidden-group");
+            visibilityGroup.show();
+        } else {
+            visibilityGroupMaster.addClass("hidden-group");
+            visibilityGroup.hide();
+        }
+    }
+    
     self.renameGroup = function(course, group) {
         new_name = window.prompt("Give a new name for this group:", group.name);
         var course_id = course.id,
@@ -195,6 +215,7 @@ function MainModel() {
                 }
             });
         }
+        return false;
     };
     
     self.addGroup = function() {
@@ -348,6 +369,19 @@ tr.hover-remove-rows button.remove-button {
     visibility: hidden;
 }
 
+
+tr.hidden-group.active.hover-remove-rows {
+    font-style: italic;
+}
+
+tr.hidden-group.active.hover-remove-rows td {
+    background-color: #d8d8d8;
+}
+
+.table-hover tbody tr.hidden-group:hover td, .table-hover tbody tr.hidden-group:hover th {
+    background-color: #c9cacd;
+}
+
 </style>
 {% endblock %}
 
@@ -475,20 +509,23 @@ tr.hover-remove-rows button.remove-button {
         </td>
     </tr>
     <!-- ko foreach: groups -->
-    <tr class="active hover-remove-rows">
+    <tr class="active hover-remove-rows"
+        data-bind='click: $root.toggleGroup.bind($data, $parent),
+                   css: "visibility-group-master-"+id'>
         <td class="col-md-12 col-sm-12 col-xs-12" colspan="3">
-            <a href="#" data-bind="click: $root.renameGroup.bind($data, $parent)"><strong data-bind="text: name"></strong></a>
+            <a href="#" data-bind="click: $root.renameGroup.bind($data, $parent), clickBubble: false"><strong data-bind="text: name"></strong></a>
         </td>
         <td>
             <button class='remove-button btn btn-danger btn-xs' type='button' 
-                    data-bind="click: $root.removeGroup.bind($data, $parent)">
+                    data-bind="click: $root.removeGroup.bind($data, $parent), clickBubble: false">
                 <span class='glyphicon glyphicon-remove' aria-hidden="true"></span>
             </button>
             <a data-bind="attr: { href: select }, visible: select" class="btn btn-primary">Select</a>
         </td>
     </tr>
     <!-- ko foreach: assignments -->
-    <tr class='hover-movers-rows'>
+    <tr class='hover-movers-rows'
+        data-bind="css: 'visibility-group-'+$parent.id">
         <td class='col-md-3 col-sm-3 col-xs-3'>
             <strong data-bind="text: title"></strong><br>
             Last modified at
