@@ -54,6 +54,16 @@ function MainModel() {
     var self = this;
     var filteredCourse = localStorage.getItem('filteredCourse');
     self.onServer = ko.observable(false);
+    var hiddenGroups = localStorage.getItem("hiddenGroups");
+    if (hiddenGroups === null) {
+        localStorage.setItem("hiddenGroups", "[]");
+        self.hiddenGroups= ko.observableArray([]);
+    } else {
+        self.hiddenGroups= ko.observableArray(JSON.parse(hiddenGroups));
+    }
+    self.hiddenGroups.subscribe(function(newValue) {
+        localStorage.setItem("hiddenGroups", JSON.stringify(self.hiddenGroups()));
+    });
     self.filteredCourse = ko.observable(filteredCourse == null ? -1 : filteredCourse);
     self.filteredCourse.subscribe(function(newValue) {
         localStorage.setItem('filteredCourse', newValue);
@@ -174,10 +184,27 @@ function MainModel() {
         });
     };
     
-    var showHideMap = {};
     self.toggleGroup = function(course, group, event) {
+        console.log(group_id, self.hiddenGroups());
         var course_id = course.id,
             group_id = group.id;
+        if (self.hiddenGroups.indexOf(group_id) == -1) {
+            self.hiddenGroups.push(group_id);
+        } else {
+            self.hiddenGroups.remove(group_id);
+        }
+    }
+    self.getGroupVisibility = function(group_id) {
+        return self.hiddenGroups.indexOf(group_id) == -1;
+    };
+    self.getGroupClass = function(group_id) {
+        if (self.hiddenGroups.indexOf(group_id) != -1) {
+            return 'hidden-group';
+        } else {
+            return '';
+        }
+    };
+    /*
         if (group_id in showHideMap) {
             showHideMap[group_id] = !showHideMap[group_id];
         } else {
@@ -192,7 +219,7 @@ function MainModel() {
             visibilityGroupMaster.addClass("hidden-group");
             visibilityGroup.hide();
         }
-    }
+    }*/
     
     self.renameGroup = function(course, group) {
         new_name = window.prompt("Give a new name for this group:", group.name);
@@ -511,7 +538,7 @@ tr.hidden-group.active.hover-remove-rows td {
     <!-- ko foreach: groups -->
     <tr class="active hover-remove-rows"
         data-bind='click: $root.toggleGroup.bind($data, $parent),
-                   css: "visibility-group-master-"+id'>
+                   css: $root.getGroupClass(id)'>
         <td class="col-md-12 col-sm-12 col-xs-12" colspan="3">
             <a href="#" data-bind="click: $root.renameGroup.bind($data, $parent), clickBubble: false"><strong data-bind="text: name"></strong></a>
         </td>
@@ -525,7 +552,7 @@ tr.hidden-group.active.hover-remove-rows td {
     </tr>
     <!-- ko foreach: assignments -->
     <tr class='hover-movers-rows'
-        data-bind="css: 'visibility-group-'+$parent.id">
+        data-bind="visible: $root.getGroupVisibility($parent.id)">
         <td class='col-md-3 col-sm-3 col-xs-3'>
             <strong data-bind="text: title"></strong><br>
             Last modified at
