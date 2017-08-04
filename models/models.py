@@ -750,7 +750,7 @@ class Assignment(Base):
     @staticmethod
     def edit(assignment_id, presentation=None, name=None, 
              give_feedback=None, on_step=None, starting_code=None, 
-             parsons=None, text_first=None,
+             parsons=None, text_first=None, mode=None,
              modules=None, importable=False,
              disable_algorithm_errors=False, type='blockpy'):
         assignment = Assignment.by_id(assignment_id)
@@ -797,6 +797,9 @@ class Assignment(Base):
             assignment.version += 1
         elif parsons is False and assignment.type == 'blockpy':
             assignment.mode = 'blocks'
+            assignment.version += 1
+        if mode is not None:
+            assignment.mode = mode
             assignment.version += 1
         if text_first is True:
             assignment.mode = 'text'
