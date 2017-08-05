@@ -119,6 +119,7 @@ def load_assignment(lti=lti):
                         'give_feedback': assignment.give_feedback,
                         'parsons': assignment.mode == 'parsons', 
                         'starting_code': assignment.starting_code,
+                        'on_change': assignment.on_step,
                         'importable': settings.get('importable', False),
                         'disable_algorithm_errors': settings.get('disable_algorithm_errors', False),
                         'modules': {
