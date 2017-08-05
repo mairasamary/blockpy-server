@@ -130,6 +130,7 @@ def load_assignment(lti=lti):
                         '__main__': submission.code,
                         'starting_code': assignment.starting_code,
                         'give_feedback': assignment.give_feedback,
+                        'on_change': assignment.on_step
                     })
 
 @blueprint_blockpy.route('/save_code/', methods=['GET', 'POST'])
