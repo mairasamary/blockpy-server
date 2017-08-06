@@ -3047,6 +3047,7 @@ var $sk_mod_instructor = function(name) {
             (obj instanceof Sk.builtin.bool) ||
             (obj instanceof Sk.builtin.int_) ||
             (obj instanceof Sk.builtin.float_) ||
+            (obj instanceof Sk.builtin.str) ||
             (obj instanceof Sk.builtin.lng);
     }
     /**
@@ -3062,10 +3063,10 @@ var $sk_mod_instructor = function(name) {
         var i;
         var arr;
         //@TODO: should theoretically check if the object is a pyhon dict or array with js objects
-        if(isSkBuiltin(obj)){
+        if (isSkBuiltin(obj)){
             //object is already python ready
             return obj;
-        }else if (Object.prototype.toString.call(obj) === "[object Array]") {
+        } else if (Object.prototype.toString.call(obj) === "[object Array]") {
             //object is actually a javascript array
             arr = [];
             for (i = 0; i < obj.length; ++i) {
@@ -3253,6 +3254,8 @@ var $sk_mod_instructor = function(name) {
                         default:
                             break;
                     }
+                    console.log(field)
+                    console.log(mixedRemapToPy(field));
                     //hope this is a basic type
                     return mixedRemapToPy(field);
                 }
