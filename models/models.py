@@ -523,7 +523,7 @@ class Submission(Base):
         except ValueError:
             submission_destructured = {}
         if 'code' in submission_destructured:
-            submission_destructured['code'] = code
+            submission_destructured['code'] = code.decode("utf-8")
             existing_elements = submission_destructured['elements']
             for element in existing_elements:
                 existing_elements[element]['present'] = False
@@ -752,7 +752,8 @@ class Assignment(Base):
              give_feedback=None, on_step=None, starting_code=None, 
              parsons=None, text_first=None, mode=None,
              modules=None, importable=False,
-             disable_algorithm_errors=False, type='blockpy'):
+             disable_algorithm_errors=False, disable_timeout=False,
+             type='blockpy'):
         assignment = Assignment.by_id(assignment_id)
         if name is not None:
             assignment.name = name
@@ -779,9 +780,12 @@ class Assignment(Base):
                 settings['importable'] = False
             if 'disable_algorithm_errors' not in settings:
                 settings['disable_algorithm_errors'] = False
+            if 'disable_timeout' not in settings:
+                settings['disable_timeout'] = False
             kept_modules = modules.split(",")
             settings['importable'] = importable
             settings['disable_algorithm_errors'] = disable_algorithm_errors
+            settings['disable_timeout'] = disable_timeout
             settings['modules']['added'] = [m for m in kept_modules 
                                             if m not in Assignment.BUILTIN_MODULES]
             settings['modules']['removed'] = [m for m in Assignment.BUILTIN_MODULES 
