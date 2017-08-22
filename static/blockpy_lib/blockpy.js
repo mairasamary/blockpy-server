@@ -345,8 +345,10 @@ AbstractInterpreter.prototype.processAst = function(ast) {
     this.variableTypes = {};
     this.variablesNonBuiltin = {};
     for (var name in this.BUILTINS) {
-        this.setVariable(name, this.BUILTINS[name]);
+        this.setVariable(name, this.BUILTINS[name], true);
     }
+    
+    this.functionContext = null;
     
     // OLD
     //this.frameIndex = 0;
@@ -385,13 +387,17 @@ AbstractInterpreter.prototype._initializeVariable = function(name) {
         this.variables[name] = [];
     }
 }
-AbstractInterpreter.prototype._newBehavior = function(method, type, position, currentType) {
+AbstractInterpreter.prototype._newBehavior = function(method, type, position, currentType, returnType) {
+    if (returnType === undefined) {
+        returnType = null;
+    }
     return {"method": method, 
             "type": type, 
             "loop": this.loopStackId, 
             "parentName": this.currentBranchName,
             "position": position, 
-            "currentType": currentType};
+            "currentType": currentType,
+            "returnType": returnType};
 }
 
 AbstractInterpreter.prototype.setVariable = function(name, type, position) {
@@ -401,6 +407,17 @@ AbstractInterpreter.prototype.setVariable = function(name, type, position) {
 AbstractInterpreter.prototype.setIterVariable = function(name, type, position) {
     this._initializeVariable(name);
     this.variables[name].push(this._newBehavior("set_iterate", type, position, type));
+}
+AbstractInterpreter.prototype.setReturnVariable = function(name, type, position) {
+    this._initializeVariable(name);
+    this.variables[name].push({
+        "method": "set_returns",
+        "type": this.getLast(name).type,
+        "parentName": this.getLast(name).parentName,
+        "position": position,
+        "currentType": this.getLast(name).type,
+        "returnType": type,
+    });
 }
 AbstractInterpreter.prototype.updateVariable = function(name, type, position) {
     this._initializeVariable(name);
@@ -435,7 +452,6 @@ function otherBranch(branch) {
 AbstractInterpreter.prototype.postProcess = function() {
     for (var name in this.variables) {
         if (!(name in this.BUILTINS)) {
-            //console.log("STARTING", name, this.source)
             var trace = this.variables[name];
             this.variablesNonBuiltin[name] = trace.slice();
             //console.log(name, this.variablesNonBuiltin[name])
@@ -529,6 +545,8 @@ AbstractInterpreter.prototype.postProcess = function() {
                                     result["was read"] = "yes"
                                 }
                             }
+                        } else if (node["method"] == "set_returns") {
+                            
                         } else if (node["method"] == "read" || node["method"] == "iterate") {
                             if (result["was set"] == "no") {
                                 report['Undefined variables'].push({"name": name, "position": node.position});
@@ -587,14 +605,18 @@ AbstractInterpreter.prototype.testTypeEquality = function(left, right) {
     }
 }
 
-AbstractInterpreter.prototype.getType = function(name) {
+AbstractInterpreter.prototype.getLast = function(name) {
     if (name in this.variables) {
         var trace = this.variables[name];
         if (trace != undefined && trace.length > 0) {
-            return trace[trace.length-1].currentType;
+            return trace[trace.length-1];
         }
     }
-    return null;
+    return {'currentType': null, 'returnType': null};
+}
+
+AbstractInterpreter.prototype.getType = function(name) {
+    this.getLast(name).currentType;
 }
 
 AbstractInterpreter.prototype.isTypeEmptyList = function(name) {
@@ -659,7 +681,7 @@ AbstractInterpreter.prototype.typecheck = function(value) {
         case "BinOp":
             var left = this.typecheck(value.left),
                 right = this.typecheck(value.right);
-            if (left === null || right === null) {
+            if (left === null || right === null || left === undefined || right === undefined) {
                 return null;
             } else if (left.type != right.type) {
                 this.report["Incompatible types"].push({"left": left, "right": right, "operation": value.op.name, "position": this.getLocation(value)});
@@ -785,12 +807,19 @@ AbstractInterpreter.prototype.visit_Name = function(node) {
 
 AbstractInterpreter.prototype.visit_FunctionDef = function(node) {
     this.setVariable(node.name.v, {"type": "Function"}, this.getLocation(node))
+    this.functionContext = node.name.v;
     var args = node.args.args;
     for (var i = 0; i < args.length; i++) {
         var arg = args[i];
         var name = Sk.ffi.remapToJs(arg.id);
         this.setVariable(name, {}, this.getLocation(node))
     }
+    this.generic_visit(node);
+}
+AbstractInterpreter.prototype.visit_Return = function(node) {
+    this.setReturnVariable(this.functionContext, 
+                           this.typecheck(node.value), 
+                           this.getLocation(node));
     this.generic_visit(node);
 }
 
@@ -999,6 +1028,12 @@ AbstractInterpreter.METHODS = {
         "append": {
             "type": "Function",
             "returns": {"type": "None"}
+        }
+    },
+    "Str": {
+        "strip": {
+            "type": "Function",
+            "returns": {"type": "Str"}
         }
     }
 }
@@ -2530,16 +2565,28 @@ PythonToBlocks.prototype.Subscript = function(node)
     var slice = node.slice;
     var ctx = node.ctx;
     
-    if (slice.value._astname == "Str") {
-        return block("dict_get_literal", node.lineno, {
-            "ITEM": this.Str_value(slice.value)
+    if (slice._astname == "Index") {
+        if (slice.value._astname == "Str") {
+            return block("dict_get_literal", node.lineno, {
+                "ITEM": this.Str_value(slice.value)
+            }, {
+                "DICT": this.convert(value)
+            });
+        } else if (slice.value._astname == "Num") {
+            return block("lists_index", node.lineno, {}, {
+                "ITEM": this.convert(slice.value),
+                "LIST": this.convert(value),
+            });
+        }
+    } else if (slice._astname == "Slice") {
+        return block("lists_getSublist", node.lineno, {
+            "WHERE1": "FROM_START",
+            "WHERE2": "FROM_END"
         }, {
-            "DICT": this.convert(value)
-        });
-    } else if (slice.value._astname == "Num") {
-        return block("lists_index", node.lineno, {}, {
-            "ITEM": this.convert(slice.value),
-            "LIST": this.convert(value),
+            "LIST": this.convert(value)
+        }, {}, {
+            "AT1": this.convert(slice.lower),
+            "AT2": this.convert(slice.upper)
         });
     }
     
@@ -3037,6 +3084,10 @@ var $sk_mod_instructor = function(name) {
     }
     /**
      * This function checks if the given object is one of the Sk.builtin objects
+     * TODO: make this so we don't have to explicitly put out eveyr option
+     *          one possible thing we could do is get a string version of the 
+     *          of the constructor and look for the substring "return new Sk.builtin"
+     *          But I don't know how reliable that is.  Rather, it's kind of hackish.
      * @param {object} obj - the object to be examined
      * @return {boolean} true if the object is one of the Sk.builtin types
     **/
@@ -3049,6 +3100,8 @@ var $sk_mod_instructor = function(name) {
             (obj instanceof Sk.builtin.float_) ||
             (obj instanceof Sk.builtin.str) ||
             (obj instanceof Sk.builtin.lng);
+        //var cons_str = obj.constructor + "";
+        //return cons_str.indexOf("return new Sk.builtin") !== -1;
     }
     /**
      * Should theoretically belong in Sk.ffi, but I put it here instead to not mess up the skulpt files
@@ -3130,6 +3183,14 @@ var $sk_mod_instructor = function(name) {
             Sk.executionReports['student']['output'].removeAll();
         }
     });
+    
+    /**
+     * This function is called by instructors to get the students' code as a string.
+    **/
+    mod.get_program = new Sk.builtin.func(function() {
+        Sk.builtin.pyCheckArgs("get_program", arguments, 0, 0);
+        return Sk.ffi.remapToPy(Sk.executionReports['verifier'].code);
+    });
 
     /**
      * This function is called by instructors to construct the python version of the AST
@@ -3176,6 +3237,25 @@ var $sk_mod_instructor = function(name) {
             return Sk.ffi.remapToPy(null);
         }
     }
+    /**
+     * When passed a python AST node, returns the next node that isn't in this node's
+     * subtree.  If such a node does not exist, returns Sk.ffi.remapToPy(null)
+    **/
+    function getNextTree(self){
+        var visitor = new NodeVisitor();
+        var currentId = self.id;//-1 to offset first iteration
+        visitor.visit = function(node) {
+            currentId += 1;
+            /** Visit a node. **/
+            var method_name = 'visit_' + node._astname;
+            return this.generic_visit(node);
+        }
+        visitor.visit(flatTree[currentId]);
+        if(currentId > flatTree.length){
+            return Sk.ffi.remapToPy(null);
+        }
+        return Sk.misceval.callsimOrSuspend(mod.AstNode, currentId);
+    }
 
     /**
      * Python representation of the AST nodes w/o recreating the entire thing. This class assumes that parse_program
@@ -3208,6 +3288,9 @@ var $sk_mod_instructor = function(name) {
             if(key == "data_type"){
                 //if it's a name node, returns the data type, otherwise returns null
                 return checkNameNodeType(actualAstNode);
+            }
+            if(key == "next_tree"){
+                return getNextTree(self);
             }
             if(key == "ast_name"){
                 key = "_astname";
@@ -3324,9 +3407,9 @@ var $sk_mod_instructor = function(name) {
         **/
         $loc.find_all = new Sk.builtin.func(function(self, type) {
             var items = [];
-            var visitor = new NodeVisitor();
             var currentId = self.id - 1;
             var funcName = 'visit_' + Sk.ffi.remapToJs(type);
+            var visitor = new NodeVisitor();
             visitor.visit = function(node) {
                 currentId += 1;
                 /** Visit a node. **/
@@ -4000,6 +4083,262 @@ Blockly.Blocks['lists_create'] = {
    */
   updateShape_: PLUS_MINUS_updateShape('ADD', "create list of")
 };
+
+Blockly.Blocks['lists_getIndex_only'] = {
+  /**
+   * Block for getting element at index.
+   * @this Blockly.Block
+   */
+  init: function() {
+    var MODE =
+        [[Blockly.Msg.LISTS_GET_INDEX_GET, 'GET']];
+    this.WHERE_OPTIONS =
+        [[Blockly.Msg.LISTS_GET_INDEX_FROM_START, 'FROM_START'],
+         [Blockly.Msg.LISTS_GET_INDEX_FROM_END, 'FROM_END'],
+         [Blockly.Msg.LISTS_GET_INDEX_FIRST, 'FIRST'],
+         [Blockly.Msg.LISTS_GET_INDEX_LAST, 'LAST'],
+         [Blockly.Msg.LISTS_GET_INDEX_RANDOM, 'RANDOM']
+         ];
+    this.setHelpUrl(Blockly.Msg.LISTS_GET_INDEX_HELPURL);
+    this.setColour(Blockly.Blocks.lists.HUE);
+    this.appendValueInput('VALUE')
+        .setCheck(['String', 'Array'])
+        .appendField(Blockly.Msg.LISTS_GET_INDEX_INPUT_IN_LIST);
+    this.appendDummyInput()
+        .appendField(Blockly.Msg.LISTS_GET_INDEX_GET)
+        .appendField('', 'SPACE');
+    this.appendDummyInput('AT');
+    if (Blockly.Msg.LISTS_GET_INDEX_TAIL) {
+      this.appendDummyInput('TAIL')
+          .appendField(Blockly.Msg.LISTS_GET_INDEX_TAIL);
+    }
+    this.setInputsInline(true);
+    this.setOutput(true);
+    this.updateAt_(true);
+    // Assign 'this' to a variable for use in the tooltip closure below.
+    var thisBlock = this;
+    this.setTooltip(function() {
+      var mode = 'GET';
+      var where = thisBlock.getFieldValue('WHERE');
+      var tooltip = '';
+      switch (mode + ' ' + where) {
+        case 'GET FROM_START':
+        case 'GET FROM_END':
+          tooltip = Blockly.Msg.LISTS_GET_INDEX_TOOLTIP_GET_FROM;
+          break;
+        case 'GET FIRST':
+          tooltip = Blockly.Msg.LISTS_GET_INDEX_TOOLTIP_GET_FIRST;
+          break;
+        case 'GET LAST':
+          tooltip = Blockly.Msg.LISTS_GET_INDEX_TOOLTIP_GET_LAST;
+          break;
+        case 'GET RANDOM':
+          tooltip = Blockly.Msg.LISTS_GET_INDEX_TOOLTIP_GET_RANDOM;
+          break;
+        case 'GET_REMOVE FROM_START':
+        case 'GET_REMOVE FROM_END':
+          tooltip = Blockly.Msg.LISTS_GET_INDEX_TOOLTIP_GET_REMOVE_FROM;
+          break;
+        case 'GET_REMOVE FIRST':
+          tooltip = Blockly.Msg.LISTS_GET_INDEX_TOOLTIP_GET_REMOVE_FIRST;
+          break;
+        case 'GET_REMOVE LAST':
+          tooltip = Blockly.Msg.LISTS_GET_INDEX_TOOLTIP_GET_REMOVE_LAST;
+          break;
+        case 'GET_REMOVE RANDOM':
+          tooltip = Blockly.Msg.LISTS_GET_INDEX_TOOLTIP_GET_REMOVE_RANDOM;
+          break;
+        case 'REMOVE FROM_START':
+        case 'REMOVE FROM_END':
+          tooltip = Blockly.Msg.LISTS_GET_INDEX_TOOLTIP_REMOVE_FROM;
+          break;
+        case 'REMOVE FIRST':
+          tooltip = Blockly.Msg.LISTS_GET_INDEX_TOOLTIP_REMOVE_FIRST;
+          break;
+        case 'REMOVE LAST':
+          tooltip = Blockly.Msg.LISTS_GET_INDEX_TOOLTIP_REMOVE_LAST;
+          break;
+        case 'REMOVE RANDOM':
+          tooltip = Blockly.Msg.LISTS_GET_INDEX_TOOLTIP_REMOVE_RANDOM;
+          break;
+      }
+      if (where == 'FROM_START' || where == 'FROM_END') {
+        var msg = (where == 'FROM_START') ?
+            Blockly.Msg.LISTS_INDEX_FROM_START_TOOLTIP :
+            Blockly.Msg.LISTS_INDEX_FROM_END_TOOLTIP;
+        tooltip += '  ' + msg.replace('%1',
+                thisBlock.workspace.options.oneBasedIndex ? '#1' : '#0');
+      }
+      return tooltip;
+    });
+  },
+  /**
+   * Create XML to represent whether the block is a statement or a value.
+   * Also represent whether there is an 'AT' input.
+   * @return {Element} XML storage element.
+   * @this Blockly.Block
+   */
+  mutationToDom: function() {
+    var container = document.createElement('mutation');
+    var isStatement = !this.outputConnection;
+    container.setAttribute('statement', isStatement);
+    var isAt = this.getInput('AT').type == Blockly.INPUT_VALUE;
+    container.setAttribute('at', isAt);
+    return container;
+  },
+  /**
+   * Parse XML to restore the 'AT' input.
+   * @param {!Element} xmlElement XML storage element.
+   * @this Blockly.Block
+   */
+  domToMutation: function(xmlElement) {
+    // Note: Until January 2013 this block did not have mutations,
+    // so 'statement' defaults to false and 'at' defaults to true.
+    var isStatement = (xmlElement.getAttribute('statement') == 'true');
+    this.updateStatement_(isStatement);
+    var isAt = (xmlElement.getAttribute('at') != 'false');
+    this.updateAt_(isAt);
+  },
+  /**
+   * Switch between a value block and a statement block.
+   * @param {boolean} newStatement True if the block should be a statement.
+   *     False if the block should be a value.
+   * @private
+   * @this Blockly.Block
+   */
+  updateStatement_: function(newStatement) {
+    var oldStatement = !this.outputConnection;
+    if (newStatement != oldStatement) {
+      this.unplug(true, true);
+      if (newStatement) {
+        this.setOutput(false);
+        this.setPreviousStatement(true);
+        this.setNextStatement(true);
+      } else {
+        this.setPreviousStatement(false);
+        this.setNextStatement(false);
+        this.setOutput(true);
+      }
+    }
+  },
+  /**
+   * Create or delete an input for the numeric index.
+   * @param {boolean} isAt True if the input should exist.
+   * @private
+   * @this Blockly.Block
+   */
+  updateAt_: function(isAt) {
+    // Destroy old 'AT' and 'ORDINAL' inputs.
+    this.removeInput('AT');
+    this.removeInput('ORDINAL', true);
+    // Create either a value 'AT' input or a dummy input.
+    if (isAt) {
+      this.appendValueInput('AT').setCheck('Number');
+      if (Blockly.Msg.ORDINAL_NUMBER_SUFFIX) {
+        this.appendDummyInput('ORDINAL')
+            .appendField(Blockly.Msg.ORDINAL_NUMBER_SUFFIX);
+      }
+    } else {
+      this.appendDummyInput('AT');
+    }
+    var menu = new Blockly.FieldDropdown(this.WHERE_OPTIONS, function(value) {
+      var newAt = (value == 'FROM_START') || (value == 'FROM_END');
+      // The 'isAt' variable is available due to this function being a closure.
+      if (newAt != isAt) {
+        var block = this.sourceBlock_;
+        block.updateAt_(newAt);
+        // This menu has been destroyed and replaced.  Update the replacement.
+        block.setFieldValue(value, 'WHERE');
+        return null;
+      }
+      return undefined;
+    });
+    this.getInput('AT').appendField(menu, 'WHERE');
+    if (Blockly.Msg.LISTS_GET_INDEX_TAIL) {
+      this.moveInputBefore('TAIL', null);
+    }
+  }
+};
+Blockly.Python['lists_getIndex_only'] = function(block) {
+  // Get element at index.
+  // Note: Until January 2013 this block did not have MODE or WHERE inputs.
+  var mode = block.getFieldValue('MODE') || 'GET';
+  var where = block.getFieldValue('WHERE') || 'FROM_START';
+  var listOrder = (where == 'RANDOM') ? Blockly.Python.ORDER_NONE :
+      Blockly.Python.ORDER_MEMBER;
+  var list = Blockly.Python.valueToCode(block, 'VALUE', listOrder) || '___';
+
+  switch (where) {
+    case 'FIRST':
+      if (mode == 'GET') {
+        var code = list + '[0]';
+        return [code, Blockly.Python.ORDER_MEMBER];
+      } else if (mode == 'GET_REMOVE') {
+        var code = list + '.pop(0)';
+        return [code, Blockly.Python.ORDER_FUNCTION_CALL];
+      } else if (mode == 'REMOVE') {
+        return list + '.pop(0)\n';
+      }
+      break;
+    case 'LAST':
+      if (mode == 'GET') {
+        var code = list + '[-1]';
+        return [code, Blockly.Python.ORDER_MEMBER];
+      } else if (mode == 'GET_REMOVE') {
+        var code = list + '.pop()';
+        return [code, Blockly.Python.ORDER_FUNCTION_CALL];
+      } else if (mode == 'REMOVE') {
+        return list + '.pop()\n';
+      }
+      break;
+    case 'FROM_START':
+      var at = Blockly.Python.getAdjustedInt(block, 'AT');
+      if (mode == 'GET') {
+        var code = list + '[' + at + ']';
+        return [code, Blockly.Python.ORDER_MEMBER];
+      } else if (mode == 'GET_REMOVE') {
+        var code = list + '.pop(' + at + ')';
+        return [code, Blockly.Python.ORDER_FUNCTION_CALL];
+      } else if (mode == 'REMOVE') {
+        return list + '.pop(' + at + ')\n';
+      }
+      break;
+    case'FROM_END':
+      var at = Blockly.Python.getAdjustedInt(block, 'AT', 1, true);
+      if (mode == 'GET') {
+        var code = list + '[' + at + ']';
+        return [code, Blockly.Python.ORDER_MEMBER];
+      } else if (mode == 'GET_REMOVE') {
+        var code = list + '.pop(' + at + ')';
+        return [code, Blockly.Python.ORDER_FUNCTION_CALL];
+      } else if (mode == 'REMOVE') {
+        return list + '.pop(' + at + ')\n';
+      }
+      break;
+    case 'RANDOM':
+      Blockly.Python.definitions_['import_random'] = 'import random';
+      if (mode == 'GET') {
+        code = 'random.choice(' + list + ')';
+        return [code, Blockly.Python.ORDER_FUNCTION_CALL];
+      } else {
+        var functionName = Blockly.Python.provideFunction_(
+            'lists_remove_random_item',
+            ['def ' + Blockly.Python.FUNCTION_NAME_PLACEHOLDER_ + '(myList):',
+              '  x = int(random.random() * len(myList))',
+              '  return myList.pop(x)']);
+        code = functionName + '(' + list + ')';
+        if (mode == 'GET_REMOVE') {
+          return [code, Blockly.Python.ORDER_FUNCTION_CALL];
+        } else if (mode == 'REMOVE') {
+          return code + '\n';
+        }
+      }
+      break;
+  }
+  throw 'Unhandled combination (lists_getIndex).';
+};
+
+
 Blockly.Python['set_create'] = function(block) {
     // Create a list with any number of elements of any type.
   var elements = new Array(block.itemCount_);
@@ -4636,6 +4975,8 @@ PythonToBlocks.KNOWN_ATTR_FUNCTIONS['count'] = function(func, args, keywords, st
                     "HAYSTACK": this.convert(func.value)
                 }, {"inline": "true"});
 }
+
+
 /**
  * A utility object for quickly and conveniently generating dialog boxes.
  * Unfortunately, this doesn't dynamically create new boxes; it reuses the same one
@@ -4966,6 +5307,7 @@ BlockPyServer.prototype.createSubscriptions = function() {
     model.assignment.parsons.subscribe(function(e) { server.saveAssignment(); });
     model.assignment.importable.subscribe(function(e) { server.saveAssignment(); });
     model.assignment.disable_algorithm_errors.subscribe(function(e) { server.saveAssignment(); });
+    model.assignment.disable_timeout.subscribe(function(e) { server.saveAssignment(); });
     model.assignment.initial_view.subscribe(function(e) { server.saveAssignment(); });
     model.settings.editor.subscribe(function(newValue) { server.logEvent('editor', newValue); });
     model.execution.show_trace.subscribe(function(newValue) { server.logEvent('trace', newValue); });
@@ -5099,6 +5441,7 @@ BlockPyServer.prototype.saveAssignment = function() {
         data['initial'] = model.assignment.initial_view();
         data['importable'] = model.assignment.importable();
         data['disable_algorithm_errors'] = model.assignment.disable_algorithm_errors();
+        data['disable_timeout'] = model.assignment.disable_timeout();
         data['name'] = model.assignment.name();
         data['modules'] = model.assignment.modules().join(','); // TODO: hackish, broken if ',' is in name
         
@@ -7558,6 +7901,7 @@ BlockPyEngine.prototype.analyzeParse = function() {
             'success': false,
             'error': error
         }
+        return false;
     }
     report['analyzer'] = {
         'success': true,
@@ -7998,7 +8342,8 @@ BlockPy.prototype.initModel = function(settings) {
             'upload': ko.observable(false),
             'importable': ko.observable(false),
             'has_files': ko.observable(false),
-            'disable_algorithm_errors': ko.observable(false)
+            'disable_algorithm_errors': ko.observable(false),
+            'disable_timeout': ko.observable(false)
         },
         // Programs' actual code
         'programs': {
@@ -8228,7 +8573,8 @@ BlockPy.prototype.setAssignment = function(settings, assignment, programs) {
                     assignment.disable_algorithmic_errors || 
                     false);
     this.model.settings['disable_variable_types'](settings.disable_variable_types);
-    this.model.settings['disable_timeout'](settings.disable_timeout);
+    this.model.settings['disable_timeout'](settings.disable_timeout || 
+                                           assignment.disable_timeout);
     this.model.settings['developer'](settings.developer);
     if (settings.completedCallback) {
         this.model.settings['completedCallback'] = settings.completedCallback;
@@ -8262,10 +8608,18 @@ BlockPy.prototype.setAssignment = function(settings, assignment, programs) {
         this.model.assignment['disable_algorithm_errors'](assignment.disable_algorithm_errors);
     }
     // Programs
-    this.model.programs['__main__'](programs.__main__);
-    this.model.programs['starting_code'](assignment.starting_code);
-    this.model.programs['give_feedback'](assignment.give_feedback);
-    this.model.programs['on_change'](assignment.on_change);
+    if (programs.__main__ !== undefined) {
+        this.model.programs['__main__'](programs.__main__);
+    }
+    if (assignment.starting_code !== undefined) {
+        this.model.programs['starting_code'](assignment.starting_code);
+    }
+    if (assignment.give_feedback !== undefined) {
+        this.model.programs['give_feedback'](assignment.give_feedback);
+    }
+    if (assignment.on_change !== undefined) {
+        this.model.programs['on_change'](assignment.on_change);
+    }
     this.model.programs['answer'](assignment.answer);
     // Update Model
     // Reload blockly
