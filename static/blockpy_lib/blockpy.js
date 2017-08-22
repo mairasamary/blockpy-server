@@ -7352,12 +7352,28 @@ BlockPyFeedback.priorityComparator = function(a, b) {
 BlockPyFeedback.prototype.presentFeedback = function() {
     var report = this.main.model.execution.reports;
     var suppress = this.main.model.execution.suppressions;
+    
+    // Organize complaints
+    var complaint = report['instructor'].complaint;
+    var gentleComplaints = [];
+    var verifierComplaints = [];
+    if (complaint) {
+        moveElements(complaint, gentleComplaints, function(e) { return e.priority == 'student' });
+        moveElements(complaint, verifierComplaints, function(e) { return e.priority == 'verifier' });
+    }
+    
     // Verifier
     if (!suppress['verifier'] && !report['verifier'].success) {
         this.emptyProgram();
         return 'verifier';
     }
     // Parser
+    if (verifierComplaints.length) {
+        this.instructorFeedback(verifierComplaints[0].name, 
+                                verifierComplaints[0].message, 
+                                verifierComplaints[0].line);
+        return 'instructor';
+    }
     if (!suppress['parser'] && !report['parser'].success) {
         var parserReport = report['parser'].error;
         var codeLine = '.';
@@ -7377,11 +7393,6 @@ BlockPyFeedback.prototype.presentFeedback = function() {
     if (report['instructor'].compliments && report['instructor'].compliments.length) {
         //this.compliment(report['instructor'].compliments);
         console.log(report['instructor'].compliments);
-    }
-    var complaint = report['instructor'].complaint;
-    var gentleComplaints = [];
-    if (complaint) {
-        moveElements(complaint, gentleComplaints, function(e) { return e.priority == 'student' });
     }
     if (complaint && complaint.length) {
         complaint.sort(BlockPyFeedback.sortPriorities);
