@@ -33,6 +33,10 @@ app.register_blueprint(blueprint_assignments)
 from controllers.assignment_groups import blueprint_assignment_group
 app.register_blueprint(blueprint_assignment_group)
 
+from controllers.homework import blueprint_homework
+app.register_blueprint(blueprint_homework)
+
+
 '''
 from lti import lti_assignments
 app.register_blueprint(lti_assignments)

@@ -38,7 +38,10 @@ LTI_PROPERTY_LIST = [
     'lti_message_type',
     'roles',
     'lis_outcome_service_url',
-    'ext_content_return_types'
+    'ext_content_return_types',
+    'ext_content_intended_use',
+    'ext_content_return_url',
+    'ext_content_file_extensions'
 ]
 
 
