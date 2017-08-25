@@ -171,9 +171,13 @@ def log_check():
         def generate():
             root = app.config['ROOT_DIRECTORY']+'/log/student_interactions/'
             all_paths = os.listdir(root)
-            for a_file in all_paths:
-                yield subprocess.check_output("wc -l "+root+a_file,
-                    shell=True)+b"\n"
+            total = 0
+            for a_file in sorted(all_paths):
+                r = subprocess.check_output("wc -l "+root+a_file,
+                    shell=True)
+                total += int(r.split()[0])
+                yield r
+            yield "Total: {}".format(total)
         return Response(generate(), mimetype='text')
     except subprocess.CalledProcessError as cpe:
         return str(cpe)
