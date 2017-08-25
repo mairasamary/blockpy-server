@@ -2,6 +2,7 @@
 import os, sys
 import json
 from subprocess import call
+import subprocess
 import csv
 import io
 import os.path as op
@@ -163,6 +164,15 @@ admin.add_view(RoleView(Role, db.session, category='Tables'))
 admin.add_view(LogView(Log, db.session, category='Tables'))
 
 admin.add_view(FileAdmin(app.config['BLOCKLY_LOG_DIR'], '/code_logs/', name='Log Files'))
+
+@app.route('/admin/log_check', methods=['GET', 'POST'])
+def log_check():
+    try:
+        return subprocess.check_output("cat {dir} | wc -l".format(
+                dir=app.config['ROOT_DIRECTORY']+'/log/student_interactions/*',
+                shell=True))
+    except subprocess.CalledProcessError as cpe:
+        return str(cpe)
 
 @app.route('/admin/shutdown', methods=['GET', 'POST'])
 @admin_required
