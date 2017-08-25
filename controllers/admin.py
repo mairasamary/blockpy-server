@@ -172,8 +172,7 @@ def log_check():
             root = app.config['ROOT_DIRECTORY']+'/log/student_interactions/'
             all_paths = os.listdir(root)
             for a_file in all_paths:
-                yield subprocess.check_output(["wc", "-l", 
-                    root+a_file],
+                yield subprocess.check_output("wc -l "+root+a_file,
                     shell=True)+b"\n"
         return Response(generate(), mimetype='text')
     except subprocess.CalledProcessError as cpe:
