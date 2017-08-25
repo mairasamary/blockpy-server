@@ -54,7 +54,7 @@ LOGGING = {
             'handlers': ['FeedbackHandler']
         },
         'SystemLogger': {
-            'level': 'INFO',
+            'level': 'WARNING',
             'handlers': ['console']
         },
         'StudentInteractions': {
