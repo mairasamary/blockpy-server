@@ -168,9 +168,14 @@ admin.add_view(FileAdmin(app.config['BLOCKLY_LOG_DIR'], '/code_logs/', name='Log
 @app.route('/admin/log_check', methods=['GET', 'POST'])
 def log_check():
     try:
-        return subprocess.check_output(["wc", "-l", 
-                app.config['ROOT_DIRECTORY']+'/log/student_interactions/*'],
-                shell=True)
+        def generate():
+            root = app.config['ROOT_DIRECTORY']+'/log/student_interactions/'
+            all_paths = os.listdir(root)
+            for a_file in all_paths:
+                yield subprocess.check_output(["wc", "-l", 
+                    root+a_file],
+                    shell=True)+b"\n"
+        return Response(generate(), mimetype='text')
     except subprocess.CalledProcessError as cpe:
         return str(cpe)
 
