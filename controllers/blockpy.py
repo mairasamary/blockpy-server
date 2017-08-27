@@ -7,6 +7,7 @@ import logging
 from pprint import pprint
 
 from slugify import slugify
+from natsort import natsorted
 
 from flask_wtf import Form
 from wtforms import IntegerField, BooleanField
@@ -97,12 +98,14 @@ def load_assignment(lti=lti):
     user_id = g.user.id if g.user != None else -1
     assignment = Assignment.by_id(assignment_id)
     submission = assignment.get_submission(user_id, course_id=course_id)
+    timestamp = request.values.get('timestamp', '')
     interface = ('Text' if assignment.mode.lower() == 'text' else 
                  'Split' if assignment.mode.lower() == 'split' else
                  'Blocks')
     settings = json.loads(assignment.settings)
     added_modules = settings['modules']['added'] if 'modules' in settings else []
     removed_modules = settings['modules']['removed'] if 'modules' in settings else []
+    log = Log.new('editor', 'load', assignment_id, user_id, body=str(assignment.version), timestamp=timestamp)
     return jsonify(success=True,
                    settings = {
                         'editor': interface,
@@ -174,7 +177,7 @@ def save_events(lti=lti):
 
 def get_group_report(group_id, user_id, course_id):
     group = AssignmentGroup.by_id(group_id)
-    assignments = sorted(group.get_assignments(), key= lambda a: a.name)
+    assignments = natsorted(group.get_assignments(), key= lambda a: a.title())
     submissions = [a.get_submission(user_id, course_id=course_id) 
                    for a in assignments]
     completed = sum([s.correct for s in submissions])
