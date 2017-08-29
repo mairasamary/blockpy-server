@@ -765,6 +765,14 @@ AbstractInterpreter.prototype.visit_Call = function(node) {
         this.generic_visit(node);
     }
 }
+/*
+AbstractInterpreter.prototype.visit_Print = function(node) {
+    for (var i = 0, len = node.values.length; i < len; i++) {
+        var value = node.values[i];
+        this.visit(value);
+    }
+    //this.generic_visit(node);
+}*/
 AbstractInterpreter.prototype.visit_Assign = function(node) {
     var typeValue = this.typecheck(node.value);
     this.visit(node.value);
@@ -802,6 +810,11 @@ AbstractInterpreter.prototype.visit_Name = function(node) {
     if (node.ctx.prototype._astname === "Load") {
         this.readVariable(node.id.v, this.getLocation(node));
     }
+    this.generic_visit(node);
+}
+
+AbstractInterpreter.prototype.visit_BinOp = function(node) {
+    this.typecheck(node);
     this.generic_visit(node);
 }
 
@@ -992,6 +1005,13 @@ AbstractInterpreter.prototype.BUILTINS = {
         "parameters": [
             {"type": "Num"},
             {"type": "Num"}
+        ]
+    },
+    "float": {
+        "type": "Function",
+        "returns": {"type": "Num"},
+        "parameters": [
+            {"type": ["Str", "Num", "Bool"]}
         ]
     },
     "range": {
@@ -7575,6 +7595,7 @@ BlockPyFeedback.prototype.presentFeedback = function() {
     // Instructor
     if (!report['instructor'].success) {
         var error = report['instructor'].error;
+        //report['instructor']['line_offset']
         this.internalError(error, "Instructor Feedback Error", "Error in instructor feedback. Please show the above message to an instructor!");
         console.error(error);
         return 'instructor';
@@ -8178,6 +8199,7 @@ BlockPyEngine.prototype.runInstructorCode = function(filename, after) {
         '    return None\n'+
         this.main.model.programs[filename]()
     );
+    var line_count = instructorCode.split(/\r\n|\r|\n/).length;
     var engine = this;
     report['instructor'] = {
         'compliments': [],
@@ -8199,6 +8221,7 @@ BlockPyEngine.prototype.runInstructorCode = function(filename, after) {
             } else {
                 report['instructor']['success'] = false;
                 report['instructor']['error'] = error;
+                report['instructor']['line_offset'] = line_count;
             }
             after();
         }
