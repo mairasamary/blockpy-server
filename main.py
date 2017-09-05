@@ -45,6 +45,7 @@ LOGGING = {
         'errorHandler': {
             'class': 'logging.handlers.RotatingFileHandler',
             'filename': ERROR_LOG,
+            'level': 'WARNING',
             'formatter': 'basicFormatter'
         }
     },
@@ -80,6 +81,7 @@ if app.config['IS_PRODUCTION']:
     LOGGING['handlers']['fileHandler'] = {
         'class': 'logging.handlers.TimedRotatingFileHandler',
         'filename': STUDENT_INTERACTION_LOG,
+        "level": "INFO",
         'when': 'D',
         'formatter': 'simpleFormatter'
     }
@@ -87,6 +89,7 @@ else:
     LOGGING['handlers']['fileHandler'] = {
         'class': 'logging.handlers.RotatingFileHandler',
         'filename': STUDENT_INTERACTION_LOG,
+        "level": "INFO",
         'formatter': 'simpleFormatter'
     }
     LOGGING
