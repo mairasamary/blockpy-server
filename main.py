@@ -40,7 +40,8 @@ LOGGING = {
     'handlers': {
         'console':{
             'class':'logging.StreamHandler',
-            'formatter':'basicFormatter'
+            'formatter':'basicFormatter',
+            'level': 'WARNING',
         },
         'errorHandler': {
             'class': 'logging.handlers.RotatingFileHandler',

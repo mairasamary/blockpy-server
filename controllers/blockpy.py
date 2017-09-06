@@ -159,6 +159,7 @@ def save_code(lti=lti):
             Assignment.edit(assignment_id=assignment_id, on_step=code)
         elif filename == "starting_code":
             Assignment.edit(assignment_id=assignment_id, starting_code=code)
+        log = Log.new('instructor', filename, assignment_id, g.user.id, body=code, timestamp=timestamp)
     return jsonify(success=True, is_version_correct=is_version_correct)
     
 @blueprint_blockpy.route('/save_events/', methods=['GET', 'POST'])
