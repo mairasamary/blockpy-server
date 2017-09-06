@@ -102,7 +102,10 @@ def load_assignment(lti=lti):
     interface = ('Text' if assignment.mode.lower() == 'text' else 
                  'Split' if assignment.mode.lower() == 'split' else
                  'Blocks')
-    settings = json.loads(assignment.settings)
+    if assignment.settings:
+        settings = json.loads(assignment.settings)
+    else:
+        settings = {}
     added_modules = settings['modules']['added'] if 'modules' in settings else []
     removed_modules = settings['modules']['removed'] if 'modules' in settings else []
     log = Log.new('editor', 'load', assignment_id, user_id, body=str(assignment.version), timestamp=timestamp)
