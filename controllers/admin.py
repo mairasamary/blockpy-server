@@ -82,7 +82,10 @@ def _render_settings(view, context, model, name):
     return Markup(body)
     
 def _render_code(view, context, model, name):
-    return Markup("<pre>"+getattr(model, name)+"</pre>")
+    code = getattr(model,name)
+    if code is None:
+        return Markup("<pre></pre>")
+    return Markup("<pre>"+code+"</pre>")
     
 def _render_assignment_settings(view, context, model, name):
     return Markup("<div>"+model.body+"</div>"+
@@ -133,8 +136,10 @@ class AssignmentGroupView(RegularView):
 class LogView(RegularView):
     column_list = ('id', 'date_modified', 
                    'assignment_id', 'user_id',
-                   'event', 'action'
+                   'event', 'action',
+                   'body'
                    )
+    column_formatters = { 'body': _render_code }
 class AssignmentGroupMembershipView(RegularView):
     column_list = ('id', 'date_modified', 
                    'assignment_group_id', 'assignment_id',
