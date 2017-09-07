@@ -369,11 +369,14 @@ class Log(Base):
     action = Column(String(255), default="")
     assignment_id = Column(Integer(), ForeignKey('assignment.id'))
     user_id = Column(Integer(), ForeignKey('user.id'))
+    body = Column(Text(), default="")
+    timestamp = Column(String(255), default="")
     
     @staticmethod    
     def new(event, action, assignment_id, user_id, body='', timestamp=''):
         # Database logging
-        log = Log(event=event, action=action, assignment_id=assignment_id, user_id=user_id)
+        log = Log(event=event, action=action, assignment_id=assignment_id, user_id=user_id,
+                  body=body, timestamp=timestamp)
         db.session.add(log)
         db.session.commit()
         # Single-file logging
@@ -595,8 +598,12 @@ class Submission(Base):
         else:
             submission.code = code
             submission.version += 1
-            current_assignment_version = Assignment.by_id(submission.assignment_id).version
-            is_version_correct = (assignment_version == current_assignment_version)
+            assignment = Assignment.by_id(submission.assignment_id)
+            if assignment:
+                current_assignment_version = assignment.version
+                is_version_correct = (assignment_version == current_assignment_version)
+            else:
+                is_version_correct = False
         db.session.commit()
         submission.log_code(timestamp=timestamp)
         return submission, is_version_correct
@@ -664,12 +671,16 @@ class Submission(Base):
         
         with open(file_name, 'w') as blockly_logfile:
             blockly_logfile.write(self.code)
+        log = Log.new('code', 'set', self.assignment_id, 
+                      self.user_id, body=self.code, timestamp=timestamp)
+        '''
         # Single file logging
         student_interactions_logger = logging.getLogger('StudentInteractions')
         student_interactions_logger.info(
             StructuredEvent(self.user_id, self.assignment_id, 'code', 'set', 
                             self.code, timestamp=timestamp)
         )
+        '''
         
     def get_history(self):
         '''
