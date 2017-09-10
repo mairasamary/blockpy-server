@@ -7698,13 +7698,19 @@ BlockPyFeedback.prototype.presentFeedback = function() {
     // Error in Instructor Feedback code
     if (!report['instructor'].success) {
         var error = report['instructor'].error;
-        if (error.traceback[0].filename == report['instructor'].filename) {
-            error.traceback[0].lineno -= report['instructor']['line_offset'];
+        if (error.traceback[0].filename == "__main__.py") {
+            this.printError(report['instructor'].error);
+            return 'student';
+        } else {
+            console.log("I", error.traceback[0].lineno, report['instructor'].line_offset);
+            if (error.traceback[0].filename == report['instructor'].filename) {
+                error.traceback[0].lineno -= report['instructor']['line_offset'];
+            }
+            //report['instructor']['line_offset']
+            this.internalError(error, "Instructor Feedback Error", "Error in instructor feedback. Please show the above message to an instructor!");
+            console.error(error);
+            return 'instructor';
         }
-        //report['instructor']['line_offset']
-        this.internalError(error, "Instructor Feedback Error", "Error in instructor feedback. Please show the above message to an instructor!");
-        console.error(error);
-        return 'instructor';
     }
     if (report['instructor'].compliments && report['instructor'].compliments.length) {
         //this.compliment(report['instructor'].compliments);
@@ -8301,6 +8307,8 @@ BlockPyEngine.prototype.runStudentCode = function(after) {
     );
 }
 
+var NEW_LINE_REGEX = /\r\n|\r|\n/;
+
 /**
  * Run the instructor code
  */
@@ -8314,6 +8322,8 @@ BlockPyEngine.prototype.runInstructorCode = function(filename, after) {
     if (!report['parser'].success || !report['verifier'].success) {
         studentCode = 'pass';
     }
+    var instructorCode = this.main.model.programs[filename]();
+    var lineOffset = instructorCode.split(NEW_LINE_REGEX).length;
     instructorCode = (
         'from instructor import *\n'+
         'def run_student():\n'+
@@ -8322,13 +8332,13 @@ BlockPyEngine.prototype.runInstructorCode = function(filename, after) {
         '    except Exception as error:\n'+
         '        return error\n'+
         '    return None\n'+
-        this.main.model.programs[filename]()
+        instructorCode
     );
-    var line_count = instructorCode.split(/\r\n|\r|\n/).length;
+    lineOffset = instructorCode.split(NEW_LINE_REGEX).length - lineOffset;
     var engine = this;
     report['instructor'] = {
         'compliments': [],
-        'filename': filename
+        'filename': filename+".py"
         //'complete': false // Actually, let's use undefined for now.
     };
     Sk.misceval.asyncToPromise(function() {
@@ -8347,7 +8357,7 @@ BlockPyEngine.prototype.runInstructorCode = function(filename, after) {
             } else {
                 report['instructor']['success'] = false;
                 report['instructor']['error'] = error;
-                report['instructor']['line_offset'] = line_count;
+                report['instructor']['line_offset'] = lineOffset;
             }
             after();
         }
