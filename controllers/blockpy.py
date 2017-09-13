@@ -101,7 +101,9 @@ def load_assignment(lti=lti):
     timestamp = request.values.get('timestamp', '')
     interface = ('Text' if assignment.mode.lower() == 'text' else 
                  'Split' if assignment.mode.lower() == 'split' else
+                 'Upload' if assignment.mode.lower() == 'upload' else
                  'Blocks')
+    upload = assignment.mode.lower() == 'upload'
     if assignment.settings:
         settings = json.loads(assignment.settings)
     else:
@@ -112,6 +114,7 @@ def load_assignment(lti=lti):
     return jsonify(success=True,
                    settings = {
                         'editor': interface,
+                        'read_only': upload
                     },
                    assignment = {
                         'assignment_id': assignment.id,
@@ -120,6 +123,7 @@ def load_assignment(lti=lti):
                         'group_id': group_id,
                         'introduction': assignment.body,
                         'name': assignment.name,
+                        'upload': upload,
                         'version': assignment.version,
                         'initial_view': interface,
                         'give_feedback': assignment.give_feedback,
