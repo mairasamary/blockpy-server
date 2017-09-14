@@ -82,6 +82,8 @@ def _render_settings(view, context, model, name):
     return Markup(body)
     
 def _render_code(view, context, model, name):
+    if name is None:
+        return Markup("<pre></pre>")
     code = getattr(model,name)
     if code is None:
         return Markup("<pre></pre>")
