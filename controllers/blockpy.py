@@ -263,7 +263,7 @@ def save_correct(lti, lti_exception=None):
         return jsonify(success=True, submitted=False, message="Not in a grading context.")
     session['lis_result_sourcedid'] = lis_result_sourcedid
     image_url = submission.save_block_image(image)
-    if assignment_group_id != None and assignment_group_id != '':
+    if assignment_group_id != None and assignment_group_id != '' and assignment_group_id != 'None':
         score, report = get_group_report(int(assignment_group_id), g.user.id, int(course_id))
     else:
         report = get_report(assignment.type, assignment.name, submission, image=image_url)
