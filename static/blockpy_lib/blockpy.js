@@ -9039,6 +9039,7 @@ BlockPy.prototype.setAssignment = function(settings, assignment, programs) {
     this.components.editor.reloadIntroduction();
     this.model.settings.server_connected(true)
     this.components.corgis.loadDatasets(true);
+    this.components.server.setStatus('Loaded');
 }
 
 /**
