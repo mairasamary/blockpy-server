@@ -739,7 +739,7 @@ AbstractInterpreter.prototype.walkAttributeChain = function(attribute) {
         var methodName = attribute.attr.v;
         if (methodName == "items") {
             var dict = this.typecheck(attribute.value);
-            if (dict.type == "Dict") {
+            if (dict != null && dict.type == "Dict") {
                 return {
                     "type": "List",
                     "subtype": {
