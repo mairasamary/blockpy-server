@@ -536,3 +536,7 @@ def regenerate_walk(lti=lti):
     else:
         return jsonify(success=True, walks=[], more_to_do=False)
 '''
+
+@blueprint_blockpy.route('/images/<path:path>', methods=['GET', 'POST'])
+def assignments_static_images(path):
+    return app.send_static_file('images/'+path)
