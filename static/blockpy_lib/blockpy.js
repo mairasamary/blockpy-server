@@ -901,7 +901,7 @@ AbstractInterpreter.prototype.visit_FunctionDef = function(node) {
 }
 AbstractInterpreter.prototype.visit_Return = function(node) {
     this.setReturnVariable(this.currentScope, 
-                           this.typecheck(node.value), 
+                           node.value ? this.typecheck(node.value) : {"type": "None"}, 
                            this.getLocation(node));
     this.generic_visit(node);
 }
@@ -8017,6 +8017,10 @@ BlockPyFeedback.prototype.presentAnalyzerFeedback = function() {
         return true;
     }
     return false;
+}
+
+if (typeof exports !== 'undefined') {
+    exports.BlockPyFeedback = BlockPyFeedback;
 }
 /**
  * An object that manages the main toolbar, including the different mode buttons.
