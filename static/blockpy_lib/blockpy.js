@@ -2467,7 +2467,8 @@ PythonToBlocks.KNOWN_MODULES = {
         "hist": ["*plot_hist", {"type": "variable", "mode": "value", "name": "values"}],
         "scatter": ["*plot_scatter", {"type": "variable", "mode": "value", "name": "x_values"},
                                       {"type": "variable", "mode": "value", "name": "y_values"}],
-        "show": ["*plot_show"]
+        "show": ["*plot_show"],
+        "legend": ["*plot_legend"]
     }
 };
 PythonToBlocks.prototype.KNOWN_FUNCTIONS = ["append", "strip", "rstrip", "lstrip"];
@@ -5425,6 +5426,25 @@ PythonToBlocks.KNOWN_ATTR_FUNCTIONS['count'] = function(func, args, keywords, st
 }
 
 
+Blockly.Blocks['plot_legend'] = {
+  init: function() {
+    this.setHelpUrl('http://www.example.com/');
+    this.setColour(Blockly.Blocks.plot.HUE);
+    this.appendDummyInput()
+        .appendField("make legend");
+    this.setInputsInline(false);
+    this.setPreviousStatement(true);
+    this.setNextStatement(true);
+    this.setOutput(false);
+    this.setTooltip('Makes the legend appear');
+  }
+};
+
+Blockly.Python['plot_legend'] = function(block) {
+    Blockly.Python.definitions_['import_matplotlib'] = 'import matplotlib.pyplot as plt';
+    var code = 'plt.legend()\n';
+    return code;
+};
 /**
  * A utility object for quickly and conveniently generating dialog boxes.
  * Unfortunately, this doesn't dynamically create new boxes; it reuses the same one
