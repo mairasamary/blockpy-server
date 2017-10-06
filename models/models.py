@@ -1066,7 +1066,7 @@ class AssignmentGroupMembership(Base):
                                                    position=0)
             db.session.add(membership)
         elif new_group_id == -1:
-            db.session.remove(membership)
+            db.session.delete(membership)
         else:
             membership.assignment_group_id = new_group_id
         db.session.commit()
