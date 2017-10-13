@@ -803,7 +803,7 @@ class Assignment(Base):
                                             if m not in Assignment.BUILTIN_MODULES]
             settings['modules']['removed'] = [m for m in Assignment.BUILTIN_MODULES 
                                               if m not in kept_modules and m != 'Separator']
-            settings['files'] = files.split(",")
+            settings['files'] = [f for f in files.split(",") if f]
             assignment.settings = json.dumps(settings)
         assignment.type = type
         if parsons is True:

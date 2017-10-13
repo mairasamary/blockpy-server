@@ -110,6 +110,7 @@ def load_assignment(lti=lti):
     else:
         settings = {}
     files = settings['files'] if 'files' in settings else []
+    files = [f for f in files if f.strip()]
     added_modules = settings['modules']['added'] if 'modules' in settings else []
     removed_modules = settings['modules']['removed'] if 'modules' in settings else []
     log = Log.new('editor', 'load', assignment_id, user_id, body=str(assignment.version), timestamp=timestamp)
