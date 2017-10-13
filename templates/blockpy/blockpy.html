@@ -77,7 +77,8 @@ DEFAULT_ASSIGNMENT = {
         'initial_view': queryParams.view || "Blocks",
         'disable_algorithm_errors': false,
         "importable": true,
-        'modules': {}
+        'modules': {},
+        'files': []
     },
     'programs': {
         '__main__': decodeURIComponent(queryParams.code || "")
@@ -102,7 +103,8 @@ $(document).ready(function() {
         'disable_typed_blocks': (queryParams.typed_blocks == "true"),
         'editor': 'Split',
         'urls': {
-            'import_datasets': {{ url_for('blockpy.load_corgis',path='')|tojson }}
+            'import_datasets': {{ url_for('blockpy.load_corgis',path='')|tojson }},
+            'load_file': {{ url_for('blockpy.load_file')|tojson }},
         }
     {% else %}
         'instructor': {{ 'true' if instructor_mode else 'false'}},
@@ -114,6 +116,7 @@ $(document).ready(function() {
             'save_success': {{ url_for('blockpy.save_correct')|tojson }},
             'load_assignment': {{ url_for('blockpy.load_assignment')|tojson }},
             'import_datasets': {{ url_for('blockpy.load_corgis',path='')|tojson }},
+            'load_file': {{ url_for('blockpy.load_file')|tojson }},
             'get_history': {{ url_for('blockpy.get_history')|tojson }},
         }
     {% endif %}

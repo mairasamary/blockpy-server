@@ -25,7 +25,8 @@ from models.models import (db, Assignment, User, Submission, Log,
                            AssignmentGroup)
 
 from controllers.helpers import (lti, get_assignments_from_request, 
-                                 highlight_python_code)
+                                 highlight_python_code, normalize_url,
+                                 ensure_dirs)
 
 blueprint_blockpy = Blueprint('blockpy', __name__, url_prefix='/blockpy')
                            
@@ -108,6 +109,7 @@ def load_assignment(lti=lti):
         settings = json.loads(assignment.settings)
     else:
         settings = {}
+    files = settings['files'] if 'files' in settings else []
     added_modules = settings['modules']['added'] if 'modules' in settings else []
     removed_modules = settings['modules']['removed'] if 'modules' in settings else []
     log = Log.new('editor', 'load', assignment_id, user_id, body=str(assignment.version), timestamp=timestamp)
@@ -133,6 +135,7 @@ def load_assignment(lti=lti):
                         'importable': settings.get('importable', False),
                         'disable_algorithm_errors': settings.get('disable_algorithm_errors', False),
                         'disable_timeout': settings.get('disable_timeout', False),
+                        'files': files,
                         'modules': {
                             'added': added_modules,
                             'removed': removed_modules,
@@ -326,10 +329,11 @@ def save_presentation(lti=lti):
     mode = request.values.get("initial", None)
     name = request.values.get('name', "")
     modules = request.values.get('modules', "")
+    files = request.values.get('files', "")
     assignment = Assignment.by_id(int(assignment_id))
     if not g.user.is_instructor(int(assignment.course_id)):
         return jsonify(success=False, message="You are not an instructor in this assignments' course.")
-    Assignment.edit(assignment_id=assignment_id, presentation=presentation, name=name, parsons=parsons, mode=mode, modules=modules, importable=importable, disable_algorithm_errors=disable_algorithm_errors, disable_timeout=disable_timeout)
+    Assignment.edit(assignment_id=assignment_id, presentation=presentation, name=name, parsons=parsons, mode=mode, modules=modules, importable=importable, disable_algorithm_errors=disable_algorithm_errors, disable_timeout=disable_timeout, files=files)
     return jsonify(success=True)
     
 @blueprint_blockpy.route('/get_history/', methods=['GET', 'POST'])    
@@ -346,6 +350,29 @@ def get_history(lti=lti):
 @blueprint_blockpy.route('/load_corgis/<path:path>', methods=['GET', 'POST'])
 def load_corgis(path):
     return app.send_static_file('corgis/{path}'.format(path=path))
+    
+@blueprint_blockpy.route('/load_file/', methods=['GET', 'POST'])
+@blueprint_blockpy.route('/load_file', methods=['GET', 'POST'])
+def load_file():
+    assignment_id = request.values.get('assignment_id', '0')
+    filename = request.values.get('filename', None)
+    type = request.values.get('type', None)
+    if None in (filename, type, assignment_id):
+        return jsonify(success=False, message="No Assignment ID, filename, or type given!")
+    files_folder = os.path.join(app.config['UPLOADS_DIR'], 'files', assignment_id)
+    ensure_dirs(files_folder)
+    if type == 'url':
+        filename = normalize_url(filename)+".txt"
+    elif type == 'file':
+        filename = secure_filename(filename)
+    file_path = os.path.join(files_folder, filename)
+    try:
+        with open(file_path) as inp:
+            contents = inp.read()
+        return jsonify(success=True, data=contents)
+    except IOError as e:
+        return jsonify(success=False, message=str(e))
+        
     
 @blueprint_blockpy.route('/force_right_section/', methods=['GET', 'POST'])    
 @blueprint_blockpy.route('/force_right_section', methods=['GET', 'POST'])    

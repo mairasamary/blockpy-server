@@ -1,6 +1,7 @@
 # Built-in imports
 from datetime import timedelta
 import re
+import os
 from pprint import pprint
 from functools import wraps, update_wrapper
 import calendar, datetime
@@ -10,11 +11,13 @@ try:
 except:
     from HTMLParser import HTMLParser
 from natsort import natsorted
+from urllib.parse import unquote_plus, urlparse, parse_qsl, quote_plus, urlunparse, urlencode
     
 # Pygments, for reporting nicely formatted Python snippets
 from pygments import highlight
 from pygments.lexers import PythonLexer
 from pygments.formatters import HtmlFormatter
+
 
 # Flask imports
 from flask import g, request, redirect, url_for, make_response, current_app
@@ -238,3 +241,21 @@ def get_assignment_id(f):
 def highlight_python_code(code):
     formatter = HtmlFormatter(linenos=True, noclasses=True)
     return highlight(code, PythonLexer(), formatter)
+
+def normalize_url(url):
+    url = re.sub(r'http://',r'',url)
+    url = re.sub(r'https://',r'',url)
+    url = re.sub(r'file://',r'',url)
+    parts = urlparse(url, scheme='')
+    _query = urlencode(sorted(set(parse_qsl(parts.query))))
+    _path = unquote_plus(parts.path)
+    parts = parts._replace(query=_query, path=_path, scheme='', fragment='')
+    url = "/".join((parts.netloc, _path, _query))
+    return quote_plus(url)
+    
+def ensure_dirs(path):
+    try: 
+        os.makedirs(path)
+    except OSError as e:
+        if not os.path.isdir(path):
+            app.logger.warning(e.args + (path, ) )

@@ -763,6 +763,7 @@ class Assignment(Base):
              give_feedback=None, on_step=None, starting_code=None, 
              parsons=None, text_first=None, mode=None,
              modules=None, importable=False,
+             files=None,
              disable_algorithm_errors=False, disable_timeout=False,
              type='blockpy'):
         assignment = Assignment.by_id(assignment_id)
@@ -781,6 +782,7 @@ class Assignment(Base):
         if starting_code is not None:
             assignment.starting_code = starting_code
             assignment.version += 1
+        # Is this check necessary and correct? It works fine for now...
         if modules is not None:
             if not assignment.settings:
                 assignment.settings = "{}"
@@ -801,6 +803,7 @@ class Assignment(Base):
                                             if m not in Assignment.BUILTIN_MODULES]
             settings['modules']['removed'] = [m for m in Assignment.BUILTIN_MODULES 
                                               if m not in kept_modules and m != 'Separator']
+            settings['files'] = files.split(",")
             assignment.settings = json.dumps(settings)
         assignment.type = type
         if parsons is True:
