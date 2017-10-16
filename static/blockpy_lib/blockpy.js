@@ -8188,6 +8188,7 @@ BlockPyToolbar.prototype.activateToolbar = function() {
             main.components.engine.on_run();
         };
         fr.readAsText(files[0]);
+        uploadButton.val("");
     });
     
     this.tag.find('.blockpy-toolbar-filename-picker label').click(function() {
