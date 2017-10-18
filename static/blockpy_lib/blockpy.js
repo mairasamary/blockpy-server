@@ -750,6 +750,19 @@ AbstractInterpreter.prototype.walkAttributeChain = function(attribute) {
             } else {
                 return null;
             }
+        } else if (methodName == "split") {
+            var a_string = this.typecheck(attribute.value);
+            if (a_string != null && a_string.type == "Str") {
+                return {
+                    "type": "List",
+                    "empty": "false",
+                    "subtype": {
+                        "type": "Str",
+                    }
+                }
+            } else {
+                return null;
+            }
         } else if (result == null) {
             return null;
         } else if (methodName in result) {
@@ -1127,6 +1140,8 @@ AbstractInterpreter.prototype.TYPE_INHERITANCE = {
     "Num": ["Int", "Float"]
 }
 AbstractInterpreter.prototype.BUILTINS = {
+    //
+    'KeyError': {"type": "Exception"},
     // Values
     'True': {"type": "Bool"}, 
     'False': {"type": "Bool"}, 
