@@ -1306,6 +1306,13 @@ AbstractInterpreter.prototype.BUILTINS = {
             {"type": "Any"}
         ]
     },
+    "abs": {
+        "type": "Function",
+        "returns": {"type": "Num"},
+        "parameters": [
+            {"type": "Num"}
+        ]
+    },
     "int": {
         "type": "Function",
         "returns": {"type": "Num"},
