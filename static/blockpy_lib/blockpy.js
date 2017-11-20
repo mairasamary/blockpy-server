@@ -3237,6 +3237,24 @@ var $sk_mod_instructor = function(name) {
         throw new Sk.builtin.GracefulExit();
     });
     /**
+     * Mark problem as partially completed
+     */
+    mod.give_partial = new Sk.builtin.func(function(value, message) {
+        Sk.builtin.pyCheckArgs("give_partial", arguments, 1, 2);
+        Sk.builtin.pyCheckType("value", "float", Sk.builtin.checkFloat(value));
+        value = Sk.ffi.remapToJs(value);
+        if (message != undefined) {
+            Sk.builtin.pyCheckType("message", "string", Sk.builtin.checkString(message));
+            message = Sk.ffi.remapToJs(message);
+        } else {
+            message = '';
+        }
+        if (!Sk.executionReports.instructor.partials){
+            Sk.executionReports.instructor.partials = [];
+        }
+        Sk.executionReports.instructor.partials.push({'value': value, 'message': message});
+    });
+    /**
      * Let user know about an issue
      */
     mod.explain = new Sk.builtin.func(function(message, priority, line) {
@@ -8604,10 +8622,16 @@ BlockPyEngine.prototype.on_run = function(afterwards) {
                 engine.main.components.toolbar.notifyFeedbackUpdate();
             }
             var result = feedback.presentFeedback();
-            if (result == 'success' || result == 'no errors') {
+            var success_level = 0;
+            var partials = Sk.executionReports.instructor.partials;
+            for (var i = 0, len = partials.length; i < len; i = i+1) {
+                success_level = success_level + partials[i].value;
+            }
+            success_level = Math.max(0.0, Math.min(1.0, success_level));
+            if (result == 'success') {
                 engine.main.components.server.markSuccess(1.0, model.settings.completedCallback);
             } else {
-                engine.main.components.server.markSuccess(0.0, model.settings.completedCallback);
+                engine.main.components.server.markSuccess(success_level, model.settings.completedCallback);
             }
             model.execution.status("complete");
             if (afterwards !== undefined) {

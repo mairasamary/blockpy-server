@@ -192,7 +192,7 @@ def get_group_report(group_id, user_id, course_id):
     assignments = natsorted(group.get_assignments(), key= lambda a: a.title())
     submissions = [a.get_submission(user_id, course_id=course_id) 
                    for a in assignments]
-    completed = sum([s.correct for s in submissions])
+    completed = sum([s.correct or s.status/100 for s in submissions])
     total = len(assignments)
     score = completed/total
     table = "\n".join(
@@ -220,7 +220,12 @@ def get_group_report(group_id, user_id, course_id):
     ])
 def get_report(mode, name, submission, image=""):
     url = url_for('blockpy.get_submission_code', submission_id=submission.id, _external=True)
-    status = "Success!" if submission.correct else "Incomplete"
+    if submission.correct:
+        status = "Success!"
+    elif submission.status:
+        status = "Incomplete ({}%)".format(submission.status)
+    else:
+        status = "Incomplete"
     if mode == 'maze':
         return """
         <h1 id='{slug}'>Maze {name}</h1>
@@ -258,10 +263,11 @@ def save_correct(lti, lti_exception=None):
     if None in (assignment_id, course_id):
         return jsonify(success=False, message="No Assignment ID or Course ID given!")
     assignment = Assignment.by_id(assignment_id)
-    if status == 1:
+    if status >= 1:
         submission = Submission.save_correct(g.user.id, assignment_id, course_id=int(course_id))
     else:
         submission = assignment.get_submission(g.user.id, course_id=course_id)
+    submission.set_status(int(100*status))
     lis_result_sourcedid = request.values.get('lis_result_sourcedid', submission.url) or None
     if lis_result_sourcedid is None:
         return jsonify(success=True, submitted=False, message="Not in a grading context.")
@@ -271,7 +277,7 @@ def save_correct(lti, lti_exception=None):
         score, report = get_group_report(int(assignment_group_id), g.user.id, int(course_id))
     else:
         report = get_report(assignment.type, assignment.name, submission, image=image_url)
-        score = float(submission.correct)
+        score = float(submission.correct) or status
     lti.post_grade(score, report, endpoint=lis_result_sourcedid)
     return jsonify(success=True, submitted=True)
     

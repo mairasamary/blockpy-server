@@ -96,6 +96,11 @@ def _render_assignment_settings(view, context, model, name):
 def _render_assignment_type(view, context, model, name):
     return Markup("<div>"+model.type+"</div>"+
                   "<div>"+model.mode+"</div>")
+                  
+def _render_version(view, context, model, name):
+    body = "<p>S: {}</p>".format(model.version)
+    body += "<p>A: {}</p>".format(model.assignment_version)
+    return Markup(body)
     
 def _smaller(view, context, model, name):
     return Markup("<small>"+getattr(model, name)+"</small>")
@@ -153,10 +158,11 @@ class AssignmentGroupMembershipView(RegularView):
 class SubmissionView(RegularView):
     column_list = ('id', 'date_modified', 
                    'user_id', 'assignment_id', 'course_id',
-                   'code', #'status', 
-                   'correct', 'version', 'assignment_version', 'url'
+                   'code', 'correct', 'status', 
+                   'version', 'url'
                    )
-    column_formatters = { 'code': _render_code, 'url': _smaller }
+    column_formatters = { 'code': _render_code, 'url': _smaller, 
+                          'version': _render_version}
 
 admin.add_view(UserView(User, db.session, category='Tables'))
 admin.add_view(ModelIdView(Course, db.session, category='Tables'))
