@@ -1,0 +1,308 @@
+{% extends 'layout.html' %}
+
+{% block title %}Computational Thinking Interview Protocol{% endblock %}
+
+{% block extrahead %}
+<style>
+.indent {
+    padding-left: 10px;
+}
+</style>
+
+<style>
+<!--
+ /* Font Definitions */
+ @font-face
+	{font-family:Wingdings;
+	panose-1:5 0 0 0 0 0 0 0 0 0;}
+@font-face
+	{font-family:"Cambria Math";
+	panose-1:2 4 5 3 5 4 6 3 2 4;}
+@font-face
+	{font-family:Calibri;
+	panose-1:2 15 5 2 2 2 4 3 2 4;}
+@font-face
+	{font-family:"Lucida Grande";}
+ /* Style Definitions */
+ p.MsoNormal, li.MsoNormal, div.MsoNormal
+	{margin-top:0in;
+	margin-right:0in;
+	margin-bottom:10.0pt;
+	margin-left:0in;
+	line-height:115%;
+	font-size:11.0pt;
+	font-family:"Calibri",sans-serif;}
+p.MsoCommentText, li.MsoCommentText, div.MsoCommentText
+	{mso-style-link:"Comment Text Char";
+	margin-top:0in;
+	margin-right:0in;
+	margin-bottom:10.0pt;
+	margin-left:0in;
+	font-size:12.0pt;
+	font-family:"Calibri",sans-serif;}
+p.MsoCommentSubject, li.MsoCommentSubject, div.MsoCommentSubject
+	{mso-style-link:"Comment Subject Char";
+	margin-top:0in;
+	margin-right:0in;
+	margin-bottom:10.0pt;
+	margin-left:0in;
+	font-size:10.0pt;
+	font-family:"Calibri",sans-serif;
+	font-weight:bold;}
+p.MsoAcetate, li.MsoAcetate, div.MsoAcetate
+	{mso-style-link:"Balloon Text Char";
+	margin:0in;
+	margin-bottom:.0001pt;
+	font-size:9.0pt;
+	font-family:"Lucida Grande";}
+p.MsoNoSpacing, li.MsoNoSpacing, div.MsoNoSpacing
+	{margin:0in;
+	margin-bottom:.0001pt;
+	font-size:11.0pt;
+	font-family:"Calibri",sans-serif;}
+p.MsoListParagraph, li.MsoListParagraph, div.MsoListParagraph
+	{margin-top:0in;
+	margin-right:0in;
+	margin-bottom:10.0pt;
+	margin-left:.5in;
+	line-height:115%;
+	font-size:11.0pt;
+	font-family:"Calibri",sans-serif;}
+p.MsoListParagraphCxSpFirst, li.MsoListParagraphCxSpFirst, div.MsoListParagraphCxSpFirst
+	{margin-top:0in;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:.5in;
+	margin-bottom:.0001pt;
+	line-height:115%;
+	font-size:11.0pt;
+	font-family:"Calibri",sans-serif;}
+p.MsoListParagraphCxSpMiddle, li.MsoListParagraphCxSpMiddle, div.MsoListParagraphCxSpMiddle
+	{margin-top:0in;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:.5in;
+	margin-bottom:.0001pt;
+	line-height:115%;
+	font-size:11.0pt;
+	font-family:"Calibri",sans-serif;}
+p.MsoListParagraphCxSpLast, li.MsoListParagraphCxSpLast, div.MsoListParagraphCxSpLast
+	{margin-top:0in;
+	margin-right:0in;
+	margin-bottom:10.0pt;
+	margin-left:.5in;
+	line-height:115%;
+	font-size:11.0pt;
+	font-family:"Calibri",sans-serif;}
+span.BalloonTextChar
+	{mso-style-name:"Balloon Text Char";
+	mso-style-link:"Balloon Text";
+	font-family:"Lucida Grande";}
+span.CommentTextChar
+	{mso-style-name:"Comment Text Char";
+	mso-style-link:"Comment Text";}
+span.CommentSubjectChar
+	{mso-style-name:"Comment Subject Char";
+	mso-style-link:"Comment Subject";
+	font-weight:bold;}
+.MsoChpDefault
+	{font-family:"Calibri",sans-serif;}
+.MsoPapDefault
+	{margin-bottom:10.0pt;
+	line-height:115%;}
+@page WordSection1
+	{size:8.5in 11.0in;
+	margin:.5in .5in .5in .5in;}
+div.WordSection1
+	{page:WordSection1;}
+ /* List Definitions */
+ ol
+	{margin-bottom:0in;}
+ul
+	{margin-bottom:0in;}
+-->
+</style>
+
+
+{% endblock %}
+
+{% block body %}
+
+<div class=WordSection1>
+
+<p><a href="{{ url_for('static', filename='resources/Interview-Protocol_Modified.docx') }}" target="_blank">Download this protocol.<span class='glyphicon glyphicon-save'></span></a></p>
+
+<p class=MsoNormal><b><span style='font-family:"Times New Roman",serif'>Sample
+Interview Protocol</span></b></p>
+
+<p class=MsoNormal><b><span style='font-family:"Times New Roman",serif'>This is
+a sample interview protocol for the study on how students learn computational
+thinking in a collaborative classroom setting.</span></b></p>
+
+<p class=MsoNormal><i><span style='font-family:"Times New Roman",serif'>[Take consent
+form to audio record the session, explain that participants will remain
+anonymous.]</span></i></p>
+
+<p class=MsoNormal><b><span style='font-family:"Times New Roman",serif'>Introduction:</span></b><span
+style='font-family:"Times New Roman",serif'>  I am interested in understanding
+how people learn computational concepts. For our time together, I'd like to
+discuss how you learn, specifically in the CS 2984 - Introduction to
+Computational Thinking class. If at any time you feel uncomfortable with a
+question or where our discussion is going, just let me know. We can stop at any
+time. Do you have any questions before we get started?</span></p>
+
+<p class=MsoListParagraphCxSpFirst style='margin-left:.25in;text-indent:-.25in'><b><span
+style='font-family:"Times New Roman",serif'>1.<span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></b><b><span style='font-family:"Times New Roman",serif'>Can you
+tell me a little bit about your academic background? </span></b></p>
+
+<p class=MsoListParagraphCxSpMiddle style='margin-left:.75in;text-indent:-.25in'><span
+style='font-family:Symbol'><span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style='font-family:"Times New Roman",serif'>What is your major?
+Are you a freshman, sophomore, junior, senior?</span></p>
+
+<p class=MsoListParagraphCxSpMiddle style='margin-left:.75in;text-indent:-.25in;
+line-height:normal'><span style='font-family:Symbol'><span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style='font-family:"Times New Roman",serif'>What courses
+are you taking now?</span></p>
+
+<p class=MsoListParagraphCxSpMiddle style='margin-left:.75in;text-indent:-.25in;
+line-height:normal'><span style='font-family:Symbol'><span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style='font-family:"Times New Roman",serif'>Why are you
+taking these computational courses?</span></p>
+
+<p class=MsoListParagraphCxSpMiddle style='line-height:normal'><span
+style='font-family:"Times New Roman",serif'>&nbsp;</span></p>
+
+<p class=MsoListParagraphCxSpLast style='margin-left:.25in;text-indent:-.25in;
+line-height:normal'><b><span style='font-family:"Times New Roman",serif'>2.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span></b><b><span
+style='font-family:"Times New Roman",serif'>I am interested in understanding
+what students have learned in this class (consider as computational thinking). </span></b></p>
+
+<p class=MsoNoSpacing style='margin-left:.75in;text-indent:-.25in'><span
+style='font-family:Symbol'><span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style='font-family:"Times New Roman",serif'>What have you
+learned in this class? </span></p>
+
+<p class=MsoNoSpacing style='margin-left:.75in;text-indent:-.25in'><span
+style='font-family:Symbol'><span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style='font-family:"Times New Roman",serif'>How do you see
+yourself applying what you have learned in this class in your own discipline?</span></p>
+
+<p class=MsoNoSpacing style='margin-left:.75in;text-indent:-.25in'><span
+style='font-family:Symbol'><span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style='font-family:"Times New Roman",serif'>Do you see what
+you have learned in this class useful for you in the long run?</span></p>
+
+<p class=MsoNoSpacing><span style='font-family:"Times New Roman",serif'>&nbsp;</span></p>
+
+<p class=MsoNoSpacing><span style='font-family:"Times New Roman",serif'>This
+class claims to teach computational thinking,</span></p>
+
+<p class=MsoNoSpacing style='margin-left:.75in;text-indent:-.25in'><span
+style='font-family:Symbol'><span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style='font-family:"Times New Roman",serif'>In your own
+words, how would you describe computational thinking /what is your
+understanding of computational thinking? </span></p>
+
+<p class=MsoNoSpacing style='margin-left:.75in'><span style='font-family:"Times New Roman",serif'>&nbsp;</span></p>
+
+<p class=MsoListParagraphCxSpFirst style='margin-left:.25in;text-indent:-.25in;
+line-height:normal'><b><span style='font-family:"Times New Roman",serif'>3.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span></b><b><span
+style='font-family:"Times New Roman",serif'>Have you taken any other computer
+related course? </span></b></p>
+
+<p class=MsoListParagraphCxSpMiddle style='margin-left:.75in;text-indent:-.25in;
+line-height:normal'><span style='font-family:Symbol'><span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style='font-family:"Times New Roman",serif'>How is this
+course different/similar than other computer related courses you have taken? </span></p>
+
+<p class=MsoListParagraphCxSpMiddle style='margin-left:.75in;line-height:normal'><b><span
+style='font-family:"Times New Roman",serif'>&nbsp;</span></b></p>
+
+<p class=MsoListParagraphCxSpMiddle style='margin-left:.25in;text-indent:-.25in;
+line-height:normal'><b><span style='font-family:"Times New Roman",serif'>4.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span></b><b><span
+style='font-family:"Times New Roman",serif'>Are there things about the class
+that were helpful?</span></b></p>
+
+<p class=MsoListParagraphCxSpMiddle style='margin-left:.75in;text-indent:-.25in;
+line-height:normal'><span style='font-family:Symbol'><span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style='font-family:"Times New Roman",serif'>Are there
+things about the class that you wish were different?</span></p>
+
+<p class=MsoListParagraphCxSpMiddle style='margin-left:.75in;line-height:normal'><b><span
+style='font-family:"Times New Roman",serif'>&nbsp;</span></b></p>
+
+<p class=MsoListParagraphCxSpMiddle style='margin-left:.25in;text-indent:-.25in;
+line-height:normal'><b><span style='font-family:"Times New Roman",serif'>5.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span></b><b><span
+style='font-family:"Times New Roman",serif'>Can you describe to me what a
+typical group session looked like with your student cohort in the computational
+thinking class? </span></b></p>
+
+<p class=MsoListParagraphCxSpMiddle style='margin-left:.25in;line-height:normal'><b><span
+style='font-family:"Times New Roman",serif'>&nbsp;</span></b></p>
+
+<p class=MsoListParagraphCxSpMiddle style='text-indent:-.25in;line-height:normal'><span
+style='font-family:Symbol'><span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style='font-family:"Times New Roman",serif'>Have you
+studied in student cohorts/groups before? </span></p>
+
+<p class=MsoListParagraphCxSpMiddle style='margin-left:1.0in;text-indent:-.25in;
+line-height:normal'><span style='font-family:"Courier New"'>o<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp; </span></span><span
+style='font-family:"Times New Roman",serif'>If so, how is this group experience
+similar/different than others you have been in? </span></p>
+
+<p class=MsoListParagraphCxSpLast style='text-indent:-.25in;line-height:normal'><span
+style='font-family:Symbol'><span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style='font-family:"Times New Roman",serif'>In what ways have
+the group interactions impacted your learning of CT?</span></p>
+
+<p class=MsoNormal style='line-height:normal'><b><span style='font-family:"Times New Roman",serif'>4:
+During cohort observation we have used the following checklist to describe
+cohort interactions in the computational thinking class. <i>[Give checklist to
+student and wait for 5 minutes for them to read it.]</i></span></b></p>
+
+<p class=MsoNoSpacing style='margin-left:.5in;text-indent:-.25in'><span
+style='font-family:Symbol'><span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style='font-family:"Times New Roman",serif'>Would you
+please rank top 5 of the following that was most beneficial for your learning
+of CT concepts?</span></p>
+
+<p class=MsoNoSpacing style='margin-left:.5in;text-indent:-.25in'><span
+style='font-family:Symbol'><span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style='font-family:"Times New Roman",serif'>Would you please
+describe particular incidents of such interactions?</span></p>
+
+<p class=MsoNoSpacing style='margin-left:.5in;text-indent:-.25in'><span
+style='font-family:Symbol'><span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style='font-family:"Times New Roman",serif'>Was most of
+your interactions within class period or did you also interact outside of
+class?</span></p>
+
+<p class=MsoNoSpacing><span style='font-family:"Times New Roman",serif'>&nbsp;</span></p>
+
+<p class=MsoNoSpacing><span style='font-family:"Times New Roman",serif'>&nbsp;</span></p>
+
+<p class=MsoNormal style='line-height:normal'><b><span style='font-family:"Times New Roman",serif'>5:
+Based on that topic, is there anything that you would like to add that I did
+not cover in my questions?</span></b><span style='font-family:"Times New Roman",serif;
+background:aqua'> </span></p>
+
+<p class=MsoNormal style='line-height:normal'><span style='font-family:"Times New Roman",serif;
+background:aqua'>&nbsp;</span></p>
+
+<p class=MsoNormal style='line-height:normal'><i><span style='font-family:"Times New Roman",serif;
+background:aqua'>[Thank the participant.]</span></i></p>
+
+<p class=MsoNormal style='line-height:normal'><span style='font-family:"Times New Roman",serif'>&nbsp;</span></p>
+
+<p class=MsoNormal style='line-height:normal'><span style='font-family:"Times New Roman",serif'>&nbsp;</span></p>
+
+</div>
+
+{% endblock %}

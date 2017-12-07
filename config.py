@@ -26,9 +26,11 @@ class Config(object):
     STATIC_DIRECTORY = os.path.join(ROOT_DIRECTORY, 'static')
     BLOCKLY_LOG_DIR = os.path.join(ROOT_DIRECTORY, 'logs')
     UPLOADS_DIR = os.path.join(STATIC_DIRECTORY, 'uploads')
+    COURSE_TOKENS = os.path.join(ROOT_DIRECTORY, 'settings/course_tokens.yaml')
     
     BLOCKPY_SOURCE_DIR = secrets.get('BLOCKPY_SOURCE_DIR')
     DATASETS_SOURCE_DIR = secrets.get('DATASETS_SOURCE_DIR')
+    CANVAS_DIR = os.path.join(STATIC_DIRECTORY, 'canvas/courses/')
     
     # secret key for flask authentication
     SECRET_KEY = secrets.get('FLASK_SECRET_KEY', 'flask-secret-key')

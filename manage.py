@@ -4,6 +4,7 @@ from main import app
 from flask_script import Manager, Server
 from scripts.db_commands import ResetDB, PopulateDB, DisplayDB, ExportCourse, CreateDB
 from scripts.external_commands import UpdateDatasets, UpdateBlockPy
+from scripts.canvas_data import GetCanvasData
 
 '''from OpenSSL import SSL
 context = SSL.Context(SSL.SSLv23_METHOD)
@@ -25,6 +26,7 @@ manager.add_command("export_course", ExportCourse())
 
 manager.add_command("update_datasets", UpdateDatasets())
 manager.add_command("update_blockpy", UpdateBlockPy())
+manager.add_command("get_canvas_data", GetCanvasData())
 
 if __name__ == "__main__":
     manager.run()

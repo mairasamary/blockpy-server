@@ -27,3 +27,7 @@ def index():
 @blueprint_resources.route('/ct-kcs', methods=['GET', 'POST'])
 def ct_kcs():
     return render_template('resources/ct-kcs.html')
+    
+@blueprint_resources.route('/ct-protocol', methods=['GET', 'POST'])
+def ct_protocol():
+    return render_template('resources/ct-protocol.html')

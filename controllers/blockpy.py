@@ -187,18 +187,20 @@ def save_events(lti=lti):
     log = Log.new(event, action, assignment_id, user_id, body=body, timestamp=timestamp)
     return jsonify(success=True)
 
-def get_group_report(group_id, user_id, course_id):
+def get_group_report(group_id, user_id, course_id, hide_correctness):
     group = AssignmentGroup.by_id(group_id)
     assignments = natsorted(group.get_assignments(), key= lambda a: a.title())
     submissions = [a.get_submission(user_id, course_id=course_id) 
                    for a in assignments]
-    completed = sum([s.correct for s in submissions])
+    completed = sum([s.correct or s.status/100 for s in submissions])
     total = len(assignments)
     score = completed/total
     table = "\n".join(
-        ["<li><a href='#{slug}'>{name}</a> - {completed}</li>".format(slug=slugify(a.name),
+        ["<li><a href='#{slug}'>{name}</a>{completed}</li>".format(slug=slugify(a.name),
                                                        name=a.name,
-                                                       completed= "Completed" if s.correct else "<strong>Incomplete</strong>")
+                                                       completed= (" - "+"Completed"
+                                                                   if s.correct else "<strong>Incomplete</strong>")
+                                                                   if not hide_correctness else "")
          for a,s in zip(assignments, submissions)]
     )
     overview = '''
@@ -209,18 +211,28 @@ def get_group_report(group_id, user_id, course_id):
     <ol>
         {table}
     </ol></div>
-    '''.format(completed=completed, total=total, score=int(10000*score)/100, table=table)
+    '''.format(completed=completed if not hide_correctness else '?', 
+               total=total, 
+               score=int(10000*score)/100 if not hide_correctness else '?', 
+               table=table)
     return score, overview+'<br><br>'.join([
         get_report(assignment.type, 
                         assignment.name, 
                         submission, 
-                        submission.get_block_image())
+                        submission.get_block_image(), hide_correctness)
         for assignment, submission 
         in zip(assignments, submissions)
     ])
-def get_report(mode, name, submission, image=""):
+def get_report(mode, name, submission, image="", hide_correctness=False):
     url = url_for('blockpy.get_submission_code', submission_id=submission.id, _external=True)
-    status = "Success!" if submission.correct else "Incomplete"
+    if hide_correctness:
+        status = "????"
+    elif submission.correct:
+        status = "Success!"
+    elif submission.status:
+        status = "Incomplete ({}%)".format(submission.status)
+    else:
+        status = "Incomplete"
     if mode == 'maze':
         return """
         <h1 id='{slug}'>Maze {name}</h1>
@@ -254,24 +266,26 @@ def save_correct(lti, lti_exception=None):
     assignment_group_id = request.values.get('group_id', None)
     status = float(request.values.get('status', "0.0"))
     image = request.values.get('image', "")
+    hide_correctness = request.values.get('hide_correctness', "true")=="true"
     course_id = request.values.get('course_id', g.course.id if 'course' in g else None)
     if None in (assignment_id, course_id):
         return jsonify(success=False, message="No Assignment ID or Course ID given!")
     assignment = Assignment.by_id(assignment_id)
-    if status == 1:
+    if status >= 1:
         submission = Submission.save_correct(g.user.id, assignment_id, course_id=int(course_id))
     else:
         submission = assignment.get_submission(g.user.id, course_id=course_id)
+    submission.set_status(int(100*status))
     lis_result_sourcedid = request.values.get('lis_result_sourcedid', submission.url) or None
     if lis_result_sourcedid is None:
         return jsonify(success=True, submitted=False, message="Not in a grading context.")
     session['lis_result_sourcedid'] = lis_result_sourcedid
     image_url = submission.save_block_image(image)
     if assignment_group_id != None and assignment_group_id != '' and assignment_group_id != 'None':
-        score, report = get_group_report(int(assignment_group_id), g.user.id, int(course_id))
+        score, report = get_group_report(int(assignment_group_id), g.user.id, int(course_id), hide_correctness)
     else:
-        report = get_report(assignment.type, assignment.name, submission, image=image_url)
-        score = float(submission.correct)
+        report = get_report(assignment.type, assignment.name, submission, image=image_url, hide_correctness=hide_correctness)
+        score = float(submission.correct) or status
     lti.post_grade(score, report, endpoint=lis_result_sourcedid)
     return jsonify(success=True, submitted=True)
     

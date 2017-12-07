@@ -409,6 +409,7 @@ class Settings(Base):
         
 class Submission(Base):
     code = Column(Text(), default="")
+    # Precision of two decimal places
     status = Column(Integer(), default=0)
     correct = Column(Boolean(), default=False)
     assignment_id = Column(Integer(), ForeignKey('assignment.id'))
@@ -623,6 +624,11 @@ class Submission(Base):
             submission.correct = True
         db.session.commit()
         return submission
+    
+    def set_status(self, new_value):
+        self.status= new_value
+        db.session.commit()
+        return self
         
     def get_report_blockpy(self, image=""):
         if self.correct:

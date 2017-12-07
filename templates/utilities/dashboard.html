@@ -1,0 +1,16 @@
+{% extends 'layout.html' %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block body %}
+
+<h1>Dashboard</h1>
+
+<ul>
+
+    <li><a href='{{ url_for("utilities.grade_report") }}'>My Grade Report</a></li>
+
+</ul>
+
+
+{% endblock %}

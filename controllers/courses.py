@@ -179,13 +179,7 @@ def change_role():
 @courses.route('dashboard', methods=['GET', 'POST'])
 @login_required
 def dashboard():
-    course = Course.query.filter_by(id=course_id).first()
-    assignments = (db.session.query(Assignment)
-                             .filter(Assignment.course_id==course.id)
-                             .all())
-    return render_template('courses/course.html', 
-                           course=course,
-                           assignments=assignments)
+    return redirect(url_for('utilities.dashboard'))
 
                            
 @courses.route('/config/', methods=['GET', 'POST'])
