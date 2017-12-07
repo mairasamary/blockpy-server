@@ -17,9 +17,9 @@ from main import app
 from models.models import db, Assignment, AssignmentGroup, Course, User, Role, Submission
 
 
-import pandas as pd
-import matplotlib.pyplot as plt
-import matplotlib.pyplot
+#import pandas as pd
+#import matplotlib.pyplot as plt
+#import matplotlib.pyplot
 
 blueprint_utilities = Blueprint('utilities', __name__, url_prefix='/utilities')
 
