@@ -222,7 +222,8 @@ def get_group_report(group_id, user_id, course_id, hide_correctness):
                         submission.get_block_image(), hide_correctness)
         for assignment, submission 
         in zip(assignments, submissions)
-    ])
+    ])+'<br><small>{uid}/{cid}/{aids}</small>'.format(uid=user_id, cid=course_id,
+        aids=','.join([str(a.id) for a in assignments]))
 def get_report(mode, name, submission, image="", hide_correctness=False):
     url = url_for('blockpy.get_submission_code', submission_id=submission.id, _external=True)
     if hide_correctness:
