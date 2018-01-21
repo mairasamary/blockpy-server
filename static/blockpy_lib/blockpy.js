@@ -2059,7 +2059,6 @@ Tifa.prototype.loadVariable = function(name, position) {
     var currentPath = this.pathChain[0];
     var variable = this.findVariablesScope(name);
     var outOfScopeVar = this.findVariableOutOfScope(name);
-    console.log(variable, outOfScopeVar);
     if (!variable.exists) {
         // Create a new instance of the variable on the current path
         if (outOfScopeVar.exists) {
@@ -2279,6 +2278,10 @@ Tifa.loadBuiltin = function(name) {
     switch (name) {
         case "range": return Tifa.simpleFunctionDefinition({"name": "List", "empty": false, "subtype": Tifa._NUM_TYPE()});
         case "set": return Tifa.simpleFunctionDefinition(Tifa._SET_TYPE());
+        case "int": return Tifa.simpleFunctionDefinition(Tifa._NUM_TYPE());
+        case "str": return Tifa.simpleFunctionDefinition(Tifa._STR_TYPE());
+        case "list": return Tifa.simpleFunctionDefinition(Tifa._LIST_TYPE());
+        case "float": return Tifa.simpleFunctionDefinition(Tifa._NUM_TYPE());
         case "print": return Tifa.simpleFunctionDefinition(Tifa._NONE_TYPE());
         case "input": return Tifa.simpleFunctionDefinition(Tifa._STR_TYPE());
         case "open": return Tifa.simpleFunctionDefinition(Tifa._FILE_TYPE());
@@ -5123,9 +5126,9 @@ var $sk_mod_instructor = function(name) {
     });
     
     mod.queue_input = new Sk.builtin.func(function() {
-        Sk.builtin.pyCheckArgs("queue_input", arguments, 1);
-        var args = Array.prototype.slice.call(arguments, 1);
-        for (var i = args.length-1; i > 0; i--) {
+        Sk.builtin.pyCheckArgs("queue_input", arguments, 1, Infinity);
+        var args = arguments;
+        for (var i = args.length-1; i >= 0; i--) {
             var input = args[i];
             Sk.builtin.pyCheckType("input", "string", Sk.builtin.checkString(input));
             Sk.queuedInput.push(Sk.ffi.remapToJs(input));
@@ -8490,7 +8493,6 @@ BlockPyEditor.prototype.setBlocks = function(python_code) {
     if (!(!this.main.model.assignment.upload() &&
         (this.main.model.settings.filename() == "__main__" ||
          this.main.model.settings.filename() == "starting_code"))) {
-        console.log("NO")
         return false;
     }
     var xml_code = "";
