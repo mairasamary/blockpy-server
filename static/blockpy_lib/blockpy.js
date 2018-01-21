@@ -2059,6 +2059,7 @@ Tifa.prototype.loadVariable = function(name, position) {
     var currentPath = this.pathChain[0];
     var variable = this.findVariablesScope(name);
     var outOfScopeVar = this.findVariableOutOfScope(name);
+    console.log(variable, outOfScopeVar);
     if (!variable.exists) {
         // Create a new instance of the variable on the current path
         if (outOfScopeVar.exists) {
@@ -2083,7 +2084,7 @@ Tifa.prototype.loadVariable = function(name, position) {
                              {'name': name, 'position':position})
         }
         newState.read = 'yes';
-        if (!variable.inScope && variable.state.type && variable.state.type.name == 'Function') {
+        if (!variable.inScope) {
             this.nameMap[currentPath][variable.scopedName] = newState;
         } else {
             this.nameMap[currentPath][fullName] = newState;
