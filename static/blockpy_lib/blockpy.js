@@ -1657,7 +1657,7 @@ Tifa.prototype.visit_Compare = function(node) {
     // Handle ops
     for (var i=0, len=comparators.length; i < len; i+= 1) {
         var op = node.ops[i];
-        var right = node.op[i];
+        var right = comparators[i];
         switch (op.name) {
             case "Eq": case "NotEq": case "Is": case "IsNot":
                 break;
