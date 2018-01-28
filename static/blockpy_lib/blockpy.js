@@ -1510,6 +1510,7 @@ Tifa.prototype.visit_Assign = function(node) {
     this.visitList(node.targets);
     var position = Tifa.locate(node);
     var that = this;
+    // TODO: Properly handle assignments with subscripts
     this.walkTargets(node.targets, valueType, (function action(target, type) {
         if (target._astname === 'Name') {
             that.storeVariable(target.id.v, type, position);
@@ -1521,7 +1522,38 @@ Tifa.prototype.visit_Assign = function(node) {
             }
         }
     }));
+}
+
+Tifa.prototype.visit_AugAssign = function(node) {
+    // Handle value
+    var right = this.visit(node.value);
+    // Handle target
+    var left = this.visit(node.target);
+    var name = this.identifyCaller(node.target);
+    // Handle op
+    var position = Tifa.locate(node);
     
+    // Handle operation
+    this.loadVariable(name, position);
+    var opLookup = Tifa.VALID_BINOP_TYPES[node.op.name];
+    if (left.name == "Unknown" || right.name == "Unknown") {
+        return Tifa._UNKNOWN_TYPE();
+    } else if (opLookup) {
+        opLookup = opLookup[left.name];
+        if (opLookup) {
+            opLookup = opLookup[right.name];
+            if (opLookup) {
+                var resultType = opLookup(left, right);
+                this.storeVariable(name, resultType, position);
+                return resultType;
+            }
+        }
+    }
+    this.reportIssue("Incompatible types", 
+                     {"left": left, "right": right, 
+                      "operation": node.op.name, 
+                      "position": position});
+    return Tifa._UNKNOWN_TYPE();
 }
 
 Tifa.prototype.visit_Import = function(node) {
@@ -1563,7 +1595,9 @@ Tifa.prototype.visit_BinOp = function(node) {
     
     // Handle operation
     var opLookup = Tifa.VALID_BINOP_TYPES[node.op.name];
-    if (opLookup) {
+    if (left.name == "Unknown" || right.name == "Unknown") {
+        return Tifa._UNKNOWN_TYPE();
+    } else if (opLookup) {
         opLookup = opLookup[left.name];
         if (opLookup) {
             opLookup = opLookup[right.name];
@@ -1576,7 +1610,81 @@ Tifa.prototype.visit_BinOp = function(node) {
                      {"left": left, "right": right, 
                       "operation": node.op.name, 
                       "position": Tifa.locate(node)});
-    return Tifa._UNKNOWN_TYPE;
+    return Tifa._UNKNOWN_TYPE();
+}
+
+Tifa.prototype.visit_UnaryOp = function(node) {
+    // Handle operand
+    var operand = this.visit(node.operand);
+    
+    if (node.op.name == "Not") {
+        return Tifa._BOOL_TYPE();
+    } else if (operand.name == "Unknown") {
+        return Tifa._UNKNOWN_TYPE();
+    } else {
+        var opLookup = Tifa.VALID_UNARYOP_TYPES[node.op.name];
+        if (opLookup) {
+            opLookup = opLookup[operand.name];
+            if (opLookup) {
+                return opLookup(operand);
+            }
+        }
+    }
+    return Tifa._UNKNOWN_TYPE();
+}
+
+Tifa.prototype.visit_BoolOp = function(node) {
+    // Handle left and right
+    var values = [];
+    for (var i=0, len=node.values.length; i < len; i+= 1) {
+        values[i] = this.visit(node.values[i]);
+    }
+    
+    // TODO: Truthiness is not supported! Probably need a Union type
+    
+    // Handle operation
+    return Tifa._BOOL_TYPE();
+}
+
+Tifa.prototype.visit_Compare = function(node) {
+    // Handle left and right
+    var left = this.visit(node.left);
+    var comparators = [];
+    for (var i=0, len=node.comparators.length; i < len; i+= 1) {
+        comparators[i] = this.visit(node.comparators[i]);
+    }
+    
+    // Handle ops
+    for (var i=0, len=comparators.length; i < len; i+= 1) {
+        var op = node.ops[i];
+        var right = node.op[i];
+        switch (op.name) {
+            case "Eq": case "NotEq": case "Is": case "IsNot":
+                break;
+            case "Lt": case "LtE": case "GtE": case "Gt": 
+                if (left.name != right.name ||
+                    (left.name != "Num" && left.name != "Bool" &&
+                     left.name != "Str" && left.name != "List" &&
+                     left.name != "Set" && left.name != "Tuple" )) {
+                    this.reportIssue("Incompatible types", 
+                                     {"left": left, "right": right, 
+                                      "operation": node.op.name, 
+                                      "position": Tifa.locate(node)});
+                }
+                break;
+            case "In": case "NotIn":
+                if (right.name != "Str" && right.name != "List" &&
+                    right.name != "Set" && right.name != "Tuple" &&
+                    right.name != "Dict") {
+                    this.reportIssue("Incompatible types", 
+                                     {"left": left, "right": right, 
+                                      "operation": node.op.name, 
+                                      "position": Tifa.locate(node)});
+                }
+                break;
+        } 
+    }
+    return Tifa._BOOL_TYPE();
 }
 
 Tifa.prototype.visit_Call = function(node) {
@@ -1598,7 +1706,25 @@ Tifa.prototype.visit_Call = function(node) {
         return result;
     }
     this.reportIssue("Not a function", {"position": position});
-    return Tifa._UNKNOWN_TYPE;
+    return Tifa._UNKNOWN_TYPE();
+}
+
+Tifa.prototype.IfExp = function(node) {
+    // Visit the conditional
+    this.visit(node.test);
+    
+    // Visit the body
+    var body = this.visit(node.body);
+    
+    // Visit the orelse
+    var orelse = this.visit(node.orelse);
+
+    if (body.name != orelse.name) {
+        // TODO: Union type?
+        return Tifa._UNKNOWN_TYPE();
+    } else {
+        return body;
+    }
 }
 
 Tifa.prototype.visit_If = function(node) {
@@ -1705,6 +1831,37 @@ Tifa.prototype.visit_ListComp = function(node) {
     }
     var elt = node.elt;
     return Tifa._LIST_OF_TYPE(this.visit(elt));
+}
+
+Tifa.prototype.visit_SetComp = function(node) {
+    // TODO: Handle comprehension scope
+    var generators = node.generators;
+    for (var i = 0, len = generators.length; i < len; i++) {
+        this.visit(generators[i]);
+    }
+    var elt = node.elt;
+    return Tifa._SET_OF_TYPE(this.visit(elt));
+}
+
+Tifa.prototype.visit_SetComp = function(node) {
+    // TODO: Handle comprehension scope
+    var generators = node.generators;
+    for (var i = 0, len = generators.length; i < len; i++) {
+        this.visit(generators[i]);
+    }
+    var key = node.key;
+    var value = node.value;
+    return Tifa._DICT_OF_TYPE(this.visit(key), this.visit(value));
+}
+
+Tifa.prototype.visit_GeneratorExp = function(node) {
+    // TODO: Handle comprehension scope
+    var generators = node.generators;
+    for (var i = 0, len = generators.length; i < len; i++) {
+        this.visit(generators[i]);
+    }
+    var elt = node.elt;
+    return Tifa._GENERATOR_OF_TYPE(this.visit(elt));
 }
 
 Tifa.prototype.visit_comprehension = function(node) {
@@ -1822,6 +1979,15 @@ Tifa.prototype.visit_For = function(node) {
     }
 }
 
+Tifa.prototype.visit_ClassDef = function(node) {
+    var className = node.name.v;
+    var position = Tifa.locate(node);
+    this.storeVariable(className, {"type": "Class"}, position)
+    // TODO: Define a new scope definition that executes the body
+    // TODO: find __init__, execute that
+    this.generic_visit(node);
+}
+
 Tifa.prototype.visit_FunctionDef = function(node) {
     // Name
     var functionName = node.name.v;
@@ -1858,6 +2024,36 @@ Tifa.prototype.visit_FunctionDef = function(node) {
         
     }
     return state.type;
+}
+
+Tifa.prototype.visit_Lambda = function(node) {
+    // Name
+    var position = Tifa.locate(node);
+    var definitionsScope = this.scopeChain.slice(0);
+    var functionType = { "name": "Function"};
+    functionType.definition = function(analyzer, callType, callName, parameters, callPosition) {
+        // Manage scope
+        analyzer.ScopeId += 1;
+        var oldScope = analyzer.scopeChain.slice(0);
+        analyzer.scopeChain = definitionsScope.slice(0);
+        analyzer.scopeChain.unshift(analyzer.ScopeId);
+        // Process arguments
+        var args = node.args.args;
+        for (var i = 0; i < args.length; i++) {
+            var arg = args[i];
+            var name = Sk.ffi.remapToJs(arg.id);
+            var parameter = Tifa.copyType(parameters[i]);
+            analyzer.storeVariable(name, parameter, position)
+        }
+        var returnValue = analyzer.visit(node.body);
+        // Return scope
+        analyzer.finishScope();
+        analyzer.scopeChain.shift();
+        analyzer.scopeChain = oldScope;
+        return returnValue;
+        
+    }
+    return functionType;
 }
 
 Tifa.prototype.visit_Return = function(node) {
@@ -2159,9 +2355,13 @@ Tifa._MODULE_TYPE = function() { return {'name': 'Module', 'submodules': []} };
 Tifa._STR_TYPE = function() { return {'name': 'Str'} };
 Tifa._FILE_TYPE = function() { return {'name': 'File'} };
 Tifa._SET_TYPE = function() { return {'name': 'Str', "empty": false} };
-Tifa._LIST_TYPE = function() { return {'name': 'List', "empty": false} };
+Tifa._LIST_TYPE = function(isEmpty) { return {'name': 'List', "empty": !!isEmpty} };
 Tifa._DICT_TYPE = function() { return {'name': 'Dict', "empty": false} };
+Tifa._GENERATOR_OF_TYPE = function(subtype) { return {'name': 'Generator', "empty": false, "subtype": subtype} };
 Tifa._LIST_OF_TYPE = function(subtype) { return {'name': 'List', "empty": false, "subtype": subtype} };
+Tifa._SET_OF_TYPE = function(subtype) { return {'name': 'Set', "empty": false, "subtype": subtype} };
+Tifa._DICT_OF_TYPE = function(keytype, valuetype) { 
+    return {'name': 'Set', "empty": false, "keys": keytype, "values": valuetype} };
 Tifa._TUPLE_TYPE = function() { return {'name': 'Tuple'} };
 Tifa._NONE_TYPE = function() { return {'name': 'None'} };
 Tifa._UNKNOWN_TYPE = function() { return {'name': '*Unknown'} };
@@ -2173,6 +2373,7 @@ Tifa.VALID_BINOP_TYPES = {
     'Sub': {'Num': {'Num': Tifa._NUM_TYPE}, 
             'Set': {'Set': Tifa.mergeTypes}},
     'Div': {'Num': {'Num': Tifa._NUM_TYPE}},
+    'FloorDiv': {'Num': {'Num': Tifa._NUM_TYPE}},
     'Mult': {'Num': {'Num': Tifa._NUM_TYPE, 
                      'Str': Tifa._STR_TYPE, 
                      'List': (l, r) => r, 
@@ -2184,6 +2385,25 @@ Tifa.VALID_BINOP_TYPES = {
     // Should we allow old-fashioned string interpolation?
     // Currently, I vote no because it makes the code harder and is bad form.
     'Mod': {'Num': {'Num': Tifa._NUM_TYPE}},
+    'LShift': {'Num': {'Num': Tifa._NUM_TYPE}},
+    'RShift': {'Num': {'Num': Tifa._NUM_TYPE}},
+    'BitOr': {'Num': {'Num': Tifa._NUM_TYPE}, 
+              'Bool': {'Num': Tifa._NUM_TYPE,
+                       'Bool': Tifa._BOOL_TYPE}, 
+              'Set': {'Set': Tifa.mergeTypes}},
+    'BitXor': {'Num': {'Num': Tifa._NUM_TYPE}, 
+              'Bool': {'Num': Tifa._NUM_TYPE,
+                       'Bool': Tifa._BOOL_TYPE}, 
+              'Set': {'Set': Tifa.mergeTypes}},
+    'BitAnd': {'Num': {'Num': Tifa._NUM_TYPE}, 
+              'Bool': {'Num': Tifa._NUM_TYPE,
+                       'Bool': Tifa._BOOL_TYPE}, 
+              'Set': {'Set': Tifa.mergeTypes}},
+}
+Tifa.VALID_UNARYOP_TYPES = {
+    'UAdd': {'Num': Tifa._NUM_TYPE},
+    'USub': {'Num': Tifa._NUM_TYPE},
+    'Invert': {'Num': Tifa._NUM_TYPE}
 }
 
 Tifa.locate = function(node) {
@@ -2195,10 +2415,14 @@ Tifa.indexSequenceType= function(type, i) {
         return type.subtypes[i];
     } else if (type.name == "List") {
         return type.subtype;
+    } else if (type.name == "Generator") {
+        return type.subtype;
     } else if (type.name == "Str") {
         return Tifa._STR_TYPE();
     } else if (type.name == "File") {
         return Tifa._STR_TYPE();
+    } else if (type.name == "Dict") {
+        return Tifa.keys;
     } else {
         return Tifa._UNKNOWN_TYPE();
     }
@@ -2224,7 +2448,7 @@ Tifa.isTypeEmptyList = function(type) {
     return (type.name === "List" && type.empty);
 }
 Tifa.isTypeSequence = function(type) {
-    return arrayContains(type.name, ["List", "Set", "Tuple", "Str", "File"]);
+    return arrayContains(type.name, ["List", "Set", "Tuple", "Str", "File", "Dict"]);
 }
 
 Tifa.sameScope = function(fullName, scopeChain) {
@@ -2302,24 +2526,109 @@ Tifa.mergeTypes = function(left, right) {
     }
 }
 
-Tifa.simpleFunctionDefinition = function(returnType) {
+Tifa.defineSupplier = function(returnType) {
     return { "name": "Function",
              "definition": function (analyzer, type, name, args, position) {
                 return returnType;
               }
     };
 }
+Tifa.defineIdentity = function(returnType) {
+    return { "name": "Function",
+             "definition": function (analyzer, type, name, args, position) {
+                 if (args.length) {
+                    return args[0];
+                 }
+                 return Tifa._UNKNOWN_TYPE();
+              }
+    };
+}
+Tifa.defineFunction = function(definition) {
+    return { "name": "Function", "definition": definition};
+}
+
 Tifa.loadBuiltin = function(name) {
     switch (name) {
-        case "range": return Tifa.simpleFunctionDefinition({"name": "List", "empty": false, "subtype": Tifa._NUM_TYPE()});
-        case "set": return Tifa.simpleFunctionDefinition(Tifa._SET_TYPE());
-        case "int": return Tifa.simpleFunctionDefinition(Tifa._NUM_TYPE());
-        case "str": return Tifa.simpleFunctionDefinition(Tifa._STR_TYPE());
-        case "list": return Tifa.simpleFunctionDefinition(Tifa._LIST_TYPE());
-        case "float": return Tifa.simpleFunctionDefinition(Tifa._NUM_TYPE());
-        case "print": return Tifa.simpleFunctionDefinition(Tifa._NONE_TYPE());
-        case "input": return Tifa.simpleFunctionDefinition(Tifa._STR_TYPE());
-        case "open": return Tifa.simpleFunctionDefinition(Tifa._FILE_TYPE());
+        // Void functions
+        case "print": return Tifa.defineSupplier(Tifa._NONE_TYPE());
+        // Math functions
+        case "int": case "abs": case "float": case "len":
+        case "ord": case "pow": case "round": case "sum":
+            return Tifa.defineSupplier(Tifa._NUM_TYPE());
+        // Boolean functions
+        case "bool": case "all": case "any": case "isinstance":
+            return Tifa.defineSupplier(Tifa._BOOL_TYPE());
+        // String functions
+        case "input": case "str": case "chr": case "repr":
+            return Tifa.defineSupplier(Tifa._STR_TYPE());
+        // File functions
+        case "open": 
+            return Tifa.defineSupplier(Tifa._FILE_TYPE());
+        // List functions
+        case "map": return Tifa.defineSupplier(Tifa._LIST_TYPE());
+        case "list":
+            return Tifa.defineFunction(
+                function (analyzer, functionType, callee, args, position) {
+                    var returnType = Tifa._LIST_TYPE();
+                    if (args.length) {
+                        returnType.subtype = Tifa.indexSequenceType(args[0], 0);
+                        // TODO: Should inherit the emptiness too
+                        returnType.empty = true;
+                    } else {
+                        returnType.empty = true;
+                    }
+                    return returnType;
+                }
+            );
+        // Set functions
+        case "set": 
+            return Tifa.defineFunction(
+                function (analyzer, functionType, callee, args, position) {
+                    var returnType = Tifa._SET_TYPE();
+                    if (args.length) {
+                        returnType.subtype = Tifa.indexSequenceType(args[0], 0);
+                        // TODO: Should inherit the emptiness too
+                        returnType.empty = true;
+                    } else {
+                        returnType.empty = true;
+                    }
+                    return returnType;
+                }
+            );
+        // Dict functions
+        case "dict": 
+            return Tifa.defineSupplier(Tifa._DICT_TYPE());
+        // Pass through
+        case "sorted": case "reversed": case "filter":
+            return Tifa.defineIdentity();
+        // Special functions
+        case "range": return Tifa.defineSupplier(Tifa._LIST_OF_TYPE(Tifa._NUM_TYPE()));
+        case "dir": return Tifa.defineSupplier(Tifa._LIST_OF_TYPE(Tifa._STR_TYPE()));
+        case "max": case "min":
+            return Tifa.defineFunction(
+                function (analyzer, functionType, callee, args, position) {
+                    if (args.length) {
+                        return Tifa.indexSequenceType(args[0], 0);
+                    }
+                    return Tifa._UNKNOWN_TYPE();
+                }
+            );
+        case "zip":
+            return Tifa.defineFunction(
+                function (analyzer, functionType, callee, args, position) {
+                    if (args.length) {
+                        var tupledTypes = Tifa._TUPLE_TYPE();
+                        tupledTypes.subtypes = [];
+                        for (var i=0, len=args.length; i<len; i+=1) {
+                            tupledTypes.subtypes[i] = Tifa.indexSequenceType(args[i],0);
+                        }
+                        return Tifa._LIST_OF_TYPE(tupledTypes);
+                    } else {
+                        var emptyList = Tifa._LIST_TYPE(true);
+                        return emptyList;
+                    }
+                }
+            );
     }
 }
 
@@ -2330,13 +2639,13 @@ Tifa.MODULES = {
             'pyplot': {
                 'name': 'Module',
                 'fields': {
-                    'plot': Tifa.simpleFunctionDefinition(Tifa._NONE_TYPE()),
-                    'hist': Tifa.simpleFunctionDefinition(Tifa._NONE_TYPE()),
-                    'scatter': Tifa.simpleFunctionDefinition(Tifa._NONE_TYPE()),
-                    'show': Tifa.simpleFunctionDefinition(Tifa._NONE_TYPE()),
-                    'xlabel': Tifa.simpleFunctionDefinition(Tifa._NONE_TYPE()),
-                    'ylabel': Tifa.simpleFunctionDefinition(Tifa._NONE_TYPE()),
-                    'title': Tifa.simpleFunctionDefinition(Tifa._NONE_TYPE()),
+                    'plot': Tifa.defineSupplier(Tifa._NONE_TYPE()),
+                    'hist': Tifa.defineSupplier(Tifa._NONE_TYPE()),
+                    'scatter': Tifa.defineSupplier(Tifa._NONE_TYPE()),
+                    'show': Tifa.defineSupplier(Tifa._NONE_TYPE()),
+                    'xlabel': Tifa.defineSupplier(Tifa._NONE_TYPE()),
+                    'ylabel': Tifa.defineSupplier(Tifa._NONE_TYPE()),
+                    'title': Tifa.defineSupplier(Tifa._NONE_TYPE()),
                 }
             }
         }
@@ -2344,24 +2653,78 @@ Tifa.MODULES = {
     'pprint': {
         'name': "Module",
         'fields': {
-            'pprint': Tifa.simpleFunctionDefinition(Tifa._NONE_TYPE())
+            'pprint': Tifa.defineSupplier(Tifa._NONE_TYPE())
         }
     },
     'random': {
         'name': "Module",
         'fields': {
-            'randint': Tifa.simpleFunctionDefinition(Tifa._NUM_TYPE())
+            'randint': Tifa.defineSupplier(Tifa._NUM_TYPE())
+        }
+    },
+    'turtle': {
+        'name': "Module",
+        'fields': {
+            'forward': Tifa.defineSupplier(Tifa._NONE_TYPE()),
+            'backward': Tifa.defineSupplier(Tifa._NONE_TYPE()),
+            'color': Tifa.defineSupplier(Tifa._NONE_TYPE()),
+            'right': Tifa.defineSupplier(Tifa._NONE_TYPE()),
+            'left': Tifa.defineSupplier(Tifa._NONE_TYPE()),
         }
     },
     'math': {
         'name': "Module",
         'fields': {
-            'sin': Tifa.simpleFunctionDefinition(Tifa._NUM_TYPE()),
-            'cos': Tifa.simpleFunctionDefinition(Tifa._NUM_TYPE()),
-            'tan': Tifa.simpleFunctionDefinition(Tifa._NUM_TYPE()),
-            'log': Tifa.simpleFunctionDefinition(Tifa._NUM_TYPE()),
-            'log2': Tifa.simpleFunctionDefinition(Tifa._NUM_TYPE()),
-            'log10': Tifa.simpleFunctionDefinition(Tifa._NUM_TYPE()),
+            'ceil': Tifa.defineSupplier(Tifa._NUM_TYPE()),
+            'copysign': Tifa.defineSupplier(Tifa._NUM_TYPE()),
+            'fabs': Tifa.defineSupplier(Tifa._NUM_TYPE()),
+            'factorial': Tifa.defineSupplier(Tifa._NUM_TYPE()),
+            'floor': Tifa.defineSupplier(Tifa._NUM_TYPE()),
+            'fmod': Tifa.defineSupplier(Tifa._NUM_TYPE()),
+            'frexp': Tifa.defineSupplier(Tifa._NUM_TYPE()),
+            'fsum': Tifa.defineSupplier(Tifa._NUM_TYPE()),
+            'gcd': Tifa.defineSupplier(Tifa._NUM_TYPE()),
+            'isclose': Tifa.defineSupplier(Tifa._BOOL_TYPE()),
+            'isfinite': Tifa.defineSupplier(Tifa._BOOL_TYPE()),
+            'isinf': Tifa.defineSupplier(Tifa._BOOL_TYPE()),
+            'isnan': Tifa.defineSupplier(Tifa._BOOL_TYPE()),
+            'ldexp': Tifa.defineSupplier(Tifa._NUM_TYPE()),
+            'modf': Tifa.defineSupplier(Tifa._NUM_TYPE()),
+            'trunc': Tifa.defineSupplier(Tifa._NUM_TYPE()),
+            'exp': Tifa.defineSupplier(Tifa._NUM_TYPE()),
+            'expm1': Tifa.defineSupplier(Tifa._NUM_TYPE()),
+            'log': Tifa.defineSupplier(Tifa._NUM_TYPE()),
+            'log1p': Tifa.defineSupplier(Tifa._NUM_TYPE()),
+            'log2': Tifa.defineSupplier(Tifa._NUM_TYPE()),
+            'log10': Tifa.defineSupplier(Tifa._NUM_TYPE()),
+            'pow': Tifa.defineSupplier(Tifa._NUM_TYPE()),
+            'sqrt': Tifa.defineSupplier(Tifa._NUM_TYPE()),
+            'acos': Tifa.defineSupplier(Tifa._NUM_TYPE()),
+            'sin': Tifa.defineSupplier(Tifa._NUM_TYPE()),
+            'cos': Tifa.defineSupplier(Tifa._NUM_TYPE()),
+            'tan': Tifa.defineSupplier(Tifa._NUM_TYPE()),
+            'asin': Tifa.defineSupplier(Tifa._NUM_TYPE()),
+            'acos': Tifa.defineSupplier(Tifa._NUM_TYPE()),
+            'atan': Tifa.defineSupplier(Tifa._NUM_TYPE()),
+            'atan2': Tifa.defineSupplier(Tifa._NUM_TYPE()),
+            'hypot': Tifa.defineSupplier(Tifa._NUM_TYPE()),
+            'degrees': Tifa.defineSupplier(Tifa._NUM_TYPE()),
+            'radians': Tifa.defineSupplier(Tifa._NUM_TYPE()),
+            'sinh': Tifa.defineSupplier(Tifa._NUM_TYPE()),
+            'cosh': Tifa.defineSupplier(Tifa._NUM_TYPE()),
+            'tanh': Tifa.defineSupplier(Tifa._NUM_TYPE()),
+            'asinh': Tifa.defineSupplier(Tifa._NUM_TYPE()),
+            'acosh': Tifa.defineSupplier(Tifa._NUM_TYPE()),
+            'atanh': Tifa.defineSupplier(Tifa._NUM_TYPE()),
+            'erf': Tifa.defineSupplier(Tifa._NUM_TYPE()),
+            'erfc': Tifa.defineSupplier(Tifa._NUM_TYPE()),
+            'gamma': Tifa.defineSupplier(Tifa._NUM_TYPE()),
+            'lgamma': Tifa.defineSupplier(Tifa._NUM_TYPE()),
+            'pi': Tifa._NUM_TYPE(),
+            'e': Tifa._NUM_TYPE(),
+            'tau': Tifa._NUM_TYPE(),
+            'inf': Tifa._NUM_TYPE(),
+            'nan': Tifa._NUM_TYPE(),
         }
     }
 }
@@ -2389,33 +2752,64 @@ Tifa.prototype.loadModule = function(chain, position) {
 
 Tifa.prototype.loadBuiltinAttr = function(type, func, attr, position) {
     switch (type.name) {
+        case "File":
+            switch (attr) {
+                case "close": return Tifa.defineFunction(
+                    function (analyzer, functionType, callee, args, position) {}
+                );
+                case "read": return Tifa.defineSupplier(Tifa._STR_TYPE());
+                case "readlines": return Tifa.defineSupplier(Tifa._LIST_OF_TYPE(Tifa._STR_TYPE()));
+            }
         case "List":
             switch (attr) {
-                case "append": return { "name": "Function",
-                    "definition": function (analyzer, functionType, callee, args, position) {
+                case "append": return Tifa.defineFunction(
+                    function (analyzer, functionType, callee, args, position) {
                         type.empty = false;
                         type.subtype = args[0];
                         if (callee) {
                             analyzer.appendVariable(callee, Tifa._LIST_OF_TYPE(type.subtype), position);
                         }
                     }
-                };
+                );
             };
         case "Dict":
             switch (attr) {
-                case "items": return { "name": "Function",
-                    "definition": function (analyzer, functionType, callee, args, position) {
+                case "items": return Tifa.defineFunction(
+                    function (analyzer, functionType, callee, args, position) {
                         return Tifa._LIST_OF_TYPE({
                             'name': 'Tuple', 'subtypes': [type.keys, type.values], 'empty': false
                         });
                     }
-                };
+                );
             };
         case "Module":
             if (attr in type.fields) {
                 return type.fields[attr];
             } else {
                 return Tifa._UNKNOWN_TYPE();
+            }
+        case "Str":
+            switch (attr) {
+                // Strings
+                case "capitalize": case "center": case "expandtabs":
+                case "join": case "ljust": case "lower": 
+                case "lstrip": case "replace": case "rjust":
+                case "rstrip": case "strip": case "swapcase":
+                case "title": case "translate": case "upper":
+                case "zfill":
+                    return Tifa.defineSupplier(Tifa._STR_TYPE());
+                // Numbers
+                case "count": case "find": case "index":
+                case "rfind": case "rindex":
+                    return Tifa.defineSupplier(Tifa._NUM_TYPE());
+                //Booleans
+                case "endswith": case "isalnum": case "isalpha":
+                case "isdigit": case "islower": case "isspace":
+                case "istitle": case "isupper": case "startswith":
+                    return Tifa.defineSupplier(Tifa._BOOL_TYPE());
+                // Lists
+                case "rsplit": case "split": case "splitlines":
+                    return Tifa.defineSupplier(Tifa._LIST_OF_TYPE(Tifa._STR_TYPE()));
             }
     }
     // Catch mistakes
@@ -2425,6 +2819,7 @@ Tifa.prototype.loadBuiltinAttr = function(type, func, attr, position) {
                           'position': position,
                           'type': type})
     }
+    return Tifa._NONE_TYPE();
 }
 AbstractInterpreter.prototype.TYPE_INHERITANCE = {
     "Sequence": ["List", "Set", "Tuple", "Str"],
@@ -4638,7 +5033,7 @@ StretchyTreeMatcher.prototype.findMatches = function(other){
 StretchyTreeMatcher.prototype.anyNodeMatch = function(insNode, stdNode){
 	//@TODO: create a more public function that converts insNode and stdNode into EasyNodes
 	//matching: an object representing the mapping and the symbol table
-	var matching = this.deep_findMatch(insNode, stdNode);
+	var matching = this.deep_findMatch(insNode, stdNode, true);
 	//if a direct matching is found
 	if(matching){
 		return matching;//return it
@@ -4660,29 +5055,27 @@ StretchyTreeMatcher.prototype.anyNodeMatch = function(insNode, stdNode){
 	Finds whether insNode and matches stdNode and whether insNode's children flexibly match stdNode's children in order
 	@return a mapping of nodes and a symbol table mapping insNode to stdNode
 **/
-StretchyTreeMatcher.prototype.deep_findMatch = function(insNode, stdNode){
+StretchyTreeMatcher.prototype.deep_findMatch = function(insNode, stdNode, checkMeta){
 	var method_name = "deep_findMatch_" + insNode.astNode._astname;
 	if(method_name in this){
-		return this[method_name](insNode, stdNode);
+		return this[method_name](insNode, stdNode, checkMeta);
 	}else{
-		return this.deep_findMatch_generic(insNode, stdNode);
+		return this.deep_findMatch_generic(insNode, stdNode, checkMeta);
 	}
 }
-StretchyTreeMatcher.prototype.deep_findMatch_BinOp = function(insNode, stdNode){
+StretchyTreeMatcher.prototype.deep_findMatch_BinOp = function(insNode, stdNode, checkMeta){
 	var op = insNode.astNode.op;
 	op = op.toString();
 	op = op.substring(("function").length + 1, op.length - 4);
 	var isGeneric = !(op === "Mult" || op === "Add");
 	if(isGeneric){
-		return this.deep_findMatch_generic(insNode, stdNode);
+		return this.deep_findMatch_generic(insNode, stdNode, checkMeta);
 	}else{
-		return this.deep_findMatch_BinFlex(insNode, stdNode);
+		return this.deep_findMatch_BinFlex(insNode, stdNode, checkMeta);
 	}
 }
-StretchyTreeMatcher.prototype.deep_findMatch_BinFlex = function(insNode, stdNode){
-	//TODO: implement this properly
-	//return this.deep_findMatch_generic(insNode, stdNode);//TODO: delete this line
-	var baseMappings = this.shallowMatch(insNode, stdNode);
+StretchyTreeMatcher.prototype.deep_findMatch_BinFlex = function(insNode, stdNode, checkMeta){
+	var baseMappings = this.shallowMatch(insNode, stdNode, checkMeta);
 	if(baseMappings){
 		var insLeft = insNode.children[0];
 		var insRight = insNode.children[1];
@@ -4690,8 +5083,8 @@ StretchyTreeMatcher.prototype.deep_findMatch_BinFlex = function(insNode, stdNode
 		var stdRight = stdNode.children[1];
 		var newMappings = [];
 		//case 1: insLeft->stdLeft and insRight->stdRight
-		var caseLeft = this.deep_findMatch(insLeft, stdLeft);
-		var caseRight = this.deep_findMatch(insRight, stdRight);
+		var caseLeft = this.deep_findMatch(insLeft, stdLeft, false);
+		var caseRight = this.deep_findMatch(insRight, stdRight, false);
 		if(caseLeft && caseRight){
 			for(var i = 0; i < caseLeft.length; i += 1){
 				var newMap = baseMappings[0].newMergedMap(caseLeft[i]);
@@ -4702,8 +5095,8 @@ StretchyTreeMatcher.prototype.deep_findMatch_BinFlex = function(insNode, stdNode
 			}
 		}
 		//case 2: insLeft->stdRight and insRight->stdLeft
-		caseLeft = this.deep_findMatch(insLeft, stdRight);
-		caseRight = this.deep_findMatch(insRight, stdLeft);
+		caseLeft = this.deep_findMatch(insLeft, stdRight, false);
+		caseRight = this.deep_findMatch(insRight, stdLeft, false);
 		if(caseLeft && caseRight){
 			for(var i = 0; i < caseLeft.length; i += 1){
 				var newMap = baseMappings[0].newMergedMap(caseLeft[i]);
@@ -4720,8 +5113,8 @@ StretchyTreeMatcher.prototype.deep_findMatch_BinFlex = function(insNode, stdNode
 	}
 	return false;
 }
-StretchyTreeMatcher.prototype.deep_findMatch_generic = function(insNode, stdNode){
-	var baseMappings = this.shallowMatch(insNode, stdNode);
+StretchyTreeMatcher.prototype.deep_findMatch_generic = function(insNode, stdNode, checkMeta){
+	var baseMappings = this.shallowMatch(insNode, stdNode, checkMeta);
 	if (baseMappings){
 		//base case this runs 0 times because no children
 		//find each child of insNode that matches IN ORDER
@@ -4738,7 +5131,7 @@ StretchyTreeMatcher.prototype.deep_findMatch_generic = function(insNode, stdNode
 			//accumulate all potential matches for current child
 			for(var j = youngestSib; j < stdNode.children.length; j += 1){
 				var stdChild = stdNode.children[j];
-				var newMapping = this.deep_findMatch(insChild, stdChild);
+				var newMapping = this.deep_findMatch(insChild, stdChild, true);
 				if (newMapping){
 					runningMaps.push(newMapping);
 					runningSibs.push(j);
@@ -4795,7 +5188,7 @@ StretchyTreeMatcher.prototype.mapMerge = function(baseMaps, baseSibs, runMaps, r
 	Flexibly matches a module node to a module or a body
 	@return a mapping of insNode to stdNode, or false if doesn't match
 **/
-StretchyTreeMatcher.prototype.shallowMatch_Module = function(insNode, stdNode){
+StretchyTreeMatcher.prototype.shallowMatch_Module = function(insNode, stdNode, checkMeta){
 	if(stdNode.astNode._astname == "Module" || stdNode.field == "body"){
 		var mapping = new ASTMap();
 		mapping.addNodePairing(insNode, stdNode);
@@ -4811,29 +5204,30 @@ StretchyTreeMatcher.prototype.shallowMatch_Module = function(insNode, stdNode){
 		case 4: matches only if the exact names are the same (falls through to shallowMatch_generic)
 	@return a mapping of insNode to stdNode and possibly a symbolTable, or false if it doesn't match
 **/
-StretchyTreeMatcher.prototype.shallowMatch_Name = function(insNode, stdNode){
+StretchyTreeMatcher.prototype.shallowMatch_Name = function(insNode, stdNode, checkMeta){
 	var id = Sk.ffi.remapToJs(insNode.astNode.id);
 	var varMatch = /^_[^_].*_$/;//regex
 	var expMatch = /^__.*__$/;//regex
 	var wildCard =/^___$/;//regex
 	var mapping = new ASTMap();
 	var matched = false;
-	if(varMatch.test(id)){//variable
+	var metaMatched = (checkMeta && insNode.field === stdNode.field) || !checkMeta;
+	if(varMatch.test(id) && metaMatched){//variable
 		if(stdNode.astNode._astname == "Name"){
 			var result = mapping.addVarToSymbolTable(insNode, stdNode);
 			matched = true;
 		}//could else return false, but shallowMatch_generic should do this as well
-	}else if(expMatch.test(id)){//expression
+	}else if(expMatch.test(id) && metaMatched){//expression
 		mapping.addExpToSymbolTable(insNode, stdNode);
 		matched = true;
-	}else if(wildCard.test(id)){//don't care
+	}else if(wildCard.test(id) && metaMatched){//don't care
 		matched = true;
 	}
 	if(matched){
 		mapping.addNodePairing(insNode, stdNode);
 		return [mapping];
 	}//else
-	return this.shallowMatch_generic(insNode, stdNode);
+	return this.shallowMatch_generic(insNode, stdNode, checkMeta);
 }
 /**
 	An empty loop body should match to anything
@@ -4857,12 +5251,13 @@ StretchyTreeMatcher.prototype.shallowMatch_Expr = function(insNode, stdNode){
 	Checks that all non astNode attributes are equal between insNode and stdNode
 	@return a mappin gof insNode to stdNode, or false, if the attributes aren't equal
 **/
-StretchyTreeMatcher.prototype.shallowMatch_generic = function(insNode, stdNode){
+StretchyTreeMatcher.prototype.shallowMatch_generic = function(insNode, stdNode, checkMeta){
 	var ins = insNode.astNode;
 	var std = stdNode.astNode;
 	var insFieldList = iter_fields(ins);
 	var stdFieldList = iter_fields(std);
-	var isMatch = insFieldList.length === stdFieldList.length && ins._astname === std._astname;
+	var metaMatched = (checkMeta && insNode.field === stdNode.field) || !checkMeta;
+	var isMatch = insFieldList.length === stdFieldList.length && ins._astname === std._astname && metaMatched;
 	for (var i = 0; i < insFieldList.length && isMatch; i += 1){
 		var insField = insFieldList[i][0];
 		var insValue = insFieldList[i][1];
@@ -4900,12 +5295,12 @@ StretchyTreeMatcher.prototype.shallowMatch_generic = function(insNode, stdNode){
 }
 
 //filter function for various types of nodes
-StretchyTreeMatcher.prototype.shallowMatch = function(insNode, stdNode){
+StretchyTreeMatcher.prototype.shallowMatch = function(insNode, stdNode, checkMeta){
 	var method_name = 'shallowMatch_' + insNode.astNode._astname;
 	if (method_name in this){
-		return this[method_name](insNode, stdNode);
+		return this[method_name](insNode, stdNode, checkMeta);
 	}//else
-	return this.shallowMatch_generic(insNode, stdNode);
+	return this.shallowMatch_generic(insNode, stdNode, checkMeta);
 }
 
 /**
@@ -4927,7 +5322,7 @@ $INSTRUCTOR_MODULES_EXTENDED["instructor_plotting.py"] = "from instructor import
 $INSTRUCTOR_MODULES_EXTENDED["instructor_printing.py"] = "from instructor import *\nfrom instructor_utility import *\n\ndef ensure_prints(count):\n    prints = find_function_calls('print')\n    if not prints:\n        gently(\"You are not using the print function!\")\n        return False\n    elif len(prints) > count:\n        gently(\"You are printing too many times!\")\n        return False\n    elif len(prints) < count:\n        gently(\"You are not printing enough things!\")\n        return False\n    else:\n        for a_print in prints:\n            if not is_top_level(a_print):\n                gently(\"You have a print function that is not at the top level. That is incorrect for this problem!\")\n                return False\n    return prints\n"
 $INSTRUCTOR_MODULES_EXTENDED["instructor_upload.py"] = "import re\nfrom instructor import *\n\n# Feedback for author's name\ndef check_author_name_on_header():\n    code = get_program()\n    m_author = re.search('Author: \\\\w+', code)\n    if not m_author:\n        gently(\"You need to add your name to the author field at the top of the file.\")\n        \ndef get_plots(output):\n    # The p[0] is the first plot in a graph/show\n    return [p[0] for p in output if isinstance(p[0],dict)]\n    \ndef find_plot_of_type(plot_list, plot_type):\n    return [p['data'] for p in plot_list if p['type'] == plot_type]\n    \n# Feedback for copying output of the program in the documentation\ndef check_output_on_header(expected_output):\n    code = get_program()\n    expected_output = str(expected_output)\n    between_stars = code.split(\"*****\")[2].strip()\n    between_stars = \"\\\\n\".join([x.strip() for x in between_stars.split(\"\\\\n\")])\n    if 'REPLACE THIS TEXT WITH THE OUTPUT OF THIS PROGRAM' in between_stars:\n        gently(\"In your code, you need to 'REPLACE THIS TEXT WITH THE OUTPUT OF THIS PROGRAM'\")\n    elif not expected_output in between_stars:\n        gently(\"The output you copied between the *****, seems to be incorrect. You may have copied it into the wrong location, or it is incomplete.\")\n\ndef check_print_output(multiple_lines):\n    for line in multiple_lines:\n        if line not in get_output():\n            gently(\"You are not doing the correct calculation\")\n"
 $INSTRUCTOR_MODULES_EXTENDED["instructor_utility.py"] = "from instructor import *\n\ndef is_top_level(ast_node):\n    ast = parse_program()\n    for element in ast.body:\n        if element.ast_name == 'Expr':\n            if element.value == ast_node:\n                return True\n        elif element == ast_node:\n            return True\n    return False\n    \ndef no_nested_function_definitions():\n    ast = parse_program()\n    defs = ast.find_all('FunctionDef')\n    for a_def in defs:\n        if not is_top_level(a_def):\n            gently(\"You have defined a function inside of another block. For instance, you may have placed it inside another function definition, or inside of a loop. Do not nest your function definition!\")\n            return False\n    return True\n    \ndef function_prints():\n    ast = parse_program()\n    defs = ast.find_all('FunctionDef')\n    for a_def in defs:\n        all_calls = a_def.find_all('Call')\n        for a_call in all_calls:\n            if a_call.func.ast_name == 'Name':\n                if a_call.func.id == 'print':\n                    return True\n    return False\n\ndef find_function_calls(name):\n    ast = parse_program()\n    all_calls = ast.find_all('Call')\n    calls = []\n    for a_call in all_calls:\n        if a_call.func.ast_name == 'Attribute':\n            if a_call.func.attr == name:\n                calls.append(a_call)\n        elif a_call.func.ast_name == 'Name':\n            if a_call.func.id == name:\n                calls.append(a_call)\n    return calls\n\ndef function_is_called(name):\n    return len(find_function_calls(name))\n    \ndef no_nonlist_nums():\n    pass\n    \ndef only_printing_variables():\n    ast = parse_program()\n    all_calls = ast.find_all('Call')\n    count = 0\n    for a_call in all_calls:\n        if a_call.func.ast_name == 'Name' and a_call.func.id == \"print\":\n            for arg in a_call.args:\n                if arg.ast_name != \"Name\":\n                    return False\n    return True\n\ndef find_prior_initializations(node):\n    if node.ast_name != \"Name\":\n        return None\n    ast = parse_program()\n    assignments = ast.find_all(\"Assign\")\n    cur_line_no = node.lineno\n    all_assignments = []\n    for assignment in assignments:\n        if assignment.has(node):\n            if assignment.lineno < cur_line_no:\n                all_assignments.append(assignment)\n    return all_assignments\n    \ndef prevent_unused_result():\n    ast = parse_program()\n    exprs = ast.find_all('Expr')\n    for expr in exprs:\n        if expr.value.ast_name == \"Call\":\n            a_call = expr.value\n            if a_call.func.ast_name == 'Attribute':\n                if a_call.func.attr == 'append':\n                    pass\n                elif a_call.func.attr in ('replace', 'strip', 'lstrip', 'rstrip'):\n                    gently(\"Remember! You cannot modify a string directly. Instead, you should assign the result back to the string variable.\")\n    \ndef prevent_builtin_usage(function_names):\n    # Prevent direction calls\n    ast = parse_program()\n    all_calls = ast.find_all('Call')\n    for a_call in all_calls:\n        if a_call.func.ast_name == 'Name':\n            if a_call.func.id in function_names:\n                explain(\"You cannot use the builtin function <code>{}</code>.\".format(a_call.func.id))\n                return a_call.func.id\n    # Prevent tricky redeclarations!\n    names = ast.find_all('Name')\n    seen = set()\n    for name in names:\n        if name.id not in seen:\n            if name.ctx == \"Load\" and name.id in function_names:\n                explain(\"You cannot use the builtin function <code>{}</code>. If you are naming a variable, consider a more specific name.\".format(name.id))\n            seen.add(name.id)\n            return name.id\n    return None\n    \ndef prevent_literal(*literals):\n    ast = parse_program()\n    str_values = [s.s for s in ast.find_all(\"Str\")]\n    num_values = [n.n for n in ast.find_all(\"Num\")]\n    for literal in literals:\n        if isinstance(literal, (int, float)):\n            if literal in num_values:\n                explain(\"Do not use the literal value <code>{}</code> in your code.\".format(repr(literal)))\n                return literal\n        elif isinstance(literal, str):\n            if literal in str_values:\n                explain(\"Do not use the literal value <code>{}</code> in your code.\".format(repr(literal)))\n                return literal\n    return False\ndef ensure_literal(*literals):\n    ast = parse_program()\n    str_values = [s.s for s in ast.find_all(\"Str\")]\n    num_values = [n.n for n in ast.find_all(\"Num\")]\n    for literal in literals:\n        if isinstance(literal, (int, float)):\n            if literal not in num_values:\n                explain(\"You need the literal value <code>{}</code> in your code.\".format(repr(literal)))\n                return literal\n        elif isinstance(literal, str):\n            if literal not in str_values:\n                explain(\"You need the literal value <code>{}</code> in your code.\".format(repr(literal)))\n                return literal\n    return False\n    \ndef prevent_advanced_iteration():\n    ast = parse_program()\n    if ast.find_all('While'):\n        explain(\"You should not use a <code>while</code> loop to solve this problem.\")\n    prevent_builtin_usage(['sum', 'map', 'filter', 'reduce', 'len', 'max', 'min',\n                           'max', 'sorted', 'all', 'any', 'getattr', 'setattr',\n                           'eval', 'exec', 'iter'])\n\nCOMPARE_OP_NAMES = {\n    \"==\": \"Eq\", \n    \"<\": \"Lt\", \n    \"<=\": \"Lte\", \n    \">=\": \"Gte\", \n    \">\": \"Gt\", \n    \"!=\": \"NotEq\", \n    \"is\": \"Is\", \n    \"is not\": \"IsNot\", \n    \"in\": \"In_\", \n    \"not in\": \"NotIn\"}\nBOOL_OP_NAMES = {\n    \"and\": \"And\",\n    \"or\": \"Or\"}\nBIN_OP_NAMES = {\n    \"+\": \"Add\",\n    \"-\": \"Sub\",\n    \"*\": \"Mult\",\n    \"/\": \"Div\",\n    \"//\": \"FloorDiv\",\n    \"%\": \"Mod\",\n    \"**\": \"Pow\",\n    \">>\": \"LShift\",\n    \"<<\": \"RShift\",\n    \"|\": \"BitOr\",\n    \"^\": \"BitXor\",\n    \"&\": \"BitAnd\",\n    \"@\": \"MatMult\"}\nUNARY_OP_NAMES = {\n    #\"+=\": \"UAdd\",\n    #\"-=\": \"USub\",\n    \"not\": \"Not\",\n    \"~\": \"Invert\"\n}\ndef ensure_operation(op_name, root=None):\n    if root is None:\n        root = parse_program()\n    result = find_operation(op_name, root)\n    if result == False:\n        gently(\"You are not using the <code>{}</code> operator.\".format(op_name))\n    return result\ndef prevent_operation(op_name, root=None):\n    if root is None:\n        root = parse_program()\n    result = find_operation(op_name, root)\n    if result != False:\n        gently(\"You may not use the <code>{}</code> operator.\".format(op_name))\n    return result\n    \ndef find_operation(op_name, root):    \n    if op_name in COMPARE_OP_NAMES:\n        compares = root.find_all(\"Compare\")\n        for compare in compares:\n            for op in compare.ops:\n                if op == COMPARE_OP_NAMES[op_name]:\n                    return compare\n    elif op_name in BOOL_OP_NAMES:\n        boolops = root.find_all(\"BoolOp\")\n        for boolop in boolops:\n            if boolop.op == BOOL_OP_NAMES[op_name]:\n                return boolop\n    elif op_name in BIN_OP_NAMES:\n        binops = root.find_all(\"BinOp\")\n        for binop in binops:\n            if binop.op == BIN_OP_NAMES[op_name]:\n                return binop\n    elif op_name in UNARY_OP_NAMES:\n        unaryops = root.find_all(\"UnaryOp\")\n        for unaryop in unaryops:\n            if unaryop.op == UNARY_OP_NAMES[op_name]:\n                return unaryop\n    return False\n'''\n    \n    mod.no_nonlist_nums = new Sk.builtin.func(function(source) {\n        Sk.builtin.pyCheckArgs(\"no_nonlist_nums\", arguments, 1, 1);\n        Sk.builtin.pyCheckType(\"source\", \"string\", Sk.builtin.checkString(source));\n        \n        source = source.v;\n        \n        var num_list = getNonListNums(source);\n        \n        var count = 0;\n        for (var i = 0, len = num_list.length; i < len; i = i+1) {\n            if (num_list[i].v != 0 && num_list[i].v != 1) {\n                return Sk.ffi.remapToPy(true);\n            }\n        }\n        return Sk.ffi.remapToPy(false);\n    });\n\n\n    \n    /**\n     * Given source code as a string, return a list of all of the AST elements\n     * that are Num (aka numeric literals) but that are not inside List elements.\n     *\n     * @param {String} source - Python source code.\n     * @returns {Array.number} The list of JavaScript numeric literals that were found.\n     */\n    function getNonListNums(source) {\n        if (!(source in parses)) {\n            var parse = Sk.parse(\"__main__\", source);\n            parses[source] = Sk.astFromParse(parse.cst, \"__main__\", parse.flags);\n        }\n        var ast = parses[source];\n        var visitor = new NodeVisitor();\n        var insideList = false;\n        var nums = [];\n        visitor.visit_List = function(node) {\n            insideList = true;\n            this.generic_visit(node);\n            insideList = false;\n        }\n        visitor.visit_Num = function(node) {\n            if (!insideList) {\n                nums.push(node.n);\n            }\n            this.generic_visit(node);\n        }\n        visitor.visit(ast);\n        return nums;\n    }\n    \n    \n '''"
-$INSTRUCTOR_MODULES_EXTENDED["ins_test_8_5.py"] = "from instructor import*\n#this conflicts with list_repeated_in_for\ndef m_wrong_target_is_list():\n    match = find_match(\"for _item_ in ___:\\n    pass\")\n    if match:\n        _item_ = match.get_std_name(\"_item_\")\n        if _item_.data_type == \"List\":\n            explain('The property <code>{0!s}</code> is a list and should not be placed in the iteration property slot of the \"for\" block<br><br><i>(target_is_list)<i></br>.'.format(_item_.id))\n            return True\n    return False\n#this conflics with list_in_wrong_slot_in_for\ndef m_wrong_list_repeated_in_for():\n    match = find_match(\"for _item_ in _item_:\\n    pass\")\n    if match:\n        _item_ = match.get_std_name(\"_item_\")\n        if _item_.data_type == \"List\":\n            explain('The <code>{0!s}</code> property can only appear once in the \"for\" block <br><br><i>(list_repeat)<i></br>'.format(_item_.id))\n            return True\n    return False\n#this isn't consistent with the pattern you wrote\ndef m_missing_iterator_initialization():\n    match = find_match(\"for ___ in _list_:\\n    pass\")\n    if match:\n        _list_ = match.get_std_name(\"_list_\")\n        if _list_.data_type != \"List\":\n            if _list_.id == \"___\":\n                explain(\"The slot to hold a list in the iteration is empty.<br><br><i>(no_iter_init-blank)<i></br>\")\n                return True\n            else:\n                explain(\"The property <code>{0!s}</code> is in the list slot of the iteration but is not a list.<br><br><i>(no_iter_init)<i></br>\".format(_list_.id))\n            return True\n    return False\n#TODO: We need to cover the different cases for these\ndef m_wrong_iterator_not_list():\n    match = find_match(\"for ___ in _item_:\\n    pass\")\n    if match:\n        _item_ = match.get_std_name(\"_item_\")\n        if _item_.data_type != \"List\":\n            explain(\"The property <code>{0!s}</code> has been set to something that is not a list but is placed in the iteration block that must be a list.<br><br><i>(iter_not_list)<i></br>\".format(_item_.id))\n            return True\n    return False\ndef m_missing_target_slot_empty():\n    match = find_match(\"for _item_ in ___:\\n    pass\")\n    if match:\n        _item_ = match.get_std_name(\"_item_\")\n        if _item_.id == \"___\":\n            explain(\"You must fill in the empty slot in the iteration.<br><br><i>(target_empty)<i></br>\")\n            return True\n    return False\ndef m_list_not_initialized_on_run():\n    match = find_match(\"for ___ in _item_:\\n    pass\")\n    if match:\n        _item_ = match.get_std_name(\"_item_\")\n        if _item_.data_type == None:\n            explain(\"The list in your for loop has not been initialized<br><br><i>(no_list_init)<i></br>\")\n            return True\n    return False\ndef m_list_initialization_misplaced():\n    match = find_match(\"for ___ in _item_:\\n    pass\")\n    if match:\n        _item_ = match.get_std_name(\"_item_\")\n        if _item_.data_type == \"List\" and def_use_error(_item_):\n            explain(\"Initialization of <code>{0!s}</code> is a list but either in the wrong place or redefined<br><br><i>(list_init_misplaced)<i></br>\".format(_item_.id))\n            return True\n    return False\ndef m_missing_for_slot_empty():\n    match = find_match(\"for _item_ in _list_:\\n    pass\")\n    if match:\n        _item_ = match.get_std_name(\"_item_\")\n        _list_ = match.get_std_name(\"_list_\")\n        if _item_.id == \"___\" or _list_.id == \"___\":\n            explain(\"You must fill in the empty slot in the iteration.<br><br><i>(for_incomplete)<i></br>\")\n            return True\n    return False\ndef m_wrong_target_reassigned():\n    match = find_match(\"for _item_ in ___:\\n   _item_ = ___\")\n    if match:\n        _item_ = match.get_std_name(\"_item_\")\n        explain(\"The property <code>{0!s}</code> has been reassigned. The iteration property shouldn't be reassigned<br><br><i>(target_reassign)<i></br>\".format(_item_.id))\n        return True\n    return False\ndef m_hard_code_8_5():#TODO: This one's weird\n    match = find_matches(\"print(__num__)\")\n    if match:\n        for m in match:\n            __num__ = m.get_std_exp(\"__num__\")\n            if len(__num__.find_all(\"Num\")) > 0:\n                explain(\"Use iteration to calculate the sum.<br><br><i>(hard_code_8.5)<i></br>\")\ndef m_wrong_modifying_list_8_5():\n    match = find_match(\"[20473, 27630, 17849, 19032, 16378]\")\n    if not match:\n        explain(\"Don't modify the list<br><br><i>(mod_list_8.5)<i></br>\")\n#this has some issues in that it can be tricked if we don't do multiple matches\ndef m_missing_zero_initialization():\n    matches = find_matches(\"for ___ in ___:\\n    ___ = _sum_ + ___\")\n    if matches:\n        for match in matches:\n            _sum_ = match.get_std_name(\"_sum_\")\n            if def_use_error(_sum_):\n                explain(\"The addition on the first iteration step is not correct because either the property <code>{0!s}</code> has not been initialized to an appropriate initial value or it has not been placed in an appropriate location<br><br><i>(miss_zero_init)<i></br>\".format(_sum_.id))\n                return True\n    return False\ndef m_wrong_duplicate_var_in_add():\n    match = find_match(\"for ___ in ___:\\n    _sum_ + _sum_\")\n    if match:\n        explain(\"You are adding the same variable twice; you need two different variables in your addition.<br><br><i>(dup_var)<i></br>\")\ndef m_wrong_cannot_sum_list():\n    match = find_match(\"for ___ in _list_:\\n    ___ = ___ + _list_\")\n    if match:\n        explain(\"Addition can only be done with a single value at a time, not with an entire list at one time.<br><br><i>(sum_list)<i></br>\")\n        return True\n    return False\ndef m_wrong_should_be_summing():\n    match = find_match(\"for ___ in _list_:\\n    ___ = ___ + 1\")\n    if match:\n        explain(\"This problem asks for the total of all the values in the list not the number of items in the list.<br><br><i>(not_sum)<i></br>\")\n        return True\n    return False\ndef m_missing_summing_list():\n    match = find_match(\"for _item_ in ___:\\n    _total_ = _total_ + _item_\")\n    if not match:\n        explain(\"Sum the total of all list elements using iteration.<br><br><i>(miss_sum_list)<i></br>\")\n        return True\n    return False\ndef m_wrong_printing_list():\n    match = find_match(\"for ___ in ___:\\n    print(__exp__)\")\n    if match:\n        __exp__ = match.get_std_exp(\"__exp__\")\n        if __exp__.ast_name == \"Name\" and __exp__.data_type != \"Num\":\n            explain(\"You should be printing a single value.<br><br><i>(list_print)<i></br>\")\n            return True\n    return False\ndef m_dup_var_8_5():\n    match = find_match(\"_item_ + _item_\")\n    if match:\n        explain(\"You are adding the same variable twice; you need two different variables in your addition.<br><br><i>(dup_var_8.5)<i></br>\")\n        return True\n    return False\ndef m_missing_no_print():\n    match = find_match(\"print(___)\")\n    if not match:\n        explain(\"Program does not output anything.<br><br><i>(no_print)<i></br>\")\n        return True\n    return False\ndef m_iteration_group():\n    m_list_initialization_misplaced()\n    m_wrong_target_is_list()\n    m_wrong_list_repeated_in_for()#should be moved before target_is_list\n    m_missing_iterator_initialization()\n    m_list_not_initialized_on_run()\n    m_wrong_iterator_not_list()\n    m_missing_target_slot_empty()\n    m_missing_for_slot_empty()\n    m_wrong_target_reassigned()\ndef m_iteration_group_on_change():\n    m_wrong_target_is_list()\n    m_wrong_list_repeated_in_for()\n    m_wrong_iterator_not_list()"
+$INSTRUCTOR_MODULES_EXTENDED["ins_test_8_5.py"] = "from instructor import*\n#this conflicts with list_repeated_in_for\ndef m_wrong_target_is_list():\n    match = find_match(\"for _item_ in ___:\\n    pass\")\n    if match:\n        _item_ = match.get_std_name(\"_item_\")\n        if _item_.data_type == \"List\":\n            explain('The property <code>{0!s}</code> is a list and should not be placed in the iteration property slot of the \"for\" block<br><br><i>(target_is_list)<i></br>.'.format(_item_.id))\n            return True\n    return False\n#this conflics with list_in_wrong_slot_in_for\ndef m_wrong_list_repeated_in_for():\n    match = find_match(\"for _item_ in _item_:\\n    pass\")\n    if match:\n        _item_ = match.get_std_name(\"_item_\")\n        if _item_.data_type == \"List\":\n            explain('The <code>{0!s}</code> property can only appear once in the \"for\" block <br><br><i>(list_repeat)<i></br>'.format(_item_.id))\n            return True\n    return False\n#this isn't consistent with the pattern you wrote\ndef m_missing_iterator_initialization():\n    match = find_match(\"for ___ in _list_:\\n    pass\")\n    if match:\n        _list_ = match.get_std_name(\"_list_\")\n        if _list_.data_type != \"List\":\n            if _list_.id == \"___\":\n                explain(\"The slot to hold a list in the iteration is empty.<br><br><i>(no_iter_init-blank)<i></br>\")\n                return True\n            else:\n                explain(\"The property <code>{0!s}</code> is in the list slot of the iteration but is not a list.<br><br><i>(no_iter_init)<i></br>\".format(_list_.id))\n            return True\n    return False\n#TODO: We need to cover the different cases for these\ndef m_wrong_iterator_not_list():\n    match = find_match(\"for ___ in _item_:\\n    pass\")\n    if match:\n        _item_ = match.get_std_name(\"_item_\")\n        if _item_.data_type != \"List\":\n            explain(\"The property <code>{0!s}</code> has been set to something that is not a list but is placed in the iteration block that must be a list.<br><br><i>(iter_not_list)<i></br>\".format(_item_.id))\n            return True\n    return False\ndef m_missing_target_slot_empty():\n    match = find_match(\"for _item_ in ___:\\n    pass\")\n    if match:\n        _item_ = match.get_std_name(\"_item_\")\n        if _item_.id == \"___\":\n            explain(\"You must fill in the empty slot in the iteration.<br><br><i>(target_empty)<i></br>\")\n            return True\n    return False\ndef m_list_not_initialized_on_run():\n    match = find_match(\"for ___ in _item_:\\n    pass\")\n    if match:\n        _item_ = match.get_std_name(\"_item_\")\n        if _item_.data_type == None:\n            explain(\"The list in your for loop has not been initialized<br><br><i>(no_list_init)<i></br>\")\n            return True\n    return False\ndef m_list_initialization_misplaced():\n    match = find_match(\"for ___ in _item_:\\n    pass\")\n    if match:\n        _item_ = match.get_std_name(\"_item_\")\n        if _item_.data_type == \"List\" and def_use_error(_item_):\n            explain(\"Initialization of <code>{0!s}</code> is a list but either in the wrong place or redefined<br><br><i>(list_init_misplaced)<i></br>\".format(_item_.id))\n            return True\n    return False\ndef m_missing_for_slot_empty():\n    match = find_match(\"for _item_ in _list_:\\n    pass\")\n    if match:\n        _item_ = match.get_std_name(\"_item_\")\n        _list_ = match.get_std_name(\"_list_\")\n        if _item_.id == \"___\" or _list_.id == \"___\":\n            explain(\"You must fill in the empty slot in the iteration.<br><br><i>(for_incomplete)<i></br>\")\n            return True\n    return False\ndef m_wrong_target_reassigned():\n    match = find_match(\"for _item_ in ___:\\n   _item_ = ___\")\n    if match:\n        _item_ = match.get_std_name(\"_item_\")\n        explain(\"The property <code>{0!s}</code> has been reassigned. The iteration property shouldn't be reassigned<br><br><i>(target_reassign)<i></br>\".format(_item_.id))\n        return True\n    return False\ndef m_hard_code_8_5():#TODO: This one's weird\n    match = find_matches(\"print(__num__)\")\n    if match:\n        for m in match:\n            __num__ = m.get_std_exp(\"__num__\")\n            if len(__num__.find_all(\"Num\")) > 0:\n                explain(\"Use iteration to calculate the sum.<br><br><i>(hard_code_8.5)<i></br>\")\ndef m_wrong_modifying_list_8_5():\n    match = find_match(\"[20473, 27630, 17849, 19032, 16378]\")\n    if not match:\n        explain(\"Don't modify the list<br><br><i>(mod_list_8.5)<i></br>\")\n#this has some issues in that it can be tricked if we don't do multiple matches\ndef m_missing_zero_initialization():\n    matches = find_matches(\"for ___ in ___:\\n    ___ = _sum_ + ___\")\n    if matches:\n        for match in matches:\n            _sum_ = match.get_std_name(\"_sum_\")\n            if def_use_error(_sum_):\n                explain(\"The addition on the first iteration step is not correct because either the property <code>{0!s}</code> has not been initialized to an appropriate initial value or it has not been placed in an appropriate location<br><br><i>(miss_zero_init)<i></br>\".format(_sum_.id))\n                return True\n    return False\ndef m_wrong_duplicate_var_in_add():\n    match = find_match(\"for ___ in ___:\\n    _sum_ + _sum_\")\n    if match:\n        explain(\"You are adding the same variable twice; you need two different variables in your addition.<br><br><i>(dup_var)<i></br>\")\ndef m_wrong_cannot_sum_list():\n    match = find_match(\"for ___ in _list_:\\n    ___ = ___ + _list_\")\n    if match:\n        explain(\"Addition can only be done with a single value at a time, not with an entire list at one time.<br><br><i>(sum_list)<i></br>\")\n        return True\n    return False\ndef m_wrong_should_be_summing():\n    match = find_match(\"for ___ in _list_:\\n    ___ = ___ + 1\")\n    if match:\n        explain(\"This problem asks for the total of all the values in the list not the number of items in the list.<br><br><i>(not_sum)<i></br>\")\n        return True\n    return False\ndef m_missing_summing_list():\n    match = find_match(\"for _item_ in ___:\\n    _total_ = _total_ + _item_\")\n    if not match:\n        explain(\"Sum the total of all list elements using iteration.<br><br><i>(miss_sum_list)<i></br>\")\n        return True\n    return False\ndef m_wrong_printing_list():\n    match = find_match(\"for ___ in ___:\\n    print(__exp__)\")\n    if match:\n        __exp__ = match.get_std_exp(\"__exp__\")\n        if __exp__.ast_name == \"Name\" and __exp__.data_type != \"Num\":\n            explain(\"You should be printing a single value.<br><br><i>(list_print)<i></br>\")\n            return True\n    return False\ndef m_dup_var_8_5():\n    match = find_match(\"_item_ + _item_\")\n    if match:\n        explain(\"You are adding the same variable twice; you need two different variables in your addition.<br><br><i>(dup_var_8.5)<i></br>\")\n        return True\n    return False\ndef m_missing_no_print():\n    match = find_match(\"print(___)\")\n    if not match:\n        explain(\"Program does not output anything.<br><br><i>(no_print)<i></br>\")\n        return True\n    return False\ndef m_iteration_group():\n    m_list_initialization_misplaced()#list_init_misplaced\n    m_wrong_target_is_list()#target_is_list\n    m_wrong_list_repeated_in_for()#list_repeat#should be moved before target_is_list\n    m_missing_iterator_initialization()#no_iter_init,no_iter_init-blank\n    m_list_not_initialized_on_run()#no_list_init\n    m_wrong_iterator_not_list()#iter_not_list\n    m_missing_target_slot_empty()#target_empty\n    m_missing_for_slot_empty()#for_incomplete\n    m_wrong_target_reassigned()#target_reassign\ndef m_iteration_group_on_change():\n    m_wrong_target_is_list()\n    m_wrong_list_repeated_in_for()\n    m_wrong_iterator_not_list()"
 $INSTRUCTOR_MODULES_EXTENDED["iteration_context.py"] = "from instructor_utility import *\nimport instructor_append as append_api\n#################8.2 Start#######################\ndef wrong_list_length_8_2():\n    ast = parse_program()\n    assignments = ast.find_all('Assign')\n    for assignment in assignments:\n        right = assignment.value\n        left = assignment.targets\n        if right.ast_name == 'List' and left.ast_name == 'Name':\n            if len(right.elts) < 3:\n                explain('You must have at least three pieces<br><br><i>(list length_8.2)<i></br>')\ndef missing_list_initialization_8_2():\n    ast = parse_program()\n    assignments = ast.find_all('Assign')\n    isMissing = True\n    for assignment in assignments:\n        right = assignment.value\n        left = assignment.targets\n        if left.id == 'shopping_cart':\n            if right.ast_name == 'List':\n                isMissing = False\n                break\n    if isMissing:\n        explain('You must set the property <code>shopping_cart</code> to a list containing the prices of items in the shopping cart.<br><br><i>(missing_list_init_8.2)<i></br>')\ndef wrong_list_is_constant_8_2():\n    ast = parse_program()\n    assignments = ast.find_all('Assign')\n    isNumber = False\n    for assignment in assignments:\n        right = assignment.value\n        left = assignment.targets\n        if left.id == 'shopping_cart':\n            if right.ast_name == 'Num':\n                isNumber = True\n                break\n    if isNumber:\n        explain('You must set <code>shoppping_cart</code> to a list of values not to a single number.<br><br><i>(list_is_const_8.2)<i></br>')\ndef list_all_zeros_8_2():\n    ast = parse_program()\n    lists = ast.find_all('List')\n    is_all_zero = True\n    for init_list in lists:\n        for node in init_list.elts:\n            if node.ast_name == 'Num' and node.n != 0:\n                is_all_zero = False\n                break\n        if is_all_zero:\n            break\n    if is_all_zero:\n        explain('Try seeing what happens when you change the numbers in the list.<br><br><i>(default_list_8.2)<i></br>')\n#################8.2 End#######################\n#################8.3 Start#######################\ndef wrong_list_initialization_placement_8_3():\n    ast = parse_program()\n    assignments = ast.find_all('Assign')\n    is_placed_wrong = True\n    lineno = None\n    for assignment in assignments:\n        right = assignment.value\n        left = assignment.targets\n        if left.id == 'episode_length_list':\n            lineno = left.lineno\n    loops = ast.find_all('For')\n    for loop in loops:\n        if loop.lineno > lineno:\n            is_placed_wrong = False\n    if is_placed_wrong:\n        explain('The list of episode lengths (<code>episode_length_list</code>) must be initialized before the iteration which uses this list.<br><br><i>(init_place_8.3)<i></br>')\n    return True\ndef wrong_accumulator_initialization_placement_8_3():\n    ast = parse_program()\n    assignments = ast.find_all('Assign')\n    is_placed_wrong = True\n    lineno = None\n    for assignment in assignments:\n        right = assignment.value\n        left = assignment.targets\n        if left.id == 'sum_length' and right.ast_name == 'Num' and right.n == 0:\n            lineno = left.lineno\n    loops = ast.find_all('For')\n    for loop in loops:\n        if lineno == None: \n            break\n        if loop.lineno > lineno:\n            is_placed_wrong = False\n    if is_placed_wrong:\n        explain('The property to hold the sum of the episode lengths (<code>sum_length</code>) must be initialized before the iteration which uses this property.<br><br><i>(accu_init_place_8.3)<i></br>')\n    return is_placed_wrong \ndef wrong_iteration_body_8_3():\n    ast = parse_program()\n    is_placed_wrong = True\n    loops = ast.find_all('For')\n    for loop in loops:\n        assignments = loop.find_all('Assign')\n        for assignment in assignments:\n            right = assignment.value\n            left = assignment.targets\n            if left.id == 'sum_length' and right.ast_name == 'BinOp' and right.op == 'Add':\n                is_placed_wrong = False\n    if is_placed_wrong:\n        explain('The addition of each episode length to the total length is not in the correct place.<br><br><i>(iter_body_8.3)<i></br>')\n    return is_placed_wrong\ndef wrong_print_8_3():\n    ast = parse_program()\n    for_loops = ast.find_all('For')\n    has_for = len(for_loops) > 0\n    for_loc = []\n    wrong_print_placement = True\n    for loop in for_loops:\n        end_node = loop.next_tree\n        if end_node != None:\n            for_loc.append(end_node.lineno)\n    calls = ast.find_all('Call')\n    for call in calls:\n        if call.func.id == 'print':\n            for loc in for_loc:\n                if call.func.lineno >= loc:\n                    wrong_print_placement = False\n                    break\n            if not wrong_print_placement:\n                break\n    if wrong_print_placement:\n        explain('The output of the total length of time is not in the correct place. The total length of time should be output only once after the total length of time has been computed.<br><br><i>(print_8.3)<i></br>')\n\n#################8.3 End#######################\n#################8.4 Start#######################\ndef missing_target_slot_empty_8_4():\n    ast = parse_program()\n    for_loops = ast.find_all('For')\n    for loop in for_loops:\n        iter_prop = loop.target\n        if iter_prop.id == '___':\n            explain('You must fill in the empty slot in the iteration.<br><br><i>(target_empty_8.4)<i></br>')\n            return False\n    return True\ndef missing_addition_slot_empty_8_4():\n    ast = parse_program()\n    assignments = ast.find_all('Assign')\n    for assignment in assignments:\n        left = assignment.targets\n        right = assignment.value\n        if left.id == 'sum_pages':\n            binOp = right.find_all('BinOp')\n            if len(binOp) == 1:\n                binOp = binOp[0]\n                if binOp.op == 'Add':\n                    if binOp.left.ast_name == 'Name' and binOp.right.ast_name == 'Name':\n                        if binOp.has(left):\n                            if binOp.left.id == '___' or binOp.right.id == '___':\n                                explain('You must fill in the empty slot in the addition.<br><br><i>(add_empty_8.4)<i></br>')\n                                return True\n    return False\ndef wrong_names_not_agree_8_4():\n    ast = parse_program()\n    for_loops = ast.find_all('For')\n    for loop in for_loops:\n        iter_prop = loop.target\n        list_prop = loop.iter\n        if list_prop.ast_name == 'Name' and iter_prop.ast_name == 'Name':\n            assignments = loop.find_all('Assign')\n            for assignment in assignments:\n                binops = assignment.find_all('BinOp')\n                if len(binops) > 0:\n                    lhs = assignment.targets\n                    if lhs.ast_name == 'Name' and lhs.id == 'sum_pages':\n                        for binop in binops:\n                            if binop.has(lhs) and binop.op == 'Add':\n                                if not binop.has(iter_prop):\n                                    explain('Each value of <code>{0!s}</code> must be added to <code>{1!s}</code>.<br><br><i>(name_agree_8.4)<i></br>'.format(iter_prop.id, lhs.id))\n                                    return True\n    return False\n#################8.4 End#######################\ndef wrong_modifying_list_8_5():\n    ast = parse_program()\n    list_init = ast.find_all('List')\n    true_sum = 0\n    if len(list_init) != 0:\n        for value in list_init[0].elts:\n            true_sum = value.n + true_sum\n    if true_sum != sum([20473, 27630, 17849, 19032, 16378]) or len(list_init) == 0:\n        explain('Don\\'t modify the list<br><br><i>(mod_list_8.5)<i></br>')\ndef wrong_modifying_list_8_6():\n    ast = parse_program()\n    list_init = ast.find_all('List')\n    true_sum = 0\n    for value in list_init[0].elts:\n        true_sum = value.n + true_sum\n    if true_sum != sum([2.9, 1.5, 2.3, 6.1]):\n        explain('Don\\'t modify the list<br><br><i>(mod_list_8.6)<i></br>')\ndef wrong_should_be_counting():#This doesn't do as it is intended to do!\n    ast = parse_program()\n    for_loops = ast.find_all('For')\n    for loop in for_loops:\n        iter_prop = loop.target\n        assignments = loop.find_all('Assign')\n        for assignment in assignments:\n            binops = assignment.find_all('BinOp')\n            for binop in binops:\n                if binop.has(iter_prop) and binop.op == 'Add':\n                    explain('This problem asks for the number of items in the list not the total of all the values in the list.<br><br><i>(not_count)<i></br>')\ndef wrong_should_be_summing():\n    ast = parse_program()\n    for_loops = ast.find_all('For')\n    for loop in for_loops:\n        assignments = loop.find_all('Assign')\n        for assignment in assignments:\n            binops = assignment.find_all('BinOp')\n            for binop in binops:\n                if binop.has(1) and binop.op == 'Add':\n                    explain('This problem asks for the total of all the values in the list not the number of items in the list.<br><br><i>(not_sum)<i></br>')\ndef missing_addition_slot_empty():\n    ast = parse_program()\n    assignments = ast.find_all('Assign')\n    for assignment in assignments:\n        left = assignment.targets\n        right = assignment.value\n        binOp = right.find_all('BinOp')\n        if len(binOp) == 1:\n            binOp = binOp[0]\n            if binOp.op == 'Add':\n                if binOp.left.ast_name == 'Name' and binOp.right.ast_name == 'Name':\n                    if binOp.left.id == '___' or binOp.right.id == '___':\n                        explain('You must fill in the empty slot in the addition.<br><br><i>(add_empty)<i></br>')\n                        return True\n    return False\n\ndef wrong_cannot_sum_list():\n    ast = parse_program()\n    for_loops = ast.find_all('For')\n    for loop in for_loops:\n        list_prop = loop.iter\n        assignments = loop.find_all('Assign')\n        for assignment in assignments:\n            binops = assignment.find_all('BinOp')\n            for binop in binops:\n                if binop.has(list_prop) and binop.op == 'Add':\n                    explain('Addition can only be done with a single value at a time, not with an entire list at one time.<br><br><i>(sum_list)<i></br>')\ndef missing_no_print():\n    prints = find_function_calls('print')\n    if not prints:\n        explain('Program does not output anything.<br><br><i>(no_print)<i></br>')\ndef missing_counting_list():\n    ast = parse_program()\n    has_count = False\n    for_loops = ast.find_all('For')\n    if len(for_loops) > 0:\n        for loop in for_loops:\n            assignments = loop.find_all('Assign')\n            if len(assignments) < 1:\n                continue\n            for assignment in assignments:\n                binops = assignment.find_all('BinOp')\n                if len(binops) < 1:\n                    continue\n                lhs = assignment.targets\n                for binop in binops:\n                    if binop.has(lhs) and binop.has(1) and binop.op == 'Add':\n                        has_count = True\n    if not has_count:\n        explain('Count the total number of items in the list using iteration.<br><br><i>(miss_count_list)<i></br>')\ndef missing_summing_list():\n    ast = parse_program()\n    has_total = False\n    for_loops = ast.find_all('For')\n    if len(for_loops) > 0:\n        for loop in for_loops:\n            assignments = loop.find_all('Assign')\n            if len(assignments) < 1:\n                continue\n            iter_prop = loop.target\n            for assignment in assignments:\n                binops = assignment.find_all('BinOp')\n                if len(binops) < 1:\n                    continue\n                lhs = assignment.targets\n                for binop in binops:\n                    if binop.has(lhs) and binop.has(iter_prop) and binop.op == 'Add':\n                        has_total = True\n    if not has_total:\n        explain('Sum the total of all list elements using iteration.<br><br><i>(miss_sum_list)<i></br>')\ndef missing_zero_initialization():\n    ast = parse_program()\n    for_loops = ast.find_all('For')\n    accumulator = None\n    loop_acu = None\n    for loop in for_loops:\n        assignments = loop.find_all('Assign')\n        for assignment in assignments:\n            binops = assignment.find_all('BinOp')\n            if len(binops) > 0:\n                lhs = assignment.targets\n                for binop in binops:\n                    if binop.has(lhs) and binop.op == 'Add':\n                        accumulator = lhs\n                        loop_acu = loop\n    accu_init = False\n    if accumulator != None:\n        assignments = ast.find_all('Assign')\n        for assignment in assignments:\n            if loop_acu.lineno > assignment.lineno:\n                lhs = assignment.targets\n                if lhs.id == accumulator.id and assignment.has(0):\n                    accu_init = True\n                    break\n    if accu_init == False and accumulator != None:\n        explain('The addition on the first iteration step is not correct because either the property <code>{0!s}</code> has not been initialized to an appropriate initial value or it has not been placed in an appropriate location<br><br><i>(miss_zero_init)<i></br>'.format(accumulator.id))\n        return False\n    return True\ndef wrong_printing_list():\n    ast = parse_program()\n    for_loops = ast.find_all('For')\n    calls = ast.find_all('Call')\n    log(calls)\n    for call in calls:\n        if call.func.id == 'print':\n            if call.args[0].ast_name == 'Name' and call.args[0].data_type != 'Num':\n                explain('You should be printing a single value.<br><br><i>(list_print)<i></br>')\ndef missing_average():\n    ast = parse_program()\n    for_loops = ast.find_all('For')\n    has_for = len(for_loops) > 0\n    has_average = False\n    for_loc = []\n    for loop in for_loops:\n        end_node = loop.next_tree\n        if end_node != None:\n            for_loc.append(end_node.lineno)\n    if has_for:\n        binops = ast.find_all('BinOp')\n        for binop in binops:\n            if binop.op != 'Div':\n                continue\n            is_after = False\n            for lineno in for_loc:\n                if lineno <= binop.lineno:\n                    is_after = True\n                    break\n            if not is_after:\n                break\n            right = binop.right\n            left = binop.left\n            if right.ast_name == 'Name' and left.ast_name == 'Name':\n                if right.id != left.id:\n                    has_average = True\n                    break\n    if not has_average:\n        explain('An average value is not computed.<br><br><i>(no_avg)<i></br>')\ndef warning_average_in_iteration():\n    ast = parse_program()\n    for_loops = ast.find_all('For')\n    for loop in for_loops:\n        assignments = loop.find_all('Assign')\n        for assignment in assignments:\n            binops = assignment.find_all('BinOp')\n            for binop in binops:\n                if binop.op == 'Div':\n                    assName = assignment.targets\n                    numerator = binop.left\n                    denominator = binop.right\n                    if numerator.ast_name == 'Name' and denominator.ast_name == 'Name':\n                        explain('An average value is best computed after the properties name <code>{0!s}</code>(total) and <code>{1!s}</code> are completely known rather than recomputing the average on each iteration.<br><br><i>(avg_in_iter)<i></br>'.format(numerator.id,denominator.id))\ndef wrong_average_denominator():\n    ast = parse_program()\n    for_loops = ast.find_all('For')\n    count_vars = []\n    loc_array = []\n    for loop in for_loops:\n        iter_prop = loop.target\n        end_node = loop.next_tree\n        if end_node == None:\n            continue\n        loc = end_node.lineno\n        assignments = loop.find_all('Assign')\n        for assignment in assignments:\n            if assignment.has(1):\n                ass_left = assignment.targets\n                ass_right = assignment.value\n                if ass_right.ast_name == 'BinOp' and ass_right.op == 'Add':\n                    if ass_right.has(ass_left):\n                        count_vars.append(ass_left)\n                        loc_array.append(loc)\n    assignments = ast.find_all('Assign')\n    denominator_wrong = False\n    for assignment in assignments:\n        index = 0\n        for loc in loc_array:\n            if assignment.lineno >= loc and assignment.value.ast_name == 'BinOp':\n                ass_left = assignment.targets\n                binop = assignment.value\n                if binop.op == 'Div' and not binop.has(ass_left):\n                    numerator = assignment.value.left\n                    denominator = assignment.value.right\n                    if numerator.id != denominator.id and denominator.id != count_vars[index].id:\n                        denominator_wrong = True\n            if denominator_wrong:\n                break\n            index = index + 1\n        if denominator_wrong:\n            break\n    if denominator_wrong:\n        explain('The average is not calculated correctly.<br><br><i>(avg_denom)<i></br>')\n    return denominator_wrong\ndef wrong_average_numerator():\n    ast = parse_program()\n    for_loops = ast.find_all('For')\n    total_vars = []\n    loc_array = []\n    for loop in for_loops:\n        iter_prop = loop.target\n        end_node = loop.next_tree\n        if end_node == None:\n            continue\n        loc = end_node.lineno\n        assignments = loop.find_all('Assign')\n        for assignment in assignments:\n            if assignment.has(iter_prop):\n                ass_left = assignment.targets\n                ass_right = assignment.value\n                if ass_right.ast_name == 'BinOp' and ass_right.op == 'Add':\n                    if ass_right.has(ass_left):\n                        total_vars.append(ass_left)\n                        loc_array.append(loc)\n    assignments = ast.find_all('Assign')\n    numerator_wrong = False\n    for assignment in assignments:\n        index = 0\n        for loc in loc_array:\n            if assignment.lineno >= loc and assignment.value.ast_name == 'BinOp':\n                ass_left = assignment.targets\n                binop = assignment.value\n                if binop.op == 'Div' and not binop.has(ass_left):\n                    numerator = assignment.value.left\n                    denominator = assignment.value.right\n                    if numerator.id != denominator.id and numerator.id != total_vars[index].id:\n                        numerator_wrong = True\n            if numerator_wrong:\n                break\n            index = index + 1\n        if numerator_wrong:\n            break\n    if numerator_wrong:\n        explain('The average is not calculated correctly.<br><br><i>(avg_numer)<i></br>')\n    return numerator_wrong\n########################AVERAGE END###########################\ndef wrong_compare_list():\n    ast = parse_program()\n    for_loops = ast.find_all('For')\n    is_comparing_list = False\n    offending_list = ''\n    for loop in for_loops:\n        list_prop = loop.iter\n        ifs = ast.find_all('If')\n        for if_block in ifs:\n            if if_block.test.has(list_prop):\n                is_comparing_list = True\n                offending_list = list_prop.id\n                break\n        if is_comparing_list:\n            break\n    if is_comparing_list:\n        explain('Each item in the list <code>{0!s}</code> must be compared one item at a time.<br><br><i>(comp_list)<i></br>'.format(offending_list))\n    return is_comparing_list\ndef wrong_for_inside_if():\n    ast = parse_program()\n    if_blocks = ast.find_all('If')\n    if_inside_for = False\n    for if_block in if_blocks:\n        loops = if_block.find_all('For')\n        if len(loops) > 0:\n            if_inside_for = True\n            break\n    if if_inside_for:\n        explain('The iteration should not be inside the decision block.<br><br><i>(for_in_if)<i></br>')\n    return if_inside_for\ndef iterator_is_function():\n    ast = parse_program()\n    for_loops = ast.find_all('For')\n    for loop in for_loops:\n        list_prop = loop.iter\n        if list_prop.ast_name == 'Call':\n            explain('You should make a property for the list instead of using a function call for the list<br><br><i>(iter_is_func)<i></br>')\n###########################9.1 START############################\ndef wrong_list_initialization_9_1():\n    ast = parse_program()\n    assignments = ast.find_all('Assign')\n    has_call = False\n    for assignment in assignments:\n        if assignment.targets.id == 'rainfall_list':\n            call = assignment.find_all('Call')\n            if len(call) == 1:\n                args = call[0].args\n                if len(args) == 3:\n                    if args[0].s == 'Precipitation' and args[1].s == 'Location' and args[2].s == 'Blacksburg, VA':\n                        has_call = True\n                        break\n    if not has_call:\n        explain('The list of rainfall amounts (<code>rainfall_list</code>) is not initialized properly.<br><br><i>(list_init_9.1)<i></br>')\n    return not has_call\ndef wrong_accumulator_initialization_9_1():\n    ast = parse_program()\n    assignments = ast.find_all('Assign')\n    has_assignment = False\n    for assignment in assignments:\n        if assignment.targets.id == 'rainfall_sum' and assignment.value.ast_name == 'Num':\n            if assignment.value.n == 0:\n                has_assignment = True\n                break\n    if not has_assignment:\n        explain('The property to hold the total value of the rainfall amounts (<code>rainfall_sum</code>) is not initialized properly.<br><br><i>(accu_init_9.1)<i></br>')\n    return not has_assignment\ndef wrong_accumulation_9_1():\n    ast = parse_program()\n    assignments = ast.find_all('Assign')\n    has_assignment = False\n    for assignment in assignments:\n        target = assignment.targets\n        if target.id == 'rainfall_sum':\n            if assignment.value.ast_name == 'BinOp':\n                binop = assignment.value\n                if binop.op == 'Add':\n                    left = binop.left\n                    right = binop.right\n                    if (left.id == 'rainfall_sum' or right.id == 'rainfall_sum') and (left.id == 'rainfall' or right.id == 'rainfall'):\n                        has_assignment = True\n                        break\n    if not has_assignment:\n        explain('The addition of each rainfall amount to <code>rainfall_sum</code> is not correct.<br><br><i>(accu_9.1)<i></br>')\n    return not has_assignment\ndef wrong_list_initialization_placement_9_1():\n    ast = parse_program()\n    assignments = ast.find_all('Assign')\n    loops = ast.find_all('For')\n    list_init = None\n    init_after_loop = False\n    for assignment in assignments:\n        if assignment.targets.id == 'rainfall_list':\n            list_init = assignment\n            break\n    if list_init != None:\n        for loop in loops:\n            if loop.lineno > list_init.lineno:\n                init_after_loop = True\n                break\n    if list_init == None or not init_after_loop:\n        explain('The list of rainfall amount (<code>rainfall_list</code>) must be initialized before the iteration that uses this list.<br><br><i>(list_init_place_9.1)<i></br>')\ndef wrong_accumulator_initialization_placement_9_1():\n    ast = parse_program()\n    assignments = ast.find_all('Assign')\n    loops = ast.find_all('For')\n    list_init = None\n    init_after_loop = False\n    for assignment in assignments:\n        if assignment.targets.id == 'rainfall_sum':\n            list_init = assignment\n            break\n    for loop in loops:\n        if list_init != None and loop.lineno > list_init.lineno:\n            init_after_loop = True\n            break\n    if list_init == None or not init_after_loop:\n        explain('The property for the sum of all the rainfall amounts (<code>rainfall_sum</code>) must be initialized before the iteration which uses this property.<br><br><i>(accu_init_place_9.1)<i></br>')\ndef wrong_iteration_body_9_1():\n    ast = parse_program()\n    loops = ast.find_all('For')\n    assignment_in_for = False\n    for loop in loops:\n        assignments = loop.find_all('Assign')\n        for assignment in assignments:\n            if assignment.targets.id == 'rainfall_sum':\n                assignment_in_for = True\n                break\n        if assignment_in_for:\n            break\n    if not assignment_in_for:\n        explain('The addition of each rainfall amount to the total rainfall is not in the correct place.<br><br><i>(iter_body_9.1)<i></br>')\ndef wrong_print_9_1():\n    ast = parse_program()\n    for_loops = ast.find_all('For')\n    has_for = len(for_loops) > 0\n    for_loc = []\n    wrong_print_placement = True\n    for loop in for_loops:\n        end_node = loop.next_tree\n        if end_node != None:\n            for_loc.append(end_node.lineno)\n    calls = ast.find_all('Call')\n    for call in calls:\n        if call.func.id == 'print':\n            for loc in for_loc:\n                if call.func.lineno >= loc:\n                    wrong_print_placement = False\n                    break\n            if not wrong_print_placement:\n                break\n    if wrong_print_placement:\n        explain('The output of the total rainfall amount is not in the correct place. The total rainfall should be output only once after the total rainfall has been computed.<br><br><i>(print_9.1)<i></br>')\n###########################9.1 END############################\n###########################9.2 START############################\ndef wrong_list_initialization_9_2():\n    ast = parse_program()\n    assignments = ast.find_all('Assign')\n    has_call = False\n    for assignment in assignments:\n        if assignment.targets.id == 'rainfall_list':\n            call = assignment.find_all('Call')\n            if len(call) == 1:\n                args = call[0].args\n                if len(args) == 3:\n                    if args[0].s == 'Precipitation' and args[1].s == 'Location' and args[2].s == 'Blacksburg, VA':\n                        has_call = True\n                        break\n    if not has_call:\n        explain('The list of rainfall amounts (<code>rainfall_list</code>) is not initialized properly.<br><br><i>(list_init_9.2)<i></br>')\n    return not has_call\ndef wrong_accumulator_initialization_9_2():\n    ast = parse_program()\n    assignments = ast.find_all('Assign')\n    has_assignment = False\n    for assignment in assignments:\n        if assignment.targets.id == 'rainfall_count' and assignment.value.ast_name == 'Num':\n            if assignment.value.n == 0:\n                has_assignment = True\n                break\n    if not has_assignment:\n        explain('The property to hold the total value of the rainfall amounts (<code>rainfall_count</code>) is not initialized properly.<br><br><i>(accu_init_9.2)<i></br>')\n    return not has_assignment\ndef wrong_accumulation_9_2():\n    ast = parse_program()\n    assignments = ast.find_all('Assign')\n    has_assignment = False\n    for assignment in assignments:\n        target = assignment.targets\n        if target.id == 'rainfall_count':\n            if assignment.value.ast_name == 'BinOp':\n                binop = assignment.value\n                if binop.op == 'Add':\n                    left = binop.left\n                    right = binop.right\n                    if (left.id == 'rainfall_count' or right.id == 'rainfall_count') and (left.ast_name == 'Num' or right.ast_name == 'Num'):\n                        if left.ast_name == 'Num':\n                            num_node = left\n                        else:\n                            num_node = right\n                        if num_node.n == 1:\n                            has_assignment = True\n                        break\n    if not has_assignment:\n        explain('The adding of another day with rainfall to the total count of days with rainfall (<code>rainfall_count</code>) is not correct.<br><br><i>(accu_9.2)<i></br>')\n    return not has_assignment\ndef wrong_list_initialization_placement_9_2():\n    ast = parse_program()\n    assignments = ast.find_all('Assign')\n    loops = ast.find_all('For')\n    list_init = None\n    init_after_loop = False\n    for assignment in assignments:\n        if assignment.targets.id == 'rainfall_list':\n            list_init = assignment\n            break\n    for loop in loops:\n        if list_init != None and loop.lineno > list_init.lineno:\n            init_after_loop = True\n            break\n    if list_init == None or not init_after_loop:\n        explain('The list of rainfall amount (<code>rainfall_list</code>) must be initialized before the iteration that uses this list.<br><br><i>(list_init_place_9.2)<i></br>')\ndef wrong_accumulator_initialization_placement_9_2():\n    ast = parse_program()\n    assignments = ast.find_all('Assign')\n    loops = ast.find_all('For')\n    list_init = None\n    init_after_loop = False\n    for assignment in assignments:\n        if assignment.targets.id == 'rainfall_count':\n            list_init = assignment\n            break\n    if list_init != None:\n        for loop in loops:\n            if loop.lineno > list_init.lineno:\n                init_after_loop = True\n                break\n    if list_init == None or not init_after_loop:\n        explain('The property for the count of the number of days having rain (<code>rainfall_count</code>) must be initialized before the iteration which uses this property.<br><br><i>(accu_init_place_9.2)<i></br>')\ndef wrong_iteration_body_9_2():\n    ast = parse_program()\n    loops = ast.find_all('For')\n    correct_if = False\n    for loop in loops:\n        if_blocks = loop.find_all('If')\n        for if_block in if_blocks:\n            test = if_block.test\n            if test.numeric_logic_check(1, 'var > 0'):\n                correct_if = True\n                break\n        if correct_if:\n            break\n    if not correct_if:\n        explain('The test (if) to determine if a given amount of rainfall is greater than (>) zero is not in the correct place.<br><br><i>(iter_body_9.2)<i></br>')\n    return not correct_if\ndef wrong_decision_body_9_2():\n    ast = parse_program()\n    if_blocks = ast.find_all('If')\n    assignment_in_if = False\n    for if_block in if_blocks:\n        test = if_block.test\n        if test.numeric_logic_check(1, 'var > 0'):\n            assignments = if_block.find_all('Assign')\n            for assignment in assignments:\n                if assignment.targets.id == 'rainfall_count':\n                    if assignment.value.ast_name == 'BinOp':\n                        binop = assignment.value\n                        if binop.has(1) and binop.has(assignment.targets):\n                            assignment_in_if = True\n                            break\n        if assignment_in_if:\n            break\n    if not assignment_in_if:\n        explain('The increase by 1 in the number of days having rainfall (<code>rainfall_count</code>) is not in the correct place.<br><br><i>(dec_body_9.2)<i></br>')\ndef wrong_print_9_2():\n    ast = parse_program()\n    for_loops = ast.find_all('For')\n    has_for = len(for_loops) > 0\n    for_loc = []\n    wrong_print_placement = True\n    for loop in for_loops:\n        end_node = loop.next_tree\n        if end_node != None:\n            for_loc.append(end_node.lineno)\n    calls = ast.find_all('Call')\n    for call in calls:\n        if call.func.id == 'print':\n            for loc in for_loc:\n                if call.func.lineno >= loc:\n                    wrong_print_placement = False\n                    break\n            if not wrong_print_placement:\n                break\n    if wrong_print_placement:\n        explain('The output of the total number of days with rainfall is not in the correct place. The total number of days should be output only once after the total number of days has been computed.<br><br><i>(print_9.2)<i></br>')\n    return wrong_print_placement\n###########################9.2 END############################\n###########################9.6 START############################\ndef wrong_comparison_9_6():\n    ast = parse_program()\n    if_blocks = ast.find_all('If')\n    if_error = False\n    for if_block in if_blocks:\n        if not if_block.has(80):\n            if_error = True\n            break\n        elif not if_block.test.numeric_logic_check(1, 'var > 80'):\n            if_error = True\n            break\n    if if_error:\n        explain('In this problem you should be finding temperatures above 80 degrees.<br><br><i>(comp_9.6)<i></br>')\n    return if_error\n###########################9.6 END############################\n###########################10.2 START############################\ndef wrong_conversion_10_2():\n    ast = parse_program()\n    loops = ast.find_all('For')\n    has_conversion = False\n    conversion_var = ''\n    for loop in loops:\n        binops = loop.find_all('BinOp')\n        iter_prop = loop.target\n        conversion_var = iter_prop.id\n        for binop in binops:\n            if binop.has(iter_prop) and binop.has(0.04) and binop.op == 'Mult':\n                conversion_var = iter_prop.id\n                has_conversion = True\n                break\n    if conversion_var != '' and not has_conversion:\n        explain('The conversion of <code>{0!s}</code> to inches is not correct.<br><br><i>(conv_10.2)<i></br>'.format(conversion_var))\n###########################10.2 END############################\n###########################10.3 START############################\ndef wrong_filter_condition_10_3():\n    ast = parse_program()\n    loops = ast.find_all('For')\n    correct_if = False\n    for loop in loops:\n        if_blocks = loop.find_all('If')\n        for if_block in if_blocks:\n            test = if_block.test\n            if test.numeric_logic_check(1, 'var > 0') or test.numeric_logic_check(1, 'var != 0'):\n                correct_if = True\n                break\n    if not correct_if:\n        explain('The condition used to filter the year when artists died is not correct.<br><br><i>(filt_10.3)<i></br>')\n    return not correct_if\n###########################10.3 END############################\n###########################10.4 START############################\ndef wrong_and_filter_condition_10_4():\n    ast = parse_program()\n    loops = ast.find_all('For')\n    correct_if = False\n    for loop in loops:\n        if_blocks = loop.find_all('If')\n        for if_block in if_blocks:\n            test = if_block.test\n            if test.numeric_logic_check(1, '32 <= temp && temp <= 50'):\n                correct_if = True\n                break\n    if not correct_if:\n        explain('The condition used to filter the temperatures into the specified range of temperatures is not correct.<br><br><i>(filt_and_10.4)<i></br>')\n    return not correct_if\ndef wrong_nested_filter_condition_10_4():\n    ast = parse_program()\n    loops = ast.find_all('For')\n    correct_if = False\n    for loop in loops:\n        if_blocks = loop.find_all('If')\n        for if_block in if_blocks:\n            test1 = if_block.test\n            if_blocks2 = if_block.find_all('If')\n            for if_block2 in if_blocks2:\n                test2 = if_block2.test\n                if test1.numeric_logic_check(1, '32 <= temp') and test2.numeric_logic_check(1,'temp <= 50'):\n                    correct_if = True\n                    break\n                elif test2.numeric_logic_check(1, '32 <= temp') and test1.numeric_logic_check(1,'temp <= 50'):\n                    correct_if = True\n                    break\n    if not correct_if:\n        explain('The decisions used to filter the temperatures into the specified range of temperatures is not correct.<br><br><i>(nest_filt_10.4)<i></br>')\n    return not correct_if\n###########################10.4 END############################\n#########################10.5 START###############################\ndef wrong_conversion_problem_10_5():\n    ast = parse_program()\n    loops = ast.find_all('For')\n    is_wrong_conversion = False\n    for loop in loops:\n        iter_prop = loop.target\n        binops = loop.find_all('BinOp')\n        for binop in binops:\n            if not (binop.op == 'Mult' and binop.has(iter_prop) and binop.has(0.62)):\n                is_wrong_conversion = True\n                break\n        if is_wrong_conversion:\n            break\n    if is_wrong_conversion:\n        log('wrong_conversion_problem_10_5')\n        explain('The conversion from kilometers to miles is not correct.<br><br><i>(conv_10.5)<i></br>')\ndef wrong_filter_problem_atl1_10_5():\n    ast = parse_program()\n    loops = ast.find_all('For')\n    correct_filter = False\n    for loop in loops:\n        iter_prop = loop.target\n        if_blocks = loop.find_all('If')\n        for if_block in if_blocks:\n            cond = if_block.test\n            append_list = append_api.find_append_in(if_block)\n            for append in append_list:\n                expr = append.args[0]\n                #this check seens unnecessary\n                if expr.ast_name == 'BinOp' and expr.op == 'Mult' and expr.has(0.62) and expr.has(iter_prop):\n                    if not cond.numeric_logic_check(0.1, 'var * 0.62 > 10'):\n                        log('wrong_filter_problem_atl1_10_5')\n                        explain('You are not correctly filtering out values from the list.<br><br><i>(filt_alt1_10.5)<i></br>')\ndef wrong_filter_problem_atl2_10_5():\n    ast = parse_program()\n    loops = ast.find_all('For')\n    correct_filter = False\n    for loop in loops:\n        iter_prop = loop.target\n        assignments = loop.find_all('Assign')\n        if_blocks = loop.find_all('If')\n        for assignment in assignments:\n            for if_block in if_blocks:\n                if if_block.lineno > assignment.lineno:\n                    miles = assignment.targets\n                    expr = assignment.value\n                    cond = if_block.test\n                    append_list = append_api.find_append_in(if_block)\n                    for append in append_list:\n                        if append.has(miles):\n                            if expr.ast_name == 'BinOp' and expr.op == 'Mult' and expr.has(0.62) and expr.has(iter_prop):\n                                if not cond.numeric_logic_check(0.1, 'var > 10'):\n                                    explain('You are not correctly filtering out values from the list.<br><br><i>(filt_alt2_10.5)<i></br>')\ndef wrong_append_problem_atl1_10_5():\n    ast = parse_program()\n    loops = ast.find_all('For')\n    correct_filter = False\n    for loop in loops:\n        iter_prop = loop.target\n        if_blocks = loop.find_all('If')\n        for if_block in if_blocks:\n            cond = if_block.test\n            append_list = append_api.find_append_in(if_block)\n            for append in append_list:\n                expr = append.args[0]\n                #this is an approximation of what's written in the code because we don't have tree matching\n                cond_binops = cond.find_all('BinOp')\n                if len(cond_binops) == 1:\n                    if not (expr.ast_name == 'BinOp' and expr.op == 'Mult' and expr.has(0.62) and expr.has(iter_prop)):\n                        #if not cond.numeric_logic_check(0.1, 'var * 0.62 > 10'):#in theory should check this\n                        explain('You are not appending the correct values.<br><br><i>(app_alt1_10.5)<i></br>')\ndef wrong_append_problem_atl2_10_5():\n    ast = parse_program()\n    loops = ast.find_all('For')\n    correct_filter = False\n    for loop in loops:\n        iter_prop = loop.target\n        assignments = loop.find_all('Assign')\n        if_blocks = loop.find_all('If')\n        for assignment in assignments:\n            for if_block in if_blocks:\n                if if_block.lineno > assignment.lineno:\n                    miles = assignment.targets\n                    expr = assignment.value\n                    cond = if_block.test\n                    append_list = append_api.find_append_in(if_block)\n                    for append in append_list:\n                        append_var = append.args[0]\n                        if expr.ast_name == 'BinOp' and expr.op == 'Mult' and expr.has(0.62) and expr.has(iter_prop):\n                            if cond.numeric_logic_check(0.1, 'var > 10'):\n                                if append_var.ast_name == 'Name' and append_var.id != miles.id:\n                                    explain('You are not appending the correct values<br><br><i>(app_alt2_10.5)<i></br>')\n#########################10.5 END###############################\ndef wrong_debug_10_6():\n    ast = parse_program()\n    #cheating because using length of 1\n    loops = ast.find_all('For')\n    bad_change = False\n    if len(loops) != 1:\n        bad_change = True\n    else:\n        append_calls = append_api.find_append_in(loops[0])\n        if len(append_calls) != None:\n            bad_change = True\n    if not bad_change:\n        item = loops[0].target\n        list1 = loops[0].iter\n        list2 = append_calls[0].func.value.id\n        if list1.id != 'quakes' or list2.id != 'quakes_in_miles':\n            bad_change = True\n    if bad_change:\n        explain('This is not one of the two changes needed. Undo the change and try again.<br><br><i>(debug_10.6)<i></br>')\ndef wrong_debug_10_7():\n    ast = parse_program()\n    if_blocks = ast.find_all('If')\n    if len(if_blocks) > 1 or if_blocks[0].test.left.id != 'book':\n        explain('This is not the change needed. Undo the change and try again.<br><br><i>(debug_10.7)<i></br>')\n#########################.....###############################\ndef wrong_initialization_in_iteration():\n    ast = parse_program()\n    loops = ast.find_all('For')\n    init_in_loop = False\n    target = None\n    for loop in loops:\n        assignments = loop.find_all('Assign')\n        for assignment in assignments:\n            target = assignment.targets\n            value = assignment.value\n            names = value.find_all('Name')\n            if len(names) == 0:\n                init_in_loop = True\n                break\n        if init_in_loop:\n            break\n    if init_in_loop:\n        explain('You only need to initialize <code>{0!s}</code> once. Remember that statements in an iteration block happens multiple times'.format(target.id))\ndef wrong_duplicate_var_in_add():\n    ast = parse_program()\n    binops = ast.find_all('BinOp')\n    for binop in binops:\n        left = binop.left\n        right = binop.right\n        if left.ast_name == 'Name' and right.ast_name == 'Name':\n            if left.id == right.id:\n                explain('You are adding the same variable twice; you need two different variables in your addition.<br><br><i>(dup_var)<i></br>')\n                return True\n    return False\n#########################PLOTTING###############################\ndef plot_group_error():\n    output = get_output()\n    if len(output) > 1:\n        explain('You should only be printing/plotting one thing!<br><br><i>(print_one)<i></br>')\n        return True\n    elif len(output) == 0:\n        explain('The algorithm is plotting an empty list. Check your logic.<br><br><i>(blank_plot)<i></br>')\n        return True\n    elif not isinstance(output[0], list):\n        explain('You should be plotting, not printing!<br><br><i>(printing)<i></br>')\n        return True\n    elif len(output[0]) != 1:\n        explain('You should only be plotting one thing!<br><br><i>(one_plot)<i></br>')\n        return True\ndef all_labels_present():#TODO: make sure it's before the show, maybe check for default values\n    x_labels = len(find_function_calls('xlabel'))\n    y_labels = len(find_function_calls('ylabel'))\n    titles = len(find_function_calls('title'))\n    if x_labels < 1 or y_labels < 1 or titles < 1:\n        explain('Make sure you supply labels to all your axes and provide a title<br><br><i>(labels_present)<i></br>')\n        return False\n    return True\n"
 
 /**
