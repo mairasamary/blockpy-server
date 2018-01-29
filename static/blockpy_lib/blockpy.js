@@ -2760,6 +2760,7 @@ Tifa.prototype.loadBuiltinAttr = function(type, func, attr, position) {
                 case "read": return Tifa.defineSupplier(Tifa._STR_TYPE());
                 case "readlines": return Tifa.defineSupplier(Tifa._LIST_OF_TYPE(Tifa._STR_TYPE()));
             }
+            break;
         case "List":
             switch (attr) {
                 case "append": return Tifa.defineFunction(
@@ -2772,6 +2773,7 @@ Tifa.prototype.loadBuiltinAttr = function(type, func, attr, position) {
                     }
                 );
             };
+            break;
         case "Dict":
             switch (attr) {
                 case "items": return Tifa.defineFunction(
@@ -2782,12 +2784,14 @@ Tifa.prototype.loadBuiltinAttr = function(type, func, attr, position) {
                     }
                 );
             };
+            break;
         case "Module":
             if (attr in type.fields) {
                 return type.fields[attr];
             } else {
                 return Tifa._UNKNOWN_TYPE();
             }
+            break;
         case "Str":
             switch (attr) {
                 // Strings
@@ -2811,6 +2815,7 @@ Tifa.prototype.loadBuiltinAttr = function(type, func, attr, position) {
                 case "rsplit": case "split": case "splitlines":
                     return Tifa.defineSupplier(Tifa._LIST_OF_TYPE(Tifa._STR_TYPE()));
             }
+            break;
     }
     // Catch mistakes
     if (attr == "append") {
