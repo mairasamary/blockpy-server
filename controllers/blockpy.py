@@ -267,7 +267,7 @@ def save_correct(lti, lti_exception=None):
     assignment_group_id = request.values.get('group_id', None)
     status = float(request.values.get('status', "0.0"))
     image = request.values.get('image', "")
-    hide_correctness = request.values.get('hide_correctness', "true")=="true"
+    hide_correctness = request.values.get('hide_correctness', "false")=="true"
     course_id = request.values.get('course_id', g.course.id if 'course' in g else None)
     if None in (assignment_id, course_id):
         return jsonify(success=False, message="No Assignment ID or Course ID given!")
