@@ -2298,7 +2298,7 @@ Tifa.prototype.loadVariable = function(name, position) {
             this.reportIssue("Undefined variables", 
                              {'name': name, 'position':position})
         }
-        state = {'name': name, 'trace': [], 'type': '*Unknown',
+        state = {'name': name, 'trace': [], 'type': Tifa._UNKNOWN_TYPE(),
                  'read': 'yes', 'set': 'no', 'over': 'no'};
         this.nameMap[currentPath][fullName] = state;
         return state;
