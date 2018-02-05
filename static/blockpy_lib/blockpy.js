@@ -2762,7 +2762,7 @@ Tifa.MODULES = {
         'fields': {
             'Time': Tifa.defineSupplier({'name': 'Time'}),
             'now': Tifa.defineSupplier({'name': 'Time'}),
-            'Date': Tifa.defineSupplier({'name': 'Date'}),
+            'Day': Tifa.defineSupplier({'name': 'Date'}),
             'today': Tifa.defineSupplier({'name': 'Date'}),
         }
     },
