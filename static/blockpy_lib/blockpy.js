@@ -1347,6 +1347,7 @@ Tifa.prototype.processAst = function(ast) {
     this.nameMap = {};
     this.nameMap[this.PathId] = {};
     this.definitionChain = [];
+    this.pathParents = {};
     
     // Initialize a new, empty report
     this.initializeReport();
@@ -1754,11 +1755,14 @@ Tifa.prototype.visit_If = function(node) {
     
     // Visit the bodies
     var thisPathId = this.PathId;
+    //console.log("Enter", thisPathId);
     this.PathId += 1;
     var ifPathId = this.PathId;
+    //console.log("Left", ifPathId);
     this.pathNames.push(ifPathId+'i');
     this.pathChain.unshift(ifPathId);
     this.nameMap[ifPathId] = {};
+    this.pathParents[ifPathId] = thisPathId;
     for (var i = 0, len = node.body.length; i < len; i++) {
         this.visit(node.body[i]);
     }
@@ -1767,9 +1771,11 @@ Tifa.prototype.visit_If = function(node) {
     
     this.PathId += 1;
     var elsePathId = this.PathId;
+    //console.log("Right", elsePathId);
     this.pathNames.push(elsePathId+'e');
     this.pathChain.unshift(elsePathId);
     this.nameMap[elsePathId] = {};
+    this.pathParents[elsePathId] = thisPathId;
     for (var i = 0, len = node.orelse.length; i < len; i++) {
         this.visit(node.orelse[i]);
     }
@@ -1778,9 +1784,12 @@ Tifa.prototype.visit_If = function(node) {
     
     // Combine two paths into one
     for (var ifName in this.nameMap[ifPathId]) {
-        if (ifName in this.nameMap[elsePathId]) {
+        var ename = this.findPathParent(elsePathId, ifName);
+        var iname = this.findPathParent(ifPathId, ifName);
+        //console.log(ifName in this.nameMap[elsePathId], this.nameMap[ifPathId][ifName], this.nameMap[elsePathId][ifName], this.nameMap[thisPathId][ifName], ename, iname)
+        if (ename) {
             var combined = this.combineStates(this.nameMap[ifPathId][ifName],
-                                              this.nameMap[elsePathId][ifName],
+                                              ename,
                                               position)
         } else {
             var combined = this.combineStates(this.nameMap[ifPathId][ifName], 
@@ -1788,13 +1797,29 @@ Tifa.prototype.visit_If = function(node) {
                                               position)
         }
         this.nameMap[thisPathId][ifName] = combined;
+        //console.log("OUT", this.nameMap[thisPathId][ifName]);
     }
     for (var elseName in this.nameMap[elsePathId]) {
         if (!(ifName in this.nameMap[elsePathId])) {
+            var ename = this.findPathParent(elsePathId, ifName);
+            var iname = this.findPathParent(ifPathId, ifName);
             var combined = this.combineStates(this.nameMap[elsePathId][elseName], 
                                               this.nameMap[thisPathId][elseName],
                                               position)
             this.nameMap[thisPathId][elseName] = combined;
+        }
+    }
+}
+
+Tifa.prototype.findPathParent = function(pathId, name) {
+    if (this.nameMap[pathId][name] !== undefined) {
+        return this.nameMap[pathId][name];
+    } else {
+        var pathParent = this.pathParents[pathId];
+        if (pathParent === undefined) {
+            return undefined;
+        } else {
+            return this.findPathParent(pathParent, name);
         }
     }
 }
@@ -2527,6 +2552,7 @@ Tifa.sameScope = function(fullName, scopeChain) {
 Tifa.prototype.combineStates = function(left, right, position) {
     var state = {'name': left.name, 'trace': left.trace, 'type': left.type,
                  'read': left.read, 'set': left.set, 'over': left.over};
+    //console.log(left, right)
     if (right == null) {
         state.read = left.read == 'no' ? 'no' : 'maybe';
         state.set = left.set == 'no' ? 'no' : 'maybe';
