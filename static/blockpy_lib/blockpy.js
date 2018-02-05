@@ -1346,6 +1346,7 @@ Tifa.prototype.processAst = function(ast) {
     this.pathChain = [this.PathId];
     this.nameMap = {};
     this.nameMap[this.PathId] = {};
+    this.definitionChain = [];
     
     // Initialize a new, empty report
     this.initializeReport();
@@ -1392,6 +1393,8 @@ Tifa.prototype.initializeReport = function() {
             "Iteration variable is iteration list": [], // 
             "Unknown functions": [], // 
             "Not a function": [], // Attempt to call non-function as function
+            "Recursive Call": [],
+            "Incorrect Arity": [],
             "Action after return": [],
             "Incompatible types": [], // 
             "Return outside function": [], // 
@@ -1666,6 +1669,7 @@ Tifa.prototype.visit_Compare = function(node) {
                 if (left.name != right.name ||
                     (left.name != "Num" && left.name != "Bool" &&
                      left.name != "Str" && left.name != "List" &&
+                     left.name != "Date" && left.name != "Time" &&
                      left.name != "Set" && left.name != "Tuple" )) {
                     this.reportIssue("Incompatible types", 
                                      {"left": left, "right": right, 
@@ -1703,10 +1707,17 @@ Tifa.prototype.visit_Call = function(node) {
     // Handle starargs
     // Handle kwargs
     if (functionType.name == 'Function') {
-        var result = functionType.definition(this, functionType, calleeName, arguments, position);
-        return result;
+        if (-1 === this.definitionChain.indexOf(functionType.definition)) {
+            this.definitionChain.push(functionType.definition);
+            var result = functionType.definition(this, functionType, calleeName, arguments, position);
+            this.definitionChain.pop();
+            return result;
+        } else {
+            this.reportIssue("Recursive Call", {"position": position, "name": calleeName});
+        }
+    } else {
+        this.reportIssue("Not a function", {"position": position, "name": calleeName});
     }
-    this.reportIssue("Not a function", {"position": position});
     return Tifa._UNKNOWN_TYPE();
 }
 
@@ -2023,7 +2034,7 @@ Tifa.prototype.visit_FunctionDef = function(node) {
                 var parameter = Tifa.copyType(parameters[i]);
                 analyzer.storeVariable(name, parameter, position)
             } else {
-                //analyzer.reportIssue('Incorrect Arity') // TODO:
+                analyzer.reportIssue('Incorrect Arity', {"position": position})
                 analyzer.storeVariable(name, Tifa._UNKNOWN_TYPE(), position)
             }
         }
@@ -2718,6 +2729,15 @@ Tifa.MODULES = {
             'color': Tifa.defineSupplier(Tifa._NONE_TYPE()),
             'right': Tifa.defineSupplier(Tifa._NONE_TYPE()),
             'left': Tifa.defineSupplier(Tifa._NONE_TYPE()),
+        }
+    },
+    'parking': {
+        'name': "Module",
+        'fields': {
+            'Time': Tifa.defineSupplier({'name': 'Time'}),
+            'now': Tifa.defineSupplier({'name': 'Time'}),
+            'Date': Tifa.defineSupplier({'name': 'Date'}),
+            'today': Tifa.defineSupplier({'name': 'Date'}),
         }
     },
     'math': {
