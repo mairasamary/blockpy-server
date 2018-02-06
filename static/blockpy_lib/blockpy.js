@@ -1785,8 +1785,6 @@ Tifa.prototype.visit_If = function(node) {
     // Combine two paths into one
     for (var ifName in this.nameMap[ifPathId]) {
         var ename = this.findPathParent(elsePathId, ifName);
-        var iname = this.findPathParent(ifPathId, ifName);
-        //console.log(ifName in this.nameMap[elsePathId], this.nameMap[ifPathId][ifName], this.nameMap[elsePathId][ifName], this.nameMap[thisPathId][ifName], ename, iname)
         if (ename) {
             var combined = this.combineStates(this.nameMap[ifPathId][ifName],
                                               ename,
@@ -1797,12 +1795,9 @@ Tifa.prototype.visit_If = function(node) {
                                               position)
         }
         this.nameMap[thisPathId][ifName] = combined;
-        //console.log("OUT", this.nameMap[thisPathId][ifName]);
     }
     for (var elseName in this.nameMap[elsePathId]) {
         if (!(ifName in this.nameMap[elsePathId])) {
-            var ename = this.findPathParent(elsePathId, ifName);
-            var iname = this.findPathParent(ifPathId, ifName);
             var combined = this.combineStates(this.nameMap[elsePathId][elseName], 
                                               this.nameMap[thisPathId][elseName],
                                               position)
@@ -1852,9 +1847,10 @@ Tifa.prototype.visit_While = function(node) {
     
     // Combine two paths into one
     for (var ifName in this.nameMap[ifPathId]) {
-        if (ifName in this.nameMap[elsePathId]) {
+        var ename = this.findPathParent(elsePathId, ifName);
+        if (ename) {
             var combined = this.combineStates(this.nameMap[ifPathId][ifName],
-                                              this.nameMap[elsePathId][ifName],
+                                              ename,
                                               Tifa.locate(node))
         } else {
             var combined = this.combineStates(this.nameMap[ifPathId][ifName], 
@@ -2298,10 +2294,11 @@ Tifa.prototype.storeVariable = function(name, type, position) {
     if (!variable.exists) {
         // Create a new instance of the variable on the current path
         newState = {'name': name, 'trace': [], 'type': type,
+                    'method': 'store', 'position': position,
                     'read': 'no', 'set': 'yes', 'over': 'no'};
         this.nameMap[currentPath][fullName] = newState;
     } else {
-        newState = Tifa.traceState(variable.state, "store");
+        newState = Tifa.traceState(variable.state, "store", position);
         if (!variable.inScope) {
             this.reportIssue("Write out of scope", 
                              {'name': name, 'position':position})
@@ -2315,6 +2312,7 @@ Tifa.prototype.storeVariable = function(name, type, position) {
         newState.type = type;
         // Overwritten?
         if (variable.state.set == 'yes' && variable.state.read == 'no') {
+            newState.overPosition = position;
             newState.over = 'yes';
         } else {
             newState.set = 'yes';
@@ -2355,11 +2353,12 @@ Tifa.prototype.loadVariable = function(name, position) {
                              {'name': name, 'position':position})
         }
         state = {'name': name, 'trace': [], 'type': Tifa._UNKNOWN_TYPE(),
-                 'read': 'yes', 'set': 'no', 'over': 'no'};
+                 'read': 'yes', 'set': 'no', 'over': 'no',
+                 'method': 'load', 'position': position};
         this.nameMap[currentPath][fullName] = state;
         return state;
     } else {
-        var newState = Tifa.traceState(variable.state, "load");
+        var newState = Tifa.traceState(variable.state, "load", position);
         if (variable.state.set == 'no') {
             this.reportIssue("Undefined variables", 
                              {'name': name, 'position':position})
@@ -2388,8 +2387,9 @@ Tifa.prototype.finishScope = function() {
         if (Tifa.sameScope(name, this.scopeChain)) {
             var state = this.nameMap[pathId][name];
             if (state.over == 'yes') {
+                var position = state.overPosition;
                 this.reportIssue('Overwritten variables', 
-                                 {'name': state.name, 'position': 0}) // TODO position
+                                 {'name': state.name, 'position': position}) // TODO position
             }
             if (state.read == 'no') {
                 this.reportIssue('Unread variables', 
@@ -2550,8 +2550,10 @@ Tifa.sameScope = function(fullName, scopeChain) {
 }
 
 Tifa.prototype.combineStates = function(left, right, position) {
-    var state = {'name': left.name, 'trace': left.trace, 'type': left.type,
-                 'read': left.read, 'set': left.set, 'over': left.over};
+    var state = {'name': left.name, 'trace': [left], 'type': left.type,
+                 'read': left.read, 'set': left.set, 'over': left.over,
+                 'overPosition': left.overPosition,
+                 'position': position, 'method': 'branch'};
     //console.log(left, right)
     if (right == null) {
         state.read = left.read == 'no' ? 'no' : 'maybe';
@@ -2566,6 +2568,10 @@ Tifa.prototype.combineStates = function(left, right, position) {
         state.read = Tifa.matchRSO(left.read, right.read);
         state.set = Tifa.matchRSO(left.set, right.set);
         state.over = Tifa.matchRSO(left.over, right.over);
+        if (left.over == 'no') {
+            state.overPosition = right.overPosition;
+        }
+        state.trace.push(right);
     }
     return state;
 }
@@ -2578,13 +2584,13 @@ Tifa.matchRSO = function(left, right) {
     }
 }
 
-Tifa.traceState = function(state, method) {
+Tifa.traceState = function(state, method, position) {
     var newState = {
-        'type': state.type, 'method': method, 'trace': [],//state.trace.slice(0),
+        'type': state.type, 'method': method, 'trace': [state],//state.trace.slice(0),
         'set': state.set, 'read': state.read, 'over': state.over,
-        'name': state.name
+        'overPosition': state.overPosition,
+        'name': state.name, 'position': position
     };
-    newState.trace.push(state);
     return newState;
 }
 
