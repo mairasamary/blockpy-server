@@ -35,6 +35,8 @@ def load():
     embed = request.values.get("embed", "False") == "True"
     filename = request.values.get('filename', 'error.html')
     name='worked_examples/files/{filename}'.format(filename=filename)
+    if not os.path.exists(os.path.join(app.config['ROOT_DIRECTORY'], 'templates', name)):
+        name = 'worked_examples/files/error.html'
     assignment_id = request.values.get('assignment_id', -1)
     return render_template('worked_examples/load.html',
                            assignment_id=assignment_id,
