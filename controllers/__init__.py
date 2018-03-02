@@ -76,6 +76,9 @@ app.register_blueprint(blueprint_pragmatics)
 from controllers.resources import blueprint_resources
 app.register_blueprint(blueprint_resources)
 
+from controllers.worked_examples import blueprint_worked_examples
+app.register_blueprint(blueprint_worked_examples)
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
     """ initial access page to the lti provider.  This page provides

@@ -1,0 +1,28 @@
+{% extends 'layout.html' %}
+
+{% block title %}Worked Examples Index{% endblock %}
+
+{% block extrahead %}
+<style>
+.indent {
+    padding-left: 10px;
+}
+</style>
+
+{% endblock %}
+
+{% block body %}
+
+<h2>Worked Examples Index</h2>
+
+<ul>
+{% for we in wes %}
+{% if we != 'error.html' %}
+<li><a href='{{ url_for("worked_examples.load", filename=we, assignment_id=assignment_id) }}'>{{ we }}</a></li>
+{% endif %}
+{% endfor %}
+</ul>
+
+<p></p>
+
+{% endblock %}
