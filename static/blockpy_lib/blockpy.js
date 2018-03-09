@@ -11758,6 +11758,9 @@ BlockPy.prototype.initModel = function(settings) {
             // Whether the canvas is read-only
             // boolean
             'read_only': ko.observable(false),
+            // Whether to skip tracing dynamically
+            // boolean
+            'trace_off': ko.observable(false),
             // The current filename that we are editing
             // string
             'filename': ko.observable("__main__"),
