@@ -8311,6 +8311,16 @@ BlockPyPrinter.prototype.printHtml = function(chart, value) {
 }
 
 /**
+ * Unconditionally scroll to the bottom of the window.
+ * 
+ */
+BlockPyPrinter.prototype.scrollToBottom = function() {
+    this.tag.animate({
+      scrollTop: this.tag.prop('scrollHeight') - this.tag.prop('clientHeight')
+    }, 500);
+}
+
+/**
  * Creates an Input box for receiving input() from the user.
  * 
  * @param {String} promptMessage - a message to render before the input
@@ -11180,6 +11190,7 @@ BlockPyEngine.prototype.on_run = function(afterwards) {
     var engine = this;
     var feedback = engine.main.components.feedback;
     var model = this.main.model;
+    var printer = this.main.components.printer;
     engine.resetReports();
     engine.verifyCode();
     engine.updateParse();
@@ -11207,6 +11218,11 @@ BlockPyEngine.prototype.on_run = function(afterwards) {
             model.execution.status("complete");
             if (afterwards !== undefined) {
                 afterwards(result);
+            }
+            if (!model.execution.suppressions.student.scrolling) {
+                try {
+                    printer.scrollToBottom();
+                } catch (e) {}
             }
         });
     });
@@ -12135,7 +12151,6 @@ BlockPy.prototype.setAssignment = function(settings, assignment, programs) {
     this.components.corgis.loadDatasets(true);
     this.components.engine.loadAllFiles(true);
     this.components.server.setStatus('Loaded');
-    console.log(this.model.settings.presentation_mode());
     if (this.model.settings.presentation_mode()) {
         this.components.server.logEvent('editor', 'run')
         this.components.engine.on_run();
