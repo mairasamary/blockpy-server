@@ -73,6 +73,7 @@ DEFAULT_ASSIGNMENT = {
         'name': "Scratch Canvas",
         'give_feedback': decodeURIComponent(queryParams.give_feedback || ""),
         'starting_code': decodeURIComponent(queryParams.starting_code || ""),
+        'presentation_mode': (queryParams.presentation == "true"),
         'on_change': decodeURIComponent(queryParams.on_change || ""),
         'initial_view': queryParams.view || "Blocks",
         'disable_algorithm_errors': false,
@@ -99,6 +100,7 @@ $(document).ready(function() {
         'blocklyPath': {{ url_for('static', filename='blockly/')|tojson }},
         'attachmentPoint': document.getElementById('blockpy-div'),
     {% if not group %}
+        'presentation_mode': (queryParams.presentation == "true"),
         'instructor': (queryParams.mode == "instructor"),
         'disable_algorithm_errors': (queryParams.algorithm_errors == "true"),
         'disable_timeout_errors': (queryParams.timeout_errors == "true"),
