@@ -136,7 +136,6 @@ def load_assignment(lti=lti):
                         'importable': settings.get('importable', False),
                         'disable_algorithm_errors': settings.get('disable_algorithm_errors', False),
                         'disable_timeout': settings.get('disable_timeout', False),
-                        'presentation_mode': settings.get('presentation_mode', False),
                         'files': files,
                         'modules': {
                             'added': added_modules,
