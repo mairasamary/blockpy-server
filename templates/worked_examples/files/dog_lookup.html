@@ -1,0 +1,111 @@
+<h2 id="read-problem">0) Read Problem</h2>
+<p><i>Below is an example of a dictionary that maps the names of dogs to their breed. Create a function called <code>get_breed</code> that takes a dictionary like this and the name of a dog (a string), and returns a string combining that dog's breed and name (e.g., <code>"Callie is a Pitbull"</code>. If the dog isn't in the dictionary, return <code>"No dog"</code>. Call your function twice to test it and print the result: once with a name in the dictionary and once with a name not in the dictionary.</i></p>
+{% filter highlight_python_code(False) %}
+my_dogs = { "Callie": "Pitbull", 
+            "Sasha": "Jack Russell", 
+            "Lexy": "Chihuahua", 
+            "Tiny": "Caucasian Shepherd", 
+            "Snowball": "Poodle"}
+{% endfilter %}
+
+<h2 id="interpret-problem">1) Interpret the Problem</h2>
+<p>This program requires us to write a function that uses a dictionary, along with the name of a dog. If the name isn't in the dictionary, the function should return a special string. Otherwise, it'll return a message involving a value from the dictionary and the name of the dog. Looking at this problem, we see that we'll probably need an <code>if</code> statement, and we'll be accessing and testing fields within the dictionary. Finally, there appears to be some string concatenation.</p>
+
+<h2 id="testing">2) Write Tests</h2>
+<p>After we formulate the problem, it is a good idea to think of some representative cases that we can test. By keeping these, we can run our code regularly and make sure we're on track.</p>
+
+<p>Here is a simple, normal case where the string exists in the dictionary.</p>
+{% filter highlight_python_code(False) %}
+print(get_breed(my_dogs, "Callie"))
+# => "Callie is a Pitbull"
+{% endfilter %}
+
+<p>A case where the string is not in the dictionary.</p>
+{% filter highlight_python_code(False) %}
+print(get_breed(my_dogs, "Klaus"))
+# => "No dog"
+{% endfilter %}
+
+<p>A case where the string is not in the dictionary because the dictionary is empty.</p>
+{% filter highlight_python_code(False) %}
+print(get_breed({}, "Callie"))
+# => "No dog"
+{% endfilter %}
+
+<h2 id="create-function-header">3: Create function header</h2>
+<p>Our function needs to be called <code>get_breed</code> and take two parameters. The first holds the name/breed associations, so reasonable names would be things like <code>name_breeds</code>, <code>name_to_breeds</code>, <code>breed_map</code>, etc. Notice that we're being more generic with these names, because this function is able to handle multiple name/breed maps, not just the example one.</p>
+<p>The second parameter holds a string representing the name of a dog, so a simple choice is <code>name</code>:</p>
+
+{% filter highlight_python_code(False) %}
+def get_breed(name_breeds, name):
+    ...
+{% endfilter %}
+
+<h2 id="handle-separate-conditions">4: Handle separate conditions</h2>
+<p>The problem establishes two conditions: the name is in the given dictionary, or it is not. Therefore, we will need an <code>if</code> statement. We can test if a given key is in a dictionary using the <code>in</code> keyword. When working with dictionaries, the expression <code>k in dictionary</code> will evaluate to True if the value stored in k is a key in the dictionary. So to check if the dog called <code>name</code> is stored in the dictionary <code>name_breeds</code>, we write</p>
+
+{% filter highlight_python_code(False) %}
+name in name_breeds
+{% endfilter %}
+
+<p>If this expression is True, it is safe to get the dog's breed from the dictionary. We'll worry about how to do that later; for now, we'll leave the body of the If statement empty.</p>
+{% filter highlight_python_code(False) %}
+if name in name_breeds: 
+    ...
+{% endfilter %}
+
+<p>Not every function with separate conditions does something in the "otherwise" case. But for this one, we are supposed to return a special value. If the name wasn't available, then the we simply return <code>"No dog"</code>.</p>
+{% filter highlight_python_code(False) %}
+if name in name_breeds: 
+    ...
+else: 
+    return "No dog"
+{% endfilter %}
+
+<h2 id="access-value">5: Access Value in Dictionary</h2>
+<p>Now that we've made sure the name is in our dictionary, we can get the breed from the dictionary using the name. To do this, we use square brackets with the key we want to look up.</p>
+{% filter highlight_python_code(False) %}
+breed = name_breeds[name]
+{% endfilter %}
+<p>Notice that the <code>name</code> wasn't surrounded with quotes, because we are using the parameter instead of a string literal.</p>
+
+<h2 id="concatenate-values">6: Concatenate Strings</h2>
+<p>The problem requires us to return messages of the form <code>"Callie is a Pitbull"</code>. This general template seems to be "[Name] is a [Breed]". We already retrieved the breed from the name, so this becomes a simple matter of string concatenation.</p>
+{% filter highlight_python_code(False) %}
+message = name + " is a " + breed
+{% endfilter %}
+<p>There were several other ways to complete this, but this string addition (including a string literal in the middle) was a particularly simple way. This expresion can now be returned.</p>
+{% filter highlight_python_code(False) %}
+return message
+{% endfilter %}
+
+
+<h2 id="solution">Solution:</h2>
+<p> Putting these pieces together, we get our final result, which passes the tests we wrote up-front!</p>
+
+{% filter highlight_python_code(True) %}
+# Solution
+def get_breed(name_breeds, name):
+    if name in name_breeds: 
+        breed = name_breeds[name]
+        message = name + " is a " + breed
+        return message
+    else: 
+        return "No dog"
+
+# Example Value
+my_dogs = { "Callie": "Pitbull", 
+            "Sasha": "Jack Russell", 
+            "Lexy": "Chihuahua", 
+            "Tiny": "Caucasian Shepherd", 
+            "Snowball": "Poodle"}
+
+# Tests
+print(get_breed(my_dogs, "Callie"))
+# => "Callie is a Pitbull"
+print(get_breed(my_dogs, "Klaus"))
+# => "No dog"
+print(get_breed({}, "Callie"))
+# => "No dog"
+{% endfilter %}
+</code></pre>

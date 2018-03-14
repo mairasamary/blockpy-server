@@ -238,8 +238,8 @@ def get_assignment_id(f):
         return f(*args, course_id=course_id, **kwargs)
     return decorated_function
 
-def highlight_python_code(code):
-    formatter = HtmlFormatter(linenos=True, noclasses=True)
+def highlight_python_code(code, linenos=True):
+    formatter = HtmlFormatter(linenos=linenos, noclasses=True)
     return highlight(code, PythonLexer(), formatter)
 
 def normalize_url(url):
