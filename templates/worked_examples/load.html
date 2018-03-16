@@ -19,8 +19,8 @@ function getTimestamp() {
 function log(action, body) {
     try {
         $.post({{ url_for('worked_examples.log_event')|tojson }}, {
-                    'course_id': {{ (g.course.id if course in g else -1)|tojson }},
-                    'student_id': {{ (g.user.id if user in g else -1)|tojson }},
+                    'course_id': {{ (g.course.id|tojson if g.course is defined else -1) }},
+                    'student_id': {{ (g.user.id|tojson if g.user != None else -1) }},
                     'assignment_id': {{ assignment_id|tojson }},
                     'event': 'worked_examples',
                     'action': action,
