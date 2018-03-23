@@ -1,0 +1,144 @@
+<h1>Worked Example: Grade Lookup</h1>
+
+<h2 id="0-read-problem">0) Read problem</h2>
+<p><i>Below is a dictionary of dictionaries representing the students in a class. The keys of the dictionary correspond to the students' PIDs, while the values correspond to information about the student, such as their name, their classes, and their grades. Create a function called <code>get_grade</code> that takes a single student dictionary and returns their name and grade in CS1064 as a tuple. Call this function on one of the students and assign the result to two variables. Print those variables with <code>"has a"</code> in between (e.g. <code>"Michael has a 94"</code>). </i></p>
+
+{% filter highlight_python_code(False) -%}
+students = { 
+    "mrf7": {
+        "pid": "mrf7",
+        "name": "Michael",
+        "year": "Senior",
+        "courses": {
+            "MATH1225": 85,
+            "CS1064": 94,
+            "GEOG1014": 100,
+            "CHEM1035": 80
+        }
+    },
+    "bob123": {
+        "pid":"bob123",
+        "name": "Bob",
+        "year": "Sophomore",
+        "courses": {
+            "ACIS1504": 70,
+            "APS1074": 80,
+            "CS1064": 87,
+            "DASC1464":90
+        }
+    }, 
+}
+{%- endfilter %}
+
+
+<h2 id="1-interpret-the-problem">1) Interpret the problem</h2>
+<p>The first part of this problem requires us to write a function called <code>get_grade</code> that takes a dictionary representing a student and returns the student's name and grade in CS1064 as a tuple. This will require us to chain together multiple dictionary accesses. The second part says we call our function on a single student dictionary, so we will have to pull one out of the <code>students</code> dictionary using the pid. Finally we concatenate strings to produce the proper output. </p>
+
+<h2 id="2-understand-the-data-structure">2) Understand the Data Structure</h2>
+<p>The <code>students</code> data structure is a dictionary of dictionaries. Each of the internal dictionaries represents a student and has the keys "pid", "name", "year", and "courses". The values for the pid, name, and year keys are strings and the value for the courses key is another dictionary.   </p>
+<p>The dictionary corresponding to the courses key uses the course name (string) as the keys and the grade (integer) as the values. </p>
+
+<h2 id="3-create-function-header">3) Create function header</h2>
+<p>Our function needs to be called <code>get_grade</code> and take a single parameter holding a student dictionary. So a reasonable parameter name could be <code>student</code>. </p>
+
+{% filter highlight_python_code(False) -%}
+def get_grade(student): 
+    ...
+{% endfilter %}
+
+
+<h2 id="4-get-a-value-from-a-dictionary">4) Get a value from a dictionary</h2>
+<p>The name of the student is stored in the student dictionary under the <code>"name"</code> key. We perform a dictionary access and store the result in a variable. </p>
+{% filter highlight_python_code(False) -%}
+student_name = student["name"]
+{% endfilter %}
+
+
+<h2 id="5-get-a-value-from-a-dictionary-within-a-dictionary">5) Get a value from a dictionary within a dictionary</h2>
+<p>The next piece of information is the student's grade in CS1064. We get the dictionary of courses from the student dictionary.</p>
+{% filter highlight_python_code(False) -%}
+student["courses"]
+{% endfilter %}
+
+
+<p>From the dictionary of courses, we get the value for the key "CS1064" and save it in a variable.</p>
+
+{% filter highlight_python_code(False) -%}
+student_grade = student["courses"]["CS1064"]
+{% endfilter %}
+
+
+<h2 id="6-return-a-tuple">6) Return a tuple</h2>
+<p>Now we return both expressions using a tuple. With a tuple, we can return multiple values that can be stored in multiple variables when our function is called. To create a tuple, we write our expressions separated by a comma:</p>
+
+{% filter highlight_python_code(False) -%}
+return student_name, student_grade
+{% endfilter %}
+
+<p>The tuple could optionally have been written with parentheses.</p>
+
+
+<h2 id="8-store-multiple-return-values">8) Store multiple return values</h2>
+<p>When we call our function, we give it a dictionary representing a student. We get the dictionary by doing a dictionary access on the <code>students</code> dictionary. Let's use Bob in our test.</p>
+
+{% filter highlight_python_code(False) -%}
+get_grade(students["bob123"])
+{% endfilter %}
+
+<p>The problem says that we should store the two return values from our function in two separate variables. This is similar to creating a tuple, separating our variables by commas. </p>
+
+{% filter highlight_python_code(False) -%}
+name, grade = get_grade(students["bob123"])
+{% endfilter %}
+
+
+<p>This will store the first value returned by our function in name, and the second value in grade. </p>
+<h2 id="9-concatenate-the-string">9) Concatenate the string</h2>
+<p>This problem requires us to print messages of the form <code>"[Name] has a [Grade]"</code>. Since we already have name and grade, we can concatenate the strings using the <code>+</code> operator. However, since grade is a number and not a string, we use the built-in <code>str</code> function to convert it to a string. </p>
+
+{% filter highlight_python_code(False) -%}
+name + " has a " + str(grade)
+{% endfilter %}
+
+
+<p>To see if our function produced the right output, we print the result</p>
+
+{% filter highlight_python_code(False) -%}
+print(name + " has a " + str(grade))
+{% endfilter %}
+
+
+<h2 id="solution">Solution</h2>
+{% filter highlight_python_code(False) -%}
+def get_grade(student): 
+    name = student["name"]
+    grade = student["courses"]["CS1064"]
+    return name, grade
+
+students = { 
+    "mrf7": {
+        "pid": "mrf7",
+        "name": "Michael",
+        "year": "Senior",
+        "courses": {
+            "MATH1225": 85,
+            "CS1064": 94,
+            "GEOG1014": 100,
+            "CHEM1035": 80
+        }
+    },
+    "bob123": {
+        "pid":"bob123",
+        "name": "Bob",
+        "year": "Sophomore",
+        "courses": {
+            "ACIS1504": 70,
+            "APS1074": 80,
+            "CS1064": 87,
+            "DASC1464":90
+        }
+    }, 
+}
+name, grade = get_grade(students["bob123"])
+print(name + " has a " + str(grade))
+{% endfilter %}
