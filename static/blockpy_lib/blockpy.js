@@ -2554,7 +2554,6 @@ Tifa.locate = function(node) {
 }
 
 Tifa.indexSequenceType= function(type, i) {
-    console.log(type, i);
     // Determine if i is a literal
     if (i === undefined) {
         i = 0;
@@ -2582,6 +2581,7 @@ Tifa.indexSequenceType= function(type, i) {
                     return Tifa.cloneType(type.values[j]);
                 }
             }
+            return Tifa._UNKNOWN_TYPE();
         } else {
             return Tifa.cloneType(type.keys);
         }
@@ -2731,7 +2731,6 @@ Tifa.mergeTypes = function(left, right) {
 }
 
 Tifa.getLiteral = function(node) {
-    console.log(node);
     switch (node._astname) {
         case "Num": return {"type": "Num", "value": node.n.v};
         case "Str": return {"type": "Str", "value": node.s.v};
