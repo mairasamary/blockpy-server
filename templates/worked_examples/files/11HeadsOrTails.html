@@ -1,0 +1,116 @@
+<h2 id="0-read-problem">0) Read Problem</h2>
+
+<p>You want to see how random a coin flip really is, so you flip a coin until your hand gets tired. You record the results in a text document, typing H for heads and T for tails. After you spend all day flipping a coin, you don't want to count all the H's and T's. You save your file as <code>coin.txt</code> and decide to let Python do the work for you. </p>
+
+<p>Count the number of all H's and T's in the file <code>coin.txt</code>. To determine the probability, you will also need to know the total number of tosses you made. After counting the number of heads, tails, and tosses, print the probability of heads and the probability of tails. Probability of heads is simply the number of heads divided by the total number of tosses. </p>
+
+<p><a href="{{ url_for('static', filename='worked_examples/coin.txt')}}" target=_blank>View <code>coin.txt</code></a></p>
+
+<h2 id="1-interpret-the-problem">1) Interpret the Problem</h2>
+<p>From the description, it sounds like we'll need the Count and Filter loop patterns to count the number of H's and T's.</p>
+<p>First, we open <code>coin.txt</code> so we understand the format of the file. The file is entirely on one line, like this: </p>
+{% filter highlight_python_code(False) -%}
+HHTHHTTTHHTTHTHTTHHHHTHTTT...
+{% endfilter %}
+
+<p>Since the file is only one line, we look at each character in the file, not each line. Instead of iterating over the result of the call to <code>open</code>, we should use the <code>read</code> method to read all the text in the file and get it as a string. Then we can iterate over the string to check every character of the text. </p>
+
+<h2 id="2-opening-a-file">2) Opening a File</h2>
+<p>Before you can use a file, you must open the file using the <code>open</code> function. This function takes the name of the file as a string and returns a file object representing the open file. We need to save this file so we can close it later:</p>
+{% filter highlight_python_code(False) -%}
+coin_file = open('coin.txt')
+{% endfilter %}
+
+
+<h2 id="3-read-the-file">3) Read the File</h2>
+<p>If we were to iterate over <code>coin_file</code> with <code>for flip in coin_file</code>, we would iterate over every line in the file. Since <code>coin.txt</code> is a single, massive line and we want every character of it, this doesn't work. To iterate over each character, we need the contents of the file as a string. To get the file as a string, we use the <code>read</code> method. The read method of an open file object returns a string of the contents of that file. We save the result in a string variable. </p>
+{% filter highlight_python_code(False) -%}
+coin_string = coin_file.read()
+{% endfilter %}
+
+
+<h2 id="4-closing-the-file">4) Closing the File</h2>
+<p>Now that we've read the contents of the file into a string, we don't need to have the file open anymore. You should always close a file once you are done with it. This is done with the <code>close</code> method. Keep in mind that after closing a file, the file is not usable.</p>
+{% filter highlight_python_code(False) -%}
+coin_file.close()
+{% endfilter %}
+
+
+<h2 id="5-iterate-over-characters-in-a-file">5) Iterate Over Character's in a File</h2>
+<p>We can use a <code>for</code> loop to iterate over each character in the string variable. </p>
+{% filter highlight_python_code(False) -%}
+for flip in coin_string:
+    ...
+{% endfilter %}
+
+
+<h2 id="6-initializing-count-variables">6) Initializing Count Variables</h2>
+<p>In the Count pattern, we initialize the accumulating variable to 0 before we loop. We need to keep track of the number of heads, the number of tails, and the total number of flips.</p>
+{% filter highlight_python_code(False) -%}
+num_heads = 0
+num_tails = 0 
+num_flips = 0
+{% endfilter %}
+
+
+<h2 id="7-implement-count-pattern">7) Implement Count Pattern</h2>
+<p>According to the Count pattern, we need to update the count inside the loop. Let's start with the easiest count to do: <code>num_flips</code>. Since every character is a flip, we should increment <code>num_flips</code> every time our loop runs. </p>
+{% filter highlight_python_code(False) -%}
+for flip in coin_string:
+    num_flips = num_flips + 1
+{% endfilter %}
+
+
+<h2 id="8-implement-the-filter-pattern">8) Implement the Filter Pattern</h2>
+<p>To count heads and tails, the Filter pattern must be combined with the Count pattern. We increment <code>num_heads</code> only if <code>flip</code> is <code>"H"</code> and <code>num_tails</code> only if <code>flip</code> is <code>"T"</code>. This can be done with a simple <code>if</code> statement.</p>
+{% filter highlight_python_code(False) -%}
+if flip == "H":
+    num_heads = num_heads + 1
+elif flip == "T":
+    num_tails = num_tails + 1
+{% endfilter %}
+
+
+<h2 id="9-calculating-probability">9) Calculating Probability</h2>
+<p>To calculate the probability of heads and tails, we have to divide <code>num_heads</code> and <code>num_tails</code> by <code>num_flips</code>. This will give us a number between 0 and 1 that represents the probability a coin flip is heads or tails, respectively.</p>
+{% filter highlight_python_code(False) -%}
+prob_heads = num_heads / num_flips
+prob_tails = num_tails / num_flips
+{% endfilter %}
+
+<h2 id="10-printing-results">10) Printing Results</h2>
+<p>Now the only thing left to do is print the probabilities we calculated to see how close to perfectly random our coin tosses were. </p>
+{% filter highlight_python_code(False) -%}
+print("Heads:", probHeads)
+print("Tails:", probTails)
+{% endfilter %}
+
+
+<h2 id="solution">Solution</h2>
+{% filter highlight_python_code(True) -%}
+coin_file = open("coin.txt")
+coin_string = coin_file.read()
+coin_file.close()
+
+num_heads = 0 
+num_tails = 0
+num_flips = 0
+for flip in coin_string: 
+    num_flips = num_flips + 1
+    if flip == "H":
+        num_heads = num_heads + 1
+    elif flip == "T":
+        num_tails = num_tails + 1
+
+prob_heads = num_heads / num_flips
+prob_tails = num_tails / num_flips
+print("Heads: ", prob_heads)
+print("Tails: ", prob_tails)
+{% endfilter %}
+
+
+<p>If we have a perfectly fair coin, the probability should be .5 for both, meaning the coin has an equal chance of flipping heads and tails. Since this is the real world, we'll probably get numbers that are slightly off. </p>
+<p>When we run this with the file above, the output we get is </p>
+<pre>Heads: 0.5202020202020202
+Tails: 0.4797979797979798</pre>
+<p>Which means about 52% of the flips were heads and 48% were tails. </p>
