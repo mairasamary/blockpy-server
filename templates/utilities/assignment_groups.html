@@ -1,5 +1,13 @@
 {% macro assignment_group_header(group, assignment_id, embed, page_type) %}
 {% set sorted_group = group %}
+
+{% set ns = namespace(found=false) %}
+{% set ns.any_secretive = False %}
+{% for assignment, submission in sorted_group %}
+    {% set secret = assignment|get_setting("secret") %}
+    {% set ns.any_secretive = ns.any_secretive or secret %}
+{% endfor %}
+
 <script>
     /*
      * Increment completed counter by 1
@@ -9,11 +17,15 @@
     function markCorrect(assignmentId) {
         var opt = $("#assignment-selector option[value='"+assignmentId+"']");
         if (!opt.hasClass("correct-submission")) {
+            {% if ns.any_secretive %}
             opt.html("&#10004; "+opt.html());
             opt.removeClass("incorrect-submission");
             opt.addClass("correct-submission");
             $("#assignment-selector-next").removeClass("btn-default").addClass("btn-success");
-            $('#completion-rate').html(parseInt($('#completion-rate').html(), 10)+1)
+            $('#completion-rate').html(parseInt($('#completion-rate').html(), 10)+1);
+            {% else %}
+            $('#completion-rate').html("??");
+            {% endif %}
         }
     }
     var URL_MAP = {
@@ -107,12 +119,26 @@
         {% for assignment, submission in sorted_group %}
             <option value='{{ assignment.id }}' 
                     {% if assignment.id == assignment_id|int%}selected{% endif %}
-                    class='{% if not submission.correct %}in{% endif %}correct-submission'>
-                {% if submission.correct %} &#10004; {% endif %} {{ assignment.name }}
+                    class='
+                    {%- if ns.any_secretive -%}
+                        secret-submission
+                    {%- elif submission.correct -%}
+                        correct-submission
+                    {%- else -%}
+                        incorrect-submission
+                    {%- endif -%}'>
+                {% if submission.correct and not ns.any_secretive %} &#10004; {% endif %} {{ assignment.name }}
             </option>
         {% endfor %}
         </select>
-        <span id='completion-box'>(<span id='completion-rate'>{{ (sorted_group|map(attribute='1.correct')|sum)}}</span>/{{(sorted_group|length)}} completed)</span></span>
+        <span id='completion-box'>(<span id='completion-rate'>
+                {%- if not ns.any_secretive -%}
+                {{- (sorted_group|map(attribute='1.correct')|sum) -}}
+                {%- else -%}
+                ??
+                {%- endif -%}
+            </span>/{{(sorted_group|length)}} completed)
+        </span>
         
         <button type="button" class='btn btn-default btn-sm' id='assignment-selector-next'>
             Next <span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span>

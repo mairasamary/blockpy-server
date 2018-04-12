@@ -134,6 +134,7 @@ def load_assignment(lti=lti):
                         'starting_code': assignment.starting_code,
                         'on_change': assignment.on_step,
                         'importable': settings.get('importable', False),
+                        'secret': settings.get('secret', False),
                         'disable_algorithm_errors': settings.get('disable_algorithm_errors', False),
                         'disable_timeout': settings.get('disable_timeout', False),
                         'files': files,
@@ -339,6 +340,7 @@ def save_presentation(lti=lti):
     presentation = request.values.get('introduction', "")
     parsons = request.values.get('parsons', "false") == "true"
     importable = request.values.get('importable', "false") == "true"
+    secret = request.values.get('secret', "false") == "true"
     disable_algorithm_errors = request.values.get('disable_algorithm_errors', 'false') == 'true'
     disable_timeout = request.values.get('disable_timeout', 'false') == 'true'
     #text_first = request.values.get('text_first', "false") == "true"
@@ -349,7 +351,7 @@ def save_presentation(lti=lti):
     assignment = Assignment.by_id(int(assignment_id))
     if not g.user.is_instructor(int(assignment.course_id)):
         return jsonify(success=False, message="You are not an instructor in this assignments' course.")
-    Assignment.edit(assignment_id=assignment_id, presentation=presentation, name=name, parsons=parsons, mode=mode, modules=modules, importable=importable, disable_algorithm_errors=disable_algorithm_errors, disable_timeout=disable_timeout, files=files)
+    Assignment.edit(assignment_id=assignment_id, presentation=presentation, name=name, parsons=parsons, mode=mode, modules=modules, importable=importable, disable_algorithm_errors=disable_algorithm_errors, disable_timeout=disable_timeout, files=files, secret=secret)
     return jsonify(success=True)
     
 @blueprint_blockpy.route('/get_history/', methods=['GET', 'POST'])    

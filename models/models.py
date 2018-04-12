@@ -771,7 +771,7 @@ class Assignment(Base):
              modules=None, importable=False,
              files=None,
              disable_algorithm_errors=False, disable_timeout=False,
-             type='blockpy'):
+             type='blockpy', secret=None):
         assignment = Assignment.by_id(assignment_id)
         if name is not None:
             assignment.name = name
@@ -803,6 +803,7 @@ class Assignment(Base):
                 settings['disable_timeout'] = False
             kept_modules = modules.split(",")
             settings['importable'] = importable
+            settings['secret'] = secret if secret is not None else settings.get('secret', False)
             settings['disable_algorithm_errors'] = disable_algorithm_errors
             settings['disable_timeout'] = disable_timeout
             settings['modules']['added'] = [m for m in kept_modules 
