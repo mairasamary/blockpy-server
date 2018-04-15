@@ -17,7 +17,7 @@
     function markCorrect(assignmentId) {
         var opt = $("#assignment-selector option[value='"+assignmentId+"']");
         if (!opt.hasClass("correct-submission")) {
-            {% if ns.any_secretive %}
+            {% if not ns.any_secretive %}
             opt.html("&#10004; "+opt.html());
             opt.removeClass("incorrect-submission");
             opt.addClass("correct-submission");
