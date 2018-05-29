@@ -763,7 +763,7 @@ class Assignment(Base):
             return Assignment(**data)
         raise Exception("Unknown schema version: {}".format(data.get('_schema_version', "Unknown")))
     
-    BUILTIN_MODULES = 'Properties,Decisions,Iteration,Calculation,Output,Values,Lists,Dictionaries,Separator'.split(',')
+    BUILTIN_MODULES = 'Properties,Decisions,Iteration,Calculation,Output,Values,Lists,Dictionaries,Separator,Input,Conversion'.split(',')
     @staticmethod
     def edit(assignment_id, presentation=None, name=None, 
              give_feedback=None, on_step=None, starting_code=None, 
