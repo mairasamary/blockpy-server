@@ -2709,6 +2709,7 @@ Tifa.traceState = function(state, method, position) {
 
 /**
  * Correctly clones a type, returning mutable types unchanged.
+ * This is necessary for parameters that mutate their passed in types
  */
 Tifa.copyType = function(type) {
     switch (type.name) {
@@ -8142,6 +8143,16 @@ LocalStorageWrapper.prototype.get = function(key) {
 };
 
 /**
+ * A method for retrieving the time associated with the given key.
+ *
+ * @param {String} key - The name of the key to retrieve the time for.
+ * @returns {Integer} - The timestamp (local epoch) when the key was last set.
+ */
+LocalStorageWrapper.prototype.getTime = function(key) {
+    return parseInt(localStorage.getItem(this.namespace+"_"+key+"_timestamp"));
+};
+
+/**
  * A method for retrieving the value associated with the given key.
  * If the key does not exist, then the default value is used instead.
  * This default will be set.
@@ -8179,6 +8190,8 @@ LocalStorageWrapper.prototype.is_new = function(key, server_time) {
     var stored_time = localStorage.getItem(this.namespace+"_"+key+"_timestamp");
     return (server_time >= stored_time+5000);
 };
+
+
 /**
  * An object for managing the console where printing and plotting is outputed.
  *
@@ -8393,19 +8406,77 @@ if (typeof exports !== 'undefined') {
 function BlockPyServer(main) {
     this.main = main;
     
+    // Save URLs locally for quicker access
+    this.urls = main.model.constants.urls;
+    
     // Add the LocalStorage connection
     // Presently deprecated, but we should investigate this
     this.storage = new LocalStorageWrapper("BLOCKPY");
     
+    // FaultResistantCache
+    this.queue = {
+        'log_event':  JSON.parse(this.storage.getDefault('log_event', '[]')),
+        'save_success': JSON.parse(this.storage.getDefault('save_success', '[]'))
+    };
+    this.MAX_QUEUE_SIZE = {
+        'log_event': 200,
+        'save_success': 50
+    }
+    
     this.saveTimer = {};
     this.presentationTimer = null;
+    this.timers = {};
     
     this.overlay = null;
+    this.blockingAttempts = 0;
     
     // For managing "walks" that let us rerun stored code
     this.inProgressWalks = [];
     
     this.createSubscriptions();
+    
+    // Check cache
+    this.checkCaches();
+}
+
+BlockPyServer.prototype.checkIP = function(newIP) {
+    if (this.storage.has("IP")) {
+        var oldIP = this.storage.get("IP");
+        if (oldIP != newIP) {
+            this.logEvent("editor", "changeIP", oldIP+"|"+newIP);
+            this.storage.set("IP", newIP);
+        }
+    } else {
+        this.storage.set("IP", newIP);
+    }
+}
+
+BlockPyServer.prototype.checkCaches = function() {
+    if (this.storage.has('ASSIGNMENTS_CACHE')) {
+        var data = JSON.parse(this.storage.get('ASSIGNMENTS_CACHE'));
+        this._postLatestRetry(data, this.urls.save_assignment, 'assignment', 
+                              'ASSIGNMENTS_CACHE', this.TIMER_DELAY);
+    }
+    for (var filename in this.main.model.programs) {
+        if (this.storage.has('CODE_CACHE_'+filename)) {
+            var data = JSON.parse(this.storage.get('CODE_CACHE_'+filename));
+            this._postLatestRetry(data, this.urls.save_code, 
+                                  'code_'+filename, 
+                                  'CODE_CACHE_'+filename, this.TIMER_DELAY);
+        }
+    }
+    var server = this;
+    Object.keys(this.queue).forEach(function(cache) {
+        (function pushAnyQueued(response){
+            if (response.success) {
+                if (server.queue[cache].length) {
+                    var data = JSON.parse(server.queue[cache].pop());
+                    var url = server.urls[cache];
+                    server._postRetry(data, url, cache, 1000, pushAnyQueued);
+                }
+            }
+        })({'success': true})
+    });
 }
 
 BlockPyServer.prototype.createSubscriptions = function() {
@@ -8438,6 +8509,7 @@ BlockPyServer.prototype.finalizeSubscriptions = function() {
 };
 
 BlockPyServer.prototype.TIMER_DELAY = 1000;
+BlockPyServer.prototype.FAIL_DELAY = 2000;
 
 BlockPyServer.prototype.createServerData = function() {
     var assignment = this.main.model.assignment;
@@ -8465,20 +8537,11 @@ BlockPyServer.prototype.setStatus = function(status, server_error) {
         this.main.model.status.server_error('');
     }
 }
-BlockPyServer.prototype.defaultResponseWithoutVersioning = function(response) {
+
+BlockPyServer.prototype.defaultResponse = function(response) {
     if (response.success) {
         this.setStatus('Saved');
-    } else {
-        console.error(response);
-        this.setStatus('Error', response.message);
-    }
-}
-BlockPyServer.prototype.defaultResponse = function(response) {
-    /*console.log(response);
-    if (!response.is_version_correct) {
-        this.setStatus('Out of date');
-    } else */if (response.success) {
-        this.setStatus('Saved');
+        this.checkIP(response.ip);
     } else {
         console.error(response);
         this.setStatus('Error', response.message);
@@ -8496,22 +8559,107 @@ BlockPyServer.prototype.logEvent = function(event_name, action, body) {
         data['body'] = (body === undefined) ? '' : body;
         this.setStatus('Logging');
         // Trigger request
-        $.post(this.main.model.constants.urls.log_event, data, 
-               this.defaultResponse.bind(this))
-         .fail(this.defaultFailure.bind(this));
+        this._postRetry(data, this.urls.log_event, 'log_event', 0, function(){});
     } else {
         this.setStatus('Offline', "Server is not connected! (Log Event)");
     }
 }
 
-BlockPyServer.prototype.markSuccess = function(success, callback, hide_correctness) {
+BlockPyServer.prototype._enqueueData = function(cache, data) {
+    // Ensure we have not overfilled the queue
+    var length = this.queue[cache].length;
+    var max = this.MAX_QUEUE_SIZE[cache];
+    if (length > max) {
+        this.queue[cache] = this.queue[cache].slice(length-max, max);
+    }
+    // Only add the element if it's new
+    var key = JSON.stringify(data);
+    var index = this.queue[cache].indexOf(key);
+    if (index == -1) {
+        this.queue[cache].push(key);
+        this.storage.set(cache, JSON.stringify(this.queue[cache]));
+    }
+}
+BlockPyServer.prototype._dequeueData = function(cache, data) {
+    var key = JSON.stringify(data);
+    var index = this.queue[cache].indexOf(key);
+    if (index >= 0) {
+        this.queue[cache].splice(index);
+        this.storage.set(cache, JSON.stringify(this.queue[cache]));
+    }
+}
+BlockPyServer.prototype._getQueued = function(cache, data) {
+    return JSON.parse(this.queue[cache][0]);
+}
+
+BlockPyServer.prototype._postRetry = function(data, url, cache, delay, callback) {
+    // Trigger request
+    var server = this;
+    server.setStatus('Saving');
+    setTimeout(function() {
+        // Make a backup of the current post
+        server._enqueueData(cache, data);
+        $.post(url, data)
+        .done(function(response) {
+            server._dequeueData(cache, data);
+            if (response.success) {
+                server.setStatus('Saved');
+                server.checkIP(response.ip);
+            } else {
+                console.error(response);
+                server.setStatus('Error', response.message);
+            }
+            console.log("Well, that's over.", callback, response);
+            callback(response);
+        })
+        // If server request is the latest one, then let's try it again in a bit
+        .fail(function(error, textStatus) {
+            console.log("I'm going to try this again!");
+            server.defaultFailure(error, textStatus);
+            server._postRetry(data, url, cache, delay+server.FAIL_DELAY, callback);
+        });
+    }, delay);
+}
+
+
+BlockPyServer.prototype.markSuccess = function(success) {
     var model = this.main.model;
+    var callback = model.settings.completedCallback;
+    var hideCorrectness = model.assignment.secret();
     var server = this;
     if (model.server_is_connected('save_success')) {
         var data = this.createServerData();
         data['code'] = model.programs.__main__;
         data['status'] = success;
-        data['hide_correctness'] = hide_correctness;
+        data['hide_correctness'] = hideCorrectness;
+        this.main.components.editor.getPngFromBlocks(function(pngData, img) {
+            data['image'] = pngData;
+            if (img.remove) {
+                img.remove();
+            }
+            server._postRetry(data, server.urls.save_success, 'save_success', 0, 
+                function(response) {
+                    if (response.success && !response.submitted) {
+                        server.setStatus('Ungraded', response.message);
+                    }
+                    if (success && callback) {
+                        callback(data);
+                    }
+                });
+        });
+    }
+}
+/*
+BlockPyServer.prototype.markSuccess = function(success) {
+    var model = this.main.model;
+    var callback = model.settings.completedCallback;
+    var hideCorrectness = model.assignment.secret();
+    var server = this;
+    if (model.server_is_connected('save_success')) {
+        var data = this.createServerData();
+        data['code'] = model.programs.__main__;
+        data['status'] = success;
+        data['hide_correctness'] = hideCorrectness;
         this.main.components.editor.getPngFromBlocks(function(pngData, img) {
             data['image'] = pngData;
             if (img.remove) {
@@ -8543,7 +8691,7 @@ BlockPyServer.prototype.markSuccess = function(success, callback, hide_correctne
     } else {
         server.setStatus('Offline', "Server is not connected! (Mark Success)");
     }
-};
+};*/
 
 BlockPyServer.prototype.saveAssignment = function() {
     var model = this.main.model;
@@ -8558,21 +8706,57 @@ BlockPyServer.prototype.saveAssignment = function() {
         data['disable_algorithm_errors'] = model.assignment.disable_algorithm_errors();
         data['disable_timeout'] = model.assignment.disable_timeout();
         data['name'] = model.assignment.name();
-        data['modules'] = model.assignment.modules().join(','); // TODO: hackish, broken if ',' is in name
-        data['files'] = model.assignment.files().join(','); // TODO: hackish, broken if ',' is in name
+        // TODO: hackish, broken if ',' is in name
+        data['modules'] = model.assignment.modules().join(',');
+        data['files'] = model.assignment.files().join(',');
         
-        var server = this;
-        this.setStatus('Saving');
-        clearTimeout(this.presentationTimer);
-        // Trigger request
-        this.presentationTimer = setTimeout(function() {
-            $.post(model.constants.urls.save_assignment, data, 
-                   server.defaultResponseWithoutVersioning.bind(server))
-             .fail(server.defaultFailure.bind(server));
-        }, this.TIMER_DELAY);
+        this._postLatestRetry(data, this.urls.save_assignment, 'assignment', 
+                              'ASSIGNMENTS_CACHE', this.TIMER_DELAY);
     } else {
         this.setStatus('Offline', "Server is not connected! (Save Assignment)");
     }
+}
+
+/**
+ * Make a AJAX request that, upon failure, will check to see if this was the
+ * latest attempt for this `cache` marker. If so, it will attempt again until
+ * successful; otherwise, it gives up the request.
+ *
+ * @param {Object} data - The AJAX-ready data to be posted
+ * @param {String} url - The URL to post to
+ * @param {String} filename - The unique name given to the relevant timer
+ * @param {String} cache - The unique name given to the relevant cache entry
+ * @param {Integer} delay - The current number of milliseconds to wait before
+                            trying the request again.
+ */
+BlockPyServer.prototype._postLatestRetry = function(data, url, filename, cache, delay) {
+    var server = this;
+    clearTimeout(this.timers[filename]);
+    this.timers[filename] = setTimeout(function() {
+        // Make a backup of the current post
+        server.storage.set(cache, JSON.stringify(data));
+        var time = server.storage.getTime(cache);
+        // Send the request
+        server.setStatus('Saving');
+        $.post(url, data)
+        .done(function(response) {
+            server.defaultResponse(response);
+            // If server request is the latest one, clear it from the cache
+            var cachedTime = server.storage.getTime(cache);
+            if (time >= cachedTime) {
+                server.storage.remove(cache);
+            }
+        })
+        .fail(function(error, textStatus) {
+            server.defaultFailure(error, textStatus);
+            // If server request is the latest one, then let's try it again in a bit
+            var cachedTime = server.storage.getTime(cache);
+            if (time >= cachedTime) {
+                server._postLatestRetry(data, url, filename, cache, 
+                                        delay+server.FAIL_DELAY);
+            }
+        });
+    }, delay);
 }
 
 BlockPyServer.prototype.saveCode = function() {
@@ -8584,18 +8768,9 @@ BlockPyServer.prototype.saveCode = function() {
         data['filename'] = filename;
         data['code'] = model.programs[filename]();
         
-        var server = this;
-        this.setStatus('Saving');
-        if (this.saveTimer[filename]) {
-            clearTimeout(this.saveTimer[filename]);
-        }
-        this.saveTimer[filename] = setTimeout(function() {
-            $.post(model.constants.urls.save_code, data, 
-                   filename == '__main__'
-                    ? server.defaultResponse.bind(server)
-                    : server.defaultResponseWithoutVersioning.bind(server))
-             .fail(server.defaultFailure.bind(server));
-        }, this.TIMER_DELAY);
+        this._postLatestRetry(data, this.urls.save_code, 
+                              'code_'+filename, 
+                              'CODE_CACHE_'+filename, this.TIMER_DELAY);
     } else {
         this.setStatus('Offline', "Server is not connected! (Save Code)");
     }
@@ -8603,28 +8778,133 @@ BlockPyServer.prototype.saveCode = function() {
 
 BlockPyServer.prototype.getHistory = function(callback) {
     var model = this.main.model;
-    
     if (model.server_is_connected('get_history')) {
         var data = this.createServerData();
         var server = this;
-        this.setStatus('Loading History');
-        $.post(model.constants.urls.get_history, data, 
-               function(response) {
+        this._postBlocking(this.urls.get_history, data, 5,
+            function(response) {
                 if (response.success) {
-                    server.setStatus('Saved');
                     callback(response.data);
                 } else {
                     console.error(response);
                     server.setStatus('Error', response.message);
                 }
-               })
-         .fail(server.defaultFailure.bind(server));
+            });
     } else {
         this.setStatus('Offline', "Server is not connected! (Get History)");
         callback([]);
     }
 }
 
+/**
+ *
+ */
+BlockPyServer.prototype.showOverlay = function(attempt) {
+    this.blockingAttempts += 1;
+    if (!document.getElementsByClassName("blockpy-overlay").length) {
+        this.overlay = $('<div class="blockpy-overlay"> </div>');
+        this.overlay.appendTo(document.body)
+    }
+    switch (attempt) {
+        case 0: this.overlay.css('background-color', '#988'); break;
+        case 1: this.overlay.css('background-color', '#655'); break;
+        case 2: this.overlay.css('background-color', '#333'); break;
+        default: this.overlay.css('background-color', 'black'); break;
+    }
+}
+BlockPyServer.prototype.hideOverlay = function() {
+    this.blockingAttempts -= 1;
+    if (this.blockingAttempts <= 0) {
+        this.overlay.remove();
+    }
+}
+
+BlockPyServer.prototype._postBlocking = function(url, data, attempts, success, failure) {
+    var server = this;
+    this.setStatus('Loading');
+    this.showOverlay(attempts);
+    $.post(url, data)
+    .done(function(response) {
+        server.hideOverlay();
+        server.setStatus('Loaded');
+        if (response.success) {
+            server.checkIP(response.ip);
+        }
+        success(response);
+    })
+    .fail(function(e, textStatus, errorThrown) {
+        if (attempts <= 0) {
+            server.hideOverlay();
+            server.defaultFailure();
+            if (failure) {
+                failure(e, textStatus, errorThrown);
+            }
+        } else {
+            setTimeout(function() {
+                server.hideOverlay();
+                server._postBlocking(url, data, attempts-1, success, failure);
+            }, server.FAIL_DELAY);
+        }
+    });
+}
+
+BlockPyServer.prototype.loadAssignment = function(assignment_id) {
+    var model = this.main.model;
+    var server = this;
+    if (model.server_is_connected('load_assignment')) {
+        var data = this.createServerData();        
+        data['assignment_id'] = assignment_id;
+        this._postBlocking(this.urls.load_assignment, data, 5,
+            function(response) {
+                if (response.success) {
+                    server.main.setAssignment(response.settings,
+                                              response.assignment, 
+                                              response.programs)
+                } else {
+                    server.setStatus('Failure', response.message);
+                }
+            },
+            function(e,textStatus,errorThrown) {
+                server.main.components.dialog.show("Error While Loading", 
+                "BlockPy encountered an error while loading the assignment.<br>"+
+                "You should probably reload the page or advance to another assignment.<br>")
+                console.error(e, textStatus, errorThrown);
+            });
+    } else {
+        this.setStatus('Offline', "Server is not connected! (Load Assignment)");
+    }
+}
+
+/**
+ * This function can be used to load files and web resources.
+ */
+BlockPyServer.prototype.loadFile = function(filename, type, callback, errorCallback) {
+    var model = this.main.model;
+    var server = this;
+    if (model.server_is_connected('load_file')) {
+        var data = this.createServerData();
+        data['filename'] = filename;
+        data['type'] = type;
+        this._postBlocking(this.urls.load_file, data, 5,
+            function(response) {
+                if (response.success) {
+                    callback(response.data);
+                } else {
+                    errorCallback(response.message);
+                    server.setStatus('Failure', response.message);
+                }
+           },
+           function(e, textStatus, errorThrown) {
+                errorCallback("Server failure! Report to instructor");
+                console.error(errorThrown);
+         });
+    } else {
+        errorCallback("No file server available.");
+        this.setStatus('Offline', "Server is not connected! (Load File)");
+    }
+}
+
+/*
 BlockPyServer.prototype.walkOldCode = function() {
     var server = this,
         main = this.main;
@@ -8673,82 +8953,7 @@ BlockPyServer.prototype.walkOldCode = function() {
             this.setStatus('Offline', "Server is not connected! (Walk Old Code)");
         }
     }
-}
-
-/**
- *
- */
-BlockPyServer.prototype.showOverlay = function() {
-    this.overlay = $('<div class="blockpy-overlay"> </div>');
-    this.overlay.appendTo(document.body)
-}
-BlockPyServer.prototype.hideOverlay = function() {
-    this.overlay.remove();
-}
-
-BlockPyServer.prototype.loadAssignment = function(assignment_id) {
-    var model = this.main.model;
-    var server = this;
-    if (model.server_is_connected('load_assignment')) {
-        var data = this.createServerData();        
-        data['assignment_id'] = assignment_id;
-        this.setStatus('Loading');
-        this.showOverlay();
-        $.post(model.constants.urls.load_assignment, data, 
-                function(response) {
-                    if (response.success) {
-                        server.main.setAssignment(response.settings,
-                                                  response.assignment, 
-                                                  response.programs)
-                        server.setStatus('Loaded');
-                        server.hideOverlay();
-                    } else {
-                        server.setStatus('Failure', response.message);
-                        server.hideOverlay();
-                    }
-               })
-         .fail(function() {
-            server.hideOverlay();
-            server.defaultFailure()
-         });
-    } else {
-        this.setStatus('Offline', "Server is not connected! (Load Assignment)");
-    }
-}
-
-/**
- * This function can be used to load files and web resources.
- */
-BlockPyServer.prototype.loadFile = function(filename, type, callback, errorCallback) {
-    var model = this.main.model;
-    var server = this;
-    if (model.server_is_connected('load_file')) {
-        var data = this.createServerData();
-        data['filename'] = filename;
-        data['type'] = type;
-        this.setStatus('Loading');
-        $.post(model.constants.urls.load_file, data, 
-                function(response) {
-                    if (response.success) {
-                        callback(response.data);
-                        server.setStatus('Loaded');
-                        server.hideOverlay();
-                    } else {
-                        errorCallback(response.message);
-                        server.setStatus('Failure', response.message);
-                        server.hideOverlay();
-                    }
-               })
-         .fail(function(e, textStatus, errorThrown) {
-            errorCallback("Server failure! Report to instructor");
-            console.error(errorThrown);
-            server.defaultFailure()
-         });
-    } else {
-        errorCallback("No file server available.");
-        this.setStatus('Offline', "Server is not connected! (Load File)");
-    }
-}
+}*/
 /**
  * An object for managing the blob of text at the top of a problem describing it.
  * This isn't a very busy component.
@@ -11224,6 +11429,7 @@ BlockPyEngine.prototype.on_run = function(afterwards) {
                 engine.main.components.toolbar.notifyFeedbackUpdate();
             }
             var result = feedback.presentFeedback();
+            // hide_correctness is now superceded by model.assignment.secret
             var hide_correctness = !!Sk.executionReports.instructor.hide_correctness;
             var completed = !!Sk.executionReports.instructor.complete;
             var success_level = 0;
@@ -11234,10 +11440,12 @@ BlockPyEngine.prototype.on_run = function(afterwards) {
                 }
             }
             success_level = Math.max(0.0, Math.min(1.0, success_level));
+            var old_status = model.settings.completion_status();
+            model.settings.completion_status(Math.max(old_status, success_level));
             if (result == 'success' || (result == 'no errors' && completed)) {
-                engine.main.components.server.markSuccess(1.0, model.settings.completedCallback, hide_correctness);
+                engine.main.components.server.markSuccess(1.0);
             } else {
-                engine.main.components.server.markSuccess(success_level, model.settings.completedCallback, hide_correctness);
+                engine.main.components.server.markSuccess(success_level);
             }
             model.execution.status("complete");
             if (afterwards !== undefined) {
@@ -11453,6 +11661,7 @@ BlockPyEngine.prototype.runInstructorCode = function(filename, after) {
         '    return None\n'+
         instructorCode
     );
+    console.log(instructorCode);
     lineOffset = instructorCode.split(NEW_LINE_REGEX).length - lineOffset;
     var engine = this;
     report['instructor'] = {
@@ -11850,7 +12059,9 @@ BlockPy.prototype.initModel = function(settings) {
             // boolean
             'server_connected': ko.observable(true),
             // boolean
-            'presentation_mode': ko.observable(settings.presentation_mode)
+            'presentation_mode': ko.observable(settings.presentation_mode),
+            // Completion status (0 incomplete, 1 complete, (0,1) is partial
+            'completion_status': ko.observable(0),
         },
         // Assignment level settings
         'assignment': {
@@ -11920,7 +12131,7 @@ BlockPy.prototype.initModel = function(settings) {
             'server_error': ko.observable(''),
             // Dataset loading
             // List of promises
-            'dataset_loading': ko.observableArray()
+            'dataset_loading': ko.observableArray(),
         },
         // Constant globals for this page, cannot be changed
         'constants': {
@@ -11986,7 +12197,7 @@ BlockPy.prototype.initModelMethods = function() {
             case 'Saved': return ['label-success', 'Saved'];
             case 'Ungraded': return ['label-warning', 'Ungraded']
             case 'Disconnected': return ['label-danger', 'Disconnected'];
-            case 'Error': return ['label-danger', 'Error'];
+            case 'Error': return ['label-danger', 'Errors'];
         }
     }, this.model);
     // Helper function to map Execution status messages to UI elements
@@ -12140,6 +12351,7 @@ BlockPy.prototype.setAssignment = function(settings, assignment, programs) {
     if (assignment.files) {
         this.model.assignment['files'](assignment.files);
     }
+    this.model.settings['completion_status'](settings.status);
     this.model.assignment['assignment_id'](assignment.assignment_id);
     this.model.assignment['group_id'] = assignment.group_id;
     this.model.assignment['student_id'] = assignment.student_id;

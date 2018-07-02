@@ -29,6 +29,9 @@ from controllers.helpers import (lti, get_assignments_from_request,
                                  ensure_dirs)
 
 blueprint_blockpy = Blueprint('blockpy', __name__, url_prefix='/blockpy')
+
+def failure(message):
+    return jsonify(success=False, message=message, ip=request.remote_addr)
                            
 @blueprint_blockpy.route('/static/<path:path>', methods=['GET', 'POST'])
 def blockpy_static(path):
@@ -85,8 +88,18 @@ def load(lti=None, assignments=None, submissions=None, embed=False):
                            course_id=course_id,
                            user_id=g.user.id if g.user is not None else -1,
                            embed=embed,
+                           ip=request.remote_addr,
                            assignment_id=assignment_id,
                            instructor_mode=instructor_mode)
+                           
+@blueprint_blockpy.route('/load_assignment_give_feedback/', methods=['GET', 'POST'])
+@blueprint_blockpy.route('/load_assignment_give_feedback', methods=['GET', 'POST'])
+def load_assignment_give_feedback():
+    assignment_id = request.values.get('assignment_id', None)
+    if assignment_id is None:
+        return failure("No Assignment ID given!")
+    assignment = Assignment.by_id(assignment_id)
+    return jsonify(success=True, give_feedback=assignment.give_feedback)
                            
 @blueprint_blockpy.route('/load_assignment/', methods=['GET', 'POST'])
 @blueprint_blockpy.route('/load_assignment', methods=['GET', 'POST'])
@@ -95,7 +108,7 @@ def load_assignment(lti=lti):
     group_id = request.values.get('group_id', None)
     course_id = request.values.get('course_id',  g.course.id if 'course' in g else None)
     if None in (assignment_id, course_id) or course_id == "":
-        return jsonify(success=False, message="No Assignment ID or Course ID given!")
+        return failure("No Assignment ID or Course ID given!")
     user_id = g.user.id if g.user != None else -1
     assignment = Assignment.by_id(assignment_id)
     submission = assignment.get_submission(user_id, course_id=course_id)
@@ -115,9 +128,11 @@ def load_assignment(lti=lti):
     removed_modules = settings['modules']['removed'] if 'modules' in settings else []
     log = Log.new('editor', 'load', assignment_id, user_id, body=str(assignment.version), timestamp=timestamp)
     return jsonify(success=True,
+                   ip=request.remote_addr,
                    settings = {
                         'editor': interface,
-                        'read_only': upload
+                        'read_only': upload,
+                        'status': submission.status
                     },
                    assignment = {
                         'assignment_id': assignment.id,
@@ -157,7 +172,7 @@ def save_code(lti=lti):
     assignment_version = int(request.values.get('version', -1))
     course_id = request.values.get('course_id',  g.course.id if 'course' in g else None)
     if None in (assignment_id, course_id) or course_id == "":
-        return jsonify(success=False, message="No Assignment ID or Course ID given!")
+        return failure("No Assignment ID or Course ID given!")
     code = request.values.get('code', '')
     timestamp = request.values.get('timestamp', '')
     filename = request.values.get('filename', '__main__')
@@ -172,7 +187,9 @@ def save_code(lti=lti):
         elif filename == "starting_code":
             Assignment.edit(assignment_id=assignment_id, starting_code=code)
         log = Log.new('instructor', filename, assignment_id, g.user.id, body=code, timestamp=timestamp)
-    return jsonify(success=True, is_version_correct=is_version_correct)
+    return jsonify(success=True, 
+                   is_version_correct=is_version_correct, 
+                   ip=request.remote_addr)
     
 @blueprint_blockpy.route('/save_events/', methods=['GET', 'POST'])
 @blueprint_blockpy.route('/save_events', methods=['GET', 'POST'])
@@ -184,9 +201,10 @@ def save_events(lti=lti):
     timestamp = request.values.get('timestamp', "")
     user_id = g.user.id if g.user != None else -1
     if assignment_id is None:
-        return jsonify(success=False, message="No Assignment ID given!")
+        return failure("No Assignment ID given!")
     log = Log.new(event, action, assignment_id, user_id, body=body, timestamp=timestamp)
-    return jsonify(success=True)
+    return jsonify(success=True, 
+                   ip=request.remote_addr)
 
 def get_group_report(group_id, user_id, course_id, hide_correctness):
     group = AssignmentGroup.by_id(group_id)
@@ -271,7 +289,7 @@ def save_correct(lti, lti_exception=None):
     hide_correctness = request.values.get('hide_correctness', "false")=="true"
     course_id = request.values.get('course_id', g.course.id if 'course' in g else None)
     if None in (assignment_id, course_id):
-        return jsonify(success=False, message="No Assignment ID or Course ID given!")
+        return failure("No Assignment ID or Course ID given!")
     assignment = Assignment.by_id(assignment_id)
     if status >= 1:
         submission = Submission.save_correct(g.user.id, assignment_id, course_id=int(course_id))
@@ -280,7 +298,9 @@ def save_correct(lti, lti_exception=None):
     submission.set_status(int(100*status))
     lis_result_sourcedid = request.values.get('lis_result_sourcedid', submission.url) or None
     if lis_result_sourcedid is None:
-        return jsonify(success=True, submitted=False, message="Not in a grading context.")
+        return jsonify(success=True, submitted=False, 
+                       message="Not in a grading context.",
+                       ip=request.remote_addr)
     session['lis_result_sourcedid'] = lis_result_sourcedid
     image_url = submission.save_block_image(image)
     if assignment_group_id != None and assignment_group_id != '' and assignment_group_id != 'None':
@@ -289,7 +309,7 @@ def save_correct(lti, lti_exception=None):
         report = get_report(assignment.type, assignment.name, submission, image=image_url, hide_correctness=hide_correctness)
         score = float(submission.correct) or status
     lti.post_grade(score, report, endpoint=lis_result_sourcedid)
-    return jsonify(success=True, submitted=True)
+    return jsonify(success=True, submitted=True, ip=request.remote_addr,)
     
 @blueprint_blockpy.route('/get_submission_code/', methods=['GET', 'POST'])
 @blueprint_blockpy.route('/get_submission_code', methods=['GET', 'POST'])
@@ -339,7 +359,7 @@ def get_submission_image(lti=lti):
 def save_presentation(lti=lti):
     assignment_id = request.values.get('assignment_id', None)
     if assignment_id is None:
-        return jsonify(success=False, message="No Assignment ID given!")
+        return failure("No Assignment ID given!")
     presentation = request.values.get('introduction', "")
     parsons = request.values.get('parsons', "false") == "true"
     importable = request.values.get('importable', "false") == "true"
@@ -355,7 +375,7 @@ def save_presentation(lti=lti):
     if not g.user.is_instructor(int(assignment.course_id)):
         return jsonify(success=False, message="You are not an instructor in this assignments' course.")
     Assignment.edit(assignment_id=assignment_id, presentation=presentation, name=name, parsons=parsons, mode=mode, modules=modules, importable=importable, disable_algorithm_errors=disable_algorithm_errors, disable_timeout=disable_timeout, files=files, secret=secret)
-    return jsonify(success=True)
+    return jsonify(success=True, ip=request.remote_addr)
     
 @blueprint_blockpy.route('/get_history/', methods=['GET', 'POST'])    
 @blueprint_blockpy.route('/get_history', methods=['GET', 'POST'])
@@ -364,9 +384,11 @@ def get_history(lti=lti):
     assignment_version = int(request.values.get('version', -1))
     course_id = request.values.get('course_id',  g.course.id if 'course' in g else None)
     if None in (assignment_id, course_id) or course_id == "":
-        return jsonify(success=False, message="No Assignment ID or Course ID given!")
+        return failure("No Assignment ID or Course ID given!")
     submission = Submission.load(g.user.id, assignment_id, int(course_id))
-    return jsonify(success=True, data=submission.get_history())
+    return jsonify(success=True, 
+                   data=submission.get_history(), 
+                   ip=request.remote_addr)
 
 @blueprint_blockpy.route('/load_corgis/<path:path>', methods=['GET', 'POST'])
 def load_corgis(path):
@@ -379,7 +401,7 @@ def load_file():
     filename = request.values.get('filename', None)
     type = request.values.get('type', None)
     if None in (filename, type, assignment_id):
-        return jsonify(success=False, message="No Assignment ID, filename, or type given!")
+        return failure("No Assignment ID, filename, or type given!")
     files_folder = os.path.join(app.config['UPLOADS_DIR'], 'files', assignment_id)
     ensure_dirs(files_folder)
     if type == 'url':
@@ -390,9 +412,9 @@ def load_file():
     try:
         with open(file_path) as inp:
             contents = inp.read()
-        return jsonify(success=True, data=contents)
+        return jsonify(success=True, data=contents, ip=request.remote_addr)
     except IOError as e:
-        return jsonify(success=False, message=str(e))
+        return jsonify(success=False, message=str(e), ip=request.remote_addr)
         
     
 @blueprint_blockpy.route('/force_right_section/', methods=['GET', 'POST'])    
@@ -472,13 +494,13 @@ def process_history(history):
 def browse_submissions():
     assignment_id = request.values.get('assignment_id', None)
     if assignment_id is None:
-        return jsonify(success=False, message="No Assignment ID given!")
+        return failure("No Assignment ID given!")
     assignment_id = int(assignment_id)
     course_id = request.values.get('course_id',  g.course.id if 'course' in g else None)
     if course_id == None or course_id == "":
-        return jsonify(success=False, message="No Course ID given!")
+        return failure("No Course ID given!")
     if g.user is None or not g.user.is_instructor(int(course_id)):
-        return jsonify(success=False, message="You are not an instructor in this assignments' course.")
+        return failure("You are not an instructor in this assignments' course.")
     submissions = Submission.by_assignment(assignment_id, int(course_id))
     formatter = HtmlFormatter(linenos=True, noclasses=True)
     python_lexer = PythonLexer()
@@ -488,7 +510,8 @@ def browse_submissions():
     return render_template('blockpy/browse_submissions.html', 
                            course_id=course_id, 
                            assignment_id=assignment_id,
-                           submissions=submissions)
+                           submissions=submissions,
+                           ip=request.remote_addr)
 
 @blueprint_blockpy.route('/watch', methods=['GET', 'POST'])
 @blueprint_blockpy.route('/watch/', methods=['GET', 'POST'])
@@ -497,9 +520,9 @@ def watch():
     assignments = [int(aid) for aid in assignment_list.split(',') if len(aid) > 0]
     course_id = request.values.get('course_id',  g.course.id if 'course' in g else None)
     if course_id == None or course_id == "":
-        return jsonify(success=False, message="No Course ID given!")
+        return failure("No Course ID given!")
     if g.user is None or not g.user.is_instructor(int(course_id)):
-        return jsonify(success=False, message="You are not an instructor in this assignments' course.")
+        return failure("You are not an instructor in this assignments' course.")
     update = request.values.get('update', 'false') == "true"
     if update:
         data = []
