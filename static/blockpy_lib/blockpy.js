@@ -8609,12 +8609,10 @@ BlockPyServer.prototype._postRetry = function(data, url, cache, delay, callback)
                 console.error(response);
                 server.setStatus('Error', response.message);
             }
-            console.log("Well, that's over.", callback, response);
             callback(response);
         })
         // If server request is the latest one, then let's try it again in a bit
         .fail(function(error, textStatus) {
-            console.log("I'm going to try this again!");
             server.defaultFailure(error, textStatus);
             server._postRetry(data, url, cache, delay+server.FAIL_DELAY, callback);
         });
