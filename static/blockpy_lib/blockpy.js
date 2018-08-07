@@ -6965,7 +6965,7 @@ BlockPyFeedback.prototype.printError = function(error) {
 BlockPyFeedback.prototype.presentInstructorError = function() {
     var instructor = this.main.model.execution.reports['instructor'];
     var error = instructor.error;
-    if (!error.traceback) {
+    if (!error.traceback || error.traceback.length == 0) {
         this.internalError(error, "Instructor Feedback Error", "Error in instructor feedback. Please show the above message to an instructor!");
         console.error(error);
         return 'instructor';
@@ -7950,7 +7950,8 @@ BlockPyEngine.prototype.runInstructorCode = function(filename, quick, after) {
     var engine = this;
     report['instructor'] = {
         'compliments': [],
-        'filename': filename+".py"
+        'filename': filename+".py",
+        'code': instructorCode,
         //'complete': false // Actually, let's use undefined for now.
     };
     Sk.misceval.asyncToPromise(function() {
@@ -7966,8 +7967,8 @@ BlockPyEngine.prototype.runInstructorCode = function(filename, quick, after) {
             if (error.tp$name === 'GracefulExit') {
                 report['instructor']['success'] = true;
             } else {
-                console.log(error.args.v);
-                console.log(error);
+                console.log(report['instructor']['code']);
+                console.error(error);
                 report['instructor']['success'] = false;
                 report['instructor']['error'] = error;
                 report['instructor']['line_offset'] = lineOffset;
