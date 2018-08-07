@@ -7009,7 +7009,6 @@ BlockPyFeedback.prototype.presentFeedback = function(category, label, message, l
         this.main.components.editor.highlightError(line-1);
     }
     this.main.components.server.logEvent('feedback', category+"|"+label, message);
-    console.error(message);
     
     return;
     
@@ -7675,7 +7674,6 @@ BlockPyEngine.prototype.on_run = function(afterwards) {
                 var label = Sk.ffi.remapToJs(module.$d.LABEL);
                 var data = Sk.ffi.remapToJs(module.$d.DATA);
                 var hide = Sk.ffi.remapToJs(module.$d.HIDE);
-                console.log(data);
                 var line = engine.lookForLines(data);
                 feedback.presentFeedback(category, label, message, line);
                 if (!feedback.isFeedbackVisible()) {
@@ -7685,8 +7683,7 @@ BlockPyEngine.prototype.on_run = function(afterwards) {
                 score = Math.max(0.0, Math.min(1.0, score));
                 var old_status = model.settings.completion_status();
                 model.settings.completion_status(Math.max(old_status, score));
-                if (success || (category == "Instructor" && 
-                                label == "No errors")) {
+                if (success) {
                     engine.main.components.server.markSuccess(1.0);
                 } else {
                     engine.main.components.server.markSuccess(score);
