@@ -55,7 +55,7 @@ def rename_course(course_id):
     
 @courses.route('/add_canvas/', methods=['GET', 'POST'])
 @courses.route('/add_canvas', methods=['GET', 'POST'])
-@instructor_required
+@login_required
 def add_canvas():
     """
     Create a new assignment with the given information

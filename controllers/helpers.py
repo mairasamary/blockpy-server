@@ -89,7 +89,7 @@ def admin_required(f):
             return redirect(url_for('security.login', next=request.url))
         if not g.user.is_admin():
             flash("This portion of the site is only for administrators.")
-            return redirect(url_for('users.index'))
+            return redirect(url_for('courses.index'))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -100,7 +100,7 @@ def instructor_required(f):
             return redirect(url_for('security.login', next=request.url))
         if not g.user.is_instructor():
             flash("This portion of the site is only for instructors.")
-            return redirect(url_for('users.index'))
+            return redirect(url_for('courses.index'))
         return f(*args, **kwargs)
     return decorated_function
 
