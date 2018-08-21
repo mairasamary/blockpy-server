@@ -2628,6 +2628,49 @@ var $sk_mod_instructor = function(name) {
         Sk.executionReports.instructor.scrolling = true;
     });
     
+    /*
+    def hist(self, data, **kwargs):
+        label = kwargs.get('label', None)
+        self.active_plot['data'].append({'type': 'Histogram', 'values': data, 'label': label})
+    def plot(self, xs, ys=None, **kwargs):
+        label = kwargs.get('label', None)
+        if ys == None:
+            self.active_plot['data'].append({'type': 'Line', 
+                                            'x': range(len(xs)), 'y': xs, 'label': label})
+        else:
+            self.active_plot['data'].append({'type': 'Line', 'x': xs, 'y': ys, 'label': label})
+    def scatter(self, xs, ys, **kwargs):
+        label = kwargs.get('label', None)
+        self.active_plot['data'].append({'type': 'Scatter', 'x': xs, 'y': ys, 'label': label})
+    */
+    mod.get_plots = new Sk.builtin.func(function() {
+        Sk.builtin.pyCheckArgs("get_plots", arguments, 0, 0);
+        if (Sk.executionReports['student'].success) {
+            var outputs = Sk.executionReports['student']['output']();
+            outputs = outputs.filter(function(output) { 
+                return typeof output != "string"; 
+            }).map(function(graph) {
+                return {'data': graph.map(function(plot) {
+                    var newPlot = { 'type': plot.type,
+                                    'label': '' };
+                    if (plot.type == "line" || plot.type == 'scatter') {
+                        newPlot['x'] = plot.data.map(function(v) { return v.x });
+                        newPlot['y'] = plot.data.map(function(v) { return v.y });
+                    } else if (plot.type == "hist") {
+                        newPlot['values'] = plot.data;
+                    }
+                    return newPlot;
+                }), 
+                    'xlabel': '', 'ylabel': '', 
+                    'title': '', 'legend': false
+                }
+            });
+            return mixedRemapToPy(outputs);
+        } else {
+            return Sk.ffi.remapToPy([]);
+        }
+    });
+    
     // Provides `student` as an object with all the data that the student declared.
     mod.StudentData = Sk.misceval.buildClass(mod, function($gbl, $loc) {
         $loc.__init__ = new Sk.builtin.func(function(self) {
@@ -7254,7 +7297,7 @@ BlockPyToolbar.prototype.notifyFeedbackUpdate = function() {
 BlockPyToolbar.prototype.activateToolbar = function() {
     var main = this.main;
     this.tag.find('.blockpy-run').click(function(e) {
-        main.components.server.logEvent('editor', 'run')
+        //main.components.server.logEvent('editor', 'run')
         var backup = this;
         main.components.feedback.clear();
         $(this).removeClass("btn-success").addClass("btn-warning")
@@ -7940,6 +7983,7 @@ BlockPyEngine.prototype.runInstructorCode = function(filename, quick, after) {
         'error, position = get_student_error()\n'+
         'compatibility.raise_exception(error, position)\n'+
         'compatibility.run_student = run_student\n'+
+        'compatibility.get_plots = get_plots\n'+
         'compatibility.get_output = get_output\n'+
         'compatibility.reset_output = reset_output\n'+
         'def capture_output(func, *args):\n'+
