@@ -69,6 +69,7 @@ function reportSuccess() {
         alertBox("Success report failed");
     });
 }
+var saveTimer = null;
 function loadEverything() {
 $(document).ready(function() {
     console.log("ON READY");
@@ -86,23 +87,26 @@ $(document).ready(function() {
                                    Blockly.Xml.textToDom(result));
     }
     Blockly.addChangeListener(function() {
-        var answer = Blockly.Xml.domToText(Blockly.Xml.workspaceToDom(Blockly.getMainWorkspace()));
-        var data = {
-            'assignment_id': "{{ assignment.id }}",
-            'course_id': {{ (course_id if course_id != None else submission.course_id)|tojson }},
-            'filename': '__main__',
-            'code': answer
-            };
-        $.post(MAZE_URL_MAP.save_code, data, function(response) {
-            if (response.success) {
-                alertBox("Saved").delay(200).fadeOut("slow");
-            } else {
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(function() {
+            var answer = Blockly.Xml.domToText(Blockly.Xml.workspaceToDom(Blockly.getMainWorkspace()));
+            var data = {
+                'assignment_id': "{{ assignment.id }}",
+                'course_id': {{ (course_id if course_id != None else submission.course_id)|tojson }},
+                'filename': '__main__',
+                'code': answer
+                };
+            $.post(MAZE_URL_MAP.save_code, data, function(response) {
+                if (response.success) {
+                    alertBox("Saved").delay(200).fadeOut("slow");
+                } else {
+                    alertBox("Saving failed");
+                    console.error("Server Saving Error", response.message);
+                }
+            }).fail(function() {
                 alertBox("Saving failed");
-                console.error("Server Saving Error", response.message);
-            }
-        }).fail(function() {
-            alertBox("Saving failed");
-        });
+            });
+        }, 1500);
     });
     $("body").css("overflow-y", "hidden");
     loadNavigation();
