@@ -262,7 +262,8 @@ def get_report(mode, name, submission, image="", hide_correctness=False):
         code = highlight_python_code(submission.code)
         if image:
             image = "Submitted Blocks:<br><img src='{0}'>".format(image)
-        time = process_history([h['time'] for h in submission.get_history()])
+        #time = process_history([h['time'] for h in submission.get_history()])
+        time = submission.version/6.0
         return '''
         <h1 id='{slug}'>{name}</h1>
         <div>Status: {status}</div>
