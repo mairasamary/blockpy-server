@@ -309,7 +309,7 @@ def save_correct(lti, lti_exception=None):
         report = get_report(assignment.type, assignment.name, submission, image=image_url, hide_correctness=hide_correctness)
         score = float(submission.correct) or status
     lti.post_grade(score, report, endpoint=lis_result_sourcedid)
-    return jsonify(success=True, submitted=True, ip=request.remote_addr,)
+    return jsonify(success=True, submitted=True, ip=request.remote_addr)
     
 @blueprint_blockpy.route('/get_submission_code/', methods=['GET', 'POST'])
 @blueprint_blockpy.route('/get_submission_code', methods=['GET', 'POST'])

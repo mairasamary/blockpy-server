@@ -4728,7 +4728,7 @@ BlockPyServer.prototype.checkCaches = function() {
 
 BlockPyServer.prototype.createSubscriptions = function() {
     var server = this, model = this.main.model;
-    model.program.subscribe(function() { server.saveCode(); });
+    model.program_updated.subscribe(function() { server.saveCode(); });
     model.assignment.name.subscribe(function(e) { server.saveAssignment();});
     model.assignment.introduction.subscribe(function(e) { server.saveAssignment(); });
     model.assignment.parsons.subscribe(function(e) { server.saveAssignment(); });
@@ -7707,6 +7707,7 @@ BlockPyEngine.prototype.lookForLines = function(feedbackData) {
 BlockPyEngine.prototype.on_run = function(afterwards) {
     this.main.model.execution.status("running");
     clearTimeout(this.main.components.editor.triggerOnChange);
+    this.main.components.server.saveCode();
     var engine = this;
     var feedback = engine.main.components.feedback;
     var model = this.main.model;
@@ -7768,6 +7769,7 @@ BlockPyEngine.prototype.on_change = function() {
         return false;
     }
     this.main.model.execution.status("changing");
+    this.main.components.server.saveCode();
     // On step does not perform parse analysis by default or run student code
     var engine = this;
     var feedback = this.main.components.feedback;
@@ -8497,7 +8499,12 @@ BlockPy.prototype.initModelMethods = function() {
     // The code for the current active program file (e.g., "__main__")
     this.model.program = ko.computed(function() {
         return this.programs[this.settings.filename()]();
-    }, this.model) //.extend({ rateLimit: { method: "notifyWhenChangesStop", timeout: 400 } });
+    }, this.model)
+    this.model.program_updated = ko.computed(function() {
+        return this.programs[this.settings.filename()]();
+    }, this.model).extend({ rateLimit: { 
+        method: "notifyWhenChangesStop", timeout: 1000
+    }});
     
     // Whether this URL has been specified
     this.model.server_is_connected = function(url) {

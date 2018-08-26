@@ -588,7 +588,6 @@ class Submission(Base):
         submission = Submission.query.filter_by(user_id=user_id, 
                                                 course_id=course_id,
                                                 assignment_id=assignment_id).first()
-        is_version_correct = True
         if not submission:
             submission = Submission(assignment_id=assignment_id, 
                                     user_id=user_id,
@@ -599,15 +598,9 @@ class Submission(Base):
         else:
             submission.code = code
             submission.version += 1
-            assignment = Assignment.by_id(submission.assignment_id)
-            if assignment:
-                current_assignment_version = assignment.version
-                is_version_correct = (assignment_version == current_assignment_version)
-            else:
-                is_version_correct = False
         db.session.commit()
         submission.log_code(timestamp=timestamp)
-        return submission, is_version_correct
+        return submission, True
         
     @staticmethod
     def save_correct(user_id, assignment_id, course_id):
@@ -667,6 +660,9 @@ class Submission(Base):
         Store the code on disk, mapped to the Assignment ID and the Student ID
         '''
         # Multiple-file logging
+        log = Log.new('code', 'set', self.assignment_id, 
+                      self.user_id, body=self.code, timestamp=timestamp)
+        '''
         directory = os.path.join(app.config['BLOCKLY_LOG_DIR'],
                                  str(self.assignment_id), 
                                  str(self.user_id))
@@ -676,9 +672,7 @@ class Submission(Base):
         file_name = os.path.join(directory, name + extension)
         
         with open(file_name, 'w') as blockly_logfile:
-            blockly_logfile.write(self.code)
-        log = Log.new('code', 'set', self.assignment_id, 
-                      self.user_id, body=self.code, timestamp=timestamp)
+            blockly_logfile.write(self.code)'''
         '''
         # Single file logging
         student_interactions_logger = logging.getLogger('StudentInteractions')
