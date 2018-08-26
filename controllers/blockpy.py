@@ -263,7 +263,7 @@ def get_report(mode, name, submission, image="", hide_correctness=False):
         if image:
             image = "Submitted Blocks:<br><img src='{0}'>".format(image)
         #time = process_history([h['time'] for h in submission.get_history()])
-        time = submission.version/10.0
+        time = submission.version/60.0
         return '''
         <h1 id='{slug}'>{name}</h1>
         <div>Status: {status}</div>

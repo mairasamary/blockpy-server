@@ -662,7 +662,7 @@ class Submission(Base):
         # Multiple-file logging
         log = Log.new('code', 'set', self.assignment_id, 
                       self.user_id, body=self.code, timestamp=timestamp)
-        '''
+        
         directory = os.path.join(app.config['BLOCKLY_LOG_DIR'],
                                  str(self.assignment_id), 
                                  str(self.user_id))
@@ -672,7 +672,7 @@ class Submission(Base):
         file_name = os.path.join(directory, name + extension)
         
         with open(file_name, 'w') as blockly_logfile:
-            blockly_logfile.write(self.code)'''
+            blockly_logfile.write(self.code)
         '''
         # Single file logging
         student_interactions_logger = logging.getLogger('StudentInteractions')
@@ -685,6 +685,7 @@ class Submission(Base):
     def get_history(self):
         '''
         Retrieve all codes from disk
+        '''
         '''
         logs = (Log.query
                    .with_entities(Log.body, Log.timestamp)
@@ -710,7 +711,7 @@ class Submission(Base):
                     'code': body,
                     'time': file_name[:-2]
                 })
-        return all_files'''
+        return all_files
     
 class Assignment(Base):
     url = Column(String(255), default="")
