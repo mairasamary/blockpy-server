@@ -15,6 +15,10 @@ VERSION = '0.1.0'
 app = Flask(__name__)
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 
+#from werkzeug.contrib.profiler import ProfilerMiddleware
+#app.config['PROFILE'] = True
+#app.wsgi_app = ProfilerMiddleware(app.wsgi_app, restrictions=[50])
+
 # Modify Jinja2
 app.jinja_env.filters['zip'] = zip
 def attempt_json_load(data):

@@ -686,6 +686,17 @@ class Submission(Base):
         '''
         Retrieve all codes from disk
         '''
+        logs = (Log.query
+                   .with_entities(Log.body, Log.timestamp)
+                   .filter_by(assignment_id=self.assignment_id,
+                              user_id=self.user_id, 
+                              event='code', action='set')
+                   .all())
+        return [{'code': log.body, 
+                 'time': datetime.fromtimestamp(int(log.timestamp))
+                                 .strftime("%Y%m%d-%H%M%S")}
+                for log in logs]
+        '''
         directory = os.path.join(app.config['BLOCKLY_LOG_DIR'],
                                  str(self.assignment_id), 
                                  str(self.user_id))
@@ -699,7 +710,7 @@ class Submission(Base):
                     'code': body,
                     'time': file_name[:-2]
                 })
-        return all_files
+        return all_files'''
     
 class Assignment(Base):
     url = Column(String(255), default="")
