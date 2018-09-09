@@ -103,15 +103,15 @@ class UpdateBlockPy(Command):
         source_files = {
             'dist/blockpy.js': 'blockpy_lib/', 
             'dist/blockpy.css': 'blockpy_lib/',
-            'skulpt/dist/skulpt.min.js': 'skulpt/dist/',
-            'skulpt/dist/skulpt-stdlib.js': 'skulpt/dist/',
-            'blockly/blockly_uncompressed.js': 'blockly/',
-            'blockly/blockly_compressed.js': 'blockly/',
-            'blockly/blocks_compressed.js': 'blockly/',
-            'blockly/python_compressed.js': 'blockly/',
-            'blockly/pseudo_compressed.js': 'blockly/',
-            'blockly/javascript_compressed.js': 'blockly/',
-            'blockly/msg/js/en.js': 'blockly/msg/js/'
+            '../skulpt/dist/skulpt.min.js': 'skulpt/dist/',
+            '../skulpt/dist/skulpt-stdlib.js': 'skulpt/dist/',
+            '../blockly/blockly_uncompressed.js': 'blockly/',
+            '../blockly/blockly_compressed.js': 'blockly/',
+            '../blockly/blocks_compressed.js': 'blockly/',
+            '../blockly/python_compressed.js': 'blockly/',
+            '../blockly/pseudo_compressed.js': 'blockly/',
+            '../blockly/javascript_compressed.js': 'blockly/',
+            '../blockly/msg/js/en.js': 'blockly/msg/js/'
         }
         static_directory = app.config['STATIC_DIRECTORY']
         for source_file, target_directory in source_files.items():

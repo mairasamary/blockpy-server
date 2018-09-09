@@ -269,3 +269,13 @@ def submissions_grid(course_id):
                            assignment_groups= assignment_groups,
                            grouped_assignments= grouped_assignments,
                            is_instructor=is_instructor)
+
+                           
+@courses.route('/making_problems', methods=['GET', 'POST'])
+@courses.route('/making_problems/', methods=['GET', 'POST'])
+def making_problems():
+    """
+    Making problems instructions
+    """
+    
+    return render_template('courses/making_problems.html')

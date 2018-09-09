@@ -1,0 +1,226 @@
+{% extends 'layout.html' %}
+
+{% block title %}
+Courses: Making Problems
+{% endblock %}
+
+{% block statusbar %}
+{% endblock %}
+
+{% block body %}
+
+<h3>Making Assignments</h3>
+
+<p>
+Here is the current workflow for creating new BlockPy problems with feedback.
+</p>
+
+<p>
+<b>Step 0:</b> Make sure you have <a href="{{ url_for('courses.add_canvas') }}">created a new Canvas course</a>. Presently, BlockPy is not supporting any other LMS. It is possible that all of the following will work for Moodle, but it has not been tested.
+</p>
+
+<p>
+<b>Step 1:</b> Visit the course on Canvas and click the Assignments tab.
+</p>
+
+<img src="{{ url_for('static', filename='images/instructions/choose_assignments.png') }}" class='center-block' /><br>
+
+<p>
+<b>Step 2:</b> Click the [+Assignment] button in the top right corner.
+</p>
+
+<img src="{{ url_for('static', filename='images/instructions/add_assignment.png') }}" class='center-block' /><br>
+
+<p>
+<b>Step 3:</b> Set the assignment type to External Tool and click [Find].
+</p>
+
+<img src="{{ url_for('static', filename='images/instructions/external_tool.png') }}" class='center-block' /><br>
+
+<p>
+<b>Step 4:</b> Click BlockPy.
+</p>
+
+<img src="{{ url_for('static', filename='images/instructions/choose_blockpy.png') }}" class='center-block' /><br>
+
+<p>
+<b>Step 5:</b> Create BlockPy assignments and assignment groups with the desired number of problems. We recommend keeping the number of problems in a group at 5 or below, for performance and student cognitive load. Note that this system is not how you configure the question (e.g., its feedback), but just how you create the empty problem and give it a name.
+</p>
+
+<img src="{{ url_for('static', filename='images/instructions/edit_assignments.png') }}" class='center-block' /><br>
+
+<p>
+<b>Step 6:</b> When you have created your desired group or assignment, click Select to attach it to the Canvas assignment. Click Select again to close the menu, and then finish setting any other options for the assignment in canvas (e.g., number of points, due date, assignment name). Save the assignment.
+</p>
+
+<img src="{{ url_for('static', filename='images/instructions/blockpy_instructor.png') }}" class='center-block'/><br>
+
+<p>
+<b>Step 7:</b> When you visit the Assignment as an instructor, you will now be able to edit its actual BlockPy settings. The [Settings] button allows you to control the name, introduction, and other settings.
+</p>
+
+<img src="{{ url_for('static', filename='images/instructions/blockpy_settings.png') }}" class='center-block' /><br>
+
+<p>
+<b>Step 8:</b> The on_run tab is the code that is executed to provide the student feedback. A number of libraries, including Pedal, are preloaded for your convenience. To get more documentation on these methods and to see examples, check out the <a href='https://github.com/acbart/pedal' target=_blank>Pedal Github repo</a>. 
+</p>
+
+<h3>Basic Feedback Functions</h3>
+
+<ul>
+    <li><code>gently(message)</code>: Displays the given HTML message string to the student. The first gently called is the only one shown.</li>
+    <li><code>explain(message, priority)</code>: Displays the given HTML message string to the student, but with the given priority. The priority should be a Pedal execution phase. To preempt the syntax verifier, for instance, use <code>'verifier'</code>. To preempt runtime errors, use <code>'student'</code>. This is more advanced than <code>gently</code>, so you usually want to just gently explain things.</li>
+</ul>
+
+<h3>Basic Student Information Retreival</h3>
+
+<ul>
+    <li><code>get_output()</code>: Gets the current output from the user as a list of strings.</li>
+    <li><code>get_program()</code>: Gets the current students' code as a string.</li>
+    <li><code>student.data</code>: Gets the students' final execution state as a dictionary (note that this is not a function). This allows you to do things like <code>'my_variable' in student.data</code> or <code>student.data['my_variable']</code>.
+</ul>
+
+<h3>Basic CAIT Analysis</h3>
+
+CAIT allows you to traverse the students' code as an AST and make assertions.
+
+<ul>
+    <li><code>parse_program()</code>: Gets the students' code as a traversable AST. Commonly, we then assign this to a variable as follows: <code>ast = parse_program()</code>. </li>
+    <li><code>ast.find_all(ast_element)</code>: Consumes an AST element as a string (e.g., <code>'For'</code> or <code>'FunctionDef'</code>) and produces a list of all the traversable AST elements that match.
+</ul>
+
+<h3>Some useful toolkit functions</h3>
+
+<p>
+You will need to import some libraries to use these:
+</p>
+<p>
+<code>from pedal.toolkit.functions import *</code>
+</p>
+
+<ul>
+    <li><code>match_signature(function_name, number_of_arguments)</code>: Consumes the expected name of the function as a string, with the expected number_of_arguments as an integer. Returns the functiond definition (as a traversable AST) if the function is found, otherwise displays a message explaining to the user that they have not defined the function correctly.
+    <li><code>unit_test(function_name, tests)</code>: Consumes the expected name of the function and then the tests to run on the function. The tests should be a sequence of tuples, where each tuple should be the arguments followed by the final return value.
+</ul>
+
+<h3>Examples</h3>
+
+<h4>Example 1 (Trivial)</h4>
+
+<p>
+Print the string "Hello World!" exactly as written (same capitalization and punctuation).
+</p>
+
+{% filter highlight_python_code %}
+if "Hello World!" in get_output():
+    set_success()
+elif get_output():
+    gently('You are printing, but you are not printing the right string.')
+else:
+    gently("You are not printing anything!")
+{% endfilter %}
+    
+<h4>Example 2 (Moderate)</h4>
+
+<p>
+BlockPy: #9.1) Addition<br>
+Using the + operator, print out the result of 5+2 (which will represent the number of days in a week, as the combination of weekdays and the weekend). Do not embed the result in your code. Let Python do the calculation for you.
+</p>
+{% filter highlight_python_code %}
+from pedal.toolkit.printing import *
+from pedal.toolkit.utilities import *
+
+ast = parse_program()
+numbers = ast.find_all('Num')
+seen = {2, 5}
+for number in numbers:
+    if number.n in seen:
+        seen.remove(number.n)
+    else:
+        gently("You should only use the numbers 2 and 5 once each in your code.")
+if seen:
+    gently("You must use the numbers 2 and 5 once each in your code.")
+
+prints = ensure_prints(1)
+if prints:
+    if prints[0].args:
+        if prints[0].args[0].ast_name == "BinOp":
+            if prints[0].args[0].op_name != "Add":
+                gently("Make sure you are using the + operator!")
+            elif "7" in get_output():
+                set_success()
+            else:
+                gently("You have calculated the wrong value")
+        else:
+            gently("Make sure you are using the + operator!")
+    else:
+        gently("You are not printing anything! Put something between those parentheses.")
+{% endfilter %}
+
+<h4>Example 3 (Complex)</h4>
+
+<p>
+BlockPy: #32.5) For with Function<br>
+Create a function convert_fahrenheit that consumes a single temperature in Celsius and returns it in Fahrenheit. Then, use that function inside a for loop to convert and print each of the following temperatures: 10, 20, and 30.
+</p>
+
+{% filter highlight_python_code %}
+from pedal.toolkit.printing import *
+from pedal.toolkit.utilities import *
+from pedal.toolkit.functions import *
+
+if any(('def' in line and '[' in line) for line in get_program().split('\n')):
+    explain("It looks like you added a square bracket on the same line as "
+            "the <code>def</code> keyword. Remember, with Python you do not "
+            "indicate the type of a parameter. A parameter only has a name; "
+            "when the function is called, a value (which will have a type) "
+            "will be assigned to it.", 'verifier')
+
+ast = parse_program()
+
+num_values = [n.n for n in ast.find_all("Num")]
+
+if any([n in (50, 68, 86) for n in num_values]):
+    explain("It looks like you may have embedded the answer in the code. Don't do that.")
+
+if ast.find_all("While"):
+    explain("Do not use a <code>while</code> loop.")
+
+cf_def = match_signature("convert_fahrenheit", 1)
+if cf_def:
+    if not cf_def.find_all("Return"):
+        explain("You are not using a <code>return</code> statement!")
+    if cf_def.find_all("For"):
+        explain("Your function definition should not have a <code>for</code> in it.")
+    if unit_test("convert_fahrenheit", 
+                 (10,50.0), 
+                 (20, 68.0), 
+                 (30, 86.0),
+                 (5, 41.0)):
+        fors = ast.find_all("For")
+        if not fors:
+            explain("You will need a <code>for</code> loop.")
+        else:
+            calls = [c.func.id for c in fors[0].find_all('Call')
+                    if c and c.func.ast_name == "Name"]
+            if not ("print" in calls):
+                gently("You will need to print inside the <code>for</code> loop.")
+            elif not ("convert_fahrenheit" in calls):
+                gently("You will need to call <code>convert_fahrenheit</code> "
+                       "in the <code>for</code> loop.")
+            else:
+                calls = find_function_calls('convert_fahrenheit')
+                if len(calls) > 1:
+                    gently("You should call <code>convert_fahrenheit</code> only once.")
+                elif not calls:
+                    gently("You should call <code>convert_fahrenheit</code> once.")
+                elif tuple(get_output()) == ("50.0", "68.0", "86.0"):
+                    set_success()
+                elif get_output():
+                    gently("You are not printing the right result.")
+                else:
+                    gently("Make sure you are printing!")
+{% endfilter %}
+
+{% endblock %}
+
