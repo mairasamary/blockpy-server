@@ -18,7 +18,7 @@
       </blti:custom>
     <blti:extensions platform="canvas.instructure.com">
       <lticm:property name="tool_id">blockpy-v{{ version }}</lticm:property>
-      <lticm:property name="privacy_level">name_only</lticm:property>
+      <lticm:property name="privacy_level">public</lticm:property>
       <lticm:property name="domain">{{ request.headers['Host'].split(':')[0] }}</lticm:property>
       <lticm:options name="editor_button">
         <lticm:property name="icon_url">{{ icon_url }}</lticm:property>
