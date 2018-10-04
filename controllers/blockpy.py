@@ -109,10 +109,20 @@ def load_assignment(lti=lti):
     course_id = request.values.get('course_id',  g.course.id if 'course' in g else None)
     if None in (assignment_id, course_id) or course_id == "":
         return failure("No Assignment ID or Course ID given!")
+    timestamp = request.values.get('timestamp', '')
     user_id = g.user.id if g.user != None else -1
     assignment = Assignment.by_id(assignment_id)
-    submission = assignment.get_submission(user_id, course_id=course_id)
-    timestamp = request.values.get('timestamp', '')
+    if user_id != -1:
+        submission = assignment.get_submission(user_id, course_id=course_id)
+        submission_status = submission.status
+        submission_course_id = submission.course_id
+        submission_code = submission.code
+        log = Log.new('editor', 'load', assignment_id, user_id, 
+                      body=str(assignment.version), timestamp=timestamp)
+    else:
+        submission_status = 0
+        submission_course_id = course_id
+        submission_code = ""
     interface = ('Text' if assignment.mode.lower() == 'text' else 
                  'Split' if assignment.mode.lower() == 'split' else
                  'Upload' if assignment.mode.lower() == 'upload' else
@@ -126,17 +136,16 @@ def load_assignment(lti=lti):
     files = [f for f in files if f.strip()]
     added_modules = settings['modules']['added'] if 'modules' in settings else []
     removed_modules = settings['modules']['removed'] if 'modules' in settings else []
-    log = Log.new('editor', 'load', assignment_id, user_id, body=str(assignment.version), timestamp=timestamp)
     return jsonify(success=True,
                    ip=request.remote_addr,
                    settings = {
                         'editor': interface,
                         'read_only': upload,
-                        'status': submission.status
+                        'status': submission_status
                     },
                    assignment = {
                         'assignment_id': assignment.id,
-                        'course_id': course_id if course_id != None else submission.course_id,
+                        'course_id': course_id if course_id != None else submission_course_id,
                         'student_id': user_id,
                         'group_id': group_id,
                         'introduction': assignment.body,
@@ -159,7 +168,7 @@ def load_assignment(lti=lti):
                         },
                     },
                     programs = {
-                        '__main__': submission.code,
+                        '__main__': submission_code,
                         'starting_code': assignment.starting_code,
                         'give_feedback': assignment.give_feedback,
                         'on_change': assignment.on_step
