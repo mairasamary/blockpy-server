@@ -126,9 +126,9 @@ $(document).ready(function() {
             'log_event': {{ url_for('blockpy.save_events')|tojson }},
             'save_assignment': {{ url_for('blockpy.save_presentation')|tojson }},
             'save_success': {{ url_for('blockpy.save_correct')|tojson }},
-            'load_assignment': {{ url_for('blockpy.load_assignment')|tojson }},
             'get_history': {{ url_for('blockpy.get_history')|tojson }},
             {% endif %}
+            'load_assignment': {{ url_for('blockpy.load_assignment')|tojson }},
             'import_datasets': {{ url_for('blockpy.load_corgis',path='')|tojson }},
             'load_file': {{ url_for('blockpy.load_file')|tojson }},
         }
