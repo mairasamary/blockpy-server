@@ -121,14 +121,16 @@ $(document).ready(function() {
         'instructor': {{ 'true' if instructor_mode else 'false'}},
         'completedCallback': function(data) { markCorrect(data.assignment_id) },
         'urls': {
+            {% if g.user != None %}
             'save_code': {{ url_for('blockpy.save_code')|tojson }},
             'log_event': {{ url_for('blockpy.save_events')|tojson }},
             'save_assignment': {{ url_for('blockpy.save_presentation')|tojson }},
             'save_success': {{ url_for('blockpy.save_correct')|tojson }},
             'load_assignment': {{ url_for('blockpy.load_assignment')|tojson }},
+            'get_history': {{ url_for('blockpy.get_history')|tojson }},
+            {% endif %}
             'import_datasets': {{ url_for('blockpy.load_corgis',path='')|tojson }},
             'load_file': {{ url_for('blockpy.load_file')|tojson }},
-            'get_history': {{ url_for('blockpy.get_history')|tojson }},
         }
     {% endif %}
     });
