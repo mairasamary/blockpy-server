@@ -122,7 +122,7 @@ def load_assignment(lti=lti):
     else:
         submission_status = 0
         submission_course_id = course_id
-        submission_code = ""
+        submission_code = assignment.starting_code or ""
     interface = ('Text' if assignment.mode.lower() == 'text' else 
                  'Split' if assignment.mode.lower() == 'split' else
                  'Upload' if assignment.mode.lower() == 'upload' else
