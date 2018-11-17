@@ -619,9 +619,10 @@ class Submission(Base):
         return submission
     
     def set_status(self, new_value):
+        was_changed = self.status != new_value
         self.status= new_value
         db.session.commit()
-        return self
+        return was_changed
         
     def get_report_blockpy(self, image=""):
         if self.correct:

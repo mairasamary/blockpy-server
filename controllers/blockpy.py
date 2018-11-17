@@ -214,6 +214,16 @@ def save_events(lti=lti):
     log = Log.new(event, action, assignment_id, user_id, body=body, timestamp=timestamp)
     return jsonify(success=True, 
                    ip=request.remote_addr)
+                   
+def get_group_score(group_id, user_id, course_id, hide_correctness):
+    group = AssignmentGroup.by_id(group_id)
+    assignments = natsorted(group.get_assignments(), key= lambda a: a.title())
+    submissions = [a.get_submission(user_id, course_id=course_id) 
+                   for a in assignments]
+    completed = sum([s.correct or s.status/100 for s in submissions])
+    total = len(assignments)
+    score = completed/total
+    return score
 
 def get_group_report(group_id, user_id, course_id, hide_correctness):
     group = AssignmentGroup.by_id(group_id)
@@ -224,7 +234,7 @@ def get_group_report(group_id, user_id, course_id, hide_correctness):
     total = len(assignments)
     score = completed/total
     table = "\n".join(
-        ["<li><a href='#{slug}'>{name}</a>{completed}</li>".format(slug=slugify(a.name),
+        ["<li><a href='#{slug}'>{name}</a> {completed}</li>".format(slug=slugify(a.name),
                                                        name=a.name,
                                                        completed= (" - "+"Completed"
                                                                    if s.correct else "<strong>Incomplete</strong>")
@@ -252,6 +262,7 @@ def get_group_report(group_id, user_id, course_id, hide_correctness):
         in zip(assignments, submissions)
     ])+'<br><small>{uid}/{cid}/{aids}</small>'.format(uid=user_id, cid=course_id,
         aids=','.join([str(a.id) for a in assignments]))
+
 def get_report(mode, name, submission, image="", hide_correctness=False):
     url = url_for('blockpy.get_submission_code', submission_id=submission.id, _external=True)
     if hide_correctness:
@@ -287,6 +298,56 @@ def get_report(mode, name, submission, image="", hide_correctness=False):
                    status=status, url=url, time=time,
                    touches=submission.version, code=code, 
                    image=image)
+
+@blueprint_blockpy.route('/force_canvas_submission/', methods=['GET', 'POST'])
+@blueprint_blockpy.route('/force_canvas_submission', methods=['GET', 'POST'])
+@lti()                   
+def force_canvas_submission(lti, lti_exception=None):
+    #TODO: Send the current value to canvas
+    pass
+    
+@blueprint_blockpy.route('/view_current_group/', methods=['GET', 'POST'])
+@blueprint_blockpy.route('/view_current_group', methods=['GET', 'POST'])
+def view_current_group(lti=lti):
+    assignment_group_id = request.values.get('group_id', None)
+    course_id = request.values.get('course_id', None)
+    user_id = request.values.get('user_id', None)
+    hide_correctness = False
+    error_message = verify_user(assignment_group_id, course_id, user_id)
+    if error_message:
+        return error_message
+    # TODO: Implement this
+    score, report = get_group_report(int(assignment_group_id), int(user_id), int(course_id), hide_correctness)
+    return report
+
+@blueprint_blockpy.route('/view_current_assignment/', methods=['GET', 'POST'])
+@blueprint_blockpy.route('/view_current_assignment', methods=['GET', 'POST'])
+def view_current_assignment(lti=lti):
+    assignment_id = request.values.get('assignment_id', None)
+    course_id = request.values.get('course_id', None)
+    user_id = request.values.get('user_id', None)
+    hide_correctness = False
+    error_message = verify_user(assignment_id, course_id, user_id)
+    if error_message:
+        return error_message
+    assignment = Assignment.by_id(assignment_id)
+    submission = assignment.get_submission(user_id, course_id=course_id)
+    score = float(submission.correct) or status
+    report = get_report(assignment.type, assignment.name, submission, 
+                        image=submission.get_block_image(), 
+                        hide_correctness=hide_correctness)
+    return report
+                        
+def verify_user(a_id, course_id, user_id):
+    if None in (a_id, course_id, user_id):
+        return "Missing either group, assignment, course, or user id."
+    if 'user' not in g or not g.user:
+        return "You are not logged in as a grader! Make sure you've visited a BlockPy Canvas."
+    print(course_id, g.user.id, g.user.is_grader(course_id))
+    if g.user.is_grader(int(course_id)) or user_id == g.user.id:
+        return False
+    return "Sorry, you do not have sufficient permissions to spy!"
+    
     
 @blueprint_blockpy.route('/save_correct/', methods=['GET', 'POST'])
 @blueprint_blockpy.route('/save_correct', methods=['GET', 'POST'])
@@ -298,6 +359,8 @@ def save_correct(lti, lti_exception=None):
     image = request.values.get('image', "")
     hide_correctness = request.values.get('hide_correctness', "false")=="true"
     course_id = request.values.get('course_id', g.course.id if 'course' in g else None)
+    if course_id == -1 or lti is None:
+        return failure("No Assignment ID or Course ID given!")
     if None in (assignment_id, course_id):
         return failure("No Assignment ID or Course ID given!")
     assignment = Assignment.by_id(assignment_id)
@@ -305,7 +368,11 @@ def save_correct(lti, lti_exception=None):
         submission = Submission.save_correct(g.user.id, assignment_id, course_id=int(course_id))
     else:
         submission = assignment.get_submission(g.user.id, course_id=course_id)
-    submission.set_status(int(100*status))
+    was_changed = submission.set_status(int(100*status))
+    if not was_changed:
+        return jsonify(success=True, submitted=False, 
+                       message="No grade change",
+                       ip=request.remote_addr)
     lis_result_sourcedid = request.values.get('lis_result_sourcedid', submission.url) or None
     if lis_result_sourcedid is None:
         return jsonify(success=True, submitted=False, 
@@ -313,13 +380,24 @@ def save_correct(lti, lti_exception=None):
                        ip=request.remote_addr)
     session['lis_result_sourcedid'] = lis_result_sourcedid
     image_url = submission.save_block_image(image)
+    
     if assignment_group_id != None and assignment_group_id != '' and assignment_group_id != 'None':
-        score, report = get_group_report(int(assignment_group_id), g.user.id, int(course_id), hide_correctness)
+        score = get_group_score(int(assignment_group_id), g.user.id, int(course_id), hide_correctness)
+        url = url_for('blockpy.view_current_group', 
+                      group_id=int(assignment_group_id),
+                      course_id=int(course_id), user_id=g.user.id,
+                      _external=True)
+        report = "<a href='{url}'>View Group</a>".format(url=url)
     else:
-        report = get_report(assignment.type, assignment.name, submission, image=image_url, hide_correctness=hide_correctness)
         score = float(submission.correct) or status
+        url = url_for('blockpy.view_current_assignment', 
+                      assignment_id=int(assignment_id),
+                      course_id=int(course_id), user_id=g.user.id,
+                      _external=True)
+        report = "<a href='{url}'>View Assignment</a>".format(url=url)
     lti.post_grade(score, report, endpoint=lis_result_sourcedid)
     return jsonify(success=True, submitted=True, ip=request.remote_addr)
+    
     
 @blueprint_blockpy.route('/get_submission_code/', methods=['GET', 'POST'])
 @blueprint_blockpy.route('/get_submission_code', methods=['GET', 'POST'])
