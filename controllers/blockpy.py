@@ -332,7 +332,7 @@ def view_current_assignment(lti=lti):
         return error_message
     assignment = Assignment.by_id(assignment_id)
     submission = assignment.get_submission(user_id, course_id=course_id)
-    score = float(submission.correct) or status
+    score = float(submission.correct) or submission.status
     report = get_report(assignment.type, assignment.name, submission, 
                         image=submission.get_block_image(), 
                         hide_correctness=hide_correctness)
