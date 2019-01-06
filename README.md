@@ -71,6 +71,8 @@ Now you can open your browser and navigate to "https://localhost:5000" and start
 If you don't want to deal with SSL stuff, you can also start using it without setting up a secure local connection. But don't do this in production.
 
     python manage.py insecure
+    
+If you want CORGIS datasets to be loadable, you'll need to clone the CORGIS dataset project and make a suitable path available. I store the datasets in a separate folder so that there's no issues with git.
 
 Installing on a Server
 ======================
