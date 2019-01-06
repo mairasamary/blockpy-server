@@ -360,7 +360,7 @@ def save_correct(lti, lti_exception=None):
     hide_correctness = request.values.get('hide_correctness', "false")=="true"
     course_id = request.values.get('course_id', g.course.id if 'course' in g else None)
     if course_id == -1 or lti is None:
-        return failure("No Assignment ID or Course ID given!")
+        return failure("Course ID was negative or LTI is None.")
     if None in (assignment_id, course_id):
         return failure("No Assignment ID or Course ID given!")
     assignment = Assignment.by_id(assignment_id)

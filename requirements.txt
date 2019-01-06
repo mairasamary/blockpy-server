@@ -21,3 +21,4 @@ six
 bcrypt
 python-slugify
 natsort
+psycopg2-binary
