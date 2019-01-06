@@ -176,13 +176,13 @@ admin.add_view(ModelIdView(Authentication, db.session, category='Tables'))
 admin.add_view(RoleView(Role, db.session, category='Tables'))
 admin.add_view(LogView(Log, db.session, category='Tables'))
 
-admin.add_view(FileAdmin(app.config['BLOCKLY_LOG_DIR'], '/code_logs/', name='Log Files'))
+admin.add_view(FileAdmin(app.config['BLOCKPY_LOG_DIR'], '/code_logs/', name='Log Files'))
 
 @app.route('/admin/log_check', methods=['GET', 'POST'])
 def log_check():
     try:
         def generate():
-            root = app.config['ROOT_DIRECTORY']+'/log/student_interactions/'
+            root = os.path.join(app.config['ROOT_DIRECTORY'], 'log/student_interactions/')
             all_paths = os.listdir(root)
             total = 0
             for a_file in sorted(all_paths):

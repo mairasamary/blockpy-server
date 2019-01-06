@@ -24,7 +24,13 @@ First, you'll need to create a `secrets.json` file.
         # string will be interpolated with .format()
         "DB_ACCESS_URL": "Full URL for SQLAlchemy",
         "SYS_ADMINS": ["your_email@whatever.com"],
-        "SITE_NAME": "BlockPy @ Wherever"
+        "SITE_NAME": "BlockPy @ Wherever",
+        "ADMIN": {
+            "first_name": "Your first name",
+            "last_name": "Your last name",
+            "password": "your password",
+            "email": "your email address"
+        }
     }
     
 Next, edit the appropriate settings in the `config.py` file. Most of the settings will probably work for you, but you should review them all and particularly update:

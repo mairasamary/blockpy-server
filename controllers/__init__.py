@@ -33,9 +33,6 @@ app.register_blueprint(blueprint_assignments)
 from controllers.assignment_groups import blueprint_assignment_group
 app.register_blueprint(blueprint_assignment_group)
 
-from controllers.services import services
-app.register_blueprint(services)
-
 from controllers.blockpy import blueprint_blockpy
 app.register_blueprint(blueprint_blockpy)
 

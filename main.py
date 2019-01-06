@@ -13,14 +13,14 @@ VERSION = '0.1.0'
 app = Flask(__name__)
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 
-# Modify Jinja2
-from controllers.jinja_filters import setup_jinja_filters
-setup_jinja_filters(app)
-
 if secrets['PRODUCTION']:
     app.config.from_object('config.ProductionConfig')
 else:
     app.config.from_object('config.TestingConfig')
+
+# Modify Jinja2
+from controllers.jinja_filters import setup_jinja_filters
+setup_jinja_filters(app)
     
 # Logging
 from controllers.interaction_logger import setup_logging

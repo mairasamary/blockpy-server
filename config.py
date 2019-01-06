@@ -24,15 +24,12 @@ class Config(object):
     SYS_ADMINS = secrets.get('SYS_ADMINS', ['Unknown'])
     ROOT_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
     STATIC_DIRECTORY = os.path.join(ROOT_DIRECTORY, 'static')
-    BLOCKLY_LOG_DIR = os.path.join(ROOT_DIRECTORY, 'logs')
+    BLOCKPY_LOG_DIR = os.path.join(ROOT_DIRECTORY, 'logs')
     UPLOADS_DIR = os.path.join(STATIC_DIRECTORY, 'uploads')
     # TODO: Pretty sure a lot of this logging is messed up - need to fix it.
     ERROR_FILE_PATH = os.path.join(ROOT_DIRECTORY, 'log', 'errors.log')
-    INTERACTIONS_FILE_PATH = os.path.join(ROOT_DIRECTORY, 'log', 
-                                          'student_interactions'
-                                          'student_interactions.log')
-    FEEDBACK_FILE_PATH = os.path.join(ROOT_DIRECTORY, 'log', 'feedbackfull', 
-                                      'feedbackfull.log')
+    INTERACTIONS_FILE_PATH = os.path.join(ROOT_DIRECTORY, 'log', 'student_interactions.log')
+    FEEDBACK_FILE_PATH = os.path.join(ROOT_DIRECTORY, 'log', 'feedbackfull.log')
     # TODO: This is for API access with Canvas - nothing actually needs it yet.
     COURSE_TOKENS = os.path.join(ROOT_DIRECTORY, 'settings/course_tokens.yaml')
     

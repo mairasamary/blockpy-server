@@ -562,7 +562,7 @@ class Submission(Base):
         log = Log.new('code', 'set', self.assignment_id, 
                       self.user_id, body=self.code, timestamp=timestamp)
         
-        directory = os.path.join(app.config['BLOCKLY_LOG_DIR'],
+        directory = os.path.join(app.config['BLOCKPY_LOG_DIR'],
                                  str(self.assignment_id), 
                                  str(self.user_id))
 
@@ -597,7 +597,7 @@ class Submission(Base):
                                  .strftime("%Y%m%d-%H%M%S")}
                 for log in logs]
         '''
-        directory = os.path.join(app.config['BLOCKLY_LOG_DIR'],
+        directory = os.path.join(app.config['BLOCKPY_LOG_DIR'],
                                  str(self.assignment_id), 
                                  str(self.user_id))
         ensure_dirs(directory)

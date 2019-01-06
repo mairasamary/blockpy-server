@@ -28,7 +28,7 @@ class PopulateDB(Command):
         from models.models import Role, User, Course
         
         with open('secrets.json', 'r') as secret_file:
-            secrets = json.load(secret_file)
+            secrets = json.load(secret_file).get("ADMIN", {})
         
         print("Adding Admin")
         admin = User(first_name=secrets.get("first_name", "Admin"),
@@ -55,7 +55,7 @@ class PopulateDB(Command):
 class DisplayDB(Command):
     def run(self, **kwargs):
         from sqlalchemy import MetaData
-        from sqlalchemy_schemadisplay3 import create_schema_graph
+        from scripts.sqlalchemy_schemadisplay3 import create_schema_graph
         connection = app.config['SQLALCHEMY_DATABASE_URI']
         filename='dbschema.png'
         graph = create_schema_graph(metadata=MetaData(connection),
