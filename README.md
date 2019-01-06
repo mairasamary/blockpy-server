@@ -38,7 +38,7 @@ Next, edit the appropriate settings in the `config.py` file. Most of the setting
 * Email server settings
 * Debug/Test flags for Flask (True if you're just locally developing)
     
-You need to create some folders. I know it's weird that we have two log folders - that needs to be fixed.
+You need to create some folders. I know it's weird that we have two log folders - that needs to be fixed. There's a makefile command (`make create_directories`) that will create the following:
     
 * `static/uploads/` - This is where we put user uploaded files.
 * `static/uploads/submission_blocks/` - Images of students' block get uploaded here.
