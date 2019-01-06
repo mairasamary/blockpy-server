@@ -27,7 +27,7 @@ class Config(object):
     BLOCKPY_LOG_DIR = os.path.join(ROOT_DIRECTORY, 'logs')
     UPLOADS_DIR = os.path.join(STATIC_DIRECTORY, 'uploads')
     # TODO: Pretty sure a lot of this logging is messed up - need to fix it.
-    ERROR_FILE_PATH = os.path.join(ROOT_DIRECTORY, 'log', 'errors.log')
+    ERROR_FILE_PATH = os.path.join(ROOT_DIRECTORY, 'log', 'blockpy_errors.log')
     INTERACTIONS_FILE_PATH = os.path.join(ROOT_DIRECTORY, 'log', 'student_interactions.log')
     FEEDBACK_FILE_PATH = os.path.join(ROOT_DIRECTORY, 'log', 'feedbackfull.log')
     # TODO: This is for API access with Canvas - nothing actually needs it yet.

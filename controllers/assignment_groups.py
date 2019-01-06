@@ -1,5 +1,4 @@
 from pprint import pprint
-from lxml import etree
 import json
 try:
     from urllib.parse import quote as url_quote

@@ -14,6 +14,8 @@ restart_server:
 	sudo systemctl restart uwsgi
 create_directories:
 	mkdir static/uploads/
+	mkdir static/gen/
+	mkdir static/.webassets-cache/
 	mkdir static/uploads/submission_blocks/
 	mkdir logs/
 	mkdir log/
