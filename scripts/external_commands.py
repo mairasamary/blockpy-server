@@ -7,7 +7,10 @@ import random
 from shutil import copy
 import os
 import json
-from tqdm import tqdm
+try:
+    from tqdm import tqdm
+except ImportError:
+    tqdm = list
 
 
 import shutil

@@ -8,15 +8,15 @@ import logging
 import base64
 
 from main import app
-from interaction_logger import StructuredEvent
+from controllers.interaction_logger import StructuredEvent
 
 from flask import url_for
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from flask_security import UserMixin, RoleMixin, login_required
-from sqlalchemy import event, Integer, Date, ForeignKey, Column, Table,\
-                       String, Boolean, DateTime, Text, ForeignKeyConstraint,\
-                       cast, func, and_, or_
+from sqlalchemy import (event, Integer, Date, ForeignKey, Column, Table,
+                        String, Boolean, DateTime, Text, ForeignKeyConstraint,
+                        cast, func, and_, or_)
 from sqlalchemy.ext.declarative import declared_attr
 
 db = SQLAlchemy(app)
@@ -473,115 +473,13 @@ class Submission(Base):
         if not submission:
             submission = Submission(assignment_id=assignment_id, user_id=user_id, course_id=course_id, url=submission_url)
             assignment = Assignment.by_id(assignment_id)
-            if assignment.mode == 'explain':
-                submission.code = json.dumps(Submission.default_explanation(''))
-            else:
-                submission.code = assignment.starting_code
+            submission.code = assignment.starting_code
             db.session.add(submission)
             db.session.commit()
         elif submission_url:
             submission.url = submission_url
             db.session.commit()
         return submission
-        
-    @staticmethod
-    def default_explanation(code):
-        return {
-                'code': code,
-                'elements': {
-                    'CORGIS_USE': {'line': 0, 'present': False, 'answer': '', 'name': 'CORGIS_USE'},
-                    'FOR_LOOP': {'line': 0, 'present': False, 'answer': '', 'name': 'FOR_LOOP'},
-                    'DICTIONARY_ACCESS': {'line': 0, 'present': False, 'answer': '', 'name': 'DICTIONARY_ACCESS'},
-                    'IMPORT_CORGIS': {'line': 0, 'present': False, 'answer': '', 'name': 'IMPORT_CORGIS'},
-                    'LIST_APPEND': {'line': 0, 'present': False, 'answer': '', 'name': 'LIST_APPEND'},
-                    'IMPORT_MATPLOTLIB': {'line': 0, 'present': False, 'answer': '', 'name': 'IMPORT_MATPLOTLIB'},
-                    'ASSIGNMENT': {'line': 0, 'present': False, 'answer': '', 'name': 'ASSIGNMENT'},
-                    'MATPLOTLIB_PLOT': {'line': 0, 'present': False, 'answer': '', 'name': 'MATPLOTLIB_PLOT'},
-                    'LIST_ASSIGNMENT': {'line': 0, 'present': False, 'answer': '', 'name': 'LIST_ASSIGNMENT'},
-                    'NUM_ASSIGNMENT': {'line': 0, 'present': False, 'answer': '', 'name': 'NUM_ASSIGNMENT'},
-                    'IF_STATEMENT': {'line': 0, 'present': False, 'answer': '', 'name': 'IF_STATEMENT'},
-                    'DICT_ASSIGNMENT': {'line': 0, 'present': False, 'answer': '', 'name': 'DICT_ASSIGNMENT'},
-                    'PRINT_USE': {'line': 0, 'present': False, 'answer': '', 'name': 'PRINT_USE'}
-                }
-        }
-        
-    @staticmethod
-    def save_explanation_answer(user_id, assignment_id, course_id, name, answer):
-        submission = Submission.query.filter_by(user_id=user_id, 
-                                                course_id=course_id,
-                                                assignment_id=assignment_id).first()
-        submission_destructured = json.loads(submission.code)
-        elements = submission_destructured['elements']
-        if name in elements:
-            elements[name]['answer'] = answer
-            submission.code = json.dumps(submission_destructured)
-            submission.version += 1
-            db.session.commit()
-            submission.log_code()
-            return submission_destructured
-        
-    
-    def save_explanation_code(self, code, elements):
-        try:
-            submission_destructured = json.loads(self.code)
-        except ValueError:
-            submission_destructured = {}
-        if 'code' in submission_destructured:
-            submission_destructured['code'] = code.decode("utf-8")
-            existing_elements = submission_destructured['elements']
-            for element in existing_elements:
-                existing_elements[element]['present'] = False
-            for element, value in elements.items():
-                existing_elements[element]['line'] = value
-                existing_elements[element]['present'] = True
-        else:
-            submission_destructured = Submission.default_explanation(code)
-        self.code = json.dumps(submission_destructured)
-        self.version += 1
-        db.session.commit()
-        self.log_code()
-        return submission_destructured
-        
-    ELEMENT_PRIORITY_LIST = ['FOR_LOOP', 'LIST_ASSIGNMENT', 'DICTIONARY_ACCESS', 
-                         'LIST_APPEND', 'IF_STATEMENT',
-                         'NUM_ASSIGNMENT',
-                         'IMPORT_CORGIS', 'IMPORT_MATPLOTLIB', 
-                         'MATPLOTLIB_PLOT', 'CORGIS_USE', 'DICT_ASSIGNMENT', 'PRINT_USE']
-                         
-    @staticmethod
-    def abbreviate_element_type(element_type):
-        return ''.join([l[0] for l in element_type.split("_")])
-    
-    def load_explanation(self, max_questions):
-        if not self.code:
-            self.code = json.dumps(Submission.default_explanation(''))
-            db.session.commit()
-        submission_destructured = json.loads(self.code)
-        code = submission_destructured['code']
-        # Find the first FIVE
-        available_elements = []
-        used_lines = set()
-        e = submission_destructured['elements']
-        for element in Submission.ELEMENT_PRIORITY_LIST:
-            # Not present?
-            if not e[element]['present']:
-                continue
-            # Already used that line?
-            if e[element]['line'][0] in used_lines:
-                continue
-            # Cool, then add it
-            available_elements.append(e[element])
-            used_lines.add(e[element]['line'][0])
-            # Stop if we have enough already
-            if len(available_elements) >= max_questions:
-                break
-        return code, available_elements
-        
-    def load_poll(self):
-        if not self.code:
-            self.code = json.dumps([])
-            db.session.commit()
-        return json.loads(self.code)
         
     @staticmethod
     def save_code(user_id, assignment_id, course_id, code, assignment_version, timestamp=''):

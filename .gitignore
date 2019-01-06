@@ -15,6 +15,7 @@ database/
 main.db
 test.db
 
+database/
 tests/
 logs/
 log/
@@ -39,3 +40,5 @@ __pycache__/
 
 # Spyder project settings
 .spyderproject
+
+.idea/

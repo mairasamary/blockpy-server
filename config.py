@@ -20,12 +20,20 @@ class Config(object):
     TESTING = False
     CSRF_ENABLED = True
     WTF_CSRF_ENABLED = True
-    SITE_NAME = 'Think/CT'
-    SYS_ADMINS = ['acbart@vt.edu']
+    SITE_NAME = secrets.get('SITE_NAME', 'BlockPy Public')
+    SYS_ADMINS = secrets.get('SYS_ADMINS', ['Unknown'])
     ROOT_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
     STATIC_DIRECTORY = os.path.join(ROOT_DIRECTORY, 'static')
     BLOCKLY_LOG_DIR = os.path.join(ROOT_DIRECTORY, 'logs')
     UPLOADS_DIR = os.path.join(STATIC_DIRECTORY, 'uploads')
+    # TODO: Pretty sure a lot of this logging is messed up - need to fix it.
+    ERROR_FILE_PATH = os.path.join(ROOT_DIRECTORY, 'log', 'errors.log')
+    INTERACTIONS_FILE_PATH = os.path.join(ROOT_DIRECTORY, 'log', 
+                                          'student_interactions'
+                                          'student_interactions.log')
+    FEEDBACK_FILE_PATH = os.path.join(ROOT_DIRECTORY, 'log', 'feedbackfull', 
+                                      'feedbackfull.log')
+    # TODO: This is for API access with Canvas - nothing actually needs it yet.
     COURSE_TOKENS = os.path.join(ROOT_DIRECTORY, 'settings/course_tokens.yaml')
     
     BLOCKPY_SOURCE_DIR = secrets.get('BLOCKPY_SOURCE_DIR')
@@ -48,9 +56,9 @@ class Config(object):
     MAIL_SERVER = 'smtp.gmail.com'
     MAIL_PORT = 465
     MAIL_USE_SSL = True
-    MAIL_USERNAME = 'vt.blockpy@gmail.com'
+    MAIL_USERNAME = secrets.get("EMAIL_USERNAME")
     MAIL_PASSWORD = secrets.get("EMAIL_PASSWORD")
-    DEFAULT_MAIL_SENDER = 'Think/CT Admin'
+    DEFAULT_MAIL_SENDER = secrets.get("EMAIL_SENDER")
     
     SECURITY_CONFIRMABLE = True
     SECURITY_REGISTERABLE = True
@@ -59,18 +67,14 @@ class Config(object):
     SECURITY_PASSWORD_HASH='bcrypt'
     SECURITY_PASSWORD_SALT=secrets.get('SECURITY_PASSWORD_SALT')
     SECURITY_DEFAULT_REMEMBER_ME = True
-    
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-
-    
-DB_ACCESS_URL = 'postgresql://{username}:{password}@localhost/thinkdb'
-#DB_ACCESS_URL = 'mysql://{username}:{password}@localhost/thinkdb'
 
 class ProductionConfig(Config):
     DEBUG = False
     PORT = 5001
-    #SITE_ROOT_URL = 'think.cs.vt.edu/blockpy'
-    SQLALCHEMY_DATABASE_URI = DB_ACCESS_URL.format(username=secrets.get('DB_USER'), password=secrets.get('DB_PASS'))
+    SQLALCHEMY_DATABASE_URI = (secrets.get('DB_ACCESS_URL')
+                                      .format(username=secrets.get('DB_USER'), 
+                                              password=secrets.get('DB_PASS')))
     
 class TestingConfig(Config):
     DEBUG = True

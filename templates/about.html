@@ -1,7 +1,7 @@
 {% extends 'layout.html' %}
 
 {% block title %}
-Kennel: About
+BlockPy: About
 {% endblock %}
 
 {% block statusbar %}
@@ -13,32 +13,6 @@ Kennel: About
 {% endblock %}
 
 {% block body %}
-
-<h1>Kennel</h1>
-
-<p>
-The <b>Kennel</b> is the host of innovative software created at Virginia Tech for introductory computing education. Currently, the Kennel includes both CORGIS and BlockPy.
-</p>
-
-<h1>CORGIS</h1>
-<p>
-The <b>CORGIS project</b> aims to transform early computer science projects by introducing real-world data via simple-to-use client libraries. Data Science offers an authentic context for your students to solve real-world problems with programming. The CORGIS project has over 40 libraries for subjects such as politics, education, literature, construction, and more!
-</p>
-
-<p>
-CORGIS offers full support for Java, Python, and Racket, in addition to making its data files available in common data formats like JSON and CSV. Some datasets are also available through our unique Visualizer platform, which enables data science exploration directly within the browser!
-</p>
-
-<p>Publications related to CORGIS:
-<ul>
-    <li>A. C. Bart, R. Whitcomb, E. Tilevich, C. A. Shaffer, D. Kafura, Computing with CORGIS: Diverse, Real-world Datasets for. Introductory Computing (Best Research Paper), SIGCSE '17, Seattle, Washington. March, 2017.</li>
-    <li>E. Tilevich, C. A. Shaffer, A. C. Bart. Creating Stimulating, Relevant, and Manageable Introductory Computer Science Projects that Utilize Real-Time, Large, Web-Based Datasets , SIGCSE'15, Kansas City, MO. 2015.</li>
-    <li>E. Tilevich, C. A. Shaffer, A. C. Bart. Creating Stimulating, Relevant, and Manageable Introductory Computer Science Projects that Utilize Real-Time, Web-Based Datasets , SIGCSE'14, Atlanta, GA. 2014.</li>
-    <li>A. C. Bart, J. Riddle, O. Saleem, B. Chowdhury, E. Tilevich, C. A. Shaffer, D. Kafura, Motivating Students with Big Data: CORGIS and MUSIC, Splash-E '14, Portland, Oregon. October 21-23, 2014.</li>
-    <li>A. C. Bart, E. Tilevich, T. Allevato, S. Hall, C. A. Shaffer, Transforming Introductory Computer Science Projects via Real-Time Web Data, SIGCSE '14, Atlanta, Georgia. March 5-8, 2014.</li>
-    <li>A. C. Bart, E. Tilevich, C. A. Shaffer, T. Allevato, S. Hall, Using Real-Time Web Data to Enrich Introductory Computer Science Projects, Splash-E '13, Indianapolis, Indiana. October 26-31, 2013.</li>
-</ul>
-</p>
 
 <h1>BlockPy</h1>
 <p>
@@ -66,32 +40,49 @@ BlockPy owes much of its power to Google's Blockly project, the Skulpt project, 
 </ul>
 </p>
 
-<h1>The People Behind Kennel</h1>
+
+<h1>CORGIS</h1>
+<p>
+The <b>CORGIS project</b> aims to transform early computer science projects by introducing real-world data via simple-to-use client libraries. Data Science offers an authentic context for your students to solve real-world problems with programming. The CORGIS project has over 40 libraries for subjects such as politics, education, literature, construction, and more!
+</p>
+
+<p>
+CORGIS offers full support for Java, Python, and Racket, in addition to making its data files available in common data formats like JSON and CSV. Some datasets are also available through our unique Visualizer platform, which enables data science exploration directly within the browser!
+</p>
+
+<p>Publications related to CORGIS:
+<ul>
+    <li>A. C. Bart, R. Whitcomb, E. Tilevich, C. A. Shaffer, D. Kafura, Computing with CORGIS: Diverse, Real-world Datasets for. Introductory Computing (Best Research Paper), SIGCSE '17, Seattle, Washington. March, 2017.</li>
+    <li>E. Tilevich, C. A. Shaffer, A. C. Bart. Creating Stimulating, Relevant, and Manageable Introductory Computer Science Projects that Utilize Real-Time, Large, Web-Based Datasets , SIGCSE'15, Kansas City, MO. 2015.</li>
+    <li>E. Tilevich, C. A. Shaffer, A. C. Bart. Creating Stimulating, Relevant, and Manageable Introductory Computer Science Projects that Utilize Real-Time, Web-Based Datasets , SIGCSE'14, Atlanta, GA. 2014.</li>
+    <li>A. C. Bart, J. Riddle, O. Saleem, B. Chowdhury, E. Tilevich, C. A. Shaffer, D. Kafura, Motivating Students with Big Data: CORGIS and MUSIC, Splash-E '14, Portland, Oregon. October 21-23, 2014.</li>
+    <li>A. C. Bart, E. Tilevich, T. Allevato, S. Hall, C. A. Shaffer, Transforming Introductory Computer Science Projects via Real-Time Web Data, SIGCSE '14, Atlanta, Georgia. March 5-8, 2014.</li>
+    <li>A. C. Bart, E. Tilevich, C. A. Shaffer, T. Allevato, S. Hall, Using Real-Time Web Data to Enrich Introductory Computer Science Projects, Splash-E '13, Indianapolis, Indiana. October 26-31, 2013.</li>
+</ul>
+</p>
+
+
+<h1>The People Behind BlockPy and CORGIS</h1>
 
 <table class="table table-condensed table-bordered table-striped">
     <tbody>
     
     <tr><td style="width:15%"><strong>Austin Cory Bart</strong><br><img class="img-thumbnail img-responsive" src="{{ url_for('static', filename='images/team/cory.jpg') }}"></td>
     <td>Primary Developer (CORGIS, BlockPy)<br><ul>
-        <li>Status: PhD student (Computer Science) at Virginia Tech</li>
-        <li>Email: <a href="mailto:acbart@vt.edu">acbart@vt.edu</a></li>
+        <li>Status: Assistant Professor (Computer Science) at University of Delaware</li>
+        <li>Email: <a href="mailto:acbart@udel.edu">acbart@udel.edu</a></li>
         <li>Website: <a href="http://www.acbart.com">www.acbart.com</a></li>
     </ul></td></tr>
     
-    <tr><td style="width:15%"><strong>Ryan Whitcomb</strong><br><img class="img-thumbnail img-responsive" src="{{ url_for('static', filename='images/team/whitcomb.jpg') }}"></td>
-    <td>Developer (CORGIS)<br><ul>
-        <li>Status: Undergraduate (Computational Modeling and Data Analytics) at Virginia Tech</li>
+    <tr><td style="width:15%"><strong>Luke Gusukuma</strong><br><img class="img-thumbnail img-responsive" src="{{ url_for('static', filename='images/team/luke.jpg') }}"></td>
+    <td>Developer (BlockPy)<br><ul>
+        <li>Status: PhD student (Computer Science) at Virginia Tech</li>
     </ul></td></tr>
     
     <tr><td style="width:15%"><strong>Javier Tibau</strong><br><img class="img-thumbnail img-responsive" src="{{ url_for('static', filename='images/team/tibau.jpg') }}"></td>
     <td>Developer (BlockPy)<br><ul>
         <li>Status: PhD student (Computer Science) at Virginia Tech</li>
         <li>Website: <a href="https://thirdlab.cs.vt.edu/people/javier-tibau/">https://thirdlab.cs.vt.edu/people/javier-tibau/</a></li>
-    </ul></td></tr>
-    
-    <tr><td style="width:15%"><strong>Luke Gusukuma</strong><br><img class="img-thumbnail img-responsive" src="{{ url_for('static', filename='images/team/luke.jpg') }}"></td>
-    <td>Developer (BlockPy)<br><ul>
-        <li>Status: PhD student (Computer Science) at Virginia Tech</li>
     </ul></td></tr>
     
     <tr><td style="width:15%"><strong>Dennis Kafura</strong><br><img class="img-thumbnail img-responsive" src="{{ url_for('static', filename='images/team/kafura.jpg') }}"></td>
@@ -113,6 +104,11 @@ BlockPy owes much of its power to Google's Blockly project, the Skulpt project, 
         <li>Status: Associate Professor (Computer Science) at Virginia Tech</li>
         <li>Email: <a href="mailto:tilevich@vt.edu">tilevich@vt.edu</a></li>
         <li>Website: <a href="http://people.cs.vt.edu/~tilevich/">people.cs.vt.edu/~tilevich/</a></li>
+    </ul></td></tr>
+    
+    <tr><td style="width:15%"><strong>Ryan Whitcomb</strong><br><img class="img-thumbnail img-responsive" src="{{ url_for('static', filename='images/team/whitcomb.jpg') }}"></td>
+    <td>Former Developer (CORGIS)<br><ul>
+        <li>Status: Graduate of Virginia Tech</li>
     </ul></td></tr>
     
     <tr><td style="width:15%"><strong>Omar Saleem</strong><br><img class="img-thumbnail img-responsive" src="{{ url_for('static', filename='images/team/omar.jpg') }}"></td>

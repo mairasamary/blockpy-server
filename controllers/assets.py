@@ -50,28 +50,7 @@ bundles = {
     'blockly_maze_js': Bundle(
         'blockly-games/common/boot.js',
         'blockly-games/common/storage.js',
-        output='gen/blockly_maze.js'),
-        
-    'code_explaining_js': Bundle(
-        "libs/codemirror/codemirror.js",
-        "libs/codemirror/python.js",
-        "libs/codemirror/htmlmixed.js",
-        "libs/codemirror/xml.js",
-        "libs/jquery.ui.widget.js",
-        "libs/summernote/summernote.min.js",
-        "libs/summernote/summernote-ext-hint.js",
-        "libs/summernote/summernote-ext-video.js",
-        #"libs/knockout-3.4.0.js",
-        'libs/knockout.mapping-latest.js',
-        'libs/ko.observableDictionary.js',
-        "libs/jquery.fileupload.js",
-        output='gen/code_explaining.js'),
-    'code_explaining_css': Bundle(
-        'libs/codemirror/codemirror.css',
-        'libs/font-awesome.min.css',
-        "libs/summernote/summernote.css",
-        "libs/jquery.fileupload.css",
-        output='gen/code_explaining.css'),
+        output='gen/blockly_maze.js')
 }
 
 assets = Environment(app)

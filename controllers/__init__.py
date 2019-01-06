@@ -33,15 +33,6 @@ app.register_blueprint(blueprint_assignments)
 from controllers.assignment_groups import blueprint_assignment_group
 app.register_blueprint(blueprint_assignment_group)
 
-from controllers.homework import blueprint_homework
-app.register_blueprint(blueprint_homework)
-
-
-'''
-from lti import lti_assignments
-app.register_blueprint(lti_assignments)
-'''
-
 from controllers.services import services
 app.register_blueprint(services)
 
@@ -51,33 +42,9 @@ app.register_blueprint(blueprint_blockpy)
 from controllers.maze import blueprint_maze
 app.register_blueprint(blueprint_maze)
 
-from controllers.explain import blueprint_explain
-app.register_blueprint(blueprint_explain)
-
-from controllers.poll import blueprint_poll
-app.register_blueprint(blueprint_poll)
-
 from controllers.corgis import blueprint_corgis, blueprint_datasets
 app.register_blueprint(blueprint_corgis)
 app.register_blueprint(blueprint_datasets)
-
-from controllers.book import blueprint_book
-app.register_blueprint(blueprint_book)
-
-from controllers.course_materials import blueprint_course_materials
-app.register_blueprint(blueprint_course_materials)
-
-from controllers.utilities import blueprint_utilities
-app.register_blueprint(blueprint_utilities)
-
-from controllers.pragmatics import blueprint_pragmatics
-app.register_blueprint(blueprint_pragmatics)
-
-from controllers.resources import blueprint_resources
-app.register_blueprint(blueprint_resources)
-
-from controllers.worked_examples import blueprint_worked_examples
-app.register_blueprint(blueprint_worked_examples)
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -127,4 +94,3 @@ def site_map():
         line = urllib.unquote("<td>{:50s}</td><td>{:20s}</td><td>{}</td>".format(rule.endpoint, methods, url))
         output.append(line)
     return "<table><tr>{}</tr></table>".format("</tr><tr>".join(sorted(output)))
-        
