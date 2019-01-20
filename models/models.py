@@ -248,6 +248,7 @@ class Course(Base):
                               for a in g.get_assignments()}
         groups_assignments.update(course_assignments)
         assignments = [a.encode_json() for a in groups_assignments]
+        assignments.sort(key=lambda a: a['name'])
         return {
             'course': course.encode_json(),
             'assignments': assignments,
