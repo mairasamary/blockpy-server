@@ -221,7 +221,7 @@ class Course(Base):
                 'date_modified': datetime_to_string(self.date_modified),
                 'date_created': datetime_to_string(self.date_created)}
     @staticmethod
-    def decode_json(self, data):
+    def decode_json(data):
         if data['_schema_version'] == 1:
             data = dict(data) # shallow copy
             del data['_schema_version']
@@ -230,6 +230,30 @@ class Course(Base):
             data['date_created'] = string_to_datetime(data['date_created'])
             return Course(**data)
         raise Exception("Unknown schema version: {}".format(data.get('_schema_version', "Unknown")))
+    
+    @staticmethod
+    def export(course_id):
+        course = Course.query.get(course_id)
+        # Get all course's assignments
+        course_assignments = Assignment.by_course(course_id, False)
+        # Get all course's assignment groups
+        groups = course.get_assignment_groups()
+        assignment_groups = [a.encode_json() for a in groups]
+        
+        # Get all assignment groups' memberships
+        assignment_memberships = [a.encode_json()
+                                  for a in AssignmentGroupMembership.by_course(course_id)]
+        # Get all assignment groups' assignments
+        groups_assignments = {a for g in groups
+                              for a in g.get_assignments()}
+        groups_assignments.update(course_assignments)
+        assignments = [a.encode_json() for a in groups_assignments]
+        return {
+            'course': course.encode_json(),
+            'assignments': assignments,
+            'assignment_groups': assignment_groups,
+            'assignment_memberships': assignment_memberships
+        }
     
     def __str__(self):
         return '<Course {}>'.format(self.id)
@@ -747,7 +771,10 @@ class Assignment(Base):
                 'on_step': self.on_step,
                 'starting_code': self.starting_code,
                 'answer': self.answer,
+                'due': self.due,
+                'settings': self.settings,
                 'type': self.type,
+                'visibility': self.visibility,
                 'disabled': self.disabled,
                 'mode': self.mode,
                 'owner_id': self.owner_id,
@@ -755,12 +782,11 @@ class Assignment(Base):
                 'owner_id__email': user.email if user else '',
                 'version': self.version,
                 'position': self.position,
-                'visibility': self.visibility,
                 'id': self.id,
                 'date_modified': datetime_to_string(self.date_modified),
                 'date_created': datetime_to_string(self.date_created)}
     @staticmethod
-    def decode_json(self, data):
+    def decode_json(data):
         if data['_schema_version'] == 1:
             data = dict(data) # shallow copy
             del data['_schema_version']
@@ -965,7 +991,7 @@ class AssignmentGroup(Base):
                 'date_modified': datetime_to_string(self.date_modified),
                 'date_created': datetime_to_string(self.date_created)}
     @staticmethod
-    def decode_json(self, data):
+    def decode_json(data):
         if data['_schema_version'] == 1:
             data = dict(data) # shallow copy
             del data['_schema_version']
@@ -1061,6 +1087,17 @@ class AssignmentGroupMembership(Base):
                 'id': self.id,
                 'date_modified': datetime_to_string(self.date_modified),
                 'date_created': datetime_to_string(self.date_created)}
+
+    @staticmethod
+    def by_course(course_id):
+        groups = [g.id for g in AssignmentGroup.by_course(course_id)]
+        return (AssignmentGroupMembership
+                    .query
+                    .filter(AssignmentGroupMembership.assignment_group_id.in_(groups))
+                    .order_by(AssignmentGroupMembership.assignment_group_id,
+                              AssignmentGroupMembership.assignment_id)
+                    .all())
+    
     @staticmethod
     def decode_json(self, data):
         if data['_schema_version'] == 1:
