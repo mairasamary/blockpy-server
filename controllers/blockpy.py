@@ -298,13 +298,6 @@ def get_report(mode, name, submission, image="", hide_correctness=False):
                    status=status, url=url, time=time,
                    touches=submission.version, code=code, 
                    image=image)
-
-@blueprint_blockpy.route('/force_canvas_submission/', methods=['GET', 'POST'])
-@blueprint_blockpy.route('/force_canvas_submission', methods=['GET', 'POST'])
-@lti()                   
-def force_canvas_submission(lti, lti_exception=None):
-    #TODO: Send the current value to canvas
-    pass
     
 @blueprint_blockpy.route('/view_current_group/', methods=['GET', 'POST'])
 @blueprint_blockpy.route('/view_current_group', methods=['GET', 'POST'])
@@ -348,7 +341,7 @@ def verify_user(a_id, course_id, user_id):
         return False
     return "Sorry, you do not have sufficient permissions to spy!"
     
-    
+
 @blueprint_blockpy.route('/save_correct/', methods=['GET', 'POST'])
 @blueprint_blockpy.route('/save_correct', methods=['GET', 'POST'])
 @lti()
@@ -358,6 +351,7 @@ def save_correct(lti, lti_exception=None):
     status = float(request.values.get('status', "0.0"))
     image = request.values.get('image', "")
     hide_correctness = request.values.get('hide_correctness', "false")=="true"
+    force_update = request.values.get('force_update', "false")=="true"
     course_id = request.values.get('course_id', g.course.id if 'course' in g else None)
     if course_id == -1 or lti is None:
         return failure("Course ID was negative or LTI is None.")
@@ -369,7 +363,7 @@ def save_correct(lti, lti_exception=None):
     else:
         submission = assignment.get_submission(g.user.id, course_id=course_id)
     was_changed = submission.set_status(int(100*status))
-    if not was_changed:
+    if not force_update and not was_changed:
         return jsonify(success=True, submitted=False, 
                        message="No grade change",
                        ip=request.remote_addr)
@@ -397,7 +391,6 @@ def save_correct(lti, lti_exception=None):
         report = "<a href='{url}'>View Assignment</a>".format(url=url)
     lti.post_grade(score, report, endpoint=lis_result_sourcedid)
     return jsonify(success=True, submitted=True, ip=request.remote_addr)
-    
     
 @blueprint_blockpy.route('/get_submission_code/', methods=['GET', 'POST'])
 @blueprint_blockpy.route('/get_submission_code', methods=['GET', 'POST'])
