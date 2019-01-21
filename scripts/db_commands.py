@@ -135,7 +135,7 @@ class ImportCourse(Command):
         from models.models import Course, Assignment, AssignmentGroup, AssignmentGroupMembership
         with open(course_data_path, 'r') as input_file:
             imported_data = json.load(input_file)
-        Course.load(imported_data, int(owner_id))
+        Course.import_json(imported_data, int(owner_id))
         pprint(imported_data)
     
 class RemoveCourse(Command):
