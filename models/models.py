@@ -304,11 +304,11 @@ class Course(Base):
         Course.query.filter_by(id=course_id).delete()
         if remove_linked:
             for m in AssignmentGroupMembership.by_course(course_id):
-                session.delete(m)
+                db.session.delete(m)
             for a in Assignment.by_course(course_id):
-                session.delete(a)
+                db.session.delete(a)
             for g in AssignmentGroup.by_course(course_id):
-                session.delete(g)
+                db.session.delete(g)
         db.session.commit()
         
     def get_users(self):
