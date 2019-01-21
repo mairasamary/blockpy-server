@@ -7,6 +7,8 @@ from pprint import pprint
 import logging
 import base64
 
+from natsort import natsorted
+
 from main import app
 from controllers.interaction_logger import StructuredEvent
 
@@ -243,7 +245,7 @@ class Course(Base):
         db.session.add(course)
         db.session.commit()
         assignment_remap = {}
-        for assignment_data in data['assignments']:
+        for assignment_data in natsorted(data['assignments'], key=lambda a: a['name']):
             assignment = Assignment.decode_json(assignment_data,
                                                 course_id=course.id,
                                                 owner_id=owner_id)
@@ -251,14 +253,15 @@ class Course(Base):
             db.session.commit()
             assignment_remap[assignment_data['id']] = assignment.id
         group_remap = {}
-        for group_data in data['assignment_groups']:
+        for group_data in natsorted(data['assignment_groups'], key=lambda g: g['name'])::
             group = AssignmentGroup.decode_json(group_data,
                                                 course_id=course.id,
                                                 owner_id=owner_id)
             db.session.add(group)
             db.session.commit()
             group_remap[group_data['id']] = group.id
-        for member_data in data['assignment_memberships']:
+        sorter = lambda m: (m['assignment_group_id'], m['assignment_id'])
+        for member_data in sorted(data['assignment_memberships'], key=sorter):
             assignment_id = assignment_remap[member_data['assignment_id']]
             group_id = group_remap[member_data['assignment_group_id']]
             member = AssignmentGroupMembership.decode_json(member_data,
