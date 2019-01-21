@@ -3,7 +3,7 @@ import sys, os
 from main import app
 from flask_script import Manager, Server
 from scripts.db_commands import (ResetDB, PopulateDB, DisplayDB, ExportCourse,
-                                 ImportCourse, CreateDB)
+                                 ImportCourse, CreateDB, RemoveCourse)
 from scripts.external_commands import UpdateDatasets, UpdateBlockPy
 from scripts.canvas_data import GetCanvasData
 
@@ -25,6 +25,7 @@ manager.add_command("populate_db", PopulateDB())
 manager.add_command("display_db", DisplayDB())
 manager.add_command("export_course", ExportCourse())
 manager.add_command("import_course", ImportCourse())
+manager.add_command("remove_course", RemoveCourse())
 
 manager.add_command("update_datasets", UpdateDatasets())
 manager.add_command("update_blockpy", UpdateBlockPy())

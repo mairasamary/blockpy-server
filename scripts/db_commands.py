@@ -129,12 +129,19 @@ class ExportCourse(Command):
 class ImportCourse(Command):
     option_list = (
         Option('--file', '-f', dest='course_data_path', default='backups/current_course_data.json'),
-        Option('--course', '-c', dest='course_id', default='1'),
+        Option('--owner', '-o', dest='owner_id', default='1'),
     )
-    def run(self, course_id, course_data_path, **kwargs):
+    def run(self, owner_id, course_data_path, **kwargs):
         from models.models import Course, Assignment, AssignmentGroup, AssignmentGroupMembership
         with open(course_data_path, 'r') as input_file:
-            imported_data = json.load(input_file, indent=2)
-        Course.load(imported_data)
+            imported_data = json.load(input_file)
+        Course.load(imported_data, int(owner_id))
         pprint(imported_data)
     
+class RemoveCourse(Command):
+    option_list = (
+        Option('--course', '-c', dest='course_id')
+    )
+    def run(self, course, **kwargs):
+        from models.models import Course
+        Course.remove(int(course), True)
