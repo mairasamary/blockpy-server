@@ -253,7 +253,7 @@ class Course(Base):
             db.session.commit()
             assignment_remap[assignment_data['id']] = assignment.id
         group_remap = {}
-        for group_data in natsorted(data['assignment_groups'], key=lambda g: g['name'])::
+        for group_data in natsorted(data['assignment_groups'], key=lambda g: g['name']):
             group = AssignmentGroup.decode_json(group_data,
                                                 course_id=course.id,
                                                 owner_id=owner_id)
