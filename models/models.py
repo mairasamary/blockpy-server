@@ -34,7 +34,10 @@ def datetime_to_string(adatetime):
     return adatetime.isoformat() + 'Z'
 
 def string_to_datetime(astring):
-    return datetime.strptime(astring, '%Y-%m-%dT%H:%M:%SZ')
+    try:
+        return datetime.strptime(astring, '%Y-%m-%dT%H:%M:%S.%fZ')
+    except ValueError:
+        return datetime.strptime(astring, '%Y-%m-%dT%H:%M:%SZ')
 
 def ensure_dirs(path):
     try: 
