@@ -125,3 +125,16 @@ class ExportCourse(Command):
         with open(course_data_path, 'w') as output_file:
             json.dump(exported_data, output_file, indent=2)
         pprint(exported_data)
+
+class ImportCourse(Command):
+    option_list = (
+        Option('--file', '-f', dest='course_data_path', default='backups/current_course_data.json'),
+        Option('--course', '-c', dest='course_id', default='1'),
+    )
+    def run(self, course_id, course_data_path, **kwargs):
+        from models.models import Course, Assignment, AssignmentGroup, AssignmentGroupMembership
+        with open(course_data_path, 'r') as input_file:
+            imported_data = json.load(input_file, indent=2)
+        Course.load(imported_data)
+        pprint(imported_data)
+    
