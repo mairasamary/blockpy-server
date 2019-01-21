@@ -221,15 +221,73 @@ class Course(Base):
                 'date_modified': datetime_to_string(self.date_modified),
                 'date_created': datetime_to_string(self.date_created)}
     @staticmethod
-    def decode_json(self, data):
+    def decode_json(data, **kwargs):
         if data['_schema_version'] == 1:
             data = dict(data) # shallow copy
             del data['_schema_version']
             del data['owner_id__email']
+            del data['id']
             data['date_modified'] = string_to_datetime(data['date_modified'])
             data['date_created'] = string_to_datetime(data['date_created'])
+            for key, value in kwargs.items():
+                data[key] = value
             return Course(**data)
         raise Exception("Unknown schema version: {}".format(data.get('_schema_version', "Unknown")))
+    
+    @staticmethod
+    def import_json(data, owner_id):
+        course = Course.decode_json(data['course'], owner_id=owner_id)
+        db.session.add(course)
+        db.session.commit()
+        assignment_remap = {}
+        for assignment_data in data['assignments']:
+            assignment = Assignment.decode_json(assignment_data,
+                                                course_id=course.id,
+                                                owner_id=owner_id)
+            db.session.add(assignment)
+            db.session.commit()
+            assignment_remap[assignment_data['id']] = assignment.id
+        group_remap = {}
+        for group_data in data['assignment_groups']:
+            group = AssignmentGroup.decode_json(group_data,
+                                                course_id=course.id,
+                                                owner_id=owner_id)
+            db.session.add(group)
+            db.session.commit()
+            group_remap[group_data['id']] = group.id
+        for member_data in data['assignment_memberships']:
+            assignment_id = assignment_remap[member_data['assignment_id']]
+            group_id = group_remap[member_data['assignment_group_id']]
+            member = AssignmentGroupMembership.decode_json(member_data,
+                                                           assignment_id=assignment_id,
+                                                           assignment_group_id=group_id)
+            db.session.add(member)
+        db.session.commit()
+    
+    @staticmethod
+    def export(course_id):
+        course = Course.query.get(course_id)
+        # Get all course's assignments
+        course_assignments = Assignment.by_course(course_id, False)
+        # Get all course's assignment groups
+        groups = course.get_assignment_groups()
+        assignment_groups = [a.encode_json() for a in groups]
+        
+        # Get all assignment groups' memberships
+        assignment_memberships = [a.encode_json()
+                                  for a in AssignmentGroupMembership.by_course(course_id)]
+        # Get all assignment groups' assignments
+        groups_assignments = {a for g in groups
+                              for a in g.get_assignments()}
+        groups_assignments.update(course_assignments)
+        assignments = [a.encode_json() for a in groups_assignments]
+        assignments.sort(key=lambda a: a['name'])
+        return {
+            'course': course.encode_json(),
+            'assignments': assignments,
+            'assignment_groups': assignment_groups,
+            'assignment_memberships': assignment_memberships
+        }
     
     def __str__(self):
         return '<Course {}>'.format(self.id)
@@ -239,8 +297,15 @@ class Course(Base):
         return Course.query.filter_by(visibility='public').all()
         
     @staticmethod    
-    def remove(course_id):
+    def remove(course_id, remove_linked=False):
         Course.query.filter_by(id=course_id).delete()
+        if remove_linked:
+            for m in AssignmentGroupMembership.by_course(course_id):
+                session.delete(m)
+            for a in Assignment.by_course(course_id):
+                session.delete(a)
+            for g in AssignmentGroup.by_course(course_id):
+                session.delete(g)
         db.session.commit()
         
     def get_users(self):
@@ -645,7 +710,10 @@ class Assignment(Base):
                 'on_step': self.on_step,
                 'starting_code': self.starting_code,
                 'answer': self.answer,
+                'due': self.due,
+                'settings': self.settings,
                 'type': self.type,
+                'visibility': self.visibility,
                 'disabled': self.disabled,
                 'mode': self.mode,
                 'owner_id': self.owner_id,
@@ -653,18 +721,20 @@ class Assignment(Base):
                 'owner_id__email': user.email if user else '',
                 'version': self.version,
                 'position': self.position,
-                'visibility': self.visibility,
                 'id': self.id,
                 'date_modified': datetime_to_string(self.date_modified),
                 'date_created': datetime_to_string(self.date_created)}
     @staticmethod
-    def decode_json(self, data):
+    def decode_json(data, **kwargs):
         if data['_schema_version'] == 1:
             data = dict(data) # shallow copy
             del data['_schema_version']
             del data['owner_id__email']
+            del data['id']
             data['date_modified'] = string_to_datetime(data['date_modified'])
             data['date_created'] = string_to_datetime(data['date_created'])
+            for key, value in kwargs.items():
+                data[key] = value
             return Assignment(**data)
         raise Exception("Unknown schema version: {}".format(data.get('_schema_version', "Unknown")))
     
@@ -863,13 +933,16 @@ class AssignmentGroup(Base):
                 'date_modified': datetime_to_string(self.date_modified),
                 'date_created': datetime_to_string(self.date_created)}
     @staticmethod
-    def decode_json(self, data):
+    def decode_json(data, **kwargs):
         if data['_schema_version'] == 1:
             data = dict(data) # shallow copy
             del data['_schema_version']
             del data['owner_id__email']
+            del data['id']
             data['date_modified'] = string_to_datetime(data['date_modified'])
             data['date_created'] = string_to_datetime(data['date_created'])
+            for key, value in kwargs.items():
+                data[key] = value
             return AssignmentGroup(**data)
         raise Exception("Unknown schema version: {}".format(data.get('_schema_version', "Unknown")))
     
@@ -959,13 +1032,27 @@ class AssignmentGroupMembership(Base):
                 'id': self.id,
                 'date_modified': datetime_to_string(self.date_modified),
                 'date_created': datetime_to_string(self.date_created)}
+
     @staticmethod
-    def decode_json(self, data):
+    def by_course(course_id):
+        groups = [g.id for g in AssignmentGroup.by_course(course_id)]
+        return (AssignmentGroupMembership
+                    .query
+                    .filter(AssignmentGroupMembership.assignment_group_id.in_(groups))
+                    .order_by(AssignmentGroupMembership.assignment_group_id,
+                              AssignmentGroupMembership.assignment_id)
+                    .all())
+    
+    @staticmethod
+    def decode_json(data, **kwargs):
         if data['_schema_version'] == 1:
             data = dict(data) # shallow copy
             del data['_schema_version']
+            del data['id']
             data['date_modified'] = string_to_datetime(data['date_modified'])
             data['date_created'] = string_to_datetime(data['date_created'])
+            for key, value in kwargs.items():
+                data[key] = value
             return AssignmentGroupMembership(**data)
         raise Exception("Unknown schema version: {}".format(data.get('_schema_version', "Unknown")))
     
