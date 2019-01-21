@@ -94,7 +94,7 @@ class ImportCourse(Command):
     
 class RemoveCourse(Command):
     option_list = (
-        Option('--course', '-c', dest='course_id')
+        Option('--course', '-c', dest='course_id'),
     )
     def run(self, course, **kwargs):
         from models.models import Course
