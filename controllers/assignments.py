@@ -25,10 +25,25 @@ blueprint_assignments = Blueprint('assignments', __name__, url_prefix='/assignme
 @blueprint_assignments.route('/load', methods=['GET', 'POST'])
 @lti(request='initial')
 def load(lti, lti_exception=None):
-    assignments, submissions = get_assignments_from_request()
+    lookup = request.values.get('lookup', None)
+    assignment_group_id = None
+    if lookup is not None:
+        embed = True
+        # Security through obscurity
+        # AGI_NNYYYY
+        # AGI_011 => 1
+        # AGI_2278129 => 12
+        try:
+            INTRO, CODE = lookup.split("_")
+            start, length = map(int, CODE[:2])
+            assignment_group_id = int(CODE[2+start:2+start+length])
+        except ValueError:
+            return jsonify(success=False, message="I didn't understand the lookup code: "+lookup)
+    else:
+        embed = request.values.get('embed', 'false') == 'True'
+    assignments, submissions = get_assignments_from_request(assignment_group_id=assignment_group_id)
     if not assignments:
         return jsonify(success=False, message="Assignment not found")
-    embed = request.values.get('embed', 'false') == 'True'
     # Use the proper template
     if assignments[0].type == 'maze':
         return maze.load(assignments=assignments, submissions=submissions, lti=lti,embed=embed)

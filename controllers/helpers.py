@@ -151,9 +151,9 @@ def crossdomain(origin=None, methods=None, headers=None,
         return update_wrapper(wrapped_function, f)
     return decorator
     
-def get_assignments_from_request():
+def get_assignments_from_request(assignment_group_id=None):
     assignment_id = request.args.get('assignment_id', None)
-    assignment_group_id = request.args.get('assignment_group_id', None)
+    assignment_group_id = request.args.get('assignment_group_id', assignment_group_id)
     if 'course_id' in request.args:
         course_id = int(request.args.get('course_id'))
     if 'course_id' in request.form:
