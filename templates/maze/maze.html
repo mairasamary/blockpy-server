@@ -72,7 +72,6 @@ function reportSuccess() {
 var saveTimer = null;
 function loadEverything() {
 $(document).ready(function() {
-    console.log("ON READY");
     $("body").prepend(test);
     $("#runButton").parent().prev().html(
         "<span id='success-report'></span><br><span id='status-report'></span>"
@@ -110,7 +109,8 @@ $(document).ready(function() {
     });
     $("body").css("overflow-y", "hidden");
     loadNavigation();
-    Blockly.getMainWorkspace().resize()
+    Blockly.getMainWorkspace().resize();
+    document.getElementById("blockly").style.top =  Math.max(10, document.getElementById("visualization").offsetTop - window.pageYOffset) + "px";
 });
 };
 </script>
