@@ -116,21 +116,31 @@ class DisplayDB(Command):
 class ExportCourse(Command):
     option_list = (
         Option('--file', '-f', dest='course_data_path', default='backups/current_course_data.json'),
-        Option('--course', '-c', dest='course_id', default='backups/current_course_data.json'),
+        Option('--course', '-c', dest='course_id', default='1'),
     )
     
     def run(self, course_id, course_data_path, **kwargs):
         from models.models import Course, Assignment, AssignmentGroup, AssignmentGroupMembership
-        course = Course.query.get(int(course_id))
-        assignments = [a.encode_json() for a in Assignment.query.all()]
-        assignment_groups = [a.encode_json() for a in AssignmentGroup.query.all()]
-        assignment_memberships = [a.encode_json() for a in AssignmentGroupMembership.query.all()]
-        exported_data = {
-            'course': course.encode_json(),
-            'assignments': assignments,
-            'assignment_groups': assignment_groups,
-            'assignment_memberships': assignment_memberships
-        }
+        exported_data = Course.export(int(course_id))
         with open(course_data_path, 'w') as output_file:
             json.dump(exported_data, output_file, indent=2)
         pprint(exported_data)
+
+class ImportCourse(Command):
+    option_list = (
+        Option('--file', '-f', dest='course_data_path', default='backups/current_course_data.json'),
+        Option('--owner', '-o', dest='owner_id', default='1'),
+    )
+    def run(self, owner_id, course_data_path, **kwargs):
+        from models.models import Course, Assignment, AssignmentGroup, AssignmentGroupMembership
+        with open(course_data_path, 'r') as input_file:
+            imported_data = json.load(input_file)
+        Course.import_json(imported_data, int(owner_id))
+    
+class RemoveCourse(Command):
+    option_list = (
+        Option('--course', '-c', dest='course_id'),
+    )
+    def run(self, course_id, **kwargs):
+        from models.models import Course
+        Course.remove(int(course_id), True)
