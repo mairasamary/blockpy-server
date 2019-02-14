@@ -666,8 +666,12 @@ PythonToBlocks.prototype.Module = function(node)
 }
 
 PythonToBlocks.prototype.Comment = function(txt, lineno) {
+    var commentText = txt.slice(1);
+    if (commentText.length && commentText[0] == " ") {
+        commentText = commentText.substring(1);
+    }
     return block("comment_single", lineno, {
-        "BODY": txt.slice(1)
+        "BODY": commentText
     }, {}, {}, {}, {})
 }
 
@@ -1677,6 +1681,29 @@ PythonToBlocks.prototype.Num_value = function(node)
     return Sk.ffi.remapToJs(n);
 }
 
+function isWhitespaceOrEmpty(str) {
+    return !/[^\s]/.test(str);
+}
+
+function dedentMultiline(str) {
+    var lines = str.split("\n");
+    if (isWhitespaceOrEmpty(lines[0])) {
+        lines.shift();
+    }
+    if (lines.length && isWhitespaceOrEmpty(lines[lines.length-1])) {
+        lines.pop();
+    }
+    if (lines.length) {
+        var skip_amount = lines[0].search(/\S|$/);
+        for (var i=0; i < lines.length; i += 1) {
+            lines[i] = lines[i].substring(skip_amount);
+        }
+        return lines.join("\n");
+    } else {
+        return "";
+    }
+}
+
 /*
  * s: string
  *
@@ -1686,7 +1713,7 @@ PythonToBlocks.prototype.Str = function(node)
     var s = node.s;
     var strValue = Sk.ffi.remapToJs(s);
     if (strValue.split("\n").length > 1) {
-        return block("string_multiline", node.lineno, {"TEXT": strValue});
+        return block("string_multiline", node.lineno, {"TEXT": dedentMultiline(strValue)});
     } else {
         return block("text", node.lineno, {"TEXT": strValue});
     }
@@ -2578,6 +2605,15 @@ var $sk_mod_instructor = function(name) {
         return Sk.ffi.remapToPy(Sk.executionReports['verifier'].code);
     });
     
+    mod.trace_lines = new Sk.builtin.func(function() {
+        if (Sk.executionReports['student'].success) {
+            var lines = Sk.executionReports['student'].lines;
+            return Sk.ffi.remapToPy(lines);
+        } else {
+            return new Sk.builtin.list([]);
+        }
+    });
+    
     /**
      *
      */
@@ -2589,10 +2625,8 @@ var $sk_mod_instructor = function(name) {
         } else {
             var error = Sk.executionReports['student'].error,
                 position = {};
-            if (error) {
-                if (error.traceback.length > 0) {
-                    position['line'] = error.traceback[0].lineno;
-                }
+            if (error && error.traceback && error.traceback.length > 0) {
+                position['line'] = error.traceback[0].lineno;
             } else {
                 error = none;
             }
@@ -2974,7 +3008,7 @@ Blockly.Blocks['string_multiline'] = {
 Blockly.Python['string_multiline'] = function(block) {
   var text_body = block.getFieldValue('TEXT');
   // TODO: Assemble JavaScript into code variable.
-  var code = '"""'+text_body+'"""\n';
+  var code = '"""\n'+text_body+'\n"""\n';
   return [code, Blockly.Python.ORDER_ATOMIC];
 };
 Blockly.Blocks['list_comprehension'] = {
@@ -4872,6 +4906,7 @@ BlockPyServer.prototype._postRetry = function(data, url, cache, delay, callback)
 BlockPyServer.prototype.markSuccess = function(success) {
     var model = this.main.model;
     var callback = model.settings.completedCallback;
+    var forceUpdate = model.settings.forceUpdate;
     var hideCorrectness = model.assignment.secret();
     var server = this;
     if (model.server_is_connected('save_success')) {
@@ -4879,6 +4914,7 @@ BlockPyServer.prototype.markSuccess = function(success) {
         data['code'] = model.programs.__main__;
         data['status'] = success;
         data['hide_correctness'] = hideCorrectness;
+        data['force_update'] = forceUpdate;
         this.main.components.editor.getPngFromBlocks(function(pngData, img) {
             data['image'] = pngData;
             if (img.remove) {
@@ -7931,6 +7967,7 @@ BlockPyEngine.prototype.runStudentCode = function(after) {
             report['student'] = {
                 'success': true,
                 'trace': engine.executionBuffer.trace,
+                'lines': engine.executionBuffer.trace.map(x => x.line),
                 'module': module,
                 'output': engine.main.model.execution.output
             }
@@ -7967,7 +8004,7 @@ BlockPyEngine.prototype.runInstructorCode = function(filename, quick, after) {
     if (!report['parser'].success || !report['verifier'].success) {
         studentCodeSafe = 'pass';
     }
-    Sk.builtinFiles.files['src/lib/pedal/sandbox/sandbox.py'] = 'class Sandbox: pass'
+    Sk.builtinFiles.files['src/lib/pedal/sandbox/sandbox.py'] = 'class Sandbox: pass\ndef run(): pass\ndef reset(): pass\n';
     var instructorCode = this.main.model.programs[filename]();
     var lineOffset = instructorCode.split(NEW_LINE_REGEX).length;
     instructorCode = (
@@ -7996,6 +8033,7 @@ BlockPyEngine.prototype.runInstructorCode = function(filename, quick, after) {
         'compatibility.get_plots = get_plots\n'+
         'compatibility.get_output = get_output\n'+
         'compatibility.reset_output = reset_output\n'+
+        'compatibility.trace_lines = trace_lines\n'+
         'def capture_output(func, *args):\n'+
         '   reset_output()\n'+
         '   func(*args)\n'+
@@ -8051,10 +8089,18 @@ BlockPyEngine.prototype.parseGlobals = function(variables) {
     if (!this.main.model.settings.trace_off()) {
         for (var property in variables) {
             var value = variables[property];
-            if (property !== "__name__" && property !== "__doc__") {
+            if (property !== "__name__" && 
+                property !== "__doc__" && 
+                property !== "__package__") {
                 property = property.replace('_$rw$', '')
                                    .replace('_$rn$', '');
-                var parsed = this.parseValue(property, value);
+                var parsed = {"name": property, "type": "Unknown",
+                              "value": value.toString()};
+                try {
+                    parsed = this.parseValue(property, value);
+                } catch {
+                    // Can't really do anything
+                }
                 if (parsed !== null) {
                     result.push(parsed);
                 } else if (value.constructor == Sk.builtin.module) {
@@ -8396,6 +8442,8 @@ BlockPy.prototype.initModel = function(settings) {
             'disable_timeout': ko.observable(false),
             // boolean
             'auto_upload': ko.observable(true),
+            // boolean
+            'forceUpdate': ko.observable(false),
             // boolean
             'developer': ko.observable(false),
             // boolean
