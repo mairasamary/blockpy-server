@@ -2,6 +2,12 @@
 
 Flask-based server for managing the BlockPy LTI app.
 
+This is the full-site for the Think project, which includes CORGIS and the CT@VT parts of the website.
+These instructions are pretty incomplete.
+If you just want to run BlockPy, check out [https://github.com/acbart/Blockpy-Server](https://github.com/acbart/Blockpy-Server)! 
+The instructions there are much better!
+
+# Incomplete Instructions
 
 To run the server, you'll want to start by initizalizing the database:
 
