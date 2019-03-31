@@ -24,7 +24,7 @@ $().ready(function() {
         'role': ko.observable({{ role.name|title|tojson }}),
         'url': ko.observable({{ url_for('courses.course', course_id=course.id)|tojson}}),
         'created': ko.observable({{ course.date_created|tojson }}),
-        'sort_date': ko.observable({{ (course.date_created.strftime('%Y/%b'))|tojson }}),
+        'sort_date': ko.observable({{ (course.date_created.strftime('%Y/%m'))|tojson }}),
         'display_date': ko.observable({{ (course.date_created.strftime('%b %Y'))|tojson }})
     })
     {% endfor %}
