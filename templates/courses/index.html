@@ -30,8 +30,8 @@ $().ready(function() {
     {% endfor %}
     
     mainModel.my_courses.sort(function(left, right) {
-        return left.sort_date === right.sort_date ? 0
-             : left.sort_date < right.sort_date ? -1
+        return left.sort_date() === right.sort_date() ? 0
+             : left.sort_date() < right.sort_date() ? -1
              : 1;
     });
     
