@@ -18,7 +18,7 @@ from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from flask_security import UserMixin, RoleMixin, login_required
 from sqlalchemy import event, Integer, Date, ForeignKey, Column, Table,\
                        String, Boolean, DateTime, Text, ForeignKeyConstraint,\
-                       cast, func, and_, or_
+                       cast, func, and_, or_, Index
 from sqlalchemy.ext.declarative import declared_attr
 
 db = SQLAlchemy(app)
@@ -489,6 +489,8 @@ class Submission(Base):
     assignment_version = Column(Integer(), default=0)
     version = Column(Integer(), default=0)
     url = Column(Text(), default="")
+    __table_args__ = (Index('submission_index', "assignment_id", 
+                            "course_id", "user_id"), )
     
     @staticmethod
     def by_id(submission_id):
