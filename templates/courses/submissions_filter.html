@@ -67,7 +67,7 @@ Assignment:
 <table class="table table-condensed table-hover table-striped table-bordered">
 <tbody>
 <tr>
-    {% if criteria=="student" %}<th>Assignment<th>{%endif %}
+    {% if criteria=="student" %}<th>Assignment</th>{%endif %}
     {% if criteria=="assignment" %}<th>Student</th>{%endif %}
     <th>Status</th>
     <th>View</th>
@@ -75,7 +75,7 @@ Assignment:
 </tr>
 {% for submission in submissions %}
 <tr>
-    {% if criteria=="student" %}<td>{{ submission[2].title() }}<td>{%endif %}
+    {% if criteria=="student" %}<td>{{ submission[2].title() }}</td>{%endif %}
     {% if criteria=="assignment" %}<td>{{ submission[1].name() }}</td>{%endif %}
     <td>{% if submission[0].correct%}Yes{% else %}No{% endif %}</td>
     <td>{% if submission[0] != None -%}

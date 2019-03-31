@@ -1,5 +1,6 @@
 from pprint import pprint
 from collections import defaultdict
+from natsort import natsorted
 
 from flask_wtf import Form
 from wtforms import IntegerField, BooleanField, TextField, SubmitField, SelectField
@@ -200,15 +201,15 @@ def submissions_filter(course_id):
         return "You are not an instructor!"
     course_id = int(course_id)
     course = Course.by_id(course_id)
-    students = course.get_students()
-    assignments = course.get_assignments()
+    students = natsorted(course.get_students(), key=lambda r: r.name())
+    assignments = natsorted(course.get_assignments(), key=lambda r: r[0].name)
     criteria = request.values.get("criteria", "none")
     search_key = int(request.values.get("search_key", "-1"))
     submissions = []
     if criteria == "student":
         all_subs = Submission.by_student(search_key, course_id)
         all_subs = {s[0].assignment_id: s for s in all_subs}
-        submissions = [all_subs.get(assignment[0].id, (None, None, assignment))
+        submissions = [all_subs.get(assignment[0].id, (None, None, assignment[0]))
                        for assignment in assignments]
     elif criteria == "assignment":
         all_subs = Submission.by_assignment(search_key, course_id)
