@@ -202,7 +202,7 @@ def submissions_filter(course_id):
     course_id = int(course_id)
     course = Course.by_id(course_id)
     students = natsorted(course.get_students(), key=lambda r: r.name())
-    assignments = natsorted(course.get_submitted_assignments(),
+    assignments = natsorted([a for a, m in course.get_submitted_assignments()],
                             key=lambda r: r.name)
     criteria = request.values.get("criteria", "none")
     search_key = int(request.values.get("search_key", "-1"))
@@ -257,7 +257,8 @@ def submissions_grid(course_id):
         return "You are not an instructor!"
     course = Course.by_id(course_id)
     students = course.get_students()
-    assignments = course.get_assignments()
+    assignments = natsorted(course.get_submitted_assignments(),
+                            key=lambda r: r[0].name)
     grouped_assignments = defaultdict(list)
     for assig_pair in assignments:
         assignment, membership = assig_pair
