@@ -29,13 +29,18 @@ $().ready(function() {
 
 <p>Back to <a href="{{ url_for('courses.course', course_id=course_id if course_id != None else 0) }}">Course</a></p>
 
-Name: {{ user.name() }} ({{ user.email }})<br>
+Submitter: {{ user.name() }} ({{ user.email }})<br>
 Assignment: {{ assignment.title() }} (<a href="{{ url_for('assignments.load', assignment_id=assignment.id) }}">View</a>)<br>
-Body: {{ assignment.body}}<br>
 Type: {{ assignment.type}}<br>
+Body: {{ assignment.body}}<br>
+Completed: {{ submission.correct }}<br>
+Status: {{ submission.status }}<br>
+Touches: {{ submission.version }}<br>
 {% if assignment.type == "blockpy" %}
-Blocks: <img src="{{ url_for('blockpy.get_submission_image', submission_id=submission.id, course_id=course_id, _external=True) }}"><br>
-Code: <pre>{{ submission.code }}</pre><br>
+Blocks: <img src="{{ url_for('blockpy.get_submission_image', submission_id=submission.id, course_id=course_id, _external=True) }}" onerror="this.style.opacity='0'" ><br>
+Code: {% filter highlight_python_code(True) -%}
+{{ submission.code|safe }}
+{% endfilter %}<br>
 {% elif assignment.type == "explain" %}
 Response: <pre>{{ (submission.code|json_load).code }}</pre>
 <ol>
@@ -46,7 +51,5 @@ Response: <pre>{{ (submission.code|json_load).code }}</pre>
 {% endfor %}
 </ol>
 {% endif %}
-Completed: {{ submission.correct }}<br>
-Touches: {{ submission.version }}<br>
 
 {% endblock %}
