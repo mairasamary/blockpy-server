@@ -327,6 +327,11 @@ class Course(Base):
                           .filter(Assignment.course_id==self.id,
                                   AssignmentGroupMembership.assignment_id == Assignment.id)
                           .all())
+    def get_submitted_assignments(self):
+        return (db.session.query(Assignment)
+                          .join(Submission, Submission.assignment_id==Assignment.id)
+                          .filter(Submission.course_id==self.id)
+                          .distinct())
     def get_submissions(self):
         return (db.session.query(Submission)
                           .filter(Submission.course_id==self.id)

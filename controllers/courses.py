@@ -196,20 +196,21 @@ def config():
 @login_required
 def submissions_filter(course_id):
     ''' List all the users in the course '''
-    is_instructor = g.user.is_instructor(int(course_id))
-    if not is_instructor:
-        return "You are not an instructor!"
+    is_grader = g.user.is_grader(int(course_id))
+    if not is_grader:
+        return "You are not an instructor or TA in this course!"
     course_id = int(course_id)
     course = Course.by_id(course_id)
     students = natsorted(course.get_students(), key=lambda r: r.name())
-    assignments = natsorted(course.get_assignments(), key=lambda r: r[0].name)
+    assignments = natsorted(course.get_submitted_assignments(),
+                            key=lambda r: r.name)
     criteria = request.values.get("criteria", "none")
     search_key = int(request.values.get("search_key", "-1"))
     submissions = []
     if criteria == "student":
         all_subs = Submission.by_student(search_key, course_id)
         all_subs = {s[0].assignment_id: s for s in all_subs}
-        submissions = [all_subs.get(assignment[0].id, (None, None, assignment[0]))
+        submissions = [all_subs.get(assignment.id, (None, None, assignment))
                        for assignment in assignments]
     elif criteria == "assignment":
         all_subs = Submission.by_assignment(search_key, course_id)
@@ -223,7 +224,7 @@ def submissions_filter(course_id):
                            submissions= submissions,
                            criteria = criteria,
                            search_key = search_key,
-                           is_instructor=is_instructor)
+                           is_instructor=is_grader)
 @courses.route('/submissions_specific/<submission_id>/', methods=['GET', 'POST'])
 @courses.route('/submissions_specific/<submission_id>', methods=['GET', 'POST'])
 @login_required
