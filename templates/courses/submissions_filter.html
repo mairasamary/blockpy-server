@@ -57,9 +57,9 @@ Assignment:
 <select id='search-assignments'>
 <option value=''></option>
 {% for assignment in assignments %}
-<option value='{{ assignment.id }}'
-{%- if criteria == "assignment" and search_key == assignment.id %} selected 
-{%- endif %} >{{ assignment.title() }}</option>
+<option value='{{ assignment[0].id }}'
+{%- if criteria == "assignment" and search_key == assignment[0].id %} selected 
+{%- endif %} >{{ assignment[0].name }}</option>
 {% endfor %}
 </select>
 <br><br>

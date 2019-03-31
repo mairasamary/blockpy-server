@@ -208,7 +208,7 @@ def submissions_filter(course_id):
     if criteria == "student":
         all_subs = Submission.by_student(search_key, course_id)
         all_subs = {s[0].assignment_id: s for s in all_subs}
-        submissions = [all_subs.get(assignment.id, (None, None, assignment))
+        submissions = [all_subs.get(assignment[0].id, (None, None, assignment))
                        for assignment in assignments]
     elif criteria == "assignment":
         all_subs = Submission.by_assignment(search_key, course_id)
