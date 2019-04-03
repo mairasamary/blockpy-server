@@ -6,7 +6,9 @@ from flask_security.core import current_user
 
 from main import app
 from models.models import db, User, Course
-from controllers.helpers import admin_required
+from controllers.helpers import (admin_required, lti, highlight_python_code)
+
+app.jinja_env.filters['highlight_python_code'] = highlight_python_code
 
 @app.before_request
 def load_user():
