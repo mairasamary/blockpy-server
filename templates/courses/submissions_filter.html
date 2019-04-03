@@ -67,20 +67,21 @@ Assignment:
 <table class="table table-condensed table-hover table-striped table-bordered">
 <tbody>
 <tr>
-    {% if criteria=="student" %}<th>Assignment<th>{%endif %}
+    {% if criteria=="student" %}<th>Assignment</th>{%endif %}
     {% if criteria=="assignment" %}<th>Student</th>{%endif %}
+    <th>Correct</th>
     <th>Status</th>
     <th>View</th>
     <th>Touches</th>
 </tr>
 {% for submission in submissions %}
-<tr>
-    {% if criteria=="student" %}<td>{{ submission[2].title() }}<td>{%endif %}
+<tr class='{% if submission[0].correct%}success{% endif %}'>
+    {% if criteria=="student" %}<td>{{ submission[2].title() }}</td>{%endif %}
     {% if criteria=="assignment" %}<td>{{ submission[1].name() }}</td>{%endif %}
     <td>{% if submission[0].correct%}Yes{% else %}No{% endif %}</td>
+    <td>{{ submission[0].status }}</td>
     <td>{% if submission[0] != None -%}
-    <a href="{{ url_for('courses.submissions_specific', submission_id=submission[0].id) }}">View</a>
-    {% else %}No submission{% endif %}</td>
+    <a href="{{ url_for('courses.submissions_specific', submission_id=submission[0].id) }}">View</a>{% endif %}</td>
     <td>{{ submission[0].version or "0"}}</td>
 </tr>
 {% endfor %}

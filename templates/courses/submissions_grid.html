@@ -29,6 +29,8 @@ $().ready(function() {
 
 <p>Back to <a href="{{ url_for('courses.course', course_id=course_id) }}">Course</a></p>
 
+<div style='overflow-x: auto'>
+
 <table class="table table-condensed table-hover table-striped table-bordered">
 <tbody>
 
@@ -36,7 +38,10 @@ $().ready(function() {
 <tr>
     <th></th>
     {% for group in assignment_groups %}
-    <th colspan="{{ grouped_assignments[group.id]|length }}">{{ group.name}}</th>
+    {% set colspan = grouped_assignments[group.id]|length %}
+    {% if colspan > 0 %}
+    <th colspan="{{ colspan }}">{{ group.name}}</th>
+    {% endif %}
     {% endfor %}
 </tr>
 
@@ -75,6 +80,8 @@ $().ready(function() {
 
 </tbody>
 </table>
+
+</div>
 
 
 {% endblock %}

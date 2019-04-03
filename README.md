@@ -48,6 +48,8 @@ You need to create some folders. I know it's weird that we have two log folders 
 * `certs/` - This is where I store any local https certificates for local dev.
 * `backups/` - If you run the backup commands, data will be dumped here.
 
+# Incomplete Instructions
+
 To run the server, you'll want to start by initizalizing the database:
 
     python manage.py reset_db

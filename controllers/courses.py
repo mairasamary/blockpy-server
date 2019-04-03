@@ -1,5 +1,6 @@
 from pprint import pprint
 from collections import defaultdict
+from natsort import natsorted
 
 from flask_wtf import Form
 from wtforms import IntegerField, BooleanField, TextField, SubmitField, SelectField
@@ -195,13 +196,14 @@ def config():
 @login_required
 def submissions_filter(course_id):
     ''' List all the users in the course '''
-    is_instructor = g.user.is_instructor(int(course_id))
-    if not is_instructor:
-        return "You are not an instructor!"
+    is_grader = g.user.is_grader(int(course_id))
+    if not is_grader:
+        return "You are not an instructor or TA in this course!"
     course_id = int(course_id)
     course = Course.by_id(course_id)
-    students = course.get_students()
-    assignments = course.get_assignments()
+    students = natsorted(course.get_students(), key=lambda r: r.name())
+    assignments = natsorted([a for a, m in course.get_submitted_assignments()],
+                            key=lambda r: r.name)
     criteria = request.values.get("criteria", "none")
     search_key = int(request.values.get("search_key", "-1"))
     submissions = []
@@ -222,7 +224,7 @@ def submissions_filter(course_id):
                            submissions= submissions,
                            criteria = criteria,
                            search_key = search_key,
-                           is_instructor=is_instructor)
+                           is_instructor=is_grader)
 @courses.route('/submissions_specific/<submission_id>/', methods=['GET', 'POST'])
 @courses.route('/submissions_specific/<submission_id>', methods=['GET', 'POST'])
 @login_required
@@ -255,7 +257,8 @@ def submissions_grid(course_id):
         return "You are not an instructor!"
     course = Course.by_id(course_id)
     students = course.get_students()
-    assignments = course.get_assignments()
+    assignments = natsorted(course.get_submitted_assignments(),
+                            key=lambda r: r[0].name)
     grouped_assignments = defaultdict(list)
     for assig_pair in assignments:
         assignment, membership = assig_pair

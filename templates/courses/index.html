@@ -12,7 +12,7 @@ Courses: Index
 <script type='text/javascript'>
 
 $().ready(function() {
-    var mainModel = {
+    mainModel = {
         'my_courses': ko.observableArray([]),
         'public_courses': ko.observableArray([]),
     };
@@ -22,9 +22,19 @@ $().ready(function() {
         'name': ko.observable({{ course.name|tojson}}),
         'service': ko.observable({{ course.service|tojson}}),
         'role': ko.observable({{ role.name|title|tojson }}),
-        'url': ko.observable({{ url_for('courses.course', course_id=course.id)|tojson}})
+        'url': ko.observable({{ url_for('courses.course', course_id=course.id)|tojson}}),
+        'created': ko.observable({{ course.date_created|tojson }}),
+        'sort_date': ko.observable({{ (course.date_created.strftime('%Y/%m'))|tojson }}),
+        'display_date': ko.observable({{ (course.date_created.strftime('%b %Y'))|tojson }})
     })
     {% endfor %}
+    
+    mainModel.my_courses.sort(function(left, right) {
+        return left.sort_date() === right.sort_date() ? 0
+             : left.sort_date() < right.sort_date() ? -1
+             : 1;
+    });
+    
     {% for course in public_courses %}
     mainModel.public_courses.push({
         'id': ko.observable({{ course.id|tojson}}),
@@ -56,15 +66,16 @@ You are enrolled in the following courses:
 <ul data-bind="foreach: my_courses">
     <li>
         <a data-bind="attr: {href: url}">
-            <b data-bind="text: name()"></b>
-            : <span data-bind="text: role"></span>
+            <b data-bind="text: name()"></b>:
         </a>
+        <span data-bind="text: role"></span>
+        (<span data-bind="text: display_date"></span>)
     </li>
 </ul>
 
 <h3> Public Courses</h3>
 
-The following courses are availble for you
+The following courses are available for you
 
 <ul data-bind="foreach: public_courses">
     <li>
