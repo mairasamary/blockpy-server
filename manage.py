@@ -1,10 +1,13 @@
 import sys, os
 import json
 
-from main import app
 from flask_script import Manager, Server
+
+from main import app
+from models.models import db
 from scripts.db_commands import (ResetDB, PopulateDB, DisplayDB, ExportCourse,
-                                 ImportCourse, CreateDB, RemoveCourse)
+                                 ImportCourse, CreateDB, RemoveCourse,
+                                 DumpDB)
 from scripts.external_commands import UpdateDatasets, UpdateBlockPy
 
 # Read in secrets
@@ -26,10 +29,12 @@ manager.add_command("display_db", DisplayDB())
 manager.add_command("export_course", ExportCourse())
 manager.add_command("import_course", ImportCourse())
 manager.add_command("remove_course", RemoveCourse())
+manager.add_command("dump_db", DumpDB())
 
 # External commands
 manager.add_command("update_datasets", UpdateDatasets())
 manager.add_command("update_blockpy", UpdateBlockPy())
+
 
 if __name__ == "__main__":
     manager.run()
