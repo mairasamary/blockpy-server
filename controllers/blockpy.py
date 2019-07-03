@@ -253,7 +253,7 @@ def get_group_report(group_id, user_id, course_id, hide_correctness):
                total=total, 
                score=int(10000*score)/100 if not hide_correctness else '?', 
                table=table)
-    return score, overview+'<br><br>'.join([
+    complete = overview+'<br><br>'.join([
         get_report(assignment.type, 
                         assignment.name, 
                         submission, 
@@ -262,6 +262,8 @@ def get_group_report(group_id, user_id, course_id, hide_correctness):
         in zip(assignments, submissions)
     ])+'<br><small>{uid}/{cid}/{aids}</small>'.format(uid=user_id, cid=course_id,
         aids=','.join([str(a.id) for a in assignments]))
+    complete = '<div xml:lang="en">'+complete+'</div>'
+    return score, complete
 
 def get_report(mode, name, submission, image="", hide_correctness=False):
     url = url_for('blockpy.get_submission_code', submission_id=submission.id, _external=True)
@@ -275,17 +277,18 @@ def get_report(mode, name, submission, image="", hide_correctness=False):
         status = "Incomplete"
     if mode == 'maze':
         return """
-        <h1 id='{slug}'>Maze {name}</h1>
+        <h2 id='{slug}'>Maze {name}</h2>
         <strong>Status:</strong><span> {status}</span>
         """.format(name=name, status=status, slug=slugify(name))
     else:
         code = highlight_python_code(submission.code)
         if image:
-            image = "Submitted Blocks:<br><img src='{0}'>".format(image)
+            image = "Submitted Blocks:<br><img alt='Block version of code' src='{0}'>".format(image)
         #time = process_history([h['time'] for h in submission.get_history()])
         time = submission.version/60.0
         return '''
-        <h1 id='{slug}'>{name}</h1>
+        <div xml:lang="en">
+        <h2 id='{slug}'>{name}</h2>
         <div>Status: {status}</div>
         <div>Latest work in progress: <a href='{url}' target='_blank'>View</a></div>
         <div>Touches: {touches}</div>
@@ -294,6 +297,7 @@ def get_report(mode, name, submission, image="", hide_correctness=False):
         <br>
         Submitted code:<br>
         {code}
+        </div>
         '''.format(name=name, slug=slugify(name),
                    status=status, url=url, time=time,
                    touches=submission.version, code=code, 
@@ -531,7 +535,7 @@ def fix_ghost_submission(lti, lti_exception=None):
                 code = highlight(row.code, PythonLexer(), HtmlFormatter())
                 image_url = url_for('blockpy.get_submission_image', submission_id=row.id, _external=True)
                 url = url_for('blockpy.get_submission_code', submission_id=row.id, _external=True)
-                potential_image = "Submitted Blocks:<br><img src='{0}'>".format(image_url)
+                potential_image = "Submitted Blocks:<br><img alt='Block version of code' src='{0}'>".format(image_url)
                 if row.correct:
                     message = "Success!"
                 else:

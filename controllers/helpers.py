@@ -18,7 +18,6 @@ from pygments import highlight
 from pygments.lexers import PythonLexer
 from pygments.formatters import HtmlFormatter
 
-
 # Flask imports
 from flask import g, request, redirect, url_for, make_response, current_app
 from flask import flash, session, jsonify
@@ -239,7 +238,8 @@ def get_assignment_id(f):
     return decorated_function
 
 def highlight_python_code(code, linenos=True):
-    formatter = HtmlFormatter(linenos=linenos, noclasses=True)
+    formatter = HtmlFormatter(linenos=linenos, noclasses=True,
+                              style='colorful')
     return highlight(code, PythonLexer(), formatter)
 
 def normalize_url(url):
