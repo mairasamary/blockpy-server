@@ -37,13 +37,11 @@ $().ready(function() {
 
 {% block body %}
 
-<h3>Submission Filter</h3>
+<h1>Submission Filter</h1>
 
 <p>Back to <a href="{{ url_for('courses.course', course_id=course_id) }}">Course</a></p>
 
-<h4>Filter Criteria</h4>
-
-Student:
+<label>Student:
 <select id='search-students'>
 <option value=''></option>
 {% for student in students %}
@@ -52,8 +50,10 @@ Student:
 {%- endif %} >{{ student.last_name}}, {{ student.first_name }}</option>
 {% endfor %}
 </select>
+</label>
 <br><br>
-Assignment:
+
+<label>Assignment:
 <select id='search-assignments'>
 <option value=''></option>
 {% for assignment in assignments %}
@@ -62,9 +62,11 @@ Assignment:
 {%- endif %} >{{ assignment.title() }}</option>
 {% endfor %}
 </select>
+</label>
 <br><br>
 
 <table class="table table-condensed table-hover table-striped table-bordered">
+<caption>Student's submissions for course's assignments.</caption>
 <tbody>
 <tr>
     {% if criteria=="student" %}<th>Assignment</th>{%endif %}

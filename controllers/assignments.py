@@ -167,7 +167,7 @@ def check_assignments(lti=lti):
 @blueprint_assignments.route('/select/', methods=['GET', 'POST'])
 @blueprint_assignments.route('/select', methods=['GET', 'POST'])
 @lti(request='initial')
-def select(lti, menu='select'):
+def select(lti, menu='select', lti_exception=None):
     """ Let's the user select from a list of assignments.
     """
     # Store current user_id and context_id
@@ -182,7 +182,7 @@ def select(lti, menu='select'):
 @blueprint_assignments.route('/select_embed/', methods=['GET', 'POST'])
 @blueprint_assignments.route('/select_embed', methods=['GET', 'POST'])
 @lti(request='initial')
-def select_embed(lti):
+def select_embed(lti, lti_exception=None):
     """ Let's the user select from a list of assignments.
     """
     return select(menu='embed', lti=lti)

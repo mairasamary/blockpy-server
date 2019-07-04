@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang='en'>
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -23,6 +23,42 @@
     <script src="{{ url_for('static', filename='libs/jquery-ui.min.js')}}"></script>
     <script src="{{ url_for('static', filename='libs/bootstrap.min.js')}}"></script>
     <script src="{{ url_for('static', filename='libs/knockout-3.4.0.js')}}"></script>
+    
+    <style>
+    a {
+        text-decoration: underline;
+    }
+    
+    a[role="button"], button a, a.btn, .btn a, .nav a, .navbar-header a,
+    .dropdown-menu a {
+        text-decoration: none;
+    }
+    
+    .navbar-inverse .navbar-nav>li>a {
+        color: white;
+    }
+    
+    .navbar-inverse a.navbar-brand {
+        color: white;
+    }
+    
+    .navbar-inverse .navbar-link.btn.btn-default {
+        color: black;
+    }
+    
+    .nav a.dropdown-toggle:focus {
+        outline: 1px solid rgb(77, 144, 254);
+    }
+    
+    table caption {
+        color: #333;
+    }
+    
+    .label-default {
+        background-color: #444;
+    }
+    
+    </style>
     
     <style>
     {% block extracss %}
@@ -55,7 +91,9 @@
   <div class="container">
     <div class="navbar-header">
       <a class="navbar-brand" href="{{ url_for('index') }}">
-        <img alt="BlockPy Brand" src="{{ url_for('static', filename='images/puppy-corgi-head.png')}}">
+        <img alt="BlockPy Brand"
+             role='presentation'
+             src="{{ url_for('static', filename='images/puppy-corgi-head.png')}}">
       </a>
       <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
         <span class="sr-only">Toggle navigation</span>
@@ -71,8 +109,11 @@
         {% if g.user %}
         <li><a id='courses.index' href="{{ url_for('courses.index') }}">Courses</a></li>
         {% endif %}
-        <li class="dropdown">
-            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Tools <span class="caret"></span></a>
+        <li class="dropdown" tabindex="-1">
+            <a href="#" class="dropdown-toggle"
+               data-toggle="dropdown" role="button"
+               aria-haspopup="true" aria-expanded="false"
+               >Tools <span class="caret"></span></a>
             <ul class="dropdown-menu">
                 <li><a href="{{ url_for('blockpy.index') }}">BlockPy</a></li>
                 <li><a href="{{ url_for('corgis.index') }}">CORGIS Datasets</a></li>

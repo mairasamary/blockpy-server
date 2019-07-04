@@ -2,7 +2,7 @@
 {% extends 'reduced_layout.html' %}
 
 {% block title %}
-Courses: Index
+Select Assignment
 {% endblock %}
 
 {% block statusbar %}
@@ -416,7 +416,7 @@ tr.hidden-group.active.hover-remove-rows td {
 
 <div class='overlay' data-bind='visible: onServer'></div>
 <span class='pull-right text-muted' style='padding-top:10px' data-bind="visible: onServer">Loading</span>
-<h3>Select {{'an Assignment' if menu != 'embed' else 'an Ungraded Canvas'}}</h3>
+<h1>Select {{'an Assignment' if menu != 'embed' else 'an Ungraded Canvas'}}</h1>
 
 <div class="modal fade" id="assignment-create" tabindex="-1" role="dialog" aria-labelledby="assignment-create-label">
   <div class="modal-dialog" role="document">
@@ -426,47 +426,49 @@ tr.hidden-group.active.hover-remove-rows td {
         <h4 class="modal-title" id="assignment-create-label">Create Assignment</h4>
       </div>
       <div class="modal-body">
-        <form>
-            <div class="form-group">
-                <label for="assignment-name">Type</label>
-                <select class="form-control" data-bind="value: createAssignmentType">
-                    <option>BlockPy</option>
-                    <option>Maze</option>
-                    <option value='explain'>Code Explanation</option>
-                    <option value='poll'>Poll</option>
-                    <option value='visualizer'>CORGIS (Visualizer)</option>
-                    <option value='corgis (python)'>CORGIS (Python)</option>
-                </select>
-            </div>
-            <div class="form-group" data-bind="visible: createAssignmentType() != 'Maze'">
-                <label for="assignment-name">Name</label>
-                <input type="text" class="form-control" id="assignment-name"
-                       data-bind="value: createAssignmentName" placeholder="Day 1 - #1.1">
-            </div>
-            <div class="form-group" data-bind="visible: createAssignmentType() == 'Maze'">
-                <label for="assignment-name">Maze Level</label>
-                <select class="form-control" data-bind="value: createAssignmentLevel">
-                    <option value='1'>Level 1</option>
-                    <option value='2'>Level 2</option>
-                    <option value='3'>Level 3</option>
-                    <option value='4'>Level 4</option>
-                    <option value='5'>Level 5</option>
-                    <option value='6'>Level 6</option>
-                    <option value='7'>Level 7</option>
-                    <option value='8'>Level 8</option>
-                    <option value='9'>Level 9</option>
-                    <option value='10'>Level 10</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="assignment-name">Owning Course</label>
-                <select class="form-control" data-bind="value: createAssignmentCourse">
-                {% for course in editable_courses %}
-                    <option value="{{ course.id }}" {{'selected' if course.id == g.course.id }}>{{ course.name }}</option>
-                {% endfor %}
-                </select>
-            </div>
-        </form>
+        <div class="form-group">
+            <label for="assignment-name">Type:
+            <select class="form-control" data-bind="value: createAssignmentType">
+                <option>BlockPy</option>
+                <option>Maze</option>
+                <option value='explain'>Code Explanation</option>
+                <option value='poll'>Poll</option>
+                <option value='visualizer'>CORGIS (Visualizer)</option>
+                <option value='corgis (python)'>CORGIS (Python)</option>
+            </select>
+            </label>
+        </div>
+        <div class="form-group" data-bind="visible: createAssignmentType() != 'Maze'">
+            <label for="assignment-name">Name:
+            <input type="text" class="form-control" id="assignment-name"
+                   data-bind="value: createAssignmentName" placeholder="Day 1 - #1.1">
+            </label>
+        </div>
+        <div class="form-group" data-bind="visible: createAssignmentType() == 'Maze'">
+            <label for="assignment-name">Maze Level:
+            <select class="form-control" data-bind="value: createAssignmentLevel">
+                <option value='1'>Level 1</option>
+                <option value='2'>Level 2</option>
+                <option value='3'>Level 3</option>
+                <option value='4'>Level 4</option>
+                <option value='5'>Level 5</option>
+                <option value='6'>Level 6</option>
+                <option value='7'>Level 7</option>
+                <option value='8'>Level 8</option>
+                <option value='9'>Level 9</option>
+                <option value='10'>Level 10</option>
+            </select>
+            </label>
+        </div>
+        <div class="form-group">
+            <label for="assignment-name">Owning Course:
+            <select class="form-control" data-bind="value: createAssignmentCourse">
+            {% for course in editable_courses %}
+                <option value="{{ course.id }}" {{'selected' if course.id == g.course.id }}>{{ course.name }}</option>
+            {% endfor %}
+            </select>
+            </label>
+        </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
@@ -484,21 +486,21 @@ tr.hidden-group.active.hover-remove-rows td {
         <h4 class="modal-title" id="group-create-label">Create Assignment Group</h4>
       </div>
       <div class="modal-body">
-        <form>
-            <div class="form-group"">
-                <label for="group-name">Name</label>
-                <input type="text" class="form-control" id="group-name"
-                       data-bind="value: createGroupName" placeholder="Day X - ">
-            </div>
-            <div class="form-group">
-                <label for="group-name">Owning Course</label>
-                <select class="form-control" data-bind="value: createGroupCourse">
-                {% for course in editable_courses %}
-                    <option value="{{ course.id }}" {{'selected' if course.id == g.course.id }}>{{ course.name }}</option>
-                {% endfor %}
-                </select>
-            </div>
-        </form>
+        <div class="form-group">
+            <label for="group-name">Name:
+            <input type="text" class="form-control" id="group-name"
+                   data-bind="value: createGroupName" placeholder="Day X - ">
+            </label>
+        </div>
+        <div class="form-group">
+            <label for="group-name">Owning Course:
+            <select class="form-control" data-bind="value: createGroupCourse">
+            {% for course in editable_courses %}
+                <option value="{{ course.id }}" {{'selected' if course.id == g.course.id }}>{{ course.name }}</option>
+            {% endfor %}
+            </select>
+            </label>
+        </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
@@ -509,6 +511,7 @@ tr.hidden-group.active.hover-remove-rows td {
 </div>
 
 <table class="table table-condensed table-hover">
+<caption>All assignments owned by this course</caption>
 <tbody>
     <tr id='new-row'>
         <td colspan='1'>

@@ -20,11 +20,11 @@ Login
     <form role="form" class='form-inline' action="{{ url_for_security('login') }}" method="POST" name="login" id='login-form'>
         {{ login_user_form.hidden_tag() }}
         <div class="form-group">
-            {{ render_field_with_errors(login_user_form.email, class_='form-control') }}
+            {{ render_field_with_errors(login_user_form.email, class_='form-control', autofill='email') }}
         </div>
         <br>
         <div class="form-group">
-            {{ render_field_with_errors(login_user_form.password, class_='form-control') }}
+            {{ render_field_with_errors(login_user_form.password, class_='form-control', autofill='current-password') }}
         </div>
         <br>
         <div class="form-group">

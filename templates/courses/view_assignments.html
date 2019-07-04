@@ -51,7 +51,7 @@ tr.hover-remove-rows button.remove-button {
 
 {% block body %}
 
-<h3>Assignments</h3>
+<h1>Assignments</h1>
 
 {% for group in groups %}
 
@@ -80,7 +80,7 @@ tr.hover-remove-rows button.remove-button {
         </td>
         <td class='col-md-7 col-sm-7 col-xs-7'>
             <span class='label label-default'>{{ assignment.type }}</span>
-            <span>{{ assignment.body }}</span>
+            <span>{{ assignment.body|safe }}</span>
         </td>
     </tr>
     

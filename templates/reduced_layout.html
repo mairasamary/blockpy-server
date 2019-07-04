@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang='en'>
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -35,6 +35,42 @@
     </script>
     
     <style>
+    a {
+        text-decoration: underline;
+    }
+    
+    a[role="button"], button a, a.btn, .btn a, .nav a, .navbar-header a,
+    .dropdown-menu a {
+        text-decoration: none;
+    }
+    
+    .navbar-inverse .navbar-nav>li>a {
+        color: white;
+    }
+    
+    .navbar-inverse a.navbar-brand {
+        color: white;
+    }
+    
+    .navbar-inverse .navbar-link.btn.btn-default {
+        color: black;
+    }
+    
+    .nav a.dropdown-toggle:focus {
+        outline: 1px solid rgb(77, 144, 254);
+    }
+    
+    table caption {
+        color: #333;
+    }
+    
+    .label-default {
+        background-color: #444;
+    }
+    
+    </style>
+    
+    <style>
     {% block extracss %}
     {% endblock %}
     </style>
@@ -60,7 +96,7 @@
 </nav>
 {% endif %}
 
-<div class="container-fluid">
+<div class="container-fluid" role='main'>
 
 {% block body %}
 {% endblock %}

@@ -25,13 +25,14 @@ $().ready(function() {
 
 {% block body %}
 
-<h3>Manage Students</h3>
+<h1>Manage Students</h1>
 
 <p>Back to <a href="{{ url_for('courses.course', course_id=course_id) }}">Course</a></p>
 
-<a href="{{ url_for('courses.add_users', course_id=course_id) }}" class='btn btn-success'>Add Students</a>
+<a href="{{ url_for('courses.add_users', course_id=course_id) }}" class='btn btn-default'>Add Students</a><br>
 
 <table class="table table-condensed table-hover">
+<caption>All users in course:</caption>
 <tbody>
 <tr>
     <th>Name</th>

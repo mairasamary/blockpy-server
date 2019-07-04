@@ -7,62 +7,70 @@ Courses: Making Problems
 {% block statusbar %}
 {% endblock %}
 
+{% block extracss %}
+
+.highlight pre, .linenodiv pre {
+    background-color: #FEFEFE;
+}
+
+{% endblock %}
+
 {% block body %}
 
-<h3>Making Assignments</h3>
+<h1>Making Assignments</h1>
 
 <p>
 Here is the current workflow for creating new BlockPy problems with feedback.
 </p>
 
 <p>
-<b>Step 0:</b> Make sure you have <a href="{{ url_for('courses.add_canvas') }}">created a new Canvas course</a>. Presently, BlockPy is not supporting any other LMS. It is possible that all of the following will work for Moodle, but it has not been tested extensively.
+<strong>Step 0:</strong> Make sure you have <a href="{{ url_for('courses.add_canvas') }}">created a new Canvas course</a>. Presently, BlockPy is not supporting any other LMS. It is possible that all of the following will work for Moodle, but it has not been tested extensively.
 </p>
 
 <p>
-<b>Step 1:</b> Visit the course on Canvas and click the Assignments tab.
+<strong>Step 1:</strong> Visit the course on Canvas and click the Assignments tab.
 </p>
 
-<img src="{{ url_for('static', filename='images/instructions/choose_assignments.png') }}" class='center-block' /><br>
+<img src="{{ url_for('static', filename='images/instructions/choose_assignments.png') }}" class='center-block' alt='Screenshot of canvas navigation menu with assignments button circled'/><br>
 
 <p>
-<b>Step 2:</b> Click the [+Assignment] button in the top right corner.
+<strong>Step 2:</strong> Click the [+Assignment] button in the top right corner.
 </p>
 
-<img src="{{ url_for('static', filename='images/instructions/add_assignment.png') }}" class='center-block' /><br>
+<img src="{{ url_for('static', filename='images/instructions/add_assignment.png') }}" class='center-block' alt='Screenshot of Canvas Assignment screen with an arrow pointing to the +Assignment button'/><br>
 
 <p>
-<b>Step 3:</b> Set the assignment type to External Tool and click [Find].
+<strong>Step 3:</strong> Set the assignment type to External Tool and click [Find].
 </p>
 
-<img src="{{ url_for('static', filename='images/instructions/external_tool.png') }}" class='center-block' /><br>
+<img src="{{ url_for('static', filename='images/instructions/external_tool.png') }}" class='center-block' alt='Screenshot of Edit Assignment screen on Canvas with arrwos pointing to the External Tool dropdown and the Find button'/><br>
 
 <p>
-<b>Step 4:</b> Click BlockPy.
+<strong>Step 4:</strong> Click BlockPy.
 </p>
 
-<img src="{{ url_for('static', filename='images/instructions/choose_blockpy.png') }}" class='center-block' /><br>
+<img src="{{ url_for('static', filename='images/instructions/choose_blockpy.png') }}" class='center-block' alt='Screenshot of Canvas Configure External Tool Dialog with an arrow pointing at the BlockPy Version X option'/><br>
 
 <p>
-<b>Step 5:</b> Create BlockPy assignments and assignment groups with the desired number of problems. We recommend keeping the number of problems in a group at 5 or below, for performance and student cognitive load. Note that this system is not how you configure the question (e.g., its feedback), but just how you create the empty problem and give it a name.
+<strong>Step 5:</strong> Create BlockPy assignments and assignment groups with the desired number of problems. We recommend keeping the number of problems in a group at 5 or below, for performance and student cognitive load. Note that this system is not how you configure the question (e.g., its feedback), but just how you create the empty problem and give it a name.
 </p>
 
-<img src="{{ url_for('static', filename='images/instructions/edit_assignments.png') }}" class='center-block' /><br>
+<img src="{{ url_for('static', filename='images/instructions/edit_assignments.png') }}" class='center-block' alt='Screenshot of BlockPy menu for selecting assignments.'/><br>
 
 <p>
-<b>Step 6:</b> When you have created your desired group or assignment, click Select to attach it to the Canvas assignment. Click Select again to close the menu, and then finish setting any other options for the assignment in canvas (e.g., number of points, due date, assignment name). Save the assignment.
+<strong>Step 6:</strong> When you have created your desired group or assignment, click Select to attach it to the Canvas assignment. Click Select again to close the menu, and then finish setting any other options for the assignment in canvas (e.g., number of points, due date, assignment name). Save the assignment.
 </p>
 
-<img src="{{ url_for('static', filename='images/instructions/blockpy_instructor.png') }}" class='center-block'/><br>
+<img src="{{ url_for('static', filename='images/instructions/blockpy_instructor.png') }}" class='center-block' alt='Screenshot of a BlockPy problem in the editor interface'/><br>
 
 <p>
-<b>Step 7:</b> When you visit the Assignment as an instructor, you will now be able to edit its actual BlockPy settings. The [Settings] button allows you to control the name, introduction, and other settings.
+<strong>Step 7:</strong> When you visit the Assignment as an instructor, you will now be able to edit its actual BlockPy settings. The [Settings] button allows you to control the name, introduction, and other settings.
 </p>
 
-<img src="{{ url_for('static', filename='images/instructions/blockpy_settings.png') }}" class='center-block' /><br>
+<img src="{{ url_for('static', filename='images/instructions/blockpy_settings.png') }}" class='center-block' alt='Screenshot of the Assignment Settings modal dialog in the BlockPy interface'/><br>
 
 <p>
-<b>Step 8:</b> The on_run tab is the code that is executed to provide the student feedback. A number of libraries, including Pedal, are preloaded for your convenience. To get more documentation on these methods and to see examples, check out the <a href='https://github.com/acbart/pedal' target=_blank>Pedal Github repo</a>. 
+<strong>Step 8:</strong> The on_run tab is the code that is executed to provide the student feedback. A number of libraries, including Pedal, are preloaded for your convenience. To get more documentation on these methods and to see examples, check out the <a href='https://github.com/acbart/pedal' target=_blank>Pedal Github repo</a>. 
 </p>
 
 <h3>Basic Feedback Functions</h3>
@@ -169,7 +177,7 @@ from pedal.toolkit.printing import *
 from pedal.toolkit.utilities import *
 from pedal.toolkit.functions import *
 
-if any(('def' in line and '[' in line) for line in get_program().split('\n')):
+if any(('def' in line and '[' in line) for line in get_program().split("\n")):
     explain("It looks like you added a square bracket on the same line as "
             "the <code>def</code> keyword. Remember, with Python you do not "
             "indicate the type of a parameter. A parameter only has a name; "

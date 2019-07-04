@@ -239,7 +239,8 @@ def get_assignment_id(f):
 
 def highlight_python_code(code, linenos=True):
     formatter = HtmlFormatter(linenos=linenos, noclasses=True,
-                              style='colorful')
+                              #style='colorful'
+                              )
     return highlight(code, PythonLexer(), formatter)
 
 def normalize_url(url):
