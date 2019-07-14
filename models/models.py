@@ -17,6 +17,8 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from flask_security import UserMixin, RoleMixin, login_required
 
+from flask_migrate import Migrate
+
 from sqlalchemy import (event, Integer, Date, ForeignKey, Column, Table,
                         String, Boolean, DateTime, Text, ForeignKeyConstraint,
                         cast, func, and_, or_, Index)
@@ -26,6 +28,8 @@ db = SQLAlchemy(app)
 Model = db.Model
 relationship = db.relationship
 backref = db.backref
+
+migrate = Migrate(app, db)
 
 def stringToBase64(s):
     return base64.b64encode(s)

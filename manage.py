@@ -2,6 +2,7 @@ import sys, os
 import json
 
 from flask_script import Manager, Server
+from flask_migrate import Migrate, MigrateCommand
 
 from main import app
 from models.models import db
@@ -35,6 +36,8 @@ manager.add_command("dump_db", DumpDB())
 manager.add_command("update_datasets", UpdateDatasets())
 manager.add_command("update_blockpy", UpdateBlockPy())
 
+# Migrate commands
+manager.add_command("db", MigrateCommand)
 
 if __name__ == "__main__":
     manager.run()
