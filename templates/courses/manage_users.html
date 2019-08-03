@@ -1,4 +1,4 @@
-{% extends 'layout.html' %}
+{% extends 'helpers/layout.html' %}
 
 {% block title %}
 Courses: Students
@@ -29,7 +29,7 @@ $().ready(function() {
 
 <p>Back to <a href="{{ url_for('courses.course', course_id=course_id) }}">Course</a></p>
 
-<a href="{{ url_for('courses.add_users', course_id=course_id) }}" class='btn btn-default'>Add Students</a><br>
+<a href="{{ url_for('courses.add_users', course_id=course_id) }}" class='btn btn-outline-secondary'>Add Students</a><br>
 
 <table class="table table-condensed table-hover">
 <caption>All users in course:</caption>

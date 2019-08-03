@@ -1,0 +1,53 @@
+<svg width="256" height="256" xmlns="http://www.w3.org/2000/svg">
+
+ <g>
+  <title>background</title>
+  <rect fill="none" id="canvas_background" height="256" width="256" y="0" x="0"/>
+ </g>
+ <g transform="scale(4)">
+  <title>Layer 1</title>
+    
+  <path id="orange_fill" fill="#ffc851" d="
+  m30 65
+  c5 0 10 0 10-10
+  l0-5 5 0
+  c5 0 10-5 10-10
+  l0-5
+  c0-5-5-10-10-10
+  l-5 0 0 5
+  c0 5-5 5-5 5
+  l-20 0
+  c-2 10 10 0 10 5
+  l0 1
+  c0 10-9 0-10 5
+  l0 14
+  c0 0 0 5 10 5
+  z"/>
+    
+  <path id="blue_fill" fill="#4795d1" d="
+  m25,5
+  c-5,0 -10,0 -10,10
+  l0,5
+  l-5,0
+  c-5,0 -10,5 -10,10
+  l0,5
+  c0,5 5,10 10,10
+  
+  l5,0
+  
+  l0,-2
+  c2,0 3,3 10,.5
+  c-.5,0 5,-3 1,-6
+  c-1,-1 -5,-1 -11,1
+  l0,-3.5
+  
+  l25,0
+  c2,-10 -10,0 -10,-5
+  l0,-1
+  c0,-10  9,0 10,-5
+  l0,-14
+  c0,0 0,-5 -10,-5
+  z"/>
+    
+ </g>
+</svg>

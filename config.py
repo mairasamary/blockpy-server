@@ -7,15 +7,19 @@ import os
 import json
 
 try:
-    with open('secrets.json', 'r') as secret_file:
+    with open('settings/secrets.json', 'r') as secret_file:
         secrets = json.load(secret_file)
 except IOError:
     print("No secrets file found. Using insecure defaults.")
     secrets = {}
 
+EMAIL_SECRETS = secrets.get("EMAIL", {})
+DB_SECRETS = secrets.get("DATABASE", {})
+
 class Config(object):
     IS_PRODUCTION = secrets.get('PRODUCTION', False)
-    SITE_VERSION = 4
+    SHOW_ABOUT_PAGE = secrets.get("SHOW_ABOUT_PAGE", True)
+    SITE_VERSION = 5
     DEBUG = False
     TESTING = False
     CSRF_ENABLED = True
@@ -24,22 +28,21 @@ class Config(object):
     SYS_ADMINS = secrets.get('SYS_ADMINS', ['Unknown'])
     ROOT_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
     STATIC_DIRECTORY = os.path.join(ROOT_DIRECTORY, 'static')
-    BLOCKPY_LOG_DIR = os.path.join(ROOT_DIRECTORY, 'logs')
     UPLOADS_DIR = os.path.join(STATIC_DIRECTORY, 'uploads')
     # TODO: Pretty sure a lot of this logging is messed up - need to fix it.
-    ERROR_FILE_PATH = os.path.join(ROOT_DIRECTORY, 'log', 'blockpy_errors.log')
-    INTERACTIONS_FILE_PATH = os.path.join(ROOT_DIRECTORY, 'log', 'student_interactions.log')
-    FEEDBACK_FILE_PATH = os.path.join(ROOT_DIRECTORY, 'log', 'feedbackfull.log')
+    BLOCKPY_LOG_DIR = os.path.join(ROOT_DIRECTORY, 'logs')
+    ERROR_FILE_PATH = os.path.join(ROOT_DIRECTORY, 'logs', 'blockpy_errors.log')
+    EVENTS_FILE_PATH = os.path.join(ROOT_DIRECTORY, 'logs', 'blockpy_events.log')
     # TODO: This is for API access with Canvas - nothing actually needs it yet.
     COURSE_TOKENS = os.path.join(ROOT_DIRECTORY, 'settings/course_tokens.yaml')
-    
+
     BLOCKPY_SOURCE_DIR = secrets.get('BLOCKPY_SOURCE_DIR')
-    DATASETS_SOURCE_DIR = secrets.get('DATASETS_SOURCE_DIR')
     CANVAS_DIR = os.path.join(STATIC_DIRECTORY, 'canvas/courses/')
-    
+    CORGIS_URL = secrets.get("CORGIS_URL", None)
+
     # secret key for flask authentication
     SECRET_KEY = secrets.get('FLASK_SECRET_KEY', 'flask-secret-key')
-    
+
     PYLTI_CONFIG = {
         "consumers": {
             secrets.get("CONSUMER_KEY", "__consumer_key__"): {
@@ -48,31 +51,34 @@ class Config(object):
             }
         }
     }
-    
-    #configured for GMAIL
-    MAIL_SERVER = 'smtp.gmail.com'
-    MAIL_PORT = 465
-    MAIL_USE_SSL = True
-    MAIL_USERNAME = secrets.get("EMAIL_USERNAME")
-    MAIL_PASSWORD = secrets.get("EMAIL_PASSWORD")
-    DEFAULT_MAIL_SENDER = secrets.get("EMAIL_SENDER")
-    
+
+    # configured for GMAIL
+    MAIL_SERVER = EMAIL_SECRETS.get('SERVER')
+    MAIL_PORT = EMAIL_SECRETS.get('PORT')
+    MAIL_USE_SSL = EMAIL_SECRETS.get('USE_SSL')
+    MAIL_USERNAME = EMAIL_SECRETS.get("USERNAME")
+    MAIL_PASSWORD = EMAIL_SECRETS.get("PASSWORD")
+    DEFAULT_MAIL_SENDER = EMAIL_SECRETS.get("SENDER")
+
     SECURITY_CONFIRMABLE = True
     SECURITY_REGISTERABLE = True
     SECURITY_RECOVERABLE = True
     SECURITY_CHANGEABLE = True
-    SECURITY_PASSWORD_HASH='bcrypt'
-    SECURITY_PASSWORD_SALT=secrets.get('SECURITY_PASSWORD_SALT')
+    SECURITY_URL_PREFIX = '/users'
+    SECURITY_PASSWORD_HASH = 'bcrypt'
+    SECURITY_PASSWORD_SALT = secrets.get('SECURITY_PASSWORD_SALT')
     SECURITY_DEFAULT_REMEMBER_ME = True
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+
 
 class ProductionConfig(Config):
     DEBUG = False
     PORT = 5001
-    SQLALCHEMY_DATABASE_URI = (secrets.get('DB_ACCESS_URL')
-                                      .format(username=secrets.get('DB_USER'), 
-                                              password=secrets.get('DB_PASS')))
-    
+    SQLALCHEMY_DATABASE_URI = (DB_SECRETS.get('ACCESS_URL')
+                               .format(username=DB_SECRETS.get('USER'),
+                                       password=DB_SECRETS.get('PASS')))
+
+
 class TestingConfig(Config):
     DEBUG = True
     PORT = 5001

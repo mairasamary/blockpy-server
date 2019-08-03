@@ -2,7 +2,6 @@
 """
     PyLTI decorator implementation for flask framework
 """
-from __future__ import absolute_import
 from functools import wraps
 import logging
 import json
@@ -26,7 +25,6 @@ from .common import (
 
 
 log = logging.getLogger('pylti.flask')  # pylint: disable=invalid-name
-
 
 def default_error(exception=None):
     """Render simple error page.  This should be overidden in applications."""

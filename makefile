@@ -12,13 +12,17 @@ check_interactions:
 	less +G log/student_interactions/student_interactions.log
 restart_server:
 	sudo systemctl restart uwsgi
+redo_database:
+	python.exe manage.py reset_db
+	python.exe manage.py populate_db
+	python.exe manage.py add_test_users_db
+	python.exe manage.py add_maze_course_db
 create_directories:
 	mkdir static/uploads/
 	mkdir static/gen/
 	mkdir static/.webassets-cache/
 	mkdir static/uploads/submission_blocks/
-	mkdir logs/
-	mkdir log/
 	mkdir database/
 	mkdir certs/
+	mkdir logs/
 	mkdir backups/

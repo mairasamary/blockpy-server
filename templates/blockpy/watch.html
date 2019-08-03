@@ -1,5 +1,5 @@
 {% set reduced_layout = embed or 'iframe' == request.form.get('launch_presentation_document_target') %}
-{% extends 'layout.html' %}
+{% extends 'helpers/layout.html' %}
 
 {% block title %}
 Watch
@@ -253,8 +253,8 @@ url_root = {{ url_for('blockpy.watch', course_id=course_id)|tojson }};
 
 <form id='al_form' method='get'>
 IDs:
-<input type='text' id='assignments' name='assignments' value="{{ request.values['assignments'] }}"></input>
-<input type='submit' id='reload' class='btn btn-default' value='Reload'></input>
+<input type='text' id='assignments' name='assignments' value="{{ request.values['assignments'] }}" />
+<input type='submit' id='reload' class='btn btn-outline-secondary' value='Reload' />
 <span class="text-muted">Make sure they are comma-separated without spaces.</span>
 </form>
 

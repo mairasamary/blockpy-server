@@ -1,47 +1,48 @@
-{% extends 'layout.html' %}
+{% extends 'helpers/layout.html' %}
 
 {% block title %}
-BlockPy Server
+    Main Page
 {% endblock %}
 
 {% block statusbar %}
 {% endblock %}
 
 {% block extrahead %}
-<script type='text/javascript'>
-</script>
+    <script type='text/javascript'>
+    </script>
+    <style>
+        .videoWrapper {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 */
+            padding-top: 25px;
+            height: 0;
+        }
+
+        .videoWrapper iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
 {% endblock %}
 
 {% block body %}
-
-<h1>Main Page</h1>
-
-<div class='row'>
-
-<div class="media panel panel-default col-md-6 col-md-offset-3">
-    <div class="media-left panel-body">
-        <a href="{{ url_for('blockpy.index') }}">
-            <img class="media-object" src="{{ url_for('static', filename='images/blockpy-logo-small.png')}}" alt="BlockPy">
-        </a>
-    </div>
-    <div class="media-body panel-body">
-        <h4 class="media-heading"><a href="{{ url_for('blockpy.index') }}">BlockPy</a></h4>
-        BlockPy is a web-based Python environment that lets you work with blocks, text, or both. Designed for Data Science, equipped with powerful tools like the State Explorer, and scaffolding beginners with Guided Feedback, the goal of BlockPy is to let you authentically solve real-world problems.
-    </div>
-</div>
-
-<div class="media panel panel-default col-md-6 col-md-offset-3">
-    <div class="media-left panel-body">
-        <a href="{{ url_for('corgis.index') }}">
-            <img class="media-object" src="{{ url_for('static', filename='images/corgis-logo-tiny.png')}}" alt="CORGIS">
-        </a>
-    </div>
-    <div class="media-body panel-body">
-        <h4 class="media-heading"><a href="{{ url_for('corgis.index') }}">CORGIS</a></h4>
-        The CORGIS Datasets Project seeks to make highly-motivating introductory computing experiences through simple, easy-to-pick-up datasets for beginners. We offer a wide range of libraries for many different programming languages and contexts.
-    </div>
-</div>
-
-</div>
-
+    <h1>Welcome to BlockPy!</h1>
+    {% if g.user %}
+        <a href="{{ url_for('courses.index') }}" class="btn btn-outline-secondary">View Courses</a>
+        {% if g.user.is_admin() %}
+            <br><br><a href="{{ url_for('admin.index') }}" class="btn btn-outline-secondary">Administration</a>
+        {% endif %}
+    {% elif config.SHOW_ABOUT_PAGE %}
+        {% include "about.html" %}
+    {% else %}
+        <p>
+            If you are an instructor or administrator, you can
+            <a class="btn-sm btn btn-outline-secondary" href="{{ url_for('security.login') }}">Log in</a> or
+            <a class="" href="{{ url_for('security.register') }}">Register</a>
+        </p>
+        <p>If you are a student, you should use your school's Learning Management System (e.g., Canvas).</p>
+    {% endif %}
 {% endblock %}

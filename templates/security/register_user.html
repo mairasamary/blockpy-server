@@ -1,5 +1,5 @@
 
-{% extends 'layout.html' %}
+{% extends 'helpers/layout.html' %}
 
 {% block title %}
 Register
@@ -18,38 +18,32 @@ Register
 <p>
 	Hello! Welcome to BlockPy. If you are an instructor, you will need to register.
 </p>
-<div class='container'>
-<div class="row">
-<div class="col-md-12 ">
-    <form role="form" class='form-inline' action="{{ url_for_security('register') }}" method="POST" name="register" id='register-form'>
-        {{ register_user_form.hidden_tag() }}
-        <div class="form-group">
-            {{ render_field_with_errors(register_user_form.email, class_='form-control', autofill='email') }}
-        </div>
-        <br>
-        <div class="form-group">
-            {{ render_field_with_errors(register_user_form.password, class_='form-control', autofill='new-password') }}
-        </div>
-        <br>
-        <div class="form-group">
-            {{ render_field_with_errors(register_user_form.first_name, class_='form-control', autofill='given-name') }}
-        </div>
-        <br>
-        <div class="form-group">
-            {{ render_field_with_errors(register_user_form.last_name, class_='form-control', autofill='family-name') }}
-        </div>
-        <br>
-        <div class="form-group">
-            {{ render_field_with_errors(register_user_form.proof, class_='form-control') }}
-        </div>
-        <br>
-        <div class="form-group">
-            {{ register_user_form.submit(class_='btn btn-default') }} or <a href='{{ url_for_security("login") }}'>login</a>
-        </div>
-    </form>
-</div>
-</div>
-</div>
+
+<form role="form"
+      action="{{ url_for_security('register') }}" method="POST" name="register" id='register-form'>
+    {{ register_user_form.hidden_tag() }}
+    <div class="form-row">
+    <div class="form-group col-md-6">
+        {{ render_field_with_errors(register_user_form.email, class_='form-control', autofill='email') }}
+    </div>
+    <br>
+    <div class="form-group col-md-6">
+        {{ render_field_with_errors(register_user_form.password, class_='form-control', autofill='new-password') }}
+    </div>
+    <br>
+    <div class="form-group col-md-6">
+        {{ render_field_with_errors(register_user_form.first_name, class_='form-control', autofill='given-name') }}
+    </div>
+    <br>
+    <div class="form-group col-md-6">
+        {{ render_field_with_errors(register_user_form.last_name, class_='form-control', autofill='family-name') }}
+    </div>
+    <br>
+    <div class="form-group col-md-6">
+        {{ register_user_form.submit(class_='btn btn-outline-secondary') }} or <a href='{{ url_for_security("login") }}'>login</a>
+    </div>
+    </div>
+</form>
 
 
 {% endblock %}

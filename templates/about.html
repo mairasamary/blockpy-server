@@ -1,134 +1,163 @@
-{% extends 'layout.html' %}
-
-{% block title %}
-BlockPy: About
-{% endblock %}
-
-{% block statusbar %}
-{% endblock %}
-
-{% block extrahead %}
-<script type='text/javascript'>
-</script>
-{% endblock %}
-
-{% block body %}
-
-<h1>About</h1>
-
-This page has public information about BlockPy and the CORGIS project.
-
-<h2>BlockPy</h2>
 <p>
-<strong>BlockPy</strong> is a web-based Python environment that lets you work with blocks, text, or both. Designed for Data Science and equipped with powerful tools like the State Explorer and Guided Feedback, BlockPy lets students solve authentic, real-world problems.
+    <strong>BlockPy</strong> is a web-based Python environment that lets you work with blocks, text, or both.
+    Designed for Data Science and equipped with powerful tools like the State Explorer and Guided Feedback, BlockPy
+    lets students solve interesting and authentic problems.
+</p>
+
+<p>Interested in making BlockPy problems for your class?</p>
+<ul>
+    <li><a href="{{ url_for('blockpy.load', mode='instructor') }}">Try building problems now!</a></li>
+    <li><a href="https://canvas.instructure.com/courses/1134562">See some sample problems!</a></li>
+    <!--<li><a href="https://virginiatech.qualtrics.com/SE/?SID=SV_0UMPv09Ci7gdRCB">Take our survey!</a></li>-->
+</ul>
+
+<div class="container">
+    <div class='row'>
+        <div class='col-md-6 mr-auto ml-auto'>
+            <div class="videoWrapper">
+                <iframe width="560" height="349"
+                        src="https://www.youtube.com/embed/0Q92VJMlf_0?cc_load_policy=1"
+                        title="Youtube Video demoing various BlockPy features"
+                        allowfullscreen></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<h2>More About BlockPy</h2>
+
+<p>
+    The goal of BlockPy is to give you a gentle introduction to Python but eventually mature you into a more serious
+    programming environment (such as Spyder or PyCharm). Long-term, we may support some game/animation design stuff
+    that Scratch/Snap does, but that's not the real goal.
 </p>
 
 <p>
-The goal of BlockPy is to give you a gentle introduction to Python but eventually mature you into a more serious programming environment (such as Spyder or PyCharm). Long-term, we may support some game/animation design stuff that Scratch/Snap does, but that's not the real goal.
+    The BlockPy project is aimed at solving some hard technical problems: having a block-based environment for a
+    dynamic language can be tricky - are a given pair of square brackets representing list indexing or dictionary
+    indexing? Our goal is to use advanced program analysis techniques to provide excellent support to learners.
 </p>
 
 <p>
-The BlockPy project is aimed at solving some hard technical problems: having a block-based environment for a dynamic language can be tricky - are a given pair of square brackets representing list indexing or dictionary indexing? Our goal is to use advanced program analysis techniques to provide excellent support to learners.
+    BlockPy owes much of its power to Google's Blockly project, the Skulpt project, Codemirror, and a host of other
+    libraries. For a complete list, see the project GitHub.
 </p>
 
-<p>
-BlockPy owes much of its power to Google's Blockly project, the Skulpt project, Codemirror, and a host of other libraries. For a complete list, see the project GitHub.
-</p>
+<h2>Research</h2>
 
 <p>Publications related to BlockPy:
 <ul>
-    <li>A. C. Bart, J. Tibau, D. Kafura, E. Tilevich, C. A. Shaffer, Design and Evaluation of a Block-based Environment with a Data Science Context, IEEE Transactions on Emerging Topics in Computing '17. May, 2017.</li>
-    <li>A. C. Bart, J. Tibau, E. Tilevich, C. A. Shaffer, D. Kafura, Design and Evaluation of Open-access, Data Science Programming Environment for Learners, IEEE Computer '17. May, 2017.</li>
-    <li>A. C. Bart, J. Tibau, E. Tilevich, C. A. Shaffer, D. Kafura, Implementing an Open-access, Data Science Programming Environment for Learners, COMPSAC '16, Atlanta, Georgia. June 10-15, 2016.</li>
-    <li>A. C. Bart, E. Tilevich, C. A. Shaffer, D. Kafura, Position Paper: From Interest to Usefulness with BlockPy, a Block-based, Educational Environment, Blocks & Beyond '15, Atlanta, Georgia. October 21-23, 2015.</li>
+    <li>A. C. Bart, J. Tibau, D. Kafura, E. Tilevich, C. A. Shaffer, Design and Evaluation of a Block-based
+        Environment with a Data Science Context, IEEE Transactions on Emerging Topics in Computing '17. May, 2017.
+    </li>
+    <li>A. C. Bart, J. Tibau, E. Tilevich, C. A. Shaffer, D. Kafura, Design and Evaluation of Open-access, Data
+        Science Programming Environment for Learners, IEEE Computer '17. May, 2017.
+    </li>
+    <li>A. C. Bart, J. Tibau, E. Tilevich, C. A. Shaffer, D. Kafura, Implementing an Open-access, Data Science
+        Programming Environment for Learners, COMPSAC '16, Atlanta, Georgia. June 10-15, 2016.
+    </li>
+    <li>A. C. Bart, E. Tilevich, C. A. Shaffer, D. Kafura, Position Paper: From Interest to Usefulness with BlockPy,
+        a Block-based, Educational Environment, Blocks & Beyond '15, Atlanta, Georgia. October 21-23, 2015.
+    </li>
 </ul>
 </p>
 
-
-<h2>CORGIS</h2>
-<p>
-The <strong>CORGIS project</strong> aims to transform early computer science projects by introducing real-world data via simple-to-use client libraries. Data Science offers an authentic context for your students to solve real-world problems with programming. The CORGIS project has over 40 libraries for subjects such as politics, education, literature, construction, and more!
-</p>
-
-<p>
-CORGIS offers full support for Java, Python, and Racket, in addition to making its data files available in common data formats like JSON and CSV. Some datasets are also available through our unique Visualizer platform, which enables data science exploration directly within the browser!
-</p>
-
-<p>Publications related to CORGIS:
-<ul>
-    <li>A. C. Bart, R. Whitcomb, E. Tilevich, C. A. Shaffer, D. Kafura, Computing with CORGIS: Diverse, Real-world Datasets for. Introductory Computing (Best Research Paper), SIGCSE '17, Seattle, Washington. March, 2017.</li>
-    <li>E. Tilevich, C. A. Shaffer, A. C. Bart. Creating Stimulating, Relevant, and Manageable Introductory Computer Science Projects that Utilize Real-Time, Large, Web-Based Datasets , SIGCSE'15, Kansas City, MO. 2015.</li>
-    <li>E. Tilevich, C. A. Shaffer, A. C. Bart. Creating Stimulating, Relevant, and Manageable Introductory Computer Science Projects that Utilize Real-Time, Web-Based Datasets , SIGCSE'14, Atlanta, GA. 2014.</li>
-    <li>A. C. Bart, J. Riddle, O. Saleem, B. Chowdhury, E. Tilevich, C. A. Shaffer, D. Kafura, Motivating Students with Big Data: CORGIS and MUSIC, Splash-E '14, Portland, Oregon. October 21-23, 2014.</li>
-    <li>A. C. Bart, E. Tilevich, T. Allevato, S. Hall, C. A. Shaffer, Transforming Introductory Computer Science Projects via Real-Time Web Data, SIGCSE '14, Atlanta, Georgia. March 5-8, 2014.</li>
-    <li>A. C. Bart, E. Tilevich, C. A. Shaffer, T. Allevato, S. Hall, Using Real-Time Web Data to Enrich Introductory Computer Science Projects, Splash-E '13, Indianapolis, Indiana. October 26-31, 2013.</li>
-</ul>
-</p>
-
-
-<h2>The People Behind BlockPy and CORGIS</h2>
+<h2>The People Behind BlockPy</h2>
 
 <table class="table table-condensed table-bordered table-striped">
     <tbody>
-    
-    <tr><td style="width:15%"><strong>Austin Cory Bart</strong><br><img class="img-thumbnail img-responsive" src="{{ url_for('static', filename='images/team/cory.jpg') }}" alt='Photo of Austin Cory Bart'></td>
-    <td>Primary Developer (CORGIS, BlockPy)<br><ul>
-        <li>Status: Assistant Professor (Computer Science) at University of Delaware</li>
-        <li>Email: <a href="mailto:acbart@udel.edu">acbart@udel.edu</a></li>
-        <li>Website: <a href="http://www.acbart.com">www.acbart.com</a></li>
-    </ul></td></tr>
-    
-    <tr><td style="width:15%"><strong>Luke Gusukuma</strong><br><img class="img-thumbnail img-responsive" src="{{ url_for('static', filename='images/team/luke.jpg') }}" alt='Photo of Luke Gusukuma'></td>
-    <td>Developer (BlockPy)<br><ul>
-        <li>Status: PhD student (Computer Science) at Virginia Tech</li>
-    </ul></td></tr>
-    
-    <tr><td style="width:15%"><strong>Javier Tibau</strong><br><img class="img-thumbnail img-responsive" src="{{ url_for('static', filename='images/team/tibau.jpg') }}" alt='Photo of Javier Tibau'></td>
-    <td>Developer (BlockPy)<br><ul>
-        <li>Status: PhD student (Computer Science) at Virginia Tech</li>
-        <li>Website: <a href="https://thirdlab.cs.vt.edu/people/javier-tibau/">https://thirdlab.cs.vt.edu/people/javier-tibau/</a></li>
-    </ul></td></tr>
-    
-    <tr><td style="width:15%"><strong>Dennis Kafura</strong><br><img class="img-thumbnail img-responsive" src="{{ url_for('static', filename='images/team/kafura.jpg') }}" alt='Photo of Dennis Kafura'></td>
-    <td>Professor<br><ul>
-        <li>Status: Professor (Computer Science) at Virginia Tech</li>
-        <li>Email: <a href="mailto:kafura@vt.edu">kafura@vt.edu</a></li>
-        <li>Website: <a href="http://people.cs.vt.edu/~kafura/">people.cs.vt.edu/~kafura/</a></li>
-    </ul></td></tr>
-    
-    <tr><td style="width:15%"><strong>Clifford A. Shaffer</strong><br><img class="img-thumbnail img-responsive" src="{{ url_for('static', filename='images/team/shaffer.jpg') }}" alt='Photo of Clifford A. Shaffer'></td>
-    <td>Professor<br><ul>
-        <li>Status: Professor (Computer Science) at Virginia Tech</li>
-        <li>Email: <a href="mailto:shaffer@vt.edu">shaffer@vt.edu</a></li>
-        <li>Website: <a href="http://people.cs.vt.edu/~shaffer/">people.cs.vt.edu/~shaffer/</a></li>
-    </ul></td></tr>
-    
-    <tr><td style="width:15%"><strong>Eli Tilevich</strong><br><img class="img-thumbnail img-responsive" src="{{ url_for('static', filename='images/team/tilevich.jpg') }}" alt='Photo of Eli Tilevich'></td>
-    <td>Professor<br><ul>
-        <li>Status: Associate Professor (Computer Science) at Virginia Tech</li>
-        <li>Email: <a href="mailto:tilevich@vt.edu">tilevich@vt.edu</a></li>
-        <li>Website: <a href="http://people.cs.vt.edu/~tilevich/">people.cs.vt.edu/~tilevich/</a></li>
-    </ul></td></tr>
-    
-    <tr><td style="width:15%"><strong>Ryan Whitcomb</strong><br><img class="img-thumbnail img-responsive" src="{{ url_for('static', filename='images/team/whitcomb.jpg') }}" alt='Photo of Ryan Whitcomb'></td>
-    <td>Former Developer (CORGIS)<br><ul>
-        <li>Status: Graduate of Virginia Tech</li>
-    </ul></td></tr>
-    
-    <tr><td style="width:15%"><strong>Omar Saleem</strong><br><img class="img-thumbnail img-responsive" src="{{ url_for('static', filename='images/team/omar.jpg') }}" alt='Photo of Omar Saleem'></td>
-    <td>Former Developer (CORGIS)<br><ul>
-        <li>Status: Graduate of Virginia Tech</li>
-    </ul></td></tr>
-    
-    <tr><td style="width:15%"><strong>Jason Riddle</strong><br><img class="img-thumbnail img-responsive" src="{{ url_for('static', filename='images/team/jason.jpg') }}" alt='Photo of Jason Riddle'></td>
-    <td>Former Developer (CORGIS)<br><ul>
-        <li>Status: Graduate of Virginia Tech</li>
-    </ul></td></tr>
-    
-</tbody></table>
 
-<h2>VPAT</h2>
+    <tr>
+        <td style="width:15%"><strong>Austin Cory Bart</strong><br></td>
+        <td>Lead Developer<br>
+            <ul>
+                <li>Status: Professor (Computer Science) at University of Delaware</li>
+                <li>Email: <a href="mailto:acbart@udel.edu">acbart@udel.edu</a></li>
+                <li>Website: <a href="http://www.acbart.com">www.acbart.com</a></li>
+            </ul>
+        </td>
+    </tr>
 
-<p>If you would like to learn about BlockPy's accessibility information, you can download our <a href='{{ url_for('static', filename="resources/VPAT2.3RevINT--April2019Final-blockpy-acbart.pdf") }}' title='Link to VPAT report as a PDF'>VPAT Report</a>.
-    
-{% endblock %}
+    <tr>
+        <td style="width:15%"><strong>Luke Gusukuma</strong><br></td>
+        <td>Developer<br>
+            <ul>
+                <li>Status: PhD student (Computer Science) at Virginia Tech</li>
+            </ul>
+        </td>
+    </tr>
+
+    <tr>
+        <td style="width:15%"><strong>Javier Tibau</strong><br></td>
+        <td>Developer<br>
+            <ul>
+                <li>Status: Professor at ESPOL</li>
+                <li>Website: <a href="https://thirdlab.cs.vt.edu/people/javier-tibau/">https://thirdlab.cs.vt.edu/people/javier-tibau/</a>
+                </li>
+            </ul>
+        </td>
+    </tr>
+
+    <tr>
+        <td style="width:15%"><strong>Dennis Kafura</strong><br></td>
+        <td>Professor<br>
+            <ul>
+                <li>Status: Professor (Computer Science) at Virginia Tech</li>
+                <li>Email: <a href="mailto:kafura@vt.edu">kafura@vt.edu</a></li>
+                <li>Website: <a href="http://people.cs.vt.edu/~kafura/">people.cs.vt.edu/~kafura/</a></li>
+            </ul>
+        </td>
+    </tr>
+
+    <tr>
+        <td style="width:15%"><strong>Clifford A. Shaffer</strong><br></td>
+        <td>Professor<br>
+            <ul>
+                <li>Status: Professor (Computer Science) at Virginia Tech</li>
+                <li>Email: <a href="mailto:shaffer@vt.edu">shaffer@vt.edu</a></li>
+                <li>Website: <a href="http://people.cs.vt.edu/~shaffer/">people.cs.vt.edu/~shaffer/</a></li>
+            </ul>
+        </td>
+    </tr>
+
+    <tr>
+        <td style="width:15%"><strong>Eli Tilevich</strong><br></td>
+        <td>Professor<br>
+            <ul>
+                <li>Status: Associate Professor (Computer Science) at Virginia Tech</li>
+                <li>Email: <a href="mailto:tilevich@vt.edu">tilevich@vt.edu</a></li>
+                <li>Website: <a href="http://people.cs.vt.edu/~tilevich/">people.cs.vt.edu/~tilevich/</a></li>
+            </ul>
+        </td>
+    </tr>
+
+    </tbody>
+</table>
+
+<h2 id="accessibility">Accessiblity</h2>
+
+<p>A major design goal for BlockPy is accessibility, although none of its developers are experts. If you have ideas
+    for how to help us be more accessible, please raise an issue on our GitHub!</p>
+
+<p>If you would like to learn about BlockPy's accessibility information, you can download our <a
+        href='{{ url_for('static', filename="resources/VPAT2.3RevINT--April2019Final-blockpy-acbart.pdf") }}'
+        title='Link to VPAT report as a PDF'>VPAT Report</a>.
+
+<h2>Contact</h2>
+
+<p>
+    Want the code? Have an issue? Check out our GitHub repos! Everything is open-source :)
+<ul>
+    <li><a href="https://github.com/blockpy-edu/blockpy/" target="_blank">BlockPy Client</a></li>
+    <li><a href="https://github.com/blockpy-edu/blockpy-server/" target="_blank">BlockPy Server</a></li>
+    <li><a href="https://github.com/blockpy-edu/BlockMirror/" target="_blank">BlockMirror</a></li>
+</ul>
+</p>
+
+<p>Need to talk to a person? You can contact the lead developer at:
+<ul>
+    <li>Austin Cory Bart (<a href="mailto:acbart@vt.edu">acbart@udel.edu</a>)</li>
+</ul>
+</p>

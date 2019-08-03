@@ -3,7 +3,6 @@
 Common classes and methods for PyLTI module
 """
 
-from __future__ import absolute_import
 import logging
 
 import oauth2

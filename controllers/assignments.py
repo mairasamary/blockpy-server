@@ -1,171 +1,109 @@
-from functools import wraps
-from pprint import pprint
 import json
+
 try:
     from urllib.parse import quote as url_quote
 except:
     from urllib import quote as url_quote
 
-from flask import Blueprint, g, session, render_template, url_for, request, jsonify
+from flask import (Blueprint, g, session, render_template, url_for, request, jsonify, abort, make_response,
+                   flash, redirect)
 
-from controllers.helpers import (lti, get_assignments_from_request, strip_tags, 
-                                 get_lti_property, get_course_id, get_assignment_id)
+from controllers.helpers import (lti, strip_tags,
+                                 get_lti_property, require_request_parameters, login_required,
+                                 require_course_instructor, get_select_menu_link,
+                                 check_resource_exists, parse_assignment_load)
 
 from main import app
 
 import controllers.maze as maze
 import controllers.blockpy as blockpy
-import controllers.corgis as corgis
 
-from models.models import (db, Assignment, AssignmentGroup, User, Course)
+from models.models import (db)
+from models.course import Course
+from models.assignment import Assignment
+from models.assignment_group import AssignmentGroup
 
 blueprint_assignments = Blueprint('assignments', __name__, url_prefix='/assignments')
 
+
 @blueprint_assignments.route('/', methods=['GET', 'POST'])
+@blueprint_assignments.route('/load/', methods=['GET', 'POST'])
 @blueprint_assignments.route('/load', methods=['GET', 'POST'])
 @lti(request='initial')
 def load(lti, lti_exception=None):
-    lookup = request.values.get('lookup', None)
-    assignment_group_id = None
-    if lookup is not None:
-        embed = True
-        # Security through obscurity
-        # AGI_NNYYYY
-        # AGI_011 => 1
-        # AGI_2278129 => 12
-        try:
-            INTRO, CODE = lookup.split("_")
-            start, length = map(int, CODE[:2])
-            assignment_group_id = int(CODE[2+start:2+start+length])
-        except ValueError:
-            return jsonify(success=False, message="I didn't understand the lookup code: "+lookup)
-    else:
-        embed = request.values.get('embed', 'false') == 'True'
-    assignments, submissions = get_assignments_from_request(assignment_group_id=assignment_group_id)
-    if not assignments:
-        return jsonify(success=False, message="Assignment not found")
+    editor_information = parse_assignment_load()
     # Use the proper template
-    if assignments[0].type == 'maze':
-        return maze.load(assignments=assignments, submissions=submissions, lti=lti,embed=embed)
-    elif assignments[0].type in ('corgis (visualizer)', 'visualizer'):
-        return corgis.redirect_language_index(language='visualizer', assignments=assignments, submissions=submissions, lti=lti, embed=embed)
+    if editor_information['assignments'] and editor_information['assignments'][0].type == 'maze':
+        return maze.load_editor(lti, editor_information)
     else:
-        return blockpy.load(assignments=assignments, submissions=submissions, lti=lti, embed=embed)
+        return blockpy.load_editor(lti, editor_information)
+
 
 @blueprint_assignments.route('/new/', methods=['GET', 'POST'])
 @blueprint_assignments.route('/new', methods=['GET', 'POST'])
-@get_course_id
-def new_assignment(course_id, lti=lti):
+@require_request_parameters('course_id')
+@login_required
+def new_assignment(lti=lti):
+    # Get arguments
+    course_id = int(request.values.get('course_id'))
     name = request.values.get('name', None) or None
     level = request.values.get('level', None) or None
-    menu = request.values.get('menu', "select")
-    #TODO: change "normal" type to "blockpy"
-    type = request.values.get('type', "normal")
-    
-    assignment = Assignment.new(owner_id=g.user.id, course_id=course_id, type=type, name=name, level=level)
-    launch_type = 'lti_launch_url' if menu != 'embed' else 'iframe'
-    endpoint = 'assignments.load'
+    is_embedded = ('embed' == request.values.get('menu', "select"))
+    assignment_type = request.values.get('type', "blockpy")
+    # Verify permissions
+    require_course_instructor(g.user, course_id)
+    # Perform action
+    assignment = Assignment.new(owner_id=g.user.id, course_id=course_id,
+                                type=assignment_type, name=name, level=level)
+    select_url = get_select_menu_link(assignment.id, assignment.title(), is_embedded, False)
     return jsonify(success=True,
                    redirect=url_for('assignments.load', assignment_id=assignment.id),
-                   id= assignment.id,
-                   name= assignment.name,
-                   type= type,
-                   body= strip_tags(assignment.body)[:255],
-                   title= assignment.title(),
-                   view = url_for('assignments.load', assignment_id=assignment.id,  embed= menu == 'embed'),
-                   select = url_quote(url_for(endpoint, assignment_id=assignment.id, _external=True, embed= menu == 'embed'))+"&return_type="+launch_type+"&title="+url_quote(assignment.title())+"&text=BlockPy%20Exercise&width=100%25&height=600",
-                   edit= url_for('assignments.load', assignment_id=assignment.id, course_id=assignment.course_id),
-                   date_modified = assignment.date_modified.strftime(" %I:%M%p on %a %d, %b %Y").replace(" 0", " "))
-    
-@blueprint_assignments.route('/remove/', methods=['GET', 'POST'])
+                   id=assignment.id,
+                   name=assignment.name,
+                   type=assignment_type,
+                   instructions=strip_tags(assignment.instructions)[:255],
+                   title=assignment.title(),
+                   view=url_for('assignments.load', assignment_id=assignment.id, embed=is_embedded),
+                   select=select_url,
+                   edit=url_for('assignments.load', assignment_id=assignment.id, course_id=assignment.course_id),
+                   date_modified=assignment.pretty_date_modified())
+
+
 @blueprint_assignments.route('/remove', methods=['GET', 'POST'])
+@blueprint_assignments.route('/remove/', methods=['GET', 'POST'])
+@require_request_parameters('course_id')
+@login_required
 def remove_assignment(lti=None):
-    assignment_id = request.values.get('assignment_id', None)
-    if assignment_id == None:
-        return jsonify(success=False, message="Need assignment_id.")
-    assignment = Assignment.by_id(int(assignment_id))
-    if not g.user.is_instructor(assignment.course_id):
-        return jsonify(success=False, message="You are not an instructor in this assignment's course.")
+    assignment_id = int(request.values.get('assignment_id'))
+    assignment = Assignment.by_id(assignment_id)
+    # Verify exists
+    check_resource_exists(assignment, "Assignment", assignment_id)
+    # Verify permissions
+    require_course_instructor(g.user, assignment.course_id)
     Assignment.remove(assignment.id)
     return jsonify(success=True)
-    
-@blueprint_assignments.route('/get/', methods=['GET', 'POST'])
-@blueprint_assignments.route('/get', methods=['GET', 'POST'])
-def get_assignment(lti=lti):
-    '''
-    Returns metadata about the assignment.
-    '''
-    
-    # TODO: Security hole, evil instructors could remove assignments outside of their course
-    assignment = Assignment.by_id(assignment_id)
-    return jsonify(success=True, url=assignment.url, name=assignment.name,
-                   body= strip_tags(assignment.body)[:255],
-                   on_run=assignment.on_run,
-                   title= assignment.title(),
-                   answer=assignment.answer, type=assignment.type,
-                   visibility=assignment.visibility, disabled=assignment.disabled,
-                   mode=assignment.mode, version=assignment.version,
-                   id=assignment.id, course_id=assignment.course_id,
-                   date_modified = assignment.date_modified.strftime(" %I:%M%p on %a %d, %b %Y").replace(" 0", " "))
-                   
-@blueprint_assignments.route('/move_course/', methods=['GET', 'POST'])
+
+
 @blueprint_assignments.route('/move_course', methods=['GET', 'POST'])
+@blueprint_assignments.route('/move_course/', methods=['GET', 'POST'])
+@require_request_parameters('new_course_id', 'assignment_id')
+@login_required
 def move_course(lti=None):
-    assignment_id = request.values.get('assignment_id', None)
-    new_course_id = request.values.get('new_course_id', None)
-    if None in (assignment_id, new_course_id):
-        return jsonify(success=False, message="Need assignment_id and new_course_id.")
+    assignment_id = int(request.values.get('assignment_id'))
+    new_course_id = int(request.values.get('new_course_id'))
     assignment = Assignment.by_id(int(assignment_id))
-    if not g.user.is_instructor(assignment.course_id):
-        return jsonify(success=False, message="You are not an instructor in this assignment's course.")
-    if not g.user.is_instructor(int(new_course_id)):
-        return jsonify(success=False, message="You are not an instructor in the new course.")
+    # Verify exists
+    check_resource_exists(assignment, "Assignment", assignment_id)
+    # Verify permissions
+    require_course_instructor(g.user, assignment.course_id)
+    require_course_instructor(g.user, new_course_id)
+    # Perform action
     assignment.move_course(new_course_id)
     return jsonify(success=True)
-    
-@blueprint_assignments.route('/edit_assignment/<int:assignment_id>/', methods=['GET', 'POST'])
-@blueprint_assignments.route('/edit_assignment/<int:assignment_id>', methods=['GET', 'POST'])
-def edit_assignment(assignment_id, lti=lti):
-    assignment = Assignment.by_id(assignment_id)
-    if not assignment:
-        return "Assignment ID not found"
-    if not g.user.is_instructor(assignment.course_id):
-        return jsonify(success=False, message="You are not an instructor in this course.")
-    submission = assignment.get_submission(g.user.id)
-    
-    return render_template('lti/edit.html', 
-                           assignment=assignment, 
-                           submission=submission, 
-                           user_id=g.user.id,
-                           context_id=assignment.course_id)
-                           
-        
-@blueprint_assignments.route('/batch_edit/', methods=['GET', 'POST'])
-@blueprint_assignments.route('/batch_edit', methods=['GET', 'POST'])
-def batch_edit(lti=lti):
-    user, roles, course = ensure_canvas_arguments()
-    if not g.user.is_instructor(g.course.id):
-        return jsonify(success=False, message="You are not an instructor in this course.")
-    assignments = Assignment.by_course(course.id)
-    return render_template('lti/batch.html', 
-                           assignments=assignments,
-                           user_id=user.id,
-                           context_id=course.id)
-                           
-                           
-@blueprint_assignments.route('/check_assignments/', methods=['GET', 'POST'])
-@blueprint_assignments.route('/check_assignments', methods=['GET', 'POST'])
-def check_assignments(lti=lti):
-    """ An AJAX endpoint for listing any new assignments.
-    
-    Unused.
-    """
-    assignments = Assignment.by_course(g.course.id)
-    return jsonify(success=True, assignments=[a.to_dict() for a in assignments])
-    
-    
-@blueprint_assignments.route('/select/', methods=['GET', 'POST'])
+
+
 @blueprint_assignments.route('/select', methods=['GET', 'POST'])
+@blueprint_assignments.route('/select/', methods=['GET', 'POST'])
 @lti(request='initial')
 def select(lti, menu='select', lti_exception=None):
     """ Let's the user select from a list of assignments.
@@ -176,8 +114,10 @@ def select(lti, menu='select', lti_exception=None):
     return_url = get_lti_property('launch_presentation_return_url')
     course_groups = Course.get_all_groups()
     editable_courses = g.user.get_editable_courses()
-    
-    return render_template('lti/select.html', assignments=assignments, groups=groups, return_url=return_url, menu=menu, editable_courses=editable_courses, course_groups=course_groups)
+
+    return render_template('lti/select.html', assignments=assignments, groups=groups, return_url=return_url, menu=menu,
+                           editable_courses=editable_courses, course_groups=course_groups)
+
 
 @blueprint_assignments.route('/select_embed/', methods=['GET', 'POST'])
 @blueprint_assignments.route('/select_embed', methods=['GET', 'POST'])
@@ -186,27 +126,29 @@ def select_embed(lti, lti_exception=None):
     """ Let's the user select from a list of assignments.
     """
     return select(menu='embed', lti=lti)
-    
+
+
 def process_assignments(assignments, user_id, course_id):
     id_map = {}
     for assignment in assignments:
         id = assignment['id']
         a = Assignment(name=assignment['name'],
-                   body=assignment['body'],
-                   give_feedback=assignment['on_run'],
-                   starting_code=assignment['on_start'],
-                   type='blockpy',
-                   visibility=assignment['visibility'],
-                   disabled=assignment['disabled'],
-                   mode=assignment['mode'],
-                   owner_id = user_id,
-                   course_id = course_id,
-                   version = assignment['version'],
-                   )
+                       instructions=assignment['instructions'],
+                       give_feedback=assignment['on_run'],
+                       starting_code=assignment['on_start'],
+                       type='blockpy',
+                       visibility=assignment['visibility'],
+                       disabled=assignment['disabled'],
+                       mode=assignment['mode'],
+                       owner_id=user_id,
+                       course_id=course_id,
+                       version=assignment['version'],
+                       )
         db.session.add(a)
         db.session.commit()
         id_map[id] = a.id
     return id_map
+
 
 @blueprint_assignments.route('/bulk_upload/', methods=['GET', 'POST'])
 @blueprint_assignments.route('/bulk_upload', methods=['GET', 'POST'])
@@ -236,7 +178,8 @@ def bulk_upload():
          <input type=submit value=Upload>
     </form>
     '''
-    
+
+
 @blueprint_assignments.route('/images/<path:path>', methods=['GET', 'POST'])
 def assignments_static_images(path):
-    return app.send_static_file('images/'+path)
+    return app.send_static_file('images/' + path)

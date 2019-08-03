@@ -1,19 +1,12 @@
 kennel.sock
 
+venv/
 env/
 
 static/.webassets-cache/
 static/gen/
-static/corgis/
 static/uploads/
 static/canvas/
-
-templates/corgis/
-!templates/corgis/generic.html
-
-database/
-main.db
-test.db
 
 database/
 tests/
@@ -24,10 +17,9 @@ backups/
 
 kennel.wsgi
 certs/
-secrets.json
-consumer_key.pem
+settings/*.json
 settings/*.yaml
-canvas_requests.sqlite
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

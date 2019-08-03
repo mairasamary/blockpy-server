@@ -1,12 +1,10 @@
 # Built-ins
 import json
-import os, sys
-from random import randint
 
 # Flask
 from flask import Flask
 
-with open('secrets.json') as secrets_file:
+with open('settings/secrets.json') as secrets_file:
     secrets = json.load(secrets_file)
 
 VERSION = '0.1.0'

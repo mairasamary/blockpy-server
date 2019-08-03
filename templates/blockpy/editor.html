@@ -1,0 +1,121 @@
+{% extends 'helpers/layout.html' %}
+
+{% from 'helpers/assignment_groups.html' import assignment_group_header %}
+
+{% block title %}
+    BlockPy Editor
+{% endblock %}
+
+{% block statusbar %}
+{% endblock %}
+
+{% block extrahead %}
+
+    {% assets "blockpy_css" %}
+        <link rel="stylesheet" href="{{ ASSET_URL }}"/>
+    {% endassets %}
+
+    {% assets "blockly_js" %}
+        <script type="text/javascript" src="{{ ASSET_URL }}"></script>
+    {% endassets %}
+
+    {% assets "skulpt_js" %}
+        <script type="text/javascript" src="{{ ASSET_URL }}"></script>
+    {% endassets %}
+
+    {% assets "blockpy_js" %}
+        <script type="text/javascript" src="{{ ASSET_URL }}"></script>
+    {% endassets %}
+
+    <style>
+        .embedded-data {
+            display: none;
+        }
+
+        .correct-submission {
+            background-color: #ded;
+        }
+
+        .incorrect-submission {
+            background-color: #edd;
+        }
+
+        .secret-submission {
+            background-color: #dde;
+        }
+    </style>
+
+{% endblock %}
+
+{% block body %}
+
+    <span class='delete-on-load'>Loading! Please wait.</span>
+
+    {% if group and group|length > 1 %}
+        {{ assignment_group_header(group, current_assignment_id, embed, 'blockpy.load') }}
+        <script>
+            $(document).ready(function () {
+                loadNavigation();
+            });
+        </script>
+    {% else %}
+        <script>
+            function markCorrect(args) {
+            }
+        </script>
+    {% endif %}
+
+
+    <!-- Main BlockPy canvas -->
+    <div id="blockpy-div" style='height:100%'></div>
+
+    <script>
+        $(document).ready(function () {
+            editor = new blockpy.BlockPy({
+                // Configuration constants
+                'blockly.path': {{ url_for('static', filename='blockly/media/')|tojson }},
+                'attachment.point': document.getElementById('blockpy-div'),
+                "urls": {
+                    "importDatasets": {{ config['CORGIS_URL']|tojson }},
+                    {% if submissions %}
+                        'saveAssignment': {{ url_for('blockpy.save_assignment')|tojson }},
+                        'loadAssignment': {{ url_for('blockpy.load_assignment')|tojson }},
+                        'loadHistory': {{ url_for('blockpy.get_history')|tojson }},
+                        'logEvent': {{ url_for('blockpy.save_events')|tojson }},
+                        'loadFile': {{ url_for('blockpy.save_code')|tojson }},
+                        'saveFile': {{ url_for('blockpy.save_file')|tojson }},
+                        'updateSubmission': {{ url_for('blockpy.save_correct')|tojson }},
+                    {% endif %}
+                },
+                // User information
+                "user.id": {{  user_id|tojson }},
+                {% if user %}
+                    "user.name": {{ user.name()|tojson }},
+                {% endif %}
+                "user.role": {{ role|tojson }},
+                "user.course": {{ course_id|tojson }},
+                // Group Information
+                {% if assignment_group_id != None %}
+                    "user.group_id": {{ assignment_group_id|tojson }},
+                    'completedCallback': function (data) {
+                        markCorrect(data.assignment_id)
+                    },
+                {% endif %}
+
+                {% for name, value in request.args.items() %}
+                    {% if name.startswith('settings-') %}
+                        "{{ name[9:] }}": {{ value|tojson }},
+                    {% endif %}
+                {% endfor %}
+            });
+
+            {% if current_assignment_id != None %}
+            editor.loadAssignment({{ current_assignment_id }});
+            altAssignmentChangingFunction = editor.loadAssignment.bind(editor);
+            {% endif %}
+
+            $('.delete-on-load').remove();
+        });
+    </script>
+
+{% endblock %}

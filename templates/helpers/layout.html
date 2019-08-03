@@ -1,0 +1,205 @@
+{% set reduced_layout = embed or 'iframe' == request.form.get('launch_presentation_document_target') %}
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="BlockPy">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>{% block title %}{% endblock %}</title>
+    <meta property="og:title" content="BlockPy"/>
+    <meta property="og:site_name" content="BlockPy Server"/>
+    <meta property="og:url" content="{{ request.headers['Host'].split(':')[0] }}"/>
+    <meta property="og:description"
+          content="BlockPy is a web-based Python environment that lets you work with blocks, text, or both. Designed for Data Science and equipped with powerful tools like the State Explorer and Guided Feedback, the goal of BlockPy is to let you solve authentic, real-world problems."/>
+
+    <link rel="shortcut icon" href="{{ url_for('static', filename='images/favicon.ico') }}">
+
+    {% assets "libs_js" %}
+        <script type="text/javascript" src="{{ ASSET_URL }}"></script>
+    {% endassets %}
+    {% assets "libs_css" %}
+        <link rel="stylesheet" href="{{ ASSET_URL }}"/>
+    {% endassets %}
+
+    <style>
+        body {
+            font-size: 14px;
+        }
+
+        a {
+            text-decoration: underline;
+        }
+
+        a[role="button"], button a, a.btn, .btn a, .nav a, .navbar a,
+        .dropdown-menu a {
+            text-decoration: none;
+        }
+
+        button, input.btn, a.btn {
+            font-size: 14px;
+        }
+
+        .navbar-inverse .navbar-nav > li > a {
+            color: white;
+        }
+
+        .navbar-inverse a.navbar-brand {
+            color: white;
+        }
+
+        .navbar-inverse .navbar-link.btn.btn-outline-secondary {
+            color: black;
+        }
+
+        .nav-item.active {
+            background-color: black;
+        }
+
+        .bg-dark {
+            background-color: #222 !important;
+        }
+
+        .nav a.dropdown-toggle:focus {
+            outline: 1px solid rgb(77, 144, 254);
+        }
+
+        table caption {
+            color: #333;
+        }
+
+        .label-default {
+            background-color: #444;
+        }
+
+        .btn-outline-secondary {
+            color: black;
+            background-color: white;
+        }
+
+        .btn-sm {
+            font-size: 12px;
+        }
+
+        form label {
+            font-weight: bold;
+        }
+
+    </style>
+
+    <style>
+        {% block extracss %}
+        {% endblock %}
+    </style>
+
+    {% block extrahead %}
+    {% endblock %}
+
+    <script type="text/javascript">
+        {% block extrajs %}
+        {% endblock %}
+
+        {% if not reduced_layout %}
+            $(document).ready(function () {
+                $("#{{request.endpoint|replace('.', '\\\\.')}}").parent().addClass("active");
+            });
+        {% endif %}
+    </script>
+
+
+</head>
+<body>
+
+{% if not reduced_layout %}
+    <nav class="navbar navbar-expand-md navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <img alt="BlockPy Brand"
+                     role='presentation'
+                     src="{{ url_for('static', filename='images/puppy-corgi-head.png') }}">
+            </a>
+            <a class="navbar-brand" href="{{ url_for('index') }}">BlockPy</a>
+            <button type="button" class="navbar-toggler collapsed"
+                    data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar"
+                    aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon" role="presentation"></span>
+            </button>
+
+            <div id="navbar" class="collapse navbar-collapse">
+                <ul class="navbar-nav mr-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" id='index' href="{{ url_for('index') }}">Home</a>
+                    </li>
+                    {% if g.user %}
+                        <li class="nav-item">
+                            <a class="nav-link" id='courses.index' href="{{ url_for('courses.index') }}">Courses</a>
+                        </li>
+                    {% endif %}
+                    <li class="nav-item">
+                        <a class="nav-link" id='blockpy.index' href="{{ url_for('blockpy.load') }}">Try Editor</a>
+                    </li>
+                    {% if g.user and g.user.is_admin() %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('admin.index') }}">Admin</a>
+                        </li>
+                    {% endif %}
+                </ul>
+                <form class="form-inline">
+                    {% if g.user %}
+                        <span class="navbar-text">
+            Signed in as {{ g.user.name() }} <a href="{{ url_for('security.logout') }}"
+                                                class="navbar-link">(log out)</a>
+        </span>
+                    {% else %}
+                        <a class="btn mr-2 btn-light btn-sm" href="{{ url_for('security.login') }}">Log in</a>
+                        <a class="btn btn-light btn-sm" href="{{ url_for('security.register') }}">Register</a>
+                    {% endif %}
+                </form>
+            </div><!--/.nav-collapse -->
+        </div>
+    </nav>
+{% endif %}
+
+{% with messages = get_flashed_messages() %}
+    <script>
+        {% for message in messages %}
+            console.error("Flask Message:", {{ message|tojson }});
+        {% endfor %}
+    </script>
+{% endwith %}
+
+<div class="container-fluid" role='main'>
+    {% block body %}
+    {% endblock %}
+</div>
+
+{% if not reduced_layout %}
+<!-- begin footer -->
+<hr/>
+<footer class="footer" style="margin-top:20px;">
+    <div class="container-fluid">
+        <p class="pull-right">
+            {% if g.user %}
+                You are <span>{{ g.user.email }}</span>
+                {%  if g.course %}
+                    <span>in {{ g.course.name }}</span>
+                {% endif %}
+                | <a href="#">Back to top</a>
+            {% else %}
+                <span>Not logged in</span> | <a href="#">Back to top</a>
+            {% endif %}
+        </p>
+        <p>
+            <small>
+                &copy; Copyright 2019 <a href="https://acbart.com">Austin Cory Bart</a>, Luke Gusukuma, Dennis Kafura.
+            </small>
+        </p>
+    </div>
+</footer>
+<!-- end footer -->
+{% endif %}
+
+</body>
+
+</html>

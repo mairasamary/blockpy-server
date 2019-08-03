@@ -1,4 +1,4 @@
-{% extends 'layout.html' %}
+{% extends 'helpers/layout.html' %}
 
 {% block title %}
 Courses: Assignments
@@ -289,21 +289,6 @@ function MainModel() {
             }
         });
     };
-    
-    self.refreshAssignment = function(assignment) {
-        $.post("{{ url_for('assignments.get_assignment') }}", {
-            'assignment_id': assignment.id
-        }, function(data) {
-            if (data.success) {
-                assignment.name(data.name);
-                assignment.title(data.title);
-                assignment.body(data.body);
-                assignment.modified(data.date_modified);
-            } else {
-                console.error(data.message);
-            }
-        });
-    };
 }
 mainModel = new MainModel();
 $().ready(function() {
@@ -387,7 +372,7 @@ tr.hover-remove-rows button.remove-button {
         </div>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
         <button type="button" class="btn btn-primary" data-bind="click: $root.addAssignment">Create</button>
       </div>
     </div>
@@ -410,7 +395,7 @@ tr.hover-remove-rows button.remove-button {
         </div>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
         <button type="button" class="btn btn-primary" data-bind="click: $root.addGroup">Create</button>
       </div>
     </div>
@@ -422,12 +407,12 @@ tr.hover-remove-rows button.remove-button {
 <tbody>
     <tr id='new-row'>
         <td colspan='2'>
-            <a href="#" data-toggle="modal" data-target="#assignment-create" class="btn btn-default btn-sm"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span>Create Assignment</a>
+            <a href="#" data-toggle="modal" data-target="#assignment-create" class="btn btn-outline-secondary btn-sm"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span>Create Assignment</a>
             &nbsp;
             <!--
-            <a href="#" data-toggle="modal" data-target="#assignment-import" class="btn btn-default btn-sm"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span>Import Assignment</a>
+            <a href="#" data-toggle="modal" data-target="#assignment-import" class="btn btn-outline-secondary btn-sm"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span>Import Assignment</a>
             &nbsp;-->
-            <a href="#" data-toggle="modal" data-target="#group-create" class="btn btn-default btn-sm"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span>Create Group</a>
+            <a href="#" data-toggle="modal" data-target="#group-create" class="btn btn-outline-secondary btn-sm"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span>Create Group</a>
         </td>
         <td colspan='3'>
         </td>
@@ -459,7 +444,7 @@ tr.hover-remove-rows button.remove-button {
         </td>
         <td class='col-md-1 col-sm-1 col-xs-1'>
             <div class="mover-buttons btn-group">
-              <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                 Move Group<span class="caret"></span>
               </button>
               <ul class="dropdown-menu dropdown-menu-right" data-bind="foreach: $parents[1].groups">
@@ -478,7 +463,6 @@ tr.hover-remove-rows button.remove-button {
                 </button>
                 <!-- Extended buttons -->
                 <ul class="dropdown-menu">
-                    <!--<li><a href="#" data-bind="click: $root.refreshAssignment">Refresh</a></li>-->
                     <li><a href="#" data-bind="click: $root.removeAssignment.bind($data, $parent)">Delete</a></li>
                 </ul>
             </div>

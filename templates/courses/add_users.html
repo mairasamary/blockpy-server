@@ -1,5 +1,5 @@
 {% from "helpers/_formhelpers.html" import render_field %}
-{% extends 'layout.html' %}
+{% extends 'helpers/layout.html' %}
 
 {% block title %}
 Courses: Add Users
@@ -17,8 +17,6 @@ Courses: Add Users
 
 <form method=post action="{{ url_for('courses.add_users', course_id=course_id) }}">
   <dl>
-    {{ render_field(add_form.invite) }}
-    {{ render_field(add_form.send_email) }}
     <p>Add each new user email on a new line. Optionally, you can include their names ("First Name|Last Name|email@email.com").</p>
     {{ render_field(add_form.new_users) }}
   </dl>

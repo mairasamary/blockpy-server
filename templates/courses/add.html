@@ -1,5 +1,5 @@
 {% from "helpers/_formhelpers.html" import render_field %}
-{% extends 'layout.html' %}
+{% extends 'helpers/layout.html' %}
 
 {% block title %}
 Courses: Index
@@ -19,8 +19,8 @@ Courses: Index
 
 <form method=post action="{{ url_for('courses.add') }}">
   <dl>
-    {{ render_field(add_form.name) }}
-    {{ render_field(add_form.visibility) }}
+      <label for="name">{{ render_field(add_form.name) }}</label>
+      <label for="visibility">{{ render_field(add_form.visibility) }}</label>
   </dl>
   <p><input type=submit value=Register>
 </form>

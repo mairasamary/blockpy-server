@@ -1,4 +1,4 @@
-{% extends 'reduced_layout.html' %}
+{% extends 'helpers/layout.html' %}
 
 {% block title %}
 Courses: Index
@@ -272,10 +272,10 @@ tr.hover-remove-rows button.remove-button {
 <tbody>
     <tr id='new-row'>
         <td colspan='1'>
-            <a href="#" data-bind="click: $root.addAssignment" class="btn btn-default">Create new Assignment</a>
+            <a href="#" data-bind="click: $root.addAssignment" class="btn btn-outline-secondary">Create new Assignment</a>
         </td>
         <td colspan='1'>
-            <a href="#" data-bind="click: $root.addGroup " class="btn btn-default">Create new Group</a>
+            <a href="#" data-bind="click: $root.addGroup " class="btn btn-outline-secondary">Create new Group</a>
         </td>
         <td colspan='2'>
             
@@ -322,7 +322,7 @@ tr.hover-remove-rows button.remove-button {
         </td>
         <td class='col-md-1 col-sm-1 col-xs-1'>
             <div class="mover-buttons btn-group">
-              <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                 <span class="caret"></span>
               </button>
               <ul class="dropdown-menu dropdown-menu-right" data-bind="foreach: $root.groups">

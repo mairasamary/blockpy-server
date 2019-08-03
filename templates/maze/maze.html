@@ -1,9 +1,9 @@
-{% extends 'reduced_layout.html' %}
+{% extends 'helpers/layout.html' %}
 
-{% from 'utilities/assignment_groups.html' import assignment_group_header %}
+{% from 'helpers/assignment_groups.html' import assignment_group_header %}
 
 {% block title %}
-Blockly Maze
+    Blockly Maze
 {% endblock %}
 
 {% block statusbar %}
@@ -11,119 +11,133 @@ Blockly Maze
 
 {% block extrahead %}
 
-{% assets "blockly_maze_css" %}
-    <link rel="stylesheet" href="{{ ASSET_URL }}" />
-{% endassets %}
+    {% assets "blockly_maze_css" %}
+        <link rel="stylesheet" href="{{ ASSET_URL }}"/>
+    {% endassets %}
 
-{% assets "blockly_maze_js" %}
-    <script type="text/javascript" src="{{ ASSET_URL }}"></script>
-{% endassets %}
+    {% assets "blockly_maze_js" %}
+        <script type="text/javascript" src="{{ ASSET_URL }}"></script>
+    {% endassets %}
 
-<style>
-.embedded-data {
-    display: none;
-}
-.correct-submission {
-    background-color: #ded;
-}
-.incorrect-submission {
-    background-color: #edd;
-}
-</style>
-
-<script>
-URL_ROOT = "{{ url_for('static', filename='') }}";
-LEVEL_SET = {{ level }};
-MAZE_URL_MAP = { 
-    'save_code': '{{ url_for("blockpy.save_code")}}',
-    'save_success': '{{ url_for("blockpy.save_correct")}}',
-    'load_success': {{ "true" if submission.correct else "false" }},
-    'log_event': '{{ url_for("blockpy.save_events") }}',
-};
-function alertBox(message) {
-    return $("#status-report").html(message);
-}
-function markSuccess() {
-    $("#success-report").addClass('label label-success').html("Success!");
-}
-function reportChange() {
-    
-}
-function markAssignmentReady() {
-    markCorrect("{{ assignment_id }}");
-}
-function reportSuccess() {
-    markSuccess();
-    var data = {'assignment_id': "{{ assignment_id }}",
-                'group_id': "{{ group_id }}",
-                'course_id': {{ (course_id if course_id != None else submission.course_id)|tojson }},
-                'status': '1'};
-    $.post(MAZE_URL_MAP.save_success, data, function(response) {
-        if (response.success) {
-            alertBox("Success reported").delay(200).fadeOut("slow");
-        } else {
-            alertBox("Success report failed");
-            console.error("Server Success Report Error", response.message);
+    <style>
+        .embedded-data {
+            display: none;
         }
-    }).fail(function() {
-        alertBox("Success report failed");
-    });
-}
-var saveTimer = null;
-function loadEverything() {
-$(document).ready(function() {
-    $("body").prepend(test);
-    $("#runButton").parent().prev().html(
-        "<span id='success-report'></span><br><span id='status-report'></span>"
-    );
-    if (MAZE_URL_MAP.load_success) {
-        markSuccess();
-    }
-    var result = {{ submission.code.replace('\n', '\\n')|tojson }}
-    if (result) {
-        Blockly.getMainWorkspace().clear();
-        Blockly.Xml.domToWorkspace(Blockly.getMainWorkspace(), 
-                                   Blockly.Xml.textToDom(result));
-    }
-    Blockly.addChangeListener(function() {
-        clearTimeout(saveTimer);
-        saveTimer = setTimeout(function() {
-            var answer = Blockly.Xml.domToText(Blockly.Xml.workspaceToDom(Blockly.getMainWorkspace()));
+
+        .correct-submission {
+            background-color: #ded;
+        }
+
+        .incorrect-submission {
+            background-color: #edd;
+        }
+    </style>
+
+    <script>
+        URL_ROOT = "{{ url_for('static', filename='') }}";
+        LEVEL_SET = {{ level }};
+        MAZE_URL_MAP = {
+            'save_code': '{{ url_for("blockpy.save_file")}}',
+            'save_success': '{{ url_for("blockpy.save_correct")}}',
+            'load_success': {{ "true" if submission.correct else "false" }},
+            'log_event': '{{ url_for("blockpy.save_events") }}',
+        };
+
+        function alertBox(message) {
+            return $("#status-report").html(message);
+        }
+
+        function markSuccess() {
+            $("#success-report").addClass('label label-success').html("Success!");
+        }
+
+        function reportChange() {
+
+        }
+
+        function markAssignmentReady() {
+            markCorrect("{{ current_assignment_id }}");
+        }
+
+        function reportSuccess() {
+            markSuccess();
             var data = {
-                'assignment_id': "{{ assignment.id }}",
+                'assignment_id': "{{ current_assignment_id }}",
+                'submission_id': "{{  submission.id }}",
+                'group_id': "{{ assignment_group_id }}",
                 'course_id': {{ (course_id if course_id != None else submission.course_id)|tojson }},
-                'filename': '__main__',
-                'code': answer
-                };
-            $.post(MAZE_URL_MAP.save_code, data, function(response) {
+                'status': '1'
+            };
+            $.post(MAZE_URL_MAP.save_success, data, function (response) {
                 if (response.success) {
-                    alertBox("Saved").delay(200).fadeOut("slow");
+                    alertBox("Success reported").delay(200).fadeOut("slow");
                 } else {
-                    alertBox("Saving failed");
-                    console.error("Server Saving Error", response.message);
+                    alertBox("Success report failed");
+                    console.error("Server Success Report Error", response.message);
                 }
-            }).fail(function() {
-                alertBox("Saving failed");
+            }).fail(function () {
+                alertBox("Success report failed");
             });
-        }, 1500);
-    });
-    $("body").css("overflow-y", "hidden");
-    loadNavigation();
-    Blockly.getMainWorkspace().resize();
-    document.getElementById("blockly").style.top =  Math.max(10, document.getElementById("visualization").offsetTop - window.pageYOffset) + "px";
-});
-};
-</script>
+        }
+
+        var saveTimer = null;
+
+        function loadEverything() {
+            $(document).ready(function () {
+                $("body").prepend(test);
+                $("#runButton").parent().prev().html(
+                    "<span id='success-report'></span><br><span id='status-report'></span>"
+                );
+                if (MAZE_URL_MAP.load_success) {
+                    markSuccess();
+                }
+                var result =
+                {{ submission.code.replace('\n', '\\n')|tojson }}
+                if (result) {
+                    Blockly.getMainWorkspace().clear();
+                    Blockly.Xml.domToWorkspace(Blockly.getMainWorkspace(),
+                        Blockly.Xml.textToDom(result));
+                }
+                Blockly.getMainWorkspace().addChangeListener(function () {
+                    clearTimeout(saveTimer);
+                    saveTimer = setTimeout(function () {
+                        var answer = Blockly.Xml.domToText(Blockly.Xml.workspaceToDom(Blockly.getMainWorkspace()));
+                        var data = {
+                            'assignment_id': "{{ current_assignment_id }}",
+                            'course_id': {{ (course_id if course_id != None else submission.course_id)|tojson }},
+                            "submission_id": {{ submission.id }},
+                            'filename': 'answer.py',
+                            'code': answer
+                        };
+                        $.post(MAZE_URL_MAP.save_code, data, function (response) {
+                            if (response.success) {
+                                alertBox("Saved").delay(200).fadeOut("slow");
+                            } else {
+                                alertBox("Saving failed");
+                                console.error("Server Saving Error", response.message);
+                            }
+                        }).fail(function () {
+                            alertBox("Saving failed");
+                        });
+                    }, 1500);
+                });
+                //$("body").css("overflow-y", "hidden");
+                loadNavigation();
+                Blockly.getMainWorkspace().resize();
+                document.getElementById("blockly").style.top = Math.max(10, document.getElementById("visualization").offsetTop - window.pageYOffset) + "px";
+            });
+        };
+    </script>
 
 {% endblock %}
 
 {% block body %}
 
-{% if group %}
-{{ assignment_group_header(group, assignment_id, embed, 'maze.load') }}
-{% endif %}
+    {% if group %}
+        {{ assignment_group_header(group, current_assignment_id, embed, 'maze.load') }}
+    {% endif %}
 
-<div id='maze-body'>
-</div>
+    <div id='maze-body'>
+    </div>
 
 {% endblock %}

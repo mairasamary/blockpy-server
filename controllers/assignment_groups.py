@@ -1,118 +1,120 @@
-from pprint import pprint
-import json
-try:
-    from urllib.parse import quote as url_quote
-except:
-    from urllib import quote as url_quote
-
-# Pygments, for reporting nicely formatted Python snippets
-from pygments import highlight
-from pygments.lexers import PythonLexer
-from pygments.formatters import HtmlFormatter
-
-from flask_wtf import Form
-
 from flask import Blueprint, send_from_directory
-from flask import Flask, redirect, url_for, session, request, jsonify, g,\
-                  make_response, Response, render_template
-from werkzeug.utils import secure_filename
-                  
-from sqlalchemy import Date, cast, func, desc, or_
+from flask import Flask, redirect, url_for, session, request, jsonify, g
 
-from controllers.helpers import instructor_required, lti
+from controllers.helpers import (lti, require_request_parameters, require_course_instructor, login_required,
+                                 check_resource_exists, get_select_menu_link)
 
-from main import app
-from models.models import (User, Course, Assignment, AssignmentGroup, 
-                           AssignmentGroupMembership,
-                           Submission, Log)
-                           
+from models.assignment import Assignment
+from models.assignment_group import AssignmentGroup
+from models.assignment_group_membership import AssignmentGroupMembership
+
 blueprint_assignment_group = Blueprint('assignment_group', __name__, url_prefix='/assignment_group')
 
+
 @blueprint_assignment_group.route('/add', methods=['GET', 'POST'])
-@blueprint_assignment_group.route('/add', methods=['GET', 'POST'])
+@blueprint_assignment_group.route('/add/', methods=['GET', 'POST'])
+@require_request_parameters('course_id', 'name')
+@login_required
 def add_group(lti=lti):
     ''' Adds a group to a course'''
     # Get arguments
-    course_id = request.values.get('course_id', None)
-    if course_id is None:
-        return jsonify(success=False, message="No course id")
-    new_name = request.values.get('name', None)
-    if new_name is None:
-        return jsonify(success=False, message="No name given.")
+    course_id = int(request.values.get('course_id'))
+    new_name = request.values.get('name')
+    is_embedded = ('embed' == request.values.get('menu', "select"))
     # Verify permissions
-    if not g.user.is_instructor(int(course_id)):
-        return jsonify(success=False, message="You are not an instructor in this group's course.")
+    require_course_instructor(g.user, course_id)
     # Perform action
-    assignment_group = AssignmentGroup.new(owner_id=g.user.id, course_id=int(course_id), name=new_name)
-    
-    menu = request.values.get('menu', "select")
-    launch_type = 'lti_launch_url' if menu != 'embed' else 'iframe'
-    endpoint = 'assignments.load'
-    select = url_quote(url_for(endpoint, assignment_group_id=assignment_group.id, _external=True, embed= menu == 'embed'))+"&return_type="+launch_type+"&title="+url_quote(assignment_group.name)+"&text=BlockPy%20Exercise&width=100%25&height=600"
+    assignment_group = AssignmentGroup.new(owner_id=g.user.id, course_id=course_id, name=new_name)
     # Result
-    return jsonify(success=True, id=assignment_group.id, name=assignment_group.name, select=select)
-    
+    select_url = get_select_menu_link(assignment_group.id, assignment_group.name, is_embedded, True)
+    return jsonify(success=True, id=assignment_group.id, name=assignment_group.name, select=select_url)
+
+
+@blueprint_assignment_group.route('/fork', methods=['GET', 'POST'])
+@blueprint_assignment_group.route('/fork/', methods=['GET', 'POST'])
+@require_request_parameters('assignment_group_id')
+@login_required
+def fork_group(lti=lti):
+    ''' Adds a group to a course'''
+    # Get arguments
+    assignment_group_id = int(request.values.get('assignment_group_id'))
+    assignment_group = AssignmentGroup.by_id(assignment_group_id)
+    is_embedded = ('embed' == request.values.get('menu', "select"))
+    # Verify exists
+    check_resource_exists(assignment_group, "Assignment Group", assignment_group_id)
+    # Verify permissions
+    require_course_instructor(g.user, assignment_group.course_id)
+    # Perform action
+    new_assignment_group = AssignmentGroup.new(owner_id=g.user.id,
+                                               course_id=assignment_group.course_id,
+                                               name=assignment_group.name)
+    new_assignment_group.forked_id = assignment_group_id
+    new_assignment_group.forked_version = assignment_group.version
+    # Result
+    select_url = get_select_menu_link(new_assignment_group.id, new_assignment_group.name, is_embedded, True)
+    return jsonify(success=True, id=new_assignment_group.id, name=new_assignment_group.name, select=select_url)
+
+
 @blueprint_assignment_group.route('/remove', methods=['GET', 'POST'])
-@blueprint_assignment_group.route('/remove', methods=['GET', 'POST'])
+@blueprint_assignment_group.route('/remove/', methods=['GET', 'POST'])
+@require_request_parameters('assignment_group_id')
+@login_required
 def remove_group(lti=lti):
     ''' Removes a group from a course'''
-    assignment_group_id = request.values.get('assignment_group_id', None)
-    if assignment_group_id is None:
-        return jsonify(success=False, message="No assignment group id")
-    assignment_group = AssignmentGroup.by_id(int(assignment_group_id))
+    assignment_group_id = int(request.values.get('assignment_group_id'))
+    assignment_group = AssignmentGroup.by_id(assignment_group_id)
+    # Verify exists
+    check_resource_exists(assignment_group, "Assignment Group", assignment_group_id)
     # Verify permissions
-    if not g.user.is_instructor(assignment_group.course_id):
-        return jsonify(success=False, message="You are not an instructor in this course.")
+    require_course_instructor(g.user, assignment_group.course_id)
     # Perform action
     AssignmentGroup.remove(assignment_group.id)
     # Result
     return jsonify(success=True)
-    
+
+
 @blueprint_assignment_group.route('/edit', methods=['GET', 'POST'])
-@blueprint_assignment_group.route('/edit', methods=['GET', 'POST'])
+@blueprint_assignment_group.route('/edit/', methods=['GET', 'POST'])
+@require_request_parameters('assignment_group_id', 'new_name')
+@login_required
 def edit_group(lti=lti):
     # Get arguments
-    assignment_group_id = request.values.get('assignment_group_id', None)
-    if assignment_group_id is None:
-        return jsonify(success=False, message="No assignment group id.")
-    assignment_group = AssignmentGroup.by_id(int(assignment_group_id))
-    new_name = request.values.get('new_name', None)
-    if new_name is None:
-        return jsonify(success=False, message="No new_name given.")
+    assignment_group_id = int(request.values.get('assignment_group_id'))
+    assignment_group = AssignmentGroup.by_id(assignment_group_id)
+    new_name = request.values.get('new_name')
+    # Verify exists
+    check_resource_exists(assignment_group, "Assignment Group", assignment_group_id)
     # Verify permissions
-    if not g.user.is_instructor(assignment_group.course_id):
-        return jsonify(success=False, message="You are not an instructor in this group's course.")
+    require_course_instructor(g.user, assignment_group.course_id)
     # Perform action
-    group = AssignmentGroup.edit(int(assignment_group_id), name=new_name)
+    group = AssignmentGroup.edit(assignment_group_id, name=new_name)
     # Result
-    return jsonify(success=True, name = group.name)
+    return jsonify(success=True, name=group.name)
+
 
 @blueprint_assignment_group.route('/move_membership', methods=['GET', 'POST'])
 @blueprint_assignment_group.route('/move_membership/', methods=['GET', 'POST'])
+@require_request_parameters('assignment_id', 'old_group_id', 'new_group_id')
+@login_required
 def move_membership(lti=None):
-    # Get the attributes
-    assignment_id = request.values.get('assignment_id', None)
-    old_group_id = request.values.get('old_group_id', None)
-    new_group_id = request.values.get('new_group_id', None)
-    if None in (assignment_id, new_group_id, old_group_id):
-        return jsonify(success=False, message="Need assignment_id, old_group_id, and new_group_id.")
-    
-    # Ensure that the assignment exists and that the user can modify it
-    assignment = Assignment.by_id(int(assignment_id))
-    if not g.user.is_instructor(assignment.course_id):
-        return jsonify(success=False, message="You are not an instructor in this assignment's course.")
-        
+    # Get arguments
+    assignment_id = int(request.values.get('assignment_id'))
+    old_group_id = int(request.values.get('old_group_id'))
+    new_group_id = int(request.values.get('new_group_id'))
+    assignment = Assignment.by_id(assignment_id)
+    # Verify exists
+    check_resource_exists(assignment, "Assignment", assignment_id)
     # Verify permissions
-    if int(new_group_id) != -1:
-        new_assignment_group = AssignmentGroup.by_id(int(new_group_id))
-        if not g.user.is_instructor(new_assignment_group.course_id):
-            return jsonify(success=False, message="You are not an instructor in this assignment's course.")
-    if int(old_group_id) != -1:
-        old_assignment_group = AssignmentGroup.by_id(int(old_group_id))
-        if not g.user.is_instructor(old_assignment_group.course_id):
-            return jsonify(success=False, message="You are not an instructor in this assignment's course.")
+    require_course_instructor(g.user, assignment.course_id)
+
+    # Verify permissions
+    if new_group_id != -1:
+        new_assignment_group = AssignmentGroup.by_id(new_group_id)
+        require_course_instructor(g.user, new_assignment_group.course_id)
+    if old_group_id != -1:
+        old_assignment_group = AssignmentGroup.by_id(old_group_id)
+        require_course_instructor(g.user, old_assignment_group.course_id)
     # Perform action
-    AssignmentGroupMembership.move_assignment(int(assignment_id), int(new_group_id))
+    AssignmentGroupMembership.move_assignment(assignment_id, new_group_id)
     # Result
     return jsonify(success=True)
-

@@ -1,4 +1,4 @@
-{% extends 'layout.html' %}
+{% extends 'helpers/layout.html' %}
 
 {% block title %}
 Courses: {{ course.name }}
@@ -35,27 +35,27 @@ $().ready(function() {
 
 {% if is_instructor %}
 <h3>Manage Assignments</h3>
-<a href="{{ url_for('courses.assignments', course_id=course.id) }}" class='btn btn-default'>Manage Assignments</a><br><br>
+<a href="{{ url_for('courses.assignments', course_id=course.id) }}" class='btn btn-outline-secondary'>Manage Assignments</a><br><br>
 {% else %}
 <h3>View Assignments</h3>
 {% endif %}
 
-<a href="{{ url_for('courses.view_assignments', course_id=course.id) }}" class='btn btn-default'>View Assignments</a><br><br>
+<a href="{{ url_for('courses.view_assignments', course_id=course.id) }}" class='btn btn-outline-secondary'>View Assignments</a><br><br>
 
 {% if is_instructor %}
 
-<a href="{{ url_for('courses.manage_users', course_id=course.id) }}" class='btn btn-default'>Manage Students</a>
+<a href="{{ url_for('courses.manage_users', course_id=course.id) }}" class='btn btn-outline-secondary'>Manage Students</a>
 
 <h3>Submissions</h3>
 
-<a href="{{ url_for('courses.submissions_filter', course_id=course.id) }}" class='btn btn-default'>Filter Submissions</a><br><br>
+<a href="{{ url_for('courses.submissions_filter', course_id=course.id) }}" class='btn btn-outline-secondary'>Filter Submissions</a><br><br>
 
-<a href="{{ url_for('courses.submissions_grid', course_id=course.id) }}" class='btn btn-default'>Submissions Grid</a><br><br>
+<a href="{{ url_for('courses.submissions_grid', course_id=course.id) }}" class='btn btn-outline-secondary'>Submissions Grid</a><br><br>
 
 <h3>Edit Course</h3>        
 
 <a href="{{ url_for('courses.remove_course', course_id=course.id) }}" onclick="return confirm('Are you sure?')" class='btn btn-danger'>Delete Course</a><br><br>
-<button onclick="renameCourse()" class='btn btn-default'>Rename Course</button><br>
+<button onclick="renameCourse()" class='btn btn-outline-secondary'>Rename Course</button><br>
 
 {% endif %}
 
