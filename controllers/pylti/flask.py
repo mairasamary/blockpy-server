@@ -260,7 +260,7 @@ class LTI(object):
             session[LTI_SESSION_KEY] = False
             raise
 
-    def post_grade(self, grade, message='', endpoint=None):
+    def post_grade(self, grade, message='', endpoint=None, url=False):
         """
         Post grade to LTI consumer using XML
 
@@ -279,7 +279,7 @@ class LTI(object):
         if 0 <= score <= 1.0:
             xml = generate_request_xml(
                 message_identifier_id, operation, lis_result_sourcedid,
-                score, message)
+                score, message, url)
             ret = post_message(self._consumers(), self.key,
                                self.response_url, xml)
             if not ret:

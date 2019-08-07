@@ -80,11 +80,10 @@
                     {% if submissions %}
                         'saveAssignment': {{ url_for('blockpy.save_assignment')|tojson }},
                         'loadAssignment': {{ url_for('blockpy.load_assignment')|tojson }},
-                        'loadHistory': {{ url_for('blockpy.get_history')|tojson }},
-                        'logEvent': {{ url_for('blockpy.save_events')|tojson }},
-                        'loadFile': {{ url_for('blockpy.save_code')|tojson }},
+                        'loadHistory': {{ url_for('blockpy.load_history')|tojson }},
+                        'logEvent': {{ url_for('blockpy.log_event')|tojson }},
                         'saveFile': {{ url_for('blockpy.save_file')|tojson }},
-                        'updateSubmission': {{ url_for('blockpy.save_correct')|tojson }},
+                        'updateSubmission': {{ url_for('blockpy.update_submission')|tojson }},
                     {% endif %}
                 },
                 // User information
@@ -112,6 +111,10 @@
             {% if current_assignment_id != None %}
             editor.loadAssignment({{ current_assignment_id }});
             altAssignmentChangingFunction = editor.loadAssignment.bind(editor);
+            {% endif %}
+
+            {% if current_submission_id %}
+                editor.loadAssignmentData({{ assignment_data|tojson }});
             {% endif %}
 
             $('.delete-on-load').remove();

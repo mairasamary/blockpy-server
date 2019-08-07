@@ -1,11 +1,12 @@
 from datetime import datetime
 import os
 import json
+from typing import Tuple
 
 from slugify import slugify
 from natsort import natsorted
 
-from flask import Blueprint, url_for, session, request, jsonify, g, render_template
+from flask import Blueprint, url_for, session, request, jsonify, g, render_template, redirect
 from werkzeug.utils import secure_filename
 
 from main import app
@@ -19,7 +20,7 @@ from models.assignment_group import AssignmentGroup
 from controllers.helpers import (lti, highlight_python_code, normalize_url,
                                  ensure_dirs, ajax_failure, parse_assignment_load, require_request_parameters,
                                  get_course_id, maybe_int, get_user, check_resource_exists, ajax_success,
-                                 login_required, require_course_instructor, require_course_grader)
+                                 login_required, require_course_instructor, require_course_grader, maybe_bool)
 
 blueprint_blockpy = Blueprint('blockpy', __name__, url_prefix='/blockpy')
 
@@ -27,6 +28,44 @@ blueprint_blockpy = Blueprint('blockpy', __name__, url_prefix='/blockpy')
 @blueprint_blockpy.route('/static/<path:path>', methods=['GET', 'POST'])
 def blockpy_static(path):
     return app.send_static_file(path)
+
+
+@blueprint_blockpy.route('/load_submission/', methods=['GET', 'POST'])
+@blueprint_blockpy.route('/load_submission', methods=['GET', 'POST'])
+@require_request_parameters('submission_id')
+def load_submission(lti=lti):
+    submission_id = int(request.args.get('submission_id'))
+    embed = maybe_bool(request.values.get('embed'))
+    user = g.get('user', None)
+    user_id = user.id if user else None
+    course_id = maybe_int(request.args.get('course_id', None))
+    if course_id is None:
+        course_id = int(g.course.id) if g.course else None
+    submission = Submission.query.get(submission_id)
+    # Check that the resource exists
+    check_resource_exists(submission, "Submission", submission_id)
+    # If it is this user's submission, redirect to load the assignment
+    if submission.user_id == user_id:
+        return redirect(url_for('blockpy.load', assignment_id=submission.assignment.id, ))
+    # Check that it is public or you are a grader
+    elif user.is_grader(submission.course_id):
+        pass
+    elif not submission.assignment.public:
+        # TODO: Handle this more gracefully
+        return ajax_failure(
+            "Cannot view submission. This is not a public submission, and you do not own the submission, and you are "
+            "not an instructor in its course.")
+    # Get the assignment
+    assignment_data = submission.assignment.for_editor(submission.user_id, submission.course_id)
+    return load_editor(lti, {
+        "user": user,
+        "user_id": user_id,
+        "embed": embed,
+        "course_id": course_id,
+        "role": 'anonymous',
+        "assignment_group_id": None,
+        "assignment_data": assignment_data
+    })
 
 
 @blueprint_blockpy.route('/', methods=['GET', 'POST'])
@@ -85,13 +124,15 @@ def save_file(lti=lti):
     course_id = get_course_id()
     user, user_id = get_user()
     if course_id is None:
-        ajax_failure("Course ID was not made available", 400)
-    if filename == "answer.py":
-        return save_answer(course_id, user)
+        ajax_failure("Course ID was not made available")
+    if filename in Submission.STUDENT_FILENAMES:
+        return save_student_file(filename, course_id, user)
+    if filename in Assignment.INSTRUCTOR_FILENAMES:
+        return save_instructor_file(course_id, user, filename)
 
 
 @require_request_parameters("submission_id", "code")
-def save_answer(course_id, user):
+def save_student_file(filename, course_id, user):
     submission_id = request.values.get("submission_id")
     code = request.values.get("code")
     submission = Submission.query.get(submission_id)
@@ -99,292 +140,202 @@ def save_answer(course_id, user):
     check_resource_exists(submission, "Submission", submission_id)
     # Verify permissions
     if submission.user_id != user.id:
-        require_course_grader(user.id, submission.course_id)
+        require_course_grader(user, submission.course_id)
+    # Validate the maximum file size
+    if app.config["MAXIMUM_CODE_SIZE"] < len(code):
+        return ajax_failure(
+            "Maximum size of code exceeded. Current limit is {}, you uploaded {} characters.".format(
+                app.config["MAXIMUM_CODE_SIZE"], len(code)
+            ))
     # Perform update
     # TODO: What if submission's assignment version conflicts with current assignments' version?
     version_change = submission.assignment.version != submission.assignment_version
-    submission.save_code(code)
+    submission.save_code(filename, code)
     make_log_entry(submission.assignment_id, submission.assignment_version,
                    course_id, user.id, "File.Save", "answer.py", message=code)
     return ajax_success({"version_change": version_change})
 
-@blueprint_blockpy.route('/save_code/', methods=['GET', 'POST'])
-@blueprint_blockpy.route('/save_code', methods=['GET', 'POST'])
-def save_code(lti=lti):
-    assignment_id = request.values.get('assignment_id', None)
-    assignment_version = int(request.values.get('version', -1))
-    course_id = int(request.values.get('course_id', g.course.id if 'course' in g else -1))
-    if None in (assignment_id, course_id) or course_id == "":
-        return ajax_failure("No Assignment ID or Course ID given!")
-    code = request.values.get('code', '')
-    timestamp = request.values.get('timestamp', '')
-    filename = request.values.get('filename', '__main__')
-    is_version_correct = True
-    if filename == "__main__":
-        submission, is_version_correct = Submission.save_code(g.user.id, assignment_id, int(course_id), code,
-                                                              assignment_version, timestamp=timestamp)
-    elif g.user.is_instructor(int(course_id)):
-        if filename == "give_feedback":
-            Assignment.edit(assignment_id=assignment_id, on_run=code)
-        elif filename == "on_change":
-            Assignment.edit(assignment_id=assignment_id, on_change=code)
-        elif filename == "starting_code":
-            Assignment.edit(assignment_id=assignment_id, starting_code=code)
-        log = Log.new('instructor', filename, assignment_id, assignment_version, course_id, g.user.id,
-                      body=code, timestamp=timestamp)
-    return jsonify(success=True,
-                   is_version_correct=is_version_correct,
-                   ip=request.remote_addr)
+
+@require_request_parameters("assignment_id", "code")
+def save_instructor_file(course_id, user, filename):
+    assignment_id = request.values.get("assignment_id")
+    code = request.values.get("code")
+    assignment = Assignment.query.get(assignment_id)
+    # Verify exists
+    check_resource_exists(assignment, "Assignment", assignment_id)
+    # Verify permissions
+    if assignment.owner_id != user.id:
+        require_course_grader(user, assignment.course_id)
+    # Perform update
+    assignment.save_file(filename, code)
+    make_log_entry(assignment_id, assignment.version, course_id, user.id,
+                   "X-Instructor.File.Save", filename, message=code)
+    return ajax_success({})
 
 
-@blueprint_blockpy.route('/save_events/', methods=['GET', 'POST'])
-@blueprint_blockpy.route('/save_events', methods=['GET', 'POST'])
-def save_events(lti=lti):
-    assignment_id = request.values.get('assignment_id', None)
-    assignment_version = request.values.get('assignment_version', None)
-    event = request.values.get('event', "blank")
-    action = request.values.get('action', "missing")
-    body = request.values.get('body', "")
-    timestamp = request.values.get('timestamp', "")
-    user_id = g.user.id if g.user != None else -1
-    course_id = int(request.values.get('course_id', g.course.id if 'course' in g else -1))
-    if assignment_id is None:
-        return ajax_failure("No Assignment ID given!")
-    log = Log.new(event, action, assignment_id, assignment_version, course_id, user_id, body=body, timestamp=timestamp)
-    return jsonify(success=True,
-                   ip=request.remote_addr)
+@blueprint_blockpy.route('/load_history/', methods=['GET', 'POST'])
+@blueprint_blockpy.route('/load_history', methods=['GET', 'POST'])
+@require_request_parameters("assignment_id", "course_id", "user_id")
+def load_history():
+    # Get parameters
+    course_id = int(request.values.get('course_id'))
+    assignment_id = int(request.values.get('assignment_id'))
+    student_id = int(request.values.get('student_id'))
+    user, user_id = get_user()
+    # Verify user can see the submission
+    if user_id != student_id and not user.is_grader(course_id):
+        return ajax_failure("Only graders can see logs for other people.")
+    history = Log.get_history(course_id, assignment_id, student_id)
+    return ajax_success({"history": history})
 
 
-def get_group_score(group_id, user_id, course_id, hide_correctness):
+@blueprint_blockpy.route('/log_event/', methods=['GET', 'POST'])
+@blueprint_blockpy.route('/log_event', methods=['GET', 'POST'])
+@require_request_parameters('event_type')
+@login_required
+def log_event(lti=lti):
+    course_id = get_course_id()
+    user, user_id = get_user()
+    assignment_id = request.values.get('assignment_id')
+    assignment_version = request.values.get('assignment_version')
+    event_type = request.values.get("event_type")
+    file_path = request.values.get("file_path", "")
+    category = request.values.get('category', "")
+    label = request.values.get('label', "")
+    message = request.values.get('message', "")
+    # Make the entry
+    new_log = make_log_entry(assignment_id, assignment_version, course_id, user_id,
+                             event_type, file_path, category, label, message)
+    return ajax_success({"log_id": new_log.id})
+
+
+def get_groups_submissions(group_id, user_id, course_id):
     group = AssignmentGroup.by_id(group_id)
-    assignments = natsorted(group.get_assignments(), key=lambda a: a.title())
-    submissions = [a.get_submission(user_id, course_id=course_id)
-                   for a in assignments]
-    completed = sum([s.correct or s.status / 100 for s in submissions])
-    total = len(assignments)
-    score = completed / total
-    return score
+    check_resource_exists(group, "AssignmentGroup", group_id)
+    assignments = group.get_assignments()
+    submissions = [assignment.load(user_id, course_id=course_id) for assignment in assignments]
+    return group, assignments, submissions
 
 
-def get_group_report(group_id, user_id, course_id, hide_correctness):
-    group = AssignmentGroup.by_id(group_id)
-    assignments = natsorted(group.get_assignments(), key=lambda a: a.title())
-    submissions = [a.get_submission(user_id, course_id=course_id)
-                   for a in assignments]
-    completed = sum([s.correct or s.status / 100 for s in submissions])
-    total = len(assignments)
-    score = completed / total
-    table = "\n".join(
-        ["<li><a href='#{slug}'>{name}</a> {completed}</li>".format(slug=slugify(a.name),
-                                                                    name=a.name,
-                                                                    completed=(" - " + "Completed"
-                                                                               if s.correct else "<strong>Incomplete</strong>")
-                                                                    if not hide_correctness else "")
-         for a, s in zip(assignments, submissions)]
-    )
-    overview = '''
-    <h1>Overview</h1>
-    <div>Status: {completed}/{total} problems</div>
-    <div>Score: {score}%</div>
-    <div>Contents:
-    <ol>
-        {table}
-    </ol></div>
-    '''.format(completed=completed if not hide_correctness else '?',
-               total=total,
-               score=int(10000 * score) / 100 if not hide_correctness else '?',
-               table=table)
-    complete = overview + '<br><br>'.join([
-        get_report(assignment.type,
-                   assignment.name,
-                   submission,
-                   submission.get_block_image(), hide_correctness)
-        for assignment, submission
-        in zip(assignments, submissions)
-    ]) + '<br><small>{uid}/{cid}/{aids}</small>'.format(uid=user_id, cid=course_id,
-                                                        aids=','.join([str(a.id) for a in assignments]))
-    complete = '<div xml:lang="en">' + complete + '</div>'
-    return score, complete
+def calculate_submissions_score(assignments, submissions):
+    total_score = sum(submission.full_score() for submission in submissions)
+    total_possible = len(assignments)
+    return total_score, total_possible
 
 
-def get_report(mode, name, submission, image="", hide_correctness=False):
-    url = url_for('blockpy.get_submission_code', submission_id=submission.id, _external=True)
-    if hide_correctness:
-        status = "????"
-    elif submission.correct:
-        status = "Success!"
-    elif submission.status:
-        status = "Incomplete ({}%)".format(submission.status)
+@blueprint_blockpy.route('/view_submissions/<int:course_id>/<int:user_id>/<int:assignment_group_id>/',
+                         methods=['GET', 'POST'])
+@blueprint_blockpy.route('/view_submissions/<int:course_id>/<int:user_id>/<int:assignment_group_id>',
+                         methods=['GET', 'POST'])
+def view_submissions(course_id, user_id, assignment_group_id):
+    embed = maybe_bool(request.values.get('embed'))
+    viewer, viewer_id = get_user()
+    group, assignments, submissions = get_groups_submissions(assignment_group_id, user_id, course_id)
+    # Check permissions
+    for submission in submissions:
+        if submission.user_id != viewer_id:
+            require_course_grader(viewer_id, submission.course_id)
+    # Do action
+    points_total, points_possible = calculate_submissions_score(assignments, submissions)
+    score = round(points_total / points_possible, 2)
+    return render_template("reports/group.html", embed=embed,
+                           points_total=points_total, points_possible=points_possible,
+                           score=score,
+                           group=list(zip(assignments, submissions)),
+                           user_id=user_id, course_id=course_id)
+
+
+@blueprint_blockpy.route('/view_submission/', methods=['GET', 'POST'])
+@blueprint_blockpy.route('/view_submission', methods=['GET', 'POST'])
+@require_request_parameters('submission_id')
+def view_submission():
+    submission_id = request.values.get('submission_id')
+    viewer, viewer_id = get_user()
+    embed = maybe_bool(request.values.get('embed'))
+    submission = Submission.by_id(submission_id)
+    # Check exists
+    check_resource_exists(submission, "Submission", submission_id)
+    # Check permissions
+    if submission.user_id != viewer_id:
+        require_course_grader(viewer, submission.course_id)
+    # Do action
+    return render_template("reports/alone.html", embed=embed,
+                           submission=submission, assignment=submission.assignment,
+                           user_id=submission.user_id, course_id=submission.course_id)
+
+
+def get_outcomes(submission, assignment_group_id, user_id, course_id) -> 'Tuple[float, str]':
+    if assignment_group_id is None:
+        score = round(submission.full_score(), 2)
+        url = url_for('blockpy.view_submission', _external=True, embed=True,
+                      submission_id=submission.id)
     else:
-        status = "Incomplete"
-    if mode == 'maze':
-        return """
-        <h2 id='{slug}'>Maze {name}</h2>
-        <strong>Status:</strong><span> {status}</span>
-        """.format(name=name, status=status, slug=slugify(name))
-    else:
-        code = highlight_python_code(submission.code)
-        if image:
-            image = "Submitted Blocks:<br><img alt='Block version of code' src='{0}'>".format(image)
-        # time = process_history([h['time'] for h in submission.get_history()])
-        time = submission.version / 60.0
-        return '''
-        <div xml:lang="en">
-        <h2 id='{slug}'>{name}</h2>
-        <div>Status: {status}</div>
-        <div>Latest work in progress: <a href='{url}' target='_blank'>View</a></div>
-        <div>Touches: {touches}</div>
-        <div>Estimated Duration: {time:.2f} minutes</div>
-        {image}
-        <br>
-        Submitted code:<br>
-        {code}
-        </div>
-        '''.format(name=name, slug=slugify(name),
-                   status=status, url=url, time=time,
-                   touches=submission.version, code=code,
-                   image=image)
+        group, assignments, submissions = get_groups_submissions(assignment_group_id, user_id, course_id)
+        total, possible = calculate_submissions_score(assignments, submissions)
+        score = round(total / possible, 2)
+        url = url_for('blockpy.view_submissions', _external=True, embed=True,
+                      assignment_group_id=assignment_group_id, course_id=course_id,
+                      user_id=user_id)
+    return score, url
 
 
-@blueprint_blockpy.route('/view_current_group/', methods=['GET', 'POST'])
-@blueprint_blockpy.route('/view_current_group', methods=['GET', 'POST'])
-def view_current_group(lti=lti):
-    assignment_group_id = request.values.get('group_id', None)
-    course_id = request.values.get('course_id', None)
-    user_id = request.values.get('user_id', None)
-    hide_correctness = False
-    error_message = verify_user(assignment_group_id, course_id, user_id)
-    if error_message:
-        return error_message
-    # TODO: Implement this
-    score, report = get_group_report(int(assignment_group_id), int(user_id), int(course_id), hide_correctness)
-    return report
-
-
-@blueprint_blockpy.route('/view_current_assignment/', methods=['GET', 'POST'])
-@blueprint_blockpy.route('/view_current_assignment', methods=['GET', 'POST'])
-def view_current_assignment(lti=lti):
-    assignment_id = request.values.get('assignment_id', None)
-    course_id = request.values.get('course_id', None)
-    user_id = request.values.get('user_id', None)
-    hide_correctness = False
-    error_message = verify_user(assignment_id, course_id, user_id)
-    if error_message:
-        return error_message
-    assignment = Assignment.by_id(assignment_id)
-    submission = assignment.get_submission(user_id, course_id=course_id)
-    score = float(submission.correct) or submission.status
-    report = get_report(assignment.type, assignment.name, submission,
-                        image=submission.get_block_image(),
-                        hide_correctness=hide_correctness)
-    return report
-
-
-def verify_user(a_id, course_id, user_id):
-    if None in (a_id, course_id, user_id):
-        return "Missing either group, assignment, course, or user id."
-    if 'user' not in g or not g.user:
-        return "You are not logged in as a grader! Make sure you've visited a BlockPy Canvas."
-    print(course_id, g.user.id, g.user.is_grader(course_id))
-    if g.user.is_grader(int(course_id)) or user_id == g.user.id:
-        return False
-    return "Sorry, you do not have sufficient permissions to spy!"
-
-
-@blueprint_blockpy.route('/save_correct/', methods=['GET', 'POST'])
-@blueprint_blockpy.route('/save_correct', methods=['GET', 'POST'])
-@lti()
-def save_correct(lti, lti_exception=None):
-    assignment_id = request.values.get('assignment_id', None)
-    assignment_group_id = request.values.get('group_id', None)
-    status = float(request.values.get('status', "0.0"))
-    image = request.values.get('image', "")
-    hide_correctness = request.values.get('hide_correctness', "false") == "true"
-    force_update = request.values.get('force_update', "false") == "true"
-    course_id = request.values.get('course_id', g.course.id if 'course' in g else None)
-    if course_id == -1 or lti is None:
-        return ajax_failure("Course ID was negative or LTI is None.")
-    if None in (assignment_id, course_id):
-        return ajax_failure("No Assignment ID or Course ID given!")
-    assignment = Assignment.by_id(assignment_id)
-    if status >= 1:
-        submission = Submission.save_correct(g.user.id, assignment_id, course_id=int(course_id))
-    else:
-        submission = assignment.get_submission(g.user.id, course_id=course_id)
-    was_changed = submission.set_status(int(100 * status))
-    if not force_update and not was_changed:
-        return jsonify(success=True, submitted=False,
-                       message="No grade change",
-                       ip=request.remote_addr)
-    lis_result_sourcedid = request.values.get('lis_result_sourcedid', submission.url) or None
-    if lis_result_sourcedid is None:
-        return jsonify(success=True, submitted=False,
-                       message="Not in a grading context.",
-                       ip=request.remote_addr)
+def lti_post_grade(lti, submission, lis_result_sourcedid, assignment_group_id, user_id, course_id):
+    total_score, view_url = get_outcomes(submission, assignment_group_id, user_id, course_id)
+    lis_result_sourcedid = submission.endpoint if lis_result_sourcedid is None else lis_result_sourcedid
     session['lis_result_sourcedid'] = lis_result_sourcedid
-    image_url = submission.save_block_image(image)
-
-    if assignment_group_id != None and assignment_group_id != '' and assignment_group_id != 'None':
-        score = get_group_score(int(assignment_group_id), g.user.id, int(course_id), hide_correctness)
-        url = url_for('blockpy.view_current_group',
-                      group_id=int(assignment_group_id),
-                      course_id=int(course_id), user_id=g.user.id,
-                      _external=True)
-        report = "<a href='{url}'>View Group</a>".format(url=url)
-    else:
-        score = float(submission.correct) or status
-        url = url_for('blockpy.view_current_assignment',
-                      assignment_id=int(assignment_id),
-                      course_id=int(course_id), user_id=g.user.id,
-                      _external=True)
-        report = "<a href='{url}'>View Assignment</a>".format(url=url)
-    lti.post_grade(score, report, endpoint=lis_result_sourcedid)
-    return jsonify(success=True, submitted=True, ip=request.remote_addr)
+    if lis_result_sourcedid and lti:
+        lti.post_grade(total_score, view_url, endpoint=lis_result_sourcedid, url=True)
+        return True
+    return False
 
 
-@blueprint_blockpy.route('/get_submission_code/', methods=['GET', 'POST'])
-@blueprint_blockpy.route('/get_submission_code', methods=['GET', 'POST'])
-def get_submission_code(lti=lti):
-    submission_id = request.values.get('submission_id', None)
-    if submission_id is None:
-        return "Sorry, no submission ID was given."
-    submission = Submission.query.get(submission_id)
-    if 'user' not in g or not g.user:
-        return "You are not logged in as a grader! Make sure you've visited a BlockPy Canvas."
-    if 'course' not in g or not g.course:
-        return "You're not in a course context! Make sure you've visited a BlockPy Canvas."
-    if not submission:
-        return '#No submission found!'
-    if g.user.is_grader(g.course.id) or submission.user_id == g.user.id:
-        if submission.code:
-            status = "100%" if submission.correct else str(submission.status) + "%"
-            body = "<strong>Status: " + status + "</strong><hr>"
-            body += "<pre>" + highlight_python_code(submission.code) + "</pre>"
-            return body
-        else:
-            return "<strong>Status: 0%</strong><hr>#No code given!"
-    else:
-        return "Sorry, you do not have sufficient permissions to spy!"
+@blueprint_blockpy.route('/update_submission/', methods=['GET', 'POST'])
+@blueprint_blockpy.route('/update_submission', methods=['GET', 'POST'])
+@require_request_parameters('submission_id')
+@lti()
+def update_submission(lti, lti_exception=None):
+    # Get parameters
+    submission_id = maybe_int(request.values.get("submission_id"))
+    lis_result_sourcedid = request.values.get('lis_result_sourcedid')
+    assignment_group_id = maybe_int(request.values.get('assignment_group_id'))
+    score = int(request.values.get('score', '0'))
+    correct = maybe_bool(request.values.get("correct"))
+    # TODO: Only send image if the assignment settings starts as Block or Split
+    image = request.values.get('image', "")
+    hidden_override = maybe_bool(request.values.get('hidden_override'))
+    force_update = maybe_bool(request.values.get('force_update'))
+    course_id = get_course_id()
+    user, user_id = get_user()
+    submission = Submission.by_id(submission_id)
+    # Check resource exists
+    check_resource_exists(submission, "Submission", submission_id)
+    # Verify permissions
+    if submission.user_id != user_id and not user.is_grader(submission.course_id):
+        return ajax_failure("This is not your submission and you are not a grader in its course.")
+    # Do action
+    was_changed = submission.update_submission(score, correct)
+    # TODO: Document that we currently only pass back grade if it changed
+    if was_changed or force_update:
+        submission.save_block_image(image)
+        lti_post_grade(lti, submission, lis_result_sourcedid, assignment_group_id, user_id, course_id)
+    return ajax_success({"submitted": was_changed or force_update, "changed": was_changed})
 
 
 @blueprint_blockpy.route('/get_submission_image/', methods=['GET', 'POST'])
 @blueprint_blockpy.route('/get_submission_image', methods=['GET', 'POST'])
+@require_request_parameters('submission_id')
 def get_submission_image(lti=lti):
-    submission_id = request.values.get('submission_id', None)
-    if submission_id is None:
-        return "Sorry, no submission ID was given."
-    relative_image_path = 'uploads/submission_blocks/' + str(submission_id) + '.png'
-    submission = Submission.query.get(int(submission_id))
-    course_id = request.values.get('course_id', None)
-    if course_id is None:
-        if 'course' in g:
-            course_id = g.course.id
-        else:
-            return "No course was found or given."
-    if g.user.is_grader(course_id) or submission.user_id == g.user.id:
-        return app.send_static_file(relative_image_path)
-    else:
-        return "Sorry, you do not have sufficient permissions to spy!"
+    submission_id = int(request.values.get('submission_id'))
+    relative_image_path = 'uploads/submission_blocks/{}.png'.format(submission_id)
+    submission = Submission.query.get(submission_id)
+    user, user_id = get_user()
+    # Check exists
+    check_resource_exists(submission, "Submission", submission_id)
+    # Check permissions
+    if submission.user_id != user_id:
+        require_course_instructor(user, submission.course_id)
+    # Do action
+    return app.send_static_file(relative_image_path)
 
 
 @blueprint_blockpy.route('/save_assignment/', methods=['GET', 'POST'])
@@ -413,25 +364,6 @@ def save_assignment(lti=lti):
     return jsonify(success=True, ip=request.remote_addr)
 
 
-@blueprint_blockpy.route('/get_history/', methods=['GET', 'POST'])
-@blueprint_blockpy.route('/get_history', methods=['GET', 'POST'])
-def get_history(lti=lti):
-    assignment_id = request.values.get('assignment_id', None)
-    assignment_version = int(request.values.get('version', -1))
-    course_id = request.values.get('course_id', g.course.id if 'course' in g else None)
-    if None in (assignment_id, course_id) or course_id == "":
-        return ajax_failure("No Assignment ID or Course ID given!")
-    submission = Submission.load(g.user.id, assignment_id, int(course_id))
-    return jsonify(success=True,
-                   data=submission.get_history(),
-                   ip=request.remote_addr)
-
-
-@blueprint_blockpy.route('/load_corgis/<path:path>', methods=['GET', 'POST'])
-def load_corgis(path):
-    return app.send_static_file('corgis/{path}'.format(path=path))
-
-
 @blueprint_blockpy.route('/load_file/', methods=['GET', 'POST'])
 @blueprint_blockpy.route('/load_file', methods=['GET', 'POST'])
 def load_file():
@@ -453,23 +385,6 @@ def load_file():
         return jsonify(success=True, data=contents, ip=request.remote_addr)
     except IOError as e:
         return jsonify(success=False, message=str(e), ip=request.remote_addr)
-
-
-@blueprint_blockpy.route('/force_right_section/', methods=['GET', 'POST'])
-@blueprint_blockpy.route('/force_right_section', methods=['GET', 'POST'])
-def force_right_section():
-    kaf_students = Submission.query.with_entities(Submission.user_id).filter_by(course_id=5).distinct().all()
-    kaf_students = [a[0] for a in kaf_students]
-    my_submissions = Submission.query.filter_by(course_id=8).all()
-    modified = []
-    for submission in my_submissions:
-        if submission.user_id in kaf_students:
-            submission.course_id = 5
-            modified.append(
-                {"user": submission.user_id, "course": submission.course_id, "assignment": submission.assignment_id,
-                 "id": submission.id})
-    db.session.commit()
-    return jsonify(result=modified)
 
 
 GAP_THRESHOLD = 2 * 60

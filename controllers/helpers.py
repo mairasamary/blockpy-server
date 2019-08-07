@@ -54,8 +54,6 @@ def lti(request='any', *lti_args, **lti_kwargs):
                 the_lti.verify()
                 kwargs['lti'] = the_lti
                 old_user = g.user
-                from pprint import pprint
-                pprint(session)
                 g.user = User.from_lti("canvas",
                                        session["pylti_user_id"],
                                        session.get("lis_person_contact_email_primary", ""),
@@ -128,7 +126,7 @@ def login_required(f):
 def require_course_instructor(user, course_id):
     if not user.is_instructor(course_id):
         message = 'You are not an instructor (course ID {}).'.format(course_id)
-        abort(make_response(jsonify(success=False, message=message), 403))
+        abort(make_response(jsonify(success=False, message=message), 200))
         return False
     return True
 
@@ -136,7 +134,7 @@ def require_course_instructor(user, course_id):
 def require_course_grader(user, course_id):
     if not user.is_grader(course_id):
         message = 'You are not a grader (course ID {}).'.format(course_id)
-        abort(make_response(jsonify(success=False, message=message), 403))
+        abort(make_response(jsonify(success=False, message=message), 200))
         return False
     return True
 
@@ -144,7 +142,7 @@ def require_course_grader(user, course_id):
 def check_resource_exists(resource, kind, id):
     if not resource:
         message = "The specified resource does not exist ({} {})".format(kind, id)
-        abort(make_response(jsonify(success=False, message=message), 404))
+        abort(make_response(jsonify(success=False, message=message), 200))
         return False
     return True
 
@@ -199,6 +197,14 @@ def maybe_int(value):
         return None
 
 
+def maybe_bool(value):
+    if value is None:
+        return False
+    elif value.lower() == "false":
+        return False
+    return True
+
+
 def parse_assignment_load():
     # Lookup Code
     assignment_group_id = parse_lookup_code()
@@ -236,7 +242,7 @@ def parse_assignment_load():
     if user_id is None or course_id is None:
         submissions = []
     else:
-        submissions = [assignment.load_or_new_submission(user_id, course_id, new_submission_url)
+        submissions = [assignment.load_or_new_submission(user_id, course_id, new_submission_url, assignment_group_id)
                        for assignment in assignments]
     # Determine the users' role in relation to this information
     role = user.determine_role(assignments, submissions) if user else "anonymous"
@@ -296,14 +302,31 @@ def get_course_id():
     return course_id
 
 
+class UnknownUser:
+    def __bool__(self):
+        return False
+
+    def __init__(self):
+        self.id = None
+
+    def is_grader(self, *args):
+        return False
+
+    def is_instructor(self, *args):
+        return False
+
+
+UNKNOWN_USER = UnknownUser()
+
+
 def get_user():
     """
 
     :return: models.user.User
     """
-    if 'user' in g:
+    if 'user' in g and g.user:
         return g.user, g.user.id
-    return None, None
+    return UNKNOWN_USER, None
 
 
 def get_assignment_id(f):
@@ -366,7 +389,7 @@ def get_select_menu_link(id, title, is_embedded, is_group):
                      "height=600"])
 
 
-def ajax_failure(message, error_code=400):
+def ajax_failure(message, error_code=200):
     return abort(make_response(jsonify(success=False, message=message, ip=request.remote_addr), error_code))
 
 

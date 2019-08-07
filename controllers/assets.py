@@ -72,7 +72,7 @@ bundles = {
 
     'blockpy_css': Bundle(
         "libs/block_mirror/block_mirror.css",
-        "libs/blockpy/blockpy.css",
+        "../../blockpy-edu/blockpy/dist/blockpy.css",
         output='gen/blockpy.css'
     ),
         

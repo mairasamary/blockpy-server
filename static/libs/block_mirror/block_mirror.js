@@ -333,6 +333,10 @@ BlockMirror.prototype.refresh = function () {
   this.textEditor.codeMirror.refresh();
 };
 
+BlockMirror.prototype.forceBlockRefresh = function () {
+  this.blockEditor.setCode(this.code_, true);
+};
+
 BlockMirror.prototype.VISIBLE_MODES = {
   'block': ['block', 'split'],
   'text': ['text', 'split']
@@ -516,6 +520,8 @@ BlockMirrorTextEditor.prototype.changed = function (codeMirror, event) {
 
   if (!this.silentEvents_) {
     var handleChange = function handleChange() {
+      console.log(_this.getCode(), codeMirror, event);
+
       var newCode = _this.getCode();
 
       _this.blockMirror.blockEditor.setCode(newCode, true);
@@ -614,10 +620,14 @@ BlockMirrorBlockEditor.prototype.makeToolbox = function () {
   var toolbox = this.blockMirror.configuration.toolbox;
 
   if (toolbox in this.TOOLBOXES) {
-    return this.TOOLBOXES[toolbox];
-  } else {
-    return toolbox;
+    toolbox = this.TOOLBOXES[toolbox];
   }
+
+  for (var name in BlockMirrorBlockEditor.EXTRA_TOOLS) {
+    toolbox += BlockMirrorBlockEditor.EXTRA_TOOLS[name];
+  }
+
+  return '<xml id="toolbox" style="display:none">' + toolbox + '</xml>';
 };
 
 BlockMirrorBlockEditor.prototype.remakeToolbox = function () {
@@ -746,12 +756,107 @@ BlockMirrorBlockEditor.prototype.changed = function (event) {
   if ((event === undefined || this.BLOCKLY_CHANGE_EVENTS.indexOf(event.type) !== -1) && !this.workspace.isDragging()) {
     var newCode = this.getCode();
     this.blockMirror.textEditor.setCode(newCode, true);
-    this.blockMirror.code_ = newCode;
+    this.blockMirror.setCode(newCode, true);
   }
 };
 
 BlockMirrorBlockEditor.prototype.isVisible = function () {
   return this.blockMirror.VISIBLE_MODES.block.indexOf(this.blockMirror.mode_) !== -1;
+};
+
+BlockMirrorBlockEditor.prototype.DOCTYPE = '<?xml version="1.0" standalone="no"?> <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">';
+BlockMirrorBlockEditor.prototype.BLOCKLY_LOADED_CSS = null;
+
+BlockMirrorBlockEditor.prototype.loadBlocklyCSS = function () {
+  if (this.BLOCKLY_LOADED_CSS === null) {
+    var result = [".blocklyDraggable {}"];
+    result = result.concat(Blockly.Css.CONTENT);
+
+    if (Blockly.FieldDate) {
+      result = result.concat(Blockly.FieldDate.CSS);
+    }
+
+    result = result.join("\n"); // Strip off any trailing slash (either Unix or Windows).
+
+    result = result.replace(/<<<PATH>>>/g, Blockly.Css.mediaPath_);
+    this.BLOCKLY_LOADED_CSS = result;
+  }
+};
+/**
+ * Generates a PNG version of the current workspace. This PNG is stored in a Base-64 encoded
+ * string as part of a data URL (e.g., "data:image/png;base64,...").
+ * TODO: There seems to be some problems capturing blocks that don't start with
+ * statement level blocks (e.g., expression blocks).
+ *
+ * @param {Function} callback - A function to be called with the results.
+ *  This function should take two parameters, the URL (as a string) of the generated
+ *  base64-encoded PNG and the IMG tag.
+ */
+
+
+BlockMirrorBlockEditor.prototype.getPngFromBlocks = function (callback) {
+  this.loadBlocklyCSS();
+
+  try {
+    // Retreive the entire canvas, strip some unnecessary tags
+    var blocks = this.workspace.svgBlockCanvas_.cloneNode(true);
+    blocks.removeAttribute("width");
+    blocks.removeAttribute("height"); // Ensure that we have some content
+
+    if (blocks.childNodes[0] !== undefined) {
+      // Remove tags that offset
+      blocks.removeAttribute("transform");
+      blocks.childNodes[0].removeAttribute("transform");
+      blocks.childNodes[0].childNodes[0].removeAttribute("transform"); // Add in styles
+
+      var linkElm = document.createElementNS("http://www.w3.org/1999/xhtml", "style");
+      linkElm.textContent = this.BLOCKLY_LOADED_CSS + "\n\n";
+      blocks.insertBefore(linkElm, blocks.firstChild); // Get the bounding box
+
+      var bbox = document.getElementsByClassName("blocklyBlockCanvas")[0].getBBox(); // Create the XML representation of the SVG
+
+      var xml = new XMLSerializer().serializeToString(blocks);
+      xml = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="' + bbox.width + '" height="' + bbox.height + '" viewBox="0 0 ' + bbox.width + " " + bbox.height + '"><rect width="100%" height="100%" fill="white"></rect>' + xml + "</svg>"; // create a file blob of our SVG.
+      // Unfortunately, this crashes modern chrome for unknown reasons.
+      //var blob = new Blob([ this.DOCTYPE + xml], { type: 'image/svg+xml' });
+      //var url = window.URL.createObjectURL(blob);
+      // Old method: this failed on IE
+
+      var url = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(xml))); // Create an IMG tag to hold the new element
+
+      var img = document.createElement("img");
+      img.style.display = "block";
+
+      img.onload = function () {
+        var canvas = document.createElement("canvas");
+        canvas.width = bbox.width;
+        canvas.height = bbox.height;
+        var ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0);
+        var canvasUrl;
+
+        try {
+          canvasUrl = canvas.toDataURL("image/png");
+        } catch (e) {
+          canvasUrl = url;
+        }
+
+        img.onload = null;
+        callback(canvasUrl, img);
+      };
+
+      img.onerror = function () {
+        callback("", img);
+      };
+
+      img.setAttribute("src", url);
+    } else {
+      callback("", document.createElement("img"));
+    }
+  } catch (e) {
+    callback("", document.createElement("img"));
+    console.error("PNG image creation not supported!", e);
+  }
 };
 
 function BlockMirrorTextToBlocks(blockMirror) {
@@ -813,6 +918,7 @@ BlockMirrorTextToBlocks.prototype.convertSource = function (filename, python_sou
         this.source = this.source.slice(0, previousLine);
         python_source = this.source.join("\n");
       } else {
+        console.error(e);
         xml.appendChild(BlockMirrorTextToBlocks.raw_block(originalSource));
         return {
           "xml": BlockMirrorTextToBlocks.xmlToString(xml),
@@ -2072,10 +2178,16 @@ BlockMirrorTextToBlocks.getFunctionBlock = function (name, values, module) {
 var ZERO_BLOCK = BlockMirrorTextToBlocks.create_block('ast_Num', null, {
   'NUM': 0
 });
-BlockMirrorBlockEditor.prototype.TOOLBOXES = {
-  'normal': "<xml id=\"toolbox\" style=\"display:none\">\n        <category name=\"Variables\" custom=\"VARIABLE\" colour=\"".concat(BlockMirrorTextToBlocks.COLOR.VARIABLES, "\"></category>\n        <category name=\"Decisions\" colour=\"").concat(BlockMirrorTextToBlocks.COLOR.LOGIC, "\">\n            <block type=\"ast_If\"></block>\n            <block type=\"ast_If\"><mutation orelse=\"true\"></mutation></block>\n            <block type=\"ast_Compare\"></block>\n            <block type=\"ast_BoolOp\"></block>\n            <block type=\"ast_UnaryOpNot\"></block>\n        </category>\n        <category name=\"Iteration\" colour=\"").concat(BlockMirrorTextToBlocks.COLOR.CONTROL, "\">\n            <block type=\"ast_For\"></block>        \n        </category>\n        <category name=\"Calculation\" colour=\"").concat(BlockMirrorTextToBlocks.COLOR.MATH, "\">\n            <block type=\"ast_BinOp\"></block>\n            ").concat(BlockMirrorTextToBlocks.getFunctionBlock("round"), "\n        </category>\n        <category name=\"Output\" colour=\"").concat(BlockMirrorTextToBlocks.COLOR.PLOTTING, "\">\n            ").concat(BlockMirrorTextToBlocks.getFunctionBlock("print"), "\n            ").concat(BlockMirrorTextToBlocks.getFunctionBlock("plot", {}, "plt"), "\n            ").concat(BlockMirrorTextToBlocks.getFunctionBlock("scatter", {}, "plt"), "\n            ").concat(BlockMirrorTextToBlocks.getFunctionBlock("hist", {}, "plt"), "\n            ").concat(BlockMirrorTextToBlocks.getFunctionBlock("show", {}, "plt"), "\n            ").concat(BlockMirrorTextToBlocks.getFunctionBlock("title", {}, "plt"), "\n            ").concat(BlockMirrorTextToBlocks.getFunctionBlock("xlabel", {}, "plt"), "\n            ").concat(BlockMirrorTextToBlocks.getFunctionBlock("ylabel", {}, "plt"), "\n        </category>\n        <category name=\"Input\" colour=\"").concat(BlockMirrorTextToBlocks.COLOR.TEXT, "\">\n            ").concat(BlockMirrorTextToBlocks.getFunctionBlock("input"), "\n        </category>\n        <category name=\"Values\" colour=\"").concat(BlockMirrorTextToBlocks.COLOR.TEXT, "\">\n            <block type=\"ast_Str\"></block>\n            <block type=\"ast_Num\"></block>\n            <block type=\"ast_NameConstantBoolean\"></block>\n        </category>\n        <category name=\"Conversion\" colour=\"").concat(BlockMirrorTextToBlocks.COLOR.TEXT, "\">\n            ").concat(BlockMirrorTextToBlocks.getFunctionBlock("int"), "\n            ").concat(BlockMirrorTextToBlocks.getFunctionBlock("float"), "\n            ").concat(BlockMirrorTextToBlocks.getFunctionBlock("str"), "\n            ").concat(BlockMirrorTextToBlocks.getFunctionBlock("bool"), "\n        </category>\n        <category name=\"Lists\" colour=\"").concat(BlockMirrorTextToBlocks.COLOR.LIST, "\">\n            <block type=\"ast_List\"><mutation items=\"3\"></mutation>\n                <value name=\"ADD0\"><block type=\"ast_Num\"><field name=\"NUM\">0</field></block></value>\n                <value name=\"ADD1\"><block type=\"ast_Num\"><field name=\"NUM\">0</field></block></value>\n                <value name=\"ADD2\"><block type=\"ast_Num\"><field name=\"NUM\">0</field></block></value>\n            </block>\n            <block type=\"ast_List\"><mutation items=\"3\"></mutation>\n                <value name=\"ADD0\"></value>\n                <value name=\"ADD1\"></value>\n                <value name=\"ADD2\"></value>\n            </block>\n            <block type=\"ast_List\"><mutation items=\"0\"></mutation></block>\n            ").concat(BlockMirrorTextToBlocks.getFunctionBlock(".append"), "\n            ").concat(BlockMirrorTextToBlocks.getFunctionBlock("range", {
+BlockMirrorBlockEditor.EXTRA_TOOLS = {};
+
+BlockMirrorBlockEditor.getDefaultBlocks = function () {
+  return "<category name=\"Variables\" custom=\"VARIABLE\" colour=\"".concat(BlockMirrorTextToBlocks.COLOR.VARIABLES, "\"></category>\n        <category name=\"Decisions\" colour=\"").concat(BlockMirrorTextToBlocks.COLOR.LOGIC, "\">\n            <block type=\"ast_If\"></block>\n            <block type=\"ast_If\"><mutation orelse=\"true\"></mutation></block>\n            <block type=\"ast_Compare\"></block>\n            <block type=\"ast_BoolOp\"></block>\n            <block type=\"ast_UnaryOpNot\"></block>\n        </category>\n        <category name=\"Iteration\" colour=\"").concat(BlockMirrorTextToBlocks.COLOR.CONTROL, "\">\n            <block type=\"ast_For\"></block>        \n        </category>\n        <sep></sep>\n        <category name=\"Calculation\" colour=\"").concat(BlockMirrorTextToBlocks.COLOR.MATH, "\">\n            <block type=\"ast_BinOp\"></block>\n            ").concat(BlockMirrorTextToBlocks.getFunctionBlock("round"), "\n        </category>\n        <category name=\"Output\" colour=\"").concat(BlockMirrorTextToBlocks.COLOR.PLOTTING, "\">\n            ").concat(BlockMirrorTextToBlocks.getFunctionBlock("print"), "\n            ").concat(BlockMirrorTextToBlocks.getFunctionBlock("plot", {}, "plt"), "\n            ").concat(BlockMirrorTextToBlocks.getFunctionBlock("scatter", {}, "plt"), "\n            ").concat(BlockMirrorTextToBlocks.getFunctionBlock("hist", {}, "plt"), "\n            ").concat(BlockMirrorTextToBlocks.getFunctionBlock("show", {}, "plt"), "\n            ").concat(BlockMirrorTextToBlocks.getFunctionBlock("title", {}, "plt"), "\n            ").concat(BlockMirrorTextToBlocks.getFunctionBlock("xlabel", {}, "plt"), "\n            ").concat(BlockMirrorTextToBlocks.getFunctionBlock("ylabel", {}, "plt"), "\n        </category>\n        <category name=\"Input\" colour=\"").concat(BlockMirrorTextToBlocks.COLOR.TEXT, "\">\n            ").concat(BlockMirrorTextToBlocks.getFunctionBlock("input"), "\n        </category>\n        <sep></sep>\n        <category name=\"Values\" colour=\"").concat(BlockMirrorTextToBlocks.COLOR.TEXT, "\">\n            <block type=\"ast_Str\"></block>\n            <block type=\"ast_Num\"></block>\n            <block type=\"ast_NameConstantBoolean\"></block>\n        </category>\n        <category name=\"Conversion\" colour=\"").concat(BlockMirrorTextToBlocks.COLOR.TEXT, "\">\n            ").concat(BlockMirrorTextToBlocks.getFunctionBlock("int"), "\n            ").concat(BlockMirrorTextToBlocks.getFunctionBlock("float"), "\n            ").concat(BlockMirrorTextToBlocks.getFunctionBlock("str"), "\n            ").concat(BlockMirrorTextToBlocks.getFunctionBlock("bool"), "\n        </category>\n        <category name=\"Lists\" colour=\"").concat(BlockMirrorTextToBlocks.COLOR.LIST, "\">\n            <block type=\"ast_List\"><mutation items=\"3\"></mutation>\n                <value name=\"ADD0\"><block type=\"ast_Num\"><field name=\"NUM\">0</field></block></value>\n                <value name=\"ADD1\"><block type=\"ast_Num\"><field name=\"NUM\">0</field></block></value>\n                <value name=\"ADD2\"><block type=\"ast_Num\"><field name=\"NUM\">0</field></block></value>\n            </block>\n            <block type=\"ast_List\"><mutation items=\"3\"></mutation>\n                <value name=\"ADD0\"></value>\n                <value name=\"ADD1\"></value>\n                <value name=\"ADD2\"></value>\n            </block>\n            <block type=\"ast_List\"><mutation items=\"0\"></mutation></block>\n            ").concat(BlockMirrorTextToBlocks.getFunctionBlock(".append"), "\n            ").concat(BlockMirrorTextToBlocks.getFunctionBlock("range", {
     'ARG0': ZERO_BLOCK
-  }), "\n        </category>\n        <category name=\"Dictionaries\" colour=\"").concat(BlockMirrorTextToBlocks.COLOR.DICTIONARY, "\">\n            <block type=\"ast_Dict\">\n                <mutation items=\"3\"></mutation>\n                <value name=\"ADD0\"><block type=\"ast_DictItem\" deletable=\"false\" movable=\"false\">\n                    <value name=\"KEY\"><block type=\"ast_Str\"><field name=\"TEXT\">1st key</field></block></value>\n                </block></value>\n                <value name=\"ADD1\"><block type=\"ast_DictItem\" deletable=\"false\" movable=\"false\">\n                    <value name=\"KEY\"><block type=\"ast_Str\"><field name=\"TEXT\">2nd key</field></block></value>\n                </block></value>\n                <value name=\"ADD2\"><block type=\"ast_DictItem\" deletable=\"false\" movable=\"false\">\n                    <value name=\"KEY\"><block type=\"ast_Str\"><field name=\"TEXT\">3rd key</field></block></value>\n                </block></value>\n            </block>\n            <block type=\"ast_Subscript\">\n                <mutation><arg name=\"I\"></arg></mutation>\n                <value name=\"INDEX0\"><block type=\"ast_Str\"><field name=\"TEXT\">key</field></block></value>\n            </block>\n        </category>\n    </xml>")
+  }), "\n        </category>\n        <category name=\"Dictionaries\" colour=\"").concat(BlockMirrorTextToBlocks.COLOR.DICTIONARY, "\">\n            <block type=\"ast_Dict\">\n                <mutation items=\"3\"></mutation>\n                <value name=\"ADD0\"><block type=\"ast_DictItem\" deletable=\"false\" movable=\"false\">\n                    <value name=\"KEY\"><block type=\"ast_Str\"><field name=\"TEXT\">1st key</field></block></value>\n                </block></value>\n                <value name=\"ADD1\"><block type=\"ast_DictItem\" deletable=\"false\" movable=\"false\">\n                    <value name=\"KEY\"><block type=\"ast_Str\"><field name=\"TEXT\">2nd key</field></block></value>\n                </block></value>\n                <value name=\"ADD2\"><block type=\"ast_DictItem\" deletable=\"false\" movable=\"false\">\n                    <value name=\"KEY\"><block type=\"ast_Str\"><field name=\"TEXT\">3rd key</field></block></value>\n                </block></value>\n            </block>\n            <block type=\"ast_Subscript\">\n                <mutation><arg name=\"I\"></arg></mutation>\n                <value name=\"INDEX0\"><block type=\"ast_Str\"><field name=\"TEXT\">key</field></block></value>\n            </block>\n        </category>\n        <sep></sep>");
+};
+
+BlockMirrorBlockEditor.prototype.TOOLBOXES = {
+  'normal': BlockMirrorBlockEditor.getDefaultBlocks()
 }; // TODO: fix these to be more interesting
 
 BlockMirrorBlockEditor.prototype.TOOLBOXES['minimal'] = BlockMirrorBlockEditor.prototype.TOOLBOXES['normal'];
@@ -4967,7 +5079,14 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
 
   var returns = true;
 
-  if (signature !== null) {
+  if (signature !== null && signature !== undefined) {
+    if (signature.custom) {
+      try {
+        return signature.custom(node, parent);
+      } catch (e) {// We tried to be fancy and failed, better fall back to default behavior!
+      }
+    }
+
     if ('returns' in signature) {
       returns = signature.returns;
     }

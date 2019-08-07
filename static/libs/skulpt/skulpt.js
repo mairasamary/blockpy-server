@@ -13040,7 +13040,7 @@ Compiler.prototype.annotateSource = function (ast, shouldStep) {
         // Do not trace the standard library
         if (shouldStep && (!this.filename || 
                            !this.filename.startsWith('src/lib/'))) {
-            out("Sk.afterSingleExecution($gbl,"+lineno+","+col_offset+","+JSON.stringify(this.filename)+");\n");
+            out("Sk.afterSingleExecution && Sk.afterSingleExecution($gbl,"+lineno+","+col_offset+","+JSON.stringify(this.filename)+");\n");
         }
     }
 };
@@ -15263,7 +15263,7 @@ Compiler.prototype.vstmt = function (s, class_for_super) {
         this.u.doesSuspend = true;
     }
 
-    this.annotateSource(s);
+    this.annotateSource(s, true);
 
     switch (s.constructor) {
         case Sk.astnodes.FunctionDef:
@@ -34344,8 +34344,8 @@ Sk.builtin.super_.__doc__ = new Sk.builtin.str(
 var Sk = {}; // jshint ignore:line
 
 Sk.build = {
-    githash: "0534d92702336f6007ca688d02571b6a09ba0d1b",
-    date: "2019-08-01T12:43:29.966Z"
+    githash: "5647447dab21b0ef3dd0d8b325634b7946687ada",
+    date: "2019-08-07T01:29:06.225Z"
 };
 
 /**

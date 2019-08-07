@@ -22,7 +22,7 @@ class Log(Base):
     message = Column(Text(), default="")
     client_timestamp = Column(String(255), default="")
     client_timezone = Column(String(255), default="")
-    
+
     # event_type
     # => event_id
     # subject_id
@@ -76,6 +76,12 @@ class Log(Base):
     @staticmethod
     def get_logs_for_course(course_id):
         return Log.query.filter_by(course_id=course_id).all()
+
+    @staticmethod
+    def get_history(course_id, assignment_id, user_id):
+        return Log.query.filter_by(course_id=course_id,
+                                   assignment_id=assignment_id,
+                                   user_id=user_id).all()
 
     def for_file(self):
         return ", ".join((

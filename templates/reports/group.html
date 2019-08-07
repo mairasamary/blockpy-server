@@ -1,0 +1,38 @@
+{% extends "helpers/layout.html" %}
+
+{% block title %}
+    Submission Group
+{% endblock %}
+
+{% block body %}
+
+<h1>Overview</h1>
+<div>Status: {{ points_total }}/{{ points_possible }} problems</div>
+<div>Score: {{ score*100 }}%</div>
+<div>Contents:
+    <ol>
+        {% for assignment, submission in group %}
+            <li><a href='#{{ assignment.slug() }}'>{{ assignment.name }}</a> - {{ submission.full_status() }}</li>
+        {% endfor %}
+    </ol>
+</div>
+<div>
+    {% for assignment, submission in group %}
+        {{ assignment.type }}
+        {% if assignment.type.lower() == "blockpy" %}
+            {% include "reports/blockpy.html" with context %}
+        {% elif assignment.type.lower() == "maze" %}
+            {% include "reports/maze.html" with context %}
+        {% endif %}
+    {% endfor  %}
+</div>
+<div>
+    <small>
+        User: {{ user_id }}<br>
+        Course: {{ course_id }}<br>
+        Assignments: {{ assignments|join(',', attribute='id') }}<br>
+        Submissions: {{ submissions|join(',', attribute='id') }}
+    </small>
+</div>
+
+{% endblock %}

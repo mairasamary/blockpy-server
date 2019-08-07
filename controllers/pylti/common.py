@@ -313,7 +313,7 @@ def verify_request_common(consumers, url, method, headers, params):
 
 
 def generate_request_xml(message_identifier_id, operation,
-                         lis_result_sourcedid, score, message):
+                         lis_result_sourcedid, score, message=None, url=False):
     # pylint: disable=too-many-locals
     """
     Generates LTI 1.1 XML for posting result to LTI consumer.
@@ -352,7 +352,7 @@ def generate_request_xml(message_identifier_id, operation,
         text_string.text = score.__str__()
         if message is not None:
             result_data = etree.SubElement(result, 'resultData')
-            text_node = etree.SubElement(result_data, 'text')
+            text_node = etree.SubElement(result_data, 'url' if url else 'text')
             text_node.text = message
     ret = "<?xml version='1.0' encoding='utf-8'?>\n{}".format(
         etree.tostring(root, encoding='utf-8').decode('utf-8'))

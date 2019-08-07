@@ -1,6 +1,7 @@
 import json
 from typing import Optional
 
+from slugify import slugify
 from sqlalchemy import Column, String, Text, DateTime, Integer, ForeignKey, JSON, UniqueConstraint, Boolean
 
 from models import models
@@ -19,6 +20,8 @@ class Assignment(Base):
     reviewed = Column(Boolean(), default=False)
     # Should we hide the current Complete status for submissions?
     hidden = Column(Boolean(), default=False)
+    # Should we allow users to see other user's submissions?
+    public = Column(Boolean(), default=False)
     settings = Column(Text())
 
     # Code columns
@@ -50,8 +53,9 @@ class Assignment(Base):
 
             'type': self.type,
             'instructions': self.instructions,
-            'review': self.reviewed,
+            'reviewed': self.reviewed,
             'hidden': self.hidden,
+            'public': self.public,
             'settings': self.settings,
 
             'on_run': self.on_run,
@@ -178,6 +182,9 @@ class Assignment(Base):
     def title(self):
         return self.name if self.name != "Untitled" else "Untitled ({})".format(self.id)
 
+    def slug(self):
+        return slugify(self.name)
+
     @staticmethod
     def get_available():
         assignments = Assignment.query.all()
@@ -258,8 +265,11 @@ class Assignment(Base):
             return course.external_id == context_id
         return False
 
-    def load_or_new_submission(self, user_id, course_id, new_submission_url=""):
-        return models.Submission.load_or_new(self, user_id, course_id, new_submission_url)
+    def load_or_new_submission(self, user_id, course_id, new_submission_url="", assignment_group_id=None):
+        return models.Submission.load_or_new(self, user_id, course_id, new_submission_url, assignment_group_id)
+
+    def load(self, user_id, course_id):
+        return models.Submission.get_submission(self.id, user_id, course_id)
 
     def for_editor(self, user_id, course_id):
         # Trust the user for now that they belong here, and give them a submission
@@ -269,3 +279,27 @@ class Assignment(Base):
             'assignment': self.encode_json(),
             'submission': submission,
         }
+
+    INSTRUCTOR_FILENAMES = ("!on_run.py", "!on_change.py", "!on_eval.py",
+                            "^starting_code.py", "!assignment_settings.blockpy", "!instructions.md",
+                            "#extra_instructor_files.blockpy", "#extra_starting_files.blockpy")
+
+    def save_file(self, filename, code):
+        if filename == "!on_run.py":
+            self.on_run = code
+        elif filename == "!on_change.py":
+            self.on_change = code
+        elif filename == "!on_eval.py":
+            self.on_eval = code
+        elif filename == "^starting_code.py":
+            self.starting_code = code
+        elif filename == "!assignment_settings.blockpy":
+            self.settings = code
+        elif filename == "!instructions.md":
+            self.instructions = code
+        elif filename == "#extra_instructor_files.blockpy":
+            self.extra_instructor_files = code
+        elif filename == "#extra_starting_files.blockpy":
+            self.extra_starting_files = code
+        self.version += 1
+        db.session.commit()

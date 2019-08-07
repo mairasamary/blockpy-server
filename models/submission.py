@@ -12,6 +12,25 @@ from models import models
 from models.models import Base, db, ensure_dirs, optional_encoded_field, datetime_to_string
 
 
+class SubmissionStatuses:
+    # Started -> not yet run
+    STARTED = "Started"
+    # inProgress -> Run, but not yet marked formally as "submitted"
+    IN_PROGRESS = "inProgress"
+    # Submitted -> formally marked
+    SUBMITTED = "Submitted"
+    # Completed -> Either formally Submitted and FullyGraded, or auto graded as "correct"
+    COMPLETED = "Completed"
+
+
+class GradingStatuses:
+    FULLY_GRADED = 'FullyGraded'
+    PENDING = 'Pending'
+    PENDING_MANUAL = 'PendingManual'
+    FAILED = 'Failed'
+    NOT_READY = 'NotReady'
+
+
 class Submission(Base):
     code = Column(Text(), default="")
     extra_files = Column(Text(), default="")
@@ -20,20 +39,15 @@ class Submission(Base):
     # Should be treated as out of X/100
     score = Column(Integer(), default=0)
     correct = Column(Boolean(), default=False)
+    submission_status = Column(String(255), default=SubmissionStatuses.STARTED)
+    grading_status = Column(String(255), default=GradingStatuses.NOT_READY)
     # Tracking
     assignment_id = Column(Integer(), ForeignKey('assignment.id'))
+    assignment_group_id = Column(Integer(), ForeignKey('assignment_group.id'), nullable=True)
     course_id = Column(Integer(), ForeignKey('course.id'))
     user_id = Column(Integer(), ForeignKey('user.id'))
     assignment_version = Column(Integer(), default=0)
     version = Column(Integer(), default=0)
-    # Started -> not yet run
-    # inProgress -> Run, but not yet marked formally as "submitted"
-    # Submitted -> formally marked
-    # Completed -> Either formally Submitted and FullyGraded, or auto graded as "correct"
-    SUBMISSION_STATUSES = ['Started', 'inProgress', 'Submitted', 'Completed']
-    submission_status = Column(String(255), default='Started')
-    GRADING_STATUSES = ['FullyGraded', 'Pending', 'PendingManual', 'Failed', 'NotReady']
-    grading_status = Column(String(255), default='NotReady')
 
     assignment = relationship("Assignment")
 
@@ -108,36 +122,72 @@ class Submission(Base):
     def __str__(self):
         return '<Submission {} for {}>'.format(self.id, self.user_id)
 
+    def full_status(self):
+        if self.assignment.hidden:
+            return "????"
+        elif self.correct:
+            return "Complete"
+        elif self.assignment.reviewed:
+            if self.grading_status == "PendingManual":
+                return "Pending review"
+        elif self.score:
+            return "Incomplete ({}%)".format(self.status)
+        else:
+            return "Incomplete"
+
+    def full_score(self):
+        return float(self.correct) or self.score / 100.0
+
     @staticmethod
-    def from_assignment(assignment, user_id, course_id):
+    def from_assignment(assignment, user_id, course_id, assignment_group_id=None):
         submission = Submission(assignment_id=assignment.id,
                                 user_id=user_id,
+                                assignment_group_id=assignment_group_id,
                                 course_id=course_id,
                                 code=assignment.starting_code,
                                 extra_files=assignment.extra_starting_files,
-                                version=assignment.version)
+                                assignment_version=assignment.version)
         db.session.add(submission)
         db.session.commit()
         return submission
 
     @staticmethod
-    def load_or_new(assignment, user_id, course_id, new_submission_url=""):
-        submission = Submission.query.filter_by(assignment_id=assignment.id,
-                                                course_id=course_id,
-                                                user_id=user_id).first()
-        if not submission:
-            submission = Submission.from_assignment(assignment, user_id, course_id)
+    def get_submission(assignment_id, user_id, course_id):
+        return Submission.query.filter_by(assignment_id=assignment_id,
+                                          course_id=course_id,
+                                          user_id=user_id).first()
 
-        if new_submission_url is not None:
+    @staticmethod
+    def load_or_new(assignment, user_id, course_id, new_submission_url="", assignment_group_id=None):
+        submission = Submission.get_submission(assignment.id, course_id, user_id)
+        if not submission:
+            submission = Submission.from_assignment(assignment, user_id, course_id, assignment_group_id)
+
+        if new_submission_url:
             submission.endpoint = new_submission_url
             db.session.commit()
         return submission
 
-    def save_code(self, code):
-        self.code = code
+    STUDENT_FILENAMES = ("#extra_student_files.blockpy", "answer.py")
+
+    def save_code(self, filename, code):
+        if filename == "#extra_student_files.blockpy":
+            self.extra_files = code
+        elif filename == "answer.py":
+            self.code = code
         self.version += 1
         self.assignment_version = self.assignment.version
         db.session.commit()
+
+    def update_submission(self, score, correct):
+        was_changed = self.score != score or self.correct != correct
+        self.score = score
+        self.correct = correct
+        if self.correct:
+            self.submission_status = SubmissionStatuses.COMPLETED
+            self.grading_status = GradingStatuses.FULLY_GRADED
+        db.session.commit()
+        return was_changed
 
     @staticmethod
     def save_correct(user_id, assignment_id, course_id):
@@ -180,9 +230,9 @@ class Submission(Base):
         sub_blocks_folder = os.path.join(app.config['UPLOADS_DIR'], 'submission_blocks')
         image_path = os.path.join(sub_blocks_folder, str(self.id) + '.png')
         if image != "":
-            converted_image = base64.b64encode(image[22:])
+            converted_image = base64.b64decode(image[22:])
             with open(image_path, 'wb') as image_file:
-                image_file.write(converted_image);
+                image_file.write(converted_image)
             return url_for('blockpy.get_submission_image',
                            submission_id=self.id,
                            _external=True)
@@ -212,22 +262,3 @@ class Submission(Base):
 
         with open(file_name, 'w') as blockly_logfile:
             blockly_logfile.write(self.code)
-
-    def get_history(self):
-        '''
-        Retrieve all codes from disk
-        '''
-        directory = os.path.join(app.config['BLOCKPY_LOG_DIR'],
-                                 str(self.assignment_id),
-                                 str(self.user_id))
-        ensure_dirs(directory)
-        all_files = []
-        for file_name in os.listdir(directory):
-            full_path = os.path.join(directory, file_name)
-            with open(full_path, 'r') as blockly_logfile:
-                body = blockly_logfile.read()
-                all_files.append({
-                    'code': body,
-                    'time': file_name[:-2]
-                })
-        return all_files

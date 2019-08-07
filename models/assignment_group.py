@@ -2,6 +2,7 @@ from sqlalchemy import Column, String, Integer, ForeignKey, func
 from natsort import natsorted
 from models import models
 from models.models import Base, datetime_to_string, string_to_datetime, db
+from typing import List
 
 
 class AssignmentGroup(Base):
@@ -109,7 +110,7 @@ class AssignmentGroup(Base):
                 .filter(models.AssignmentGroupMembership.assignment_id == None)
                 .all())
 
-    def get_assignments(self):
+    def get_assignments(self) -> 'List[models.Assignment]':
         assignments = (models.Assignment.query
                 .join(models.AssignmentGroupMembership,
                       models.AssignmentGroupMembership.assignment_id == models.Assignment.id)
