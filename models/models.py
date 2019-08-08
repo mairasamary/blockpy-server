@@ -82,9 +82,10 @@ from models.authentication import Authentication
 from models.course import Course
 from models.log import Log
 from models.role import Role
+from models.review import Review
 from models.submission import Submission
 from models.sample_submission import SampleSubmission
 from models.user import User
 
 ALL_TABLES = (Assignment, AssignmentTag, AssignmentGroup, AssignmentGroupMembership,
-              Authentication, Course, Log, Role, Submission, User, SampleSubmission)
+              Authentication, Course, Log, Role, Review, Submission, User, SampleSubmission)

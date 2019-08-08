@@ -43,7 +43,7 @@ class Assignment(Base):
                            back_populates='assignments')
     sample_submissions = db.relationship("SampleSubmission", backref='assignment', lazy='dynamic')
 
-    __table_args__ = (UniqueConstraint("url", "course_id", name="url_course_index"),)
+    __table_args__ = (UniqueConstraint("course_id", "url", name="url_course_index"),)
 
     def encode_json(self, use_owner=True):
         return {
