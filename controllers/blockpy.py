@@ -129,7 +129,7 @@ def save_file(lti=lti):
         return save_student_file(filename, course_id, user)
     if filename in Assignment.INSTRUCTOR_FILENAMES:
         return save_instructor_file(course_id, user, filename)
-    return ajax_failure("Unknown filename: "+str(course_id))
+    return ajax_failure("Unknown filename: "+str(filename))
 
 
 @require_request_parameters("submission_id", "code")
