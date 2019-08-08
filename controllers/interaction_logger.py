@@ -56,7 +56,7 @@ def setup_logging(app):
         }
     }
     if app.config['IS_PRODUCTION']:
-        logging_configuration['handlers']['fileHandler']['class'] = 'logging.handlers.TimedRotatingFileHandler'
-        logging_configuration['handlers']['fileHandler']['when'] = 'D'
+        logging_configuration['handlers']['errorHandler']['class'] = 'logging.handlers.TimedRotatingFileHandler'
+        logging_configuration['handlers']['errorHandler']['when'] = 'D'
 
     logging.config.dictConfig(logging_configuration)

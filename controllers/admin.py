@@ -125,7 +125,7 @@ def _render_version(view, context, model, name):
 
 
 def _smaller(view, context, model, name):
-    return Markup("<small>" + getattr(model, name) + "</small>")
+    return Markup("<small>" + (getattr(model, name) or "") + "</small>")
 
 
 class RoleView(RegularView):
@@ -222,7 +222,7 @@ class SubmissionView(RegularView):
                    'code', 'correct', 'status',
                    'version', 'url'
                    )
-    column_formatters = {'code': _render_code, 'url': _smaller,
+    column_formatters = {'code': _render_code, 'endpoint': _smaller,
                          'version': _render_version}
 
 
