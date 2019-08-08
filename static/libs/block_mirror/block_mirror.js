@@ -520,8 +520,6 @@ BlockMirrorTextEditor.prototype.changed = function (codeMirror, event) {
 
   if (!this.silentEvents_) {
     var handleChange = function handleChange() {
-      console.log(_this.getCode(), codeMirror, event);
-
       var newCode = _this.getCode();
 
       _this.blockMirror.blockEditor.setCode(newCode, true);
@@ -1101,12 +1099,12 @@ BlockMirrorTextToBlocks.prototype.convertBody = function (node, parent) {
 
     for (var commentLineInProgram in this.comments) {
       if (commentLineInProgram < lineNumberInProgram) {
-        commentChild = this.ast_Comment(this.comments[commentLineInProgram], commentLineInProgram);
+        var commentChild = this.ast_Comment(this.comments[commentLineInProgram], commentLineInProgram);
 
         if (previousLineInProgram == null) {
           nestChild(commentChild);
         } else {
-          skipped_previous_line = Math.abs(previousLineInProgram - commentLineInProgram) > 1;
+          var skipped_previous_line = Math.abs(previousLineInProgram - commentLineInProgram) > 1;
 
           if (is_top_level && skipped_previous_line) {
             addPeer(commentChild);
@@ -1156,23 +1154,25 @@ BlockMirrorTextToBlocks.prototype.convertBody = function (node, parent) {
   var lastLineNumber = lineNumberInProgram + 1;
 
   if (lastLineNumber in this.comments) {
-    commentChild = this.ast_Comment(this.comments[lastLineNumber], lastLineNumber);
-    nestChild(commentChild);
+    var _commentChild = this.ast_Comment(this.comments[lastLineNumber], lastLineNumber);
+
+    nestChild(_commentChild);
     delete this.comments[lastLineNumber];
   } // Handle any extra comments that stuck around
 
 
   if (is_top_level) {
     for (var commentLineInProgram in this.comments) {
-      commentChild = this.ast_Comment(this.comments[commentLineInProgram], commentLineInProgram);
+      var _commentChild2 = this.ast_Comment(this.comments[commentLineInProgram], commentLineInProgram);
+
       distance = commentLineInProgram - previousLineInProgram;
 
       if (previousLineInProgram == null) {
-        addPeer(commentChild);
+        addPeer(_commentChild2);
       } else if (distance > 1) {
-        addPeer(commentChild);
+        addPeer(_commentChild2);
       } else {
-        nestChild(commentChild);
+        nestChild(_commentChild2);
       }
 
       previousLineInProgram = commentLineInProgram;

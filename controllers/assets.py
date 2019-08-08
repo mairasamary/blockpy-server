@@ -48,7 +48,7 @@ bundles = {
     'blockpy_js': Bundle(
         "libs/block_mirror/block_mirror.js",
         #"libs/blockpy/blockpy.js",
-        "../../blockpy-edu/blockpy/dist/blockpy.js",
+        "libs/blockpy/blockpy.js" if app.config["IS_PRODUCTION"] else "../../blockpy-edu/blockpy/dist/blockpy.js",
         output='gen/blockpy.js'
     ),
 
@@ -72,7 +72,7 @@ bundles = {
 
     'blockpy_css': Bundle(
         "libs/block_mirror/block_mirror.css",
-        "../../blockpy-edu/blockpy/dist/blockpy.css",
+        "libs/blockpy/blockpy.css" if app.config["IS_PRODUCTION"] else "../../blockpy-edu/blockpy/dist/blockpy.css",
         output='gen/blockpy.css'
     ),
         
