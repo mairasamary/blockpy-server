@@ -219,7 +219,7 @@ def parse_assignment_load():
     # Course ID of the user
     course_id = maybe_int(request.args.get('course_id', None))
     if course_id is None:
-        course_id = int(g.course.id) if g.course else None
+        course_id = int(g.course.id) if 'course' in g and g.course else None
     # LTI submission URL
     new_submission_url = request.form.get('lis_result_sourcedid', None)
     # Embedded?
