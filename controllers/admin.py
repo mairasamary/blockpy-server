@@ -143,7 +143,7 @@ class AssignmentView(RegularView):
     column_list = ('id', 'date_modified',
                    'owner_id', 'course_id',
                    'name',  # 'type', #'body',
-                   'give_feedback',  # 'starting_code',
+                   'on_run',  # 'starting_code',
                    'settings',
                    # 'visibility', 'disabled',
                    # 'mode',
@@ -157,7 +157,7 @@ class AssignmentView(RegularView):
     }
     column_formatters = {'settings': _render_settings,
                          # 'type': _render_assignment_type,
-                         'give_feedback': _render_assignment_settings  # _render_code,
+                         'on_run': _render_assignment_settings  # _render_code,
                          # 'starting_code': _render_code
                          }
 
@@ -178,11 +178,11 @@ class AssignmentGroupView(RegularView):
 
 class LogView(RegularView):
     column_list = ('id', 'date_modified',
-                   'assignment_id', 'user_id',
-                   'event', 'action',
-                   'body'
+                   'course_id', 'assignment_id', 'subject_id',
+                   'event_type', 'category',
+                   'label', 'message'
                    )
-    column_formatters = {'body': _render_code}
+    column_formatters = {'message': _render_code}
 
 
 class AssignmentGroupMembershipView(RegularView):
