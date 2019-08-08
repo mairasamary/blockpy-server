@@ -124,11 +124,12 @@ def save_file(lti=lti):
     course_id = get_course_id()
     user, user_id = get_user()
     if course_id is None:
-        ajax_failure("Course ID was not made available")
+        return ajax_failure("Course ID was not made available")
     if filename in Submission.STUDENT_FILENAMES:
         return save_student_file(filename, course_id, user)
     if filename in Assignment.INSTRUCTOR_FILENAMES:
         return save_instructor_file(course_id, user, filename)
+    return ajax_failure("Unknown filename: "+str(course_id))
 
 
 @require_request_parameters("submission_id", "code")
