@@ -107,7 +107,8 @@ class LTIOAuthServer(oauth2.Server):
             return None
 
         cert = consumer.get('cert', None)
-        return cert
+        keyf = consumer.get('certkey', cert)
+        return cert, keyf
 
 
 class LTIException(Exception):
@@ -157,7 +158,8 @@ def _post_patched_request(consumers, lti_key, body,
     oauth_server = LTIOAuthServer(consumers)
     oauth_server.add_signature_method(SignatureMethod_HMAC_SHA1_Unicode())
     lti_consumer = oauth_server.lookup_consumer(lti_key)
-    lti_cert = oauth_server.lookup_cert(lti_key)
+    lti_cert, key_cert = oauth_server.lookup_cert(lti_key)
+
 
     secret = lti_consumer.secret
 
@@ -165,7 +167,7 @@ def _post_patched_request(consumers, lti_key, body,
     client = oauth2.Client(consumer)
 
     if lti_cert:
-        client.add_certificate(key=lti_cert, cert=lti_cert, domain='')
+        client.add_certificate(key=key_cert, cert=lti_cert, domain='')
         log.debug("cert %s", lti_cert)
     import httplib2
 

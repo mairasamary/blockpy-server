@@ -49,7 +49,8 @@ class Config(object):
         "consumers": {
             secrets.get("CONSUMER_KEY", "__consumer_key__"): {
                 "secret": secrets.get("CONSUMER_KEY_SECRET", "__lti_secret__"),
-                "cert": secrets.get("CONSUMER_KEY_PEM_FILE", "consumer_key.pem")
+                "cert": secrets.get("CONSUMER_KEY_PEM_FILE", "consumer_cert.pem"),
+                "certkey": secrets.get("CONSUMER_KEY_CERT", "consumer_key.pem")
             }
         }
     }
