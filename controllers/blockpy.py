@@ -214,7 +214,6 @@ def get_groups_submissions(group_id, user_id, course_id):
     group = AssignmentGroup.by_id(group_id)
     check_resource_exists(group, "AssignmentGroup", group_id)
     assignments = group.get_assignments()
-    app.logger.info(repr([assignments, user_id, course_id]))
     submissions = [assignment.load(user_id, course_id=course_id) for assignment in assignments]
     return group, assignments, submissions
 
@@ -297,6 +296,7 @@ def lti_post_grade(lti, submission, lis_result_sourcedid, assignment_group_id, u
 @lti()
 def update_submission(lti, lti_exception=None):
     # Get parameters
+    app.logger.warning(repr(session.items()))
     submission_id = maybe_int(request.values.get("submission_id"))
     lis_result_sourcedid = request.values.get('lis_result_sourcedid')
     assignment_group_id = maybe_int(request.values.get('assignment_group_id'))
