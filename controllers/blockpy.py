@@ -73,7 +73,7 @@ def load_submission(lti=lti):
 @blueprint_blockpy.route('/index/', methods=['GET', 'POST'])
 @blueprint_blockpy.route('/', methods=['GET', 'POST'])
 @blueprint_blockpy.route('/load', methods=['GET', 'POST'])
-def load(lti=lti):
+def load(lti):
     editor_information = parse_assignment_load()
     return load_editor(lti, editor_information)
 
@@ -296,8 +296,6 @@ def lti_post_grade(lti, submission, lis_result_sourcedid, assignment_group_id, u
 @lti()
 def update_submission(lti, lti_exception=None):
     # Get parameters
-    app.logger.warning(repr(session.items()))
-    app.logger.warning(repr(list(request.values.items())))
     submission_id = maybe_int(request.values.get("submission_id"))
     lis_result_sourcedid = request.values.get('lis_result_sourcedid')
     assignment_group_id = maybe_int(request.values.get('assignment_group_id'))
