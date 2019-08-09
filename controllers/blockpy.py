@@ -73,7 +73,7 @@ def load_submission(lti=lti):
 @blueprint_blockpy.route('/index/', methods=['GET', 'POST'])
 @blueprint_blockpy.route('/', methods=['GET', 'POST'])
 @blueprint_blockpy.route('/load', methods=['GET', 'POST'])
-def load(lti):
+def load(lti=lti):
     editor_information = parse_assignment_load()
     return load_editor(lti, editor_information)
 
