@@ -214,6 +214,7 @@ def get_groups_submissions(group_id, user_id, course_id):
     group = AssignmentGroup.by_id(group_id)
     check_resource_exists(group, "AssignmentGroup", group_id)
     assignments = group.get_assignments()
+    app.logger.info(repr([assignments, user_id, course_id]))
     submissions = [assignment.load(user_id, course_id=course_id) for assignment in assignments]
     return group, assignments, submissions
 
