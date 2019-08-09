@@ -152,7 +152,7 @@ class Submission(Base):
         return submission
 
     @staticmethod
-    def get_submission(assignment_id, user_id, course_id):
+    def get_submission(assignment_id, course_id, user_id):
         return Submission.query.filter_by(assignment_id=assignment_id,
                                           course_id=course_id,
                                           user_id=user_id).first()
