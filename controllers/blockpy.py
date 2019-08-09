@@ -297,7 +297,7 @@ def lti_post_grade(lti, submission, lis_result_sourcedid, assignment_group_id, u
 def update_submission(lti, lti_exception=None):
     # Get parameters
     app.logger.warning(repr(session.items()))
-    app.logger.warning(repr(request.values.items()))
+    app.logger.warning(repr(list(request.values.items())))
     submission_id = maybe_int(request.values.get("submission_id"))
     lis_result_sourcedid = request.values.get('lis_result_sourcedid')
     assignment_group_id = maybe_int(request.values.get('assignment_group_id'))
