@@ -152,14 +152,14 @@ class Submission(Base):
         return submission
 
     @staticmethod
-    def get_submission(assignment_id, course_id, user_id):
+    def get_submission(assignment_id, user_id, course_id):
         return Submission.query.filter_by(assignment_id=assignment_id,
                                           course_id=course_id,
                                           user_id=user_id).first()
 
     @staticmethod
     def load_or_new(assignment, user_id, course_id, new_submission_url="", assignment_group_id=None):
-        submission = Submission.get_submission(assignment.id, course_id, user_id)
+        submission = Submission.get_submission(assignment.id, user_id, course_id)
         if not submission:
             submission = Submission.from_assignment(assignment, user_id, course_id, assignment_group_id)
 
