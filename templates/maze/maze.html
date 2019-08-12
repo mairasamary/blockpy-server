@@ -38,9 +38,9 @@
         LEVEL_SET = {{ level }};
         MAZE_URL_MAP = {
             'save_code': '{{ url_for("blockpy.save_file")}}',
-            'save_success': '{{ url_for("blockpy.save_correct")}}',
+            'save_success': '{{ url_for("blockpy.update_submission")}}',
             'load_success': {{ "true" if submission.correct else "false" }},
-            'log_event': '{{ url_for("blockpy.save_events") }}',
+            'log_event': '{{ url_for("blockpy.log_event") }}',
         };
 
         function alertBox(message) {
