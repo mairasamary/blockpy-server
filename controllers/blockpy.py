@@ -103,15 +103,18 @@ def load_assignment(lti=lti):
     # Get arguments
     assignment_id = int(request.values.get('assignment_id'))
     assignment = Assignment.by_id(assignment_id)
-    course_id = get_course_id()
+    course_id = get_course_id(True)
     user, user_id = get_user()
     # Verify exists
     check_resource_exists(assignment, "Assignment", assignment_id)
     # Verify permissions
-    editor_information = assignment.for_editor(user_id, course_id)
-    # Log the event
-    if user is not None:
-        make_log_entry(assignment_id, assignment.version, course_id, user_id, 'Session.Start')
+    if course_id is None:
+        editor_information = assignment.for_read_only_editor(user_id)
+    else:
+        editor_information = assignment.for_editor(user_id, course_id)
+        # Log the event
+        if user is not None:
+            make_log_entry(assignment_id, assignment.version, course_id, user_id, 'Session.Start')
     return ajax_success(editor_information)
 
 

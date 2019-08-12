@@ -271,6 +271,12 @@ class Assignment(Base):
     def load(self, user_id, course_id):
         return models.Submission.get_submission(self.id, user_id, course_id)
 
+    def for_read_only_editor(self, user_id):
+        return {
+            'assignment': self.encode_json(),
+            'submission': None
+        }
+
     def for_editor(self, user_id, course_id):
         # Trust the user for now that they belong here, and give them a submission
         submission = (None if user_id is None else

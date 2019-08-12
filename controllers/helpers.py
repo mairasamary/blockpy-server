@@ -290,15 +290,17 @@ def get_lti_property(property_name, default_value=None):
     raise KeyError('Property {0} not found in form or session.'.format(property_name))
 
 
-def get_course_id():
+def get_course_id(okay_if_failure=False):
     course_id = request.args.get('course_id')
     if course_id is None:
         if 'course' in g:
             return g.course.id
-        ajax_failure("No course_id given and not logged into a course.")
+        if not okay_if_failure:
+            ajax_failure("No course_id given and not logged into a course.")
     course_id = maybe_int(course_id)
     if course_id is None:
-        ajax_failure("Course ID was not an integer")
+        if not okay_if_failure:
+            ajax_failure("Course ID was not an integer")
     return course_id
 
 
