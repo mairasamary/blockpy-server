@@ -1,7 +1,5 @@
 "use strict";
 
-function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
-
 /**
  * Initialise the database of variable names.
  * @param {!Blockly.Workspace} workspace Workspace to generate code from.
@@ -368,7 +366,7 @@ function BlockMirrorTextEditor(blockMirror) {
     tabSize: 4,
     indentWithTabs: false,
     matchBrackets: true,
-    extraKeys: _defineProperty({
+    extraKeys: {
       'Tab': 'indentMore',
       'Shift-Tab': 'indentLess',
       'Ctrl-Enter': blockMirror.run,
@@ -382,7 +380,8 @@ function BlockMirrorTextEditor(blockMirror) {
       "F11": function F11(cm) {
         cm.setOption("fullScreen", !cm.getOption("fullScreen"));
       }
-    }, "Esc", function Esc(cm) {}),
+    },
+    // TODO: Hide gutters when short on space
     foldGutter: true,
     gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"]
   };
@@ -485,7 +484,18 @@ BlockMirrorTextEditor.prototype.setMode = function (mode) {
   } // Should we indent the toolbox
 
 
-  if (configuration.indentSidebar) {
+  this.updateGutter(configuration);
+};
+
+BlockMirrorTextEditor.prototype.updateGutter = function (configuration) {
+  if (configuration === undefined) {
+    var mode = this.blockMirror.mode_.toLowerCase();
+    configuration = this.VIEW_CONFIGURATIONS[mode];
+  }
+
+  var isBigWindow = window.innerWidth >= this.blockMirror.BREAK_WIDTH;
+
+  if (configuration.indentSidebar && isBigWindow) {
     var gutters = this.textContainer.querySelector('.CodeMirror-gutters');
     var gutterWidth = gutters.offsetWidth;
     var toolbarWidth = this.blockMirror.blockEditor.getToolbarWidth();
@@ -916,7 +926,7 @@ BlockMirrorTextToBlocks.prototype.convertSource = function (filename, python_sou
         this.source = this.source.slice(0, previousLine);
         python_source = this.source.join("\n");
       } else {
-        console.error(e);
+        //console.error(e);
         xml.appendChild(BlockMirrorTextToBlocks.raw_block(originalSource));
         return {
           "xml": BlockMirrorTextToBlocks.xmlToString(xml),
@@ -1385,10 +1395,10 @@ BlockMirrorTextToBlocks.COLOR = {
   FUNCTIONS: 210,
   OO: 240,
   CONTROL: 270,
-  MATH: 150,
+  MATH: 190,
   TEXT: 120,
-  FILE: 125,
-  PLOTTING: 135,
+  FILE: 170,
+  PLOTTING: 140,
   LOGIC: 345,
   PYTHON: 60,
   EXCEPTIONS: 300,
@@ -1532,7 +1542,7 @@ BlockMirrorTextToBlocks.prototype.FUNCTION_SIGNATURES = {
   },
   'input': {
     returns: true,
-    colour: BlockMirrorTextToBlocks.COLOR.TEXT,
+    colour: BlockMirrorTextToBlocks.COLOR.FILE,
     simple: ['prompt']
   },
   'int': {
@@ -1606,7 +1616,7 @@ BlockMirrorTextToBlocks.prototype.FUNCTION_SIGNATURES = {
   },
   'print': {
     returns: false,
-    colour: BlockMirrorTextToBlocks.COLOR.TEXT,
+    colour: BlockMirrorTextToBlocks.COLOR.FILE,
     simple: ['message'],
     full: ['*messages', 'sep', 'end', 'file', 'flush']
   },
@@ -6023,13 +6033,13 @@ BlockMirrorTextToBlocks.BLOCKS.push({
     var typed = "";
 
     if (parameterTyped) {
-      typed = ": " + Blockly.Python.valueToCode(block, 'TYPE', Blockly.Python.ORDER_NONE) || Blockly.Python.blank;
+      typed = ": " + (Blockly.Python.valueToCode(block, 'TYPE', Blockly.Python.ORDER_NONE) || Blockly.Python.blank);
     }
 
     var defaulted = "";
 
     if (parameterDefault) {
-      defaulted = "=" + Blockly.Python.valueToCode(block, 'DEFAULT', Blockly.Python.ORDER_NONE) || Blockly.Python.blank;
+      defaulted = "=" + (Blockly.Python.valueToCode(block, 'DEFAULT', Blockly.Python.ORDER_NONE) || Blockly.Python.blank);
     }
 
     return [parameterPrefix + name + typed + defaulted, Blockly.Python.ORDER_ATOMIC];

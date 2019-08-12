@@ -77,9 +77,9 @@
                 'attachment.point': document.getElementById('blockpy-div'),
                 "urls": {
                     "importDatasets": {{ config['CORGIS_URL']|tojson }},
+                    'loadAssignment': {{ url_for('blockpy.load_assignment')|tojson }},
                     {% if submissions %}
                         'saveAssignment': {{ url_for('blockpy.save_assignment')|tojson }},
-                        'loadAssignment': {{ url_for('blockpy.load_assignment')|tojson }},
                         'loadHistory': {{ url_for('blockpy.load_history')|tojson }},
                         'logEvent': {{ url_for('blockpy.log_event')|tojson }},
                         'saveFile': {{ url_for('blockpy.save_file')|tojson }},
