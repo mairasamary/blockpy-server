@@ -48,7 +48,11 @@ You can download the server from our public GitHub repo:
 > git clone https://github.com/blockpy-edu/blockpy-server.git .
 ```
 
-Using Git will allow you to pull in the inevitable bug fixes we'll be publishing.
+Using Git will allow you to pull in the inevitable bug fixes we'll be publishing. Right now, all of our latest madness is in the Summer2019 branch, but we hope to merge to master in a few days. For now, checkout out lunacy:
+
+```bash
+> git checkout summer2019
+```
 
 ## VirtualEnv
 
