@@ -25,4 +25,5 @@ create_directories:
 	mkdir database/
 	mkdir certs/
 	mkdir logs/
+	mkdir logs/uwsgi/
 	mkdir backups/
