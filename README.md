@@ -295,6 +295,10 @@ And reload them when they're ready:
 > nginx -s reload
 ```
 
+## INI File Setup
+
+You should edit your `blockpy.ini` file in the BlockPy Server directory, if you have a different directory than `/var/www/blockpy-server/`
+
 ## UWSGI Setup
 
 You'll need to register your UWSGI script with your server's `systemd` or equivalent. Here's our `/etc/systemd/system/uwsgi.service` file:
