@@ -142,7 +142,7 @@ class RoleView(RegularView):
 class AssignmentView(RegularView):
     column_list = ('id', 'date_modified',
                    'owner_id', 'course_id',
-                   'name',  # 'type', #'body',
+                   'name',  "url", # 'type', #'body',
                    'on_run',  # 'starting_code',
                    'settings',
                    # 'visibility', 'disabled',
@@ -171,7 +171,7 @@ class AssignmentGroupView(RegularView):
             '\n'.join(("<li>{}</li>".format(assignment.name) for assignment in assignments))))
     column_list = ('id', 'date_modified',
                    'owner_id', 'course_id',
-                   'name', 'position', 'assignments'
+                   'name', 'url', 'assignments'
                    )
     column_formatters = {'assignments': _list_assignments}
 
