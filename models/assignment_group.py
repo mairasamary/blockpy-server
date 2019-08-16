@@ -23,7 +23,9 @@ class AssignmentGroup(Base):
         user = models.User.query.get(self.owner_id)
         return {'_schema_version': 2,
                 'name': self.name,
-                'fork_id': self.fork_id,
+                'url': self.url,
+                'forked_id': self.forked_id,
+                'forked_version': self.forked_version,
                 'owner_id': self.owner_id,
                 'owner_id__email': user.email if user else '',
                 'course_id': self.course_id,

@@ -2,7 +2,7 @@
 {% extends 'helpers/layout.html' %}
 
 {% block title %}
-Select Assignment
+    Select Assignment
 {% endblock %}
 
 {% block statusbar %}
@@ -10,605 +10,611 @@ Select Assignment
 
 {% block extrahead %}
 
-<style>
-    .overlay {
-        position: absolute;
-        top: 0;
-        left:0;
-        background-color: rgba(255, 255, 255, .5);
-        z-index:1002;
-        overflow:auto;
-        width:100%;
-        height:100%;
-    }
-</style>
-
-<script type='text/javascript' src="{{ url_for('static', filename='libs/naturalSort.js') }}"></script>
-
-<script type='text/javascript'>
-
-function findById(anArray, id, isFunc) {
-    for (var i = 0, len = anArray.length; i < len; i++) {
-        if (isFunc && anArray[i].id() === id) {
-            return anArray[i];
-        } else if (!isFunc && anArray[i].id === id) {
-            return anArray[i];
+    <style>
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            background-color: rgba(255, 255, 255, .5);
+            z-index: 1002;
+            overflow: auto;
+            width: 100%;
+            height: 100%;
         }
-    }
-    return null; // Nothing found
-}
+    </style>
 
-var sortNames = function(a, b) {
-    if (a.id == -1)
-        return 1;
-    if (b.id == -1)
-        return -1;
-    if (typeof a.name === "function") {
-        return naturalSort(a.name(), b.name());
-    } else {
-        return naturalSort(a.name, b.name);
-    }
-}
+    <script type='text/javascript'>
 
-function MainModel() {
-    var self = this;
-    var filteredCourse = localStorage.getItem('filteredCourse');
-    self.onServer = ko.observable(false);
-    var hiddenGroups = localStorage.getItem("hiddenGroups");
-    if (hiddenGroups === null) {
-        localStorage.setItem("hiddenGroups", "[]");
-        self.hiddenGroups= ko.observableArray([]);
-    } else {
-        self.hiddenGroups= ko.observableArray(JSON.parse(hiddenGroups));
-    }
-    self.hiddenGroups.subscribe(function(newValue) {
-        localStorage.setItem("hiddenGroups", JSON.stringify(self.hiddenGroups()));
-    });
-    self.filteredCourse = ko.observable(filteredCourse == null ? -1 : filteredCourse);
-    self.filteredCourse.subscribe(function(newValue) {
-        localStorage.setItem('filteredCourse', newValue);
-        self.createAssignmentCourse(newValue);
-        self.createGroupCourse(newValue);
-    });
-    self.createAssignmentType = ko.observable('BlockPy');
-    self.createAssignmentName = ko.observable('Day 1 - #1.1');
-    self.createAssignmentLevel = ko.observable('Level 1');
-    self.createAssignmentCourse = ko.observable();
-    self.createGroupName = ko.observable("Day X - ");
-    self.createGroupCourse = ko.observable();
-    self.assignments = ko.observableArray([
-        {% for assignment in assignments %}
-        {   'name': ko.observable({{ assignment[0].name|tojson }}),
-            'type': ko.observable({{ assignment[0].type|tojson }}),
-            'course_id': ko.observable({{ assignment[0].course_id|tojson }}),
-            'group_id': ko.observable({{ assignment[1].id|tojson if assignment[1] else -1}}),
-            'id': {{ assignment[0].id }},
-            'title': ko.observable("{{assignment[0].title()}}"),
-            'select': "{{ return_url }}?url={{url_for('assignments.load', assignment_id=assignment[0].id, _external=True, embed= menu == 'embed') | urlencode}}&return_type={{ 'lti_launch_url' if menu != 'embed' else 'iframe' }}&title={{ assignment[0].title()|urlencode }}&text=BlockPy%20Exercise&width=100%25&height=600", 
-            'edit': "{{ url_for('assignments.load', assignment_id=assignment[0].id, course_id=assignment[0].course_id )|safe }}",
-            'modified': ko.observable('{{ assignment[0].date_modified.strftime(" %I:%M%p on %a %d, %b %Y").replace(" 0", " ") }}'),
-            'body': ko.observable("{{ assignment[0].body|striptags|truncate(255) if assignment[0].type != 'poll' else '' }}")
-        }{{ "," if not loop.last }}
-        {% endfor %}
-    ]);
-    self.groups = ko.observableArray([
-        {% for course in course_groups %}
-        {   'name': ko.observable({{ course.name|tojson }}),
-            'id': ko.observable({{ course.id|tojson }}),
-            'groups': ko.observableArray([
-            {% for group in course.groups %}
-            {   'name': ko.observable({{ group.name|tojson }}),
-                'id': ko.observable({{ group.id|tojson }}),
-                'select': ko.observable("{{ return_url }}?url={{url_for('assignments.load', assignment_group_id=group.id, _external=True, embed= menu == 'embed') | urlencode}}&return_type={{ 'lti_launch_url' if menu != 'embed' else 'iframe' }}&title={{ group.name|urlencode }}&text=BlockPy%20Exercise&width=100%25&height=600")
-            }{{ "," if not loop.last }}
-            {% endfor %}
-            ])
-        }{{ "," if not loop.last }}
-        {% endfor %}
-    ]);
-    self.strayGroup = self.groups();
-    self.groupedAssignments = ko.pureComputed(function() {
-        var result = [];
-        var mappedCourses = {},
-            strayGroups = {};
-        self.assignments().forEach(function(v, i) {
-            var course_id = v.course_id(), 
-                group_id = v.group_id();
-            if (self.filteredCourse() != -1 && self.filteredCourse() != course_id) {
-                return;
-            }
-            if (!(course_id in mappedCourses)) {
-                var new_course = findById(self.groups(), course_id, true);
-                //console.log(self.groups(), course_id, new_course);
-                mappedCourses[course_id] = {'id': course_id, 
-                                            'name': new_course.name(),
-                                            'groups': new_course.groups().map(function(elem) {
-                                                return {'id': elem.id(), 'name': elem.name(), 'assignments': [], 'select': elem.select}
-                                            })};
-                strayGroups[course_id] = {
-                    'id': -1,
-                    'name': 'Ungrouped Assignments',
-                    'select': '',
-                    'assignments': []
-                };
-                mappedCourses[course_id].groups.push(strayGroups[course_id])
-                result.push(mappedCourses[course_id]);
-            }
-            var course = mappedCourses[course_id];
-            var group = findById(course.groups, group_id, false);
-            if (group == null) {
-                strayGroups[course_id].assignments.push(v);
-            } else {
-                group.assignments.push(v);
-            }
-        });
-        result.forEach(function(v, i) {
-            v.groups.sort(sortNames);
-            v.groups.forEach(function(vv, ii) {
-                vv.assignments.sort(sortNames);
-            });
-        });
-        result.sort(sortNames);
-        return result;
-    });
-    
-    self.moveMembership = function(assignment, old_group, new_group) {
-        self.onServer(true);
-        $.post("{{ url_for('assignment_group.move_membership') }}", {
-                'new_group_id': new_group.id,
-                'old_group_id': old_group.id,
-                'assignment_id': assignment.id
-           }, function(data) {
-            self.onServer(false);
-            if (data.success) {
-                assignment.group_id(new_group.id);
-            } else {
-                console.error(data.message);
-            }
-        });
-    };
-    
-    self.moveCourse = function(assignment, old_course) {
-        var new_course = this;
-        self.onServer(true);
-        $.post("{{ url_for('assignments.move_course') }}", {
-                'new_course_id': new_course.id(),
-                'assignment_id': assignment.id
-           }, function(data) {
-            self.onServer(false);
-            if (data.success) {
-                assignment.course_id(new_course.id());
-            } else {
-                console.error(data.message);
-            }
-        });
-    };
-    
-    self.toggleGroup = function(course, group, event) {
-        console.log(group_id, self.hiddenGroups());
-        var course_id = course.id,
-            group_id = group.id;
-        if (self.hiddenGroups.indexOf(group_id) == -1) {
-            self.hiddenGroups.push(group_id);
-        } else {
-            self.hiddenGroups.remove(group_id);
-        }
-    }
-    self.getGroupVisibility = function(group_id) {
-        return self.hiddenGroups.indexOf(group_id) == -1;
-    };
-    self.getGroupClass = function(group_id) {
-        if (self.hiddenGroups.indexOf(group_id) != -1) {
-            return 'hidden-group';
-        } else {
-            return '';
-        }
-    };
-    /*
-        if (group_id in showHideMap) {
-            showHideMap[group_id] = !showHideMap[group_id];
-        } else {
-            showHideMap[group_id] = false;
-        }
-        var visibilityGroup = $(".visibility-group-"+group_id),
-            visibilityGroupMaster = $(".visibility-group-master-"+group_id);
-        if (showHideMap[group_id]) {
-            visibilityGroupMaster.removeClass("hidden-group");
-            visibilityGroup.show();
-        } else {
-            visibilityGroupMaster.addClass("hidden-group");
-            visibilityGroup.hide();
-        }
-    }*/
-    
-    self.renameGroup = function(course, group) {
-        new_name = window.prompt("Give a new name for this group:", group.name);
-        var course_id = course.id,
-            group_id = group.id;
-        if (new_name != null) {
-            self.onServer(true);
-            $.post("{{ url_for('assignment_group.edit_group') }}", {
-                'new_name': new_name,
-                'assignment_group_id': group_id
-            }, function(data) {
-                self.onServer(false);
-                if (data.success) {
-                    // The group here is a clone of the real one, can't modify it!
-                    var course = findById(self.groups(), course_id, true);
-                    var group = findById(course.groups(), group_id, true);
-                    group.name(new_name);
-                } else {
-                    console.error(data.message);
+        function findById(anArray, id, isFunc) {
+            for (var i = 0, len = anArray.length; i < len; i++) {
+                if (isFunc && anArray[i].id() === id) {
+                    return anArray[i];
+                } else if (!isFunc && anArray[i].id === id) {
+                    return anArray[i];
                 }
-            });
+            }
+            return null; // Nothing found
         }
-        return false;
-    };
-    
-    self.addGroup = function() {
-        var course_id = parseInt(mainModel.createGroupCourse());
-        var name = mainModel.createGroupName();
-        self.onServer(true);
-        $.post("{{ url_for('assignment_group.add_group') }}", {
-            "course_id": course_id,
-            'menu': "{{ menu }}",
-            "name": name
-        }, function(data) {
-            self.onServer(false);
-            if (data.success) {
-                $("#group-create").modal('hide');
-                var course = findById(self.groups(), course_id, true);
-                course.groups.push({
-                    'id': ko.observable(data.id),
-                    'name': ko.observable(data.name),
-                    'select': "{{ return_url }}?url="+data.select,
-                    'assignments': ko.observableArray()
+
+        var sortNames = function (a, b) {
+            if (a.id == -1)
+                return 1;
+            if (b.id == -1)
+                return -1;
+            if (typeof a.name === "function") {
+                return naturalSort(a.name(), b.name());
+            } else {
+                return naturalSort(a.name, b.name);
+            }
+        }
+
+        function MainModel() {
+            var self = this;
+            var filteredCourse = localStorage.getItem('filteredCourse');
+            self.onServer = ko.observable(false);
+            var hiddenGroups = localStorage.getItem("hiddenGroups");
+            if (hiddenGroups === null) {
+                localStorage.setItem("hiddenGroups", "[]");
+                self.hiddenGroups = ko.observableArray([]);
+            } else {
+                self.hiddenGroups = ko.observableArray(JSON.parse(hiddenGroups));
+            }
+            self.hiddenGroups.subscribe(function (newValue) {
+                localStorage.setItem("hiddenGroups", JSON.stringify(self.hiddenGroups()));
+            });
+            self.filteredCourse = ko.observable(filteredCourse == null ? -1 : filteredCourse);
+            self.filteredCourse.subscribe(function (newValue) {
+                localStorage.setItem('filteredCourse', newValue);
+                self.createAssignmentCourse(newValue);
+                self.createGroupCourse(newValue);
+            });
+            self.createAssignmentType = ko.observable('BlockPy');
+            self.createAssignmentName = ko.observable('Day 1 - #1.1');
+            self.createAssignmentLevel = ko.observable('Level 1');
+            self.createAssignmentCourse = ko.observable();
+            self.createGroupName = ko.observable("Day X - ");
+            self.createGroupCourse = ko.observable();
+            self.assignments = ko.observableArray([
+                {% for assignment in assignments %}
+                    {
+                        'name': ko.observable({{ assignment[0].name|tojson }}),
+                        'type': ko.observable({{ assignment[0].type|tojson }}),
+                        'course_id': ko.observable({{ assignment[0].course_id|tojson }}),
+                        'group_id': ko.observable({{ assignment[1].id|tojson if assignment[1] else -1}}),
+                        'id': {{ assignment[0].id }},
+                        'title': ko.observable("{{assignment[0].title()}}"),
+                        'select': "{{ return_url }}?url={{url_for('assignments.load', assignment_id=assignment[0].id, _external=True, embed= menu == 'embed') | urlencode}}&return_type={{ 'lti_launch_url' if menu != 'embed' else 'iframe' }}&title={{ assignment[0].title()|urlencode }}&text=BlockPy%20Exercise&width=100%25&height=600",
+                        'edit': "{{ url_for('assignments.load', assignment_id=assignment[0].id, course_id=assignment[0].course_id )|safe }}",
+                        'modified': ko.observable('{{ assignment[0].date_modified.strftime(" %I:%M%p on %a %d, %b %Y").replace(" 0", " ") }}'),
+                        'instructions': ko.observable("{{ assignment[0].instructions|striptags|truncate(255) if assignment[0].type != 'poll' else '' }}")
+                    }{{ "," if not loop.last }}
+                {% endfor %}
+            ]);
+            self.groups = ko.observableArray([
+                {% for course in course_groups %}
+                    {
+                        'name': ko.observable({{ course.name|tojson }}),
+                        'id': ko.observable({{ course.id|tojson }}),
+                        'groups': ko.observableArray([
+                            {% for group in course.groups %}
+                                {
+                                    'name': ko.observable({{ group.name|tojson }}),
+                                    'id': ko.observable({{ group.id|tojson }}),
+                                    'select': ko.observable("{{ return_url }}?url={{url_for('assignments.load', assignment_group_id=group.id, _external=True, embed= menu == 'embed') | urlencode}}&return_type={{ 'lti_launch_url' if menu != 'embed' else 'iframe' }}&title={{ group.name|urlencode }}&text=BlockPy%20Exercise&width=100%25&height=600")
+                                }{{ "," if not loop.last }}
+                            {% endfor %}
+                        ])
+                    }{{ "," if not loop.last }}
+                {% endfor %}
+            ]);
+            self.strayGroup = self.groups();
+            self.groupedAssignments = ko.pureComputed(function () {
+                var result = [];
+                var mappedCourses = {},
+                    strayGroups = {};
+                self.assignments().forEach(function (v, i) {
+                    var course_id = v.course_id(),
+                        group_id = v.group_id();
+                    if (self.filteredCourse() != -1 && self.filteredCourse() != course_id) {
+                        return;
+                    }
+                    if (!(course_id in mappedCourses)) {
+                        var new_course = findById(self.groups(), course_id, true);
+                        //console.log(self.groups(), course_id, new_course);
+                        mappedCourses[course_id] = {
+                            'id': course_id,
+                            'name': new_course.name(),
+                            'groups': new_course.groups().map(function (elem) {
+                                return {'id': elem.id(), 'name': elem.name(), 'assignments': [], 'select': elem.select}
+                            })
+                        };
+                        strayGroups[course_id] = {
+                            'id': -1,
+                            'name': 'Ungrouped Assignments',
+                            'select': '',
+                            'assignments': []
+                        };
+                        mappedCourses[course_id].groups.push(strayGroups[course_id])
+                        result.push(mappedCourses[course_id]);
+                    }
+                    var course = mappedCourses[course_id];
+                    var group = findById(course.groups, group_id, false);
+                    if (group == null) {
+                        strayGroups[course_id].assignments.push(v);
+                    } else {
+                        group.assignments.push(v);
+                    }
                 });
-            } else {
-                console.error(data.message);
-            }
-        });
-    };
-    
-    self.removeGroup = function(course, group) {
-        var course_id = course.id,
-            group_id = group.id;
-        if (group_id == -1) {
-            // Can't delete the Stray group.
-            return false;
-        }
-        var youSureHuh = confirm("Are you really sure you want to delete this group?");
-        if (youSureHuh != null) {
-            self.onServer(true);
-            $.post("{{ url_for('assignment_group.remove_group') }}", {
-                'assignment_group_id': group_id
-            }, function(data) {
-                self.onServer(false);
-                if (data.success) {
-                    var course = findById(self.groups(), course_id, true);
-                    course.groups.remove(function(a_group) { return a_group.id() == group_id});
-                } else {
-                    console.error(data.message);
-                }
-            });
-        }
-    }
-    
-    self.removeAssignment = function(parent_group, assignment) {
-        var assignment_id = assignment.id;
-        var youSureHuh = confirm("Are you really sure you want to delete this assignment?");
-        if (youSureHuh != null) {
-            self.onServer(true);
-            $.post("{{ url_for('assignments.remove_assignment') }}", {
-                'assignment_id': assignment_id
-            }, function(data) {
-                self.onServer(false);
-                if (data.success) {
-                    self.assignments.remove(function(item) { return item.id == assignment_id });
-                } else {
-                    console.error(data.message);
-                }
-            });
-        }
-    }
-    
-    self.addAssignment = function() {
-        var course_id = mainModel.createAssignmentCourse();
-        var name = mainModel.createAssignmentName();
-        var level = mainModel.createAssignmentLevel();
-        var type = mainModel.createAssignmentType().toLowerCase();
-        self.onServer(true);
-        $.post("{{ url_for('assignments.new_assignment') }}", {
-            'menu': "{{ menu }}",
-            'name': name,
-            "course_id": course_id,
-            'level': level,
-            'type': type
-        }, function(data) {
-            self.onServer(false);
-            $("#assignment-create").modal('hide');
-            if (data.success) {
-                self.assignments.unshift({
-                    'id': data.id,
-                    'group_id': ko.observable(-1),
-                    'type': ko.observable(type),
-                    'course_id': ko.observable(parseInt(course_id)),
-                    'name': ko.observable(data.name),
-                    'title': ko.observable(data.title),
-                    'select': "{{ return_url }}?url="+data.select,
-                    'edit': data.edit,
-                    'modified': ko.observable(data.date_modified),
-                    'body': ko.observable(data.body)
+                result.forEach(function (v, i) {
+                    v.groups.sort(sortNames);
+                    v.groups.forEach(function (vv, ii) {
+                        vv.assignments.sort(sortNames);
+                    });
                 });
-                //window.open(data.redirect);
-            } else {
-                console.error(data.message);
+                result.sort(sortNames);
+                return result;
+            });
+
+            self.moveMembership = function (assignment, old_group, new_group) {
+                self.onServer(true);
+                $.post("{{ url_for('assignment_group.move_membership') }}", {
+                    'new_group_id': new_group.id,
+                    'old_group_id': old_group.id,
+                    'assignment_id': assignment.id
+                }, function (data) {
+                    self.onServer(false);
+                    if (data.success) {
+                        assignment.group_id(new_group.id);
+                    } else {
+                        console.error(data.message);
+                    }
+                });
+            };
+
+            self.moveCourse = function (assignment, old_course) {
+                var new_course = this;
+                self.onServer(true);
+                $.post("{{ url_for('assignments.move_course') }}", {
+                    'new_course_id': new_course.id(),
+                    'assignment_id': assignment.id
+                }, function (data) {
+                    self.onServer(false);
+                    if (data.success) {
+                        assignment.course_id(new_course.id());
+                    } else {
+                        console.error(data.message);
+                    }
+                });
+            };
+
+            self.toggleGroup = function (course, group, event) {
+                console.log(group_id, self.hiddenGroups());
+                var course_id = course.id,
+                    group_id = group.id;
+                if (self.hiddenGroups.indexOf(group_id) == -1) {
+                    self.hiddenGroups.push(group_id);
+                } else {
+                    self.hiddenGroups.remove(group_id);
+                }
             }
-        });
-    };
-    
-    self.refreshAssignment = function(assignment) {
-        self.onServer(true);
-        $.post("{{ url_for('assignments.get_assignment') }}", {
-            'assignment_id': assignment.id
-        }, function(data) {
-            self.onServer(false);
-            if (data.success) {
-                assignment.name(data.name);
-                assignment.title(data.title);
-                assignment.body(data.body);
-                assignment.modified(data.date_modified);
-            } else {
-                console.error(data.message);
+            self.getGroupVisibility = function (group_id) {
+                return self.hiddenGroups.indexOf(group_id) == -1;
+            };
+            self.getGroupClass = function (group_id) {
+                if (self.hiddenGroups.indexOf(group_id) != -1) {
+                    return 'hidden-group';
+                } else {
+                    return '';
+                }
+            };
+            /*
+                if (group_id in showHideMap) {
+                    showHideMap[group_id] = !showHideMap[group_id];
+                } else {
+                    showHideMap[group_id] = false;
+                }
+                var visibilityGroup = $(".visibility-group-"+group_id),
+                    visibilityGroupMaster = $(".visibility-group-master-"+group_id);
+                if (showHideMap[group_id]) {
+                    visibilityGroupMaster.removeClass("hidden-group");
+                    visibilityGroup.show();
+                } else {
+                    visibilityGroupMaster.addClass("hidden-group");
+                    visibilityGroup.hide();
+                }
+            }*/
+
+            self.renameGroup = function (course, group) {
+                new_name = window.prompt("Give a new name for this group:", group.name);
+                var course_id = course.id,
+                    group_id = group.id;
+                if (new_name != null) {
+                    self.onServer(true);
+                    $.post("{{ url_for('assignment_group.edit_group') }}", {
+                        'new_name': new_name,
+                        'assignment_group_id': group_id
+                    }, function (data) {
+                        self.onServer(false);
+                        if (data.success) {
+                            // The group here is a clone of the real one, can't modify it!
+                            var course = findById(self.groups(), course_id, true);
+                            var group = findById(course.groups(), group_id, true);
+                            group.name(new_name);
+                        } else {
+                            console.error(data.message);
+                        }
+                    });
+                }
+                return false;
+            };
+
+            self.addGroup = function () {
+                var course_id = parseInt(mainModel.createGroupCourse());
+                var name = mainModel.createGroupName();
+                self.onServer(true);
+                $.post("{{ url_for('assignment_group.add_group') }}", {
+                    "course_id": course_id,
+                    'menu': "{{ menu }}",
+                    "name": name
+                }, function (data) {
+                    self.onServer(false);
+                    if (data.success) {
+                        $("#group-create").modal('hide');
+                        var course = findById(self.groups(), course_id, true);
+                        course.groups.push({
+                            'id': ko.observable(data.id),
+                            'name': ko.observable(data.name),
+                            'select': "{{ return_url }}?url=" + data.select,
+                            'assignments': ko.observableArray()
+                        });
+                    } else {
+                        console.error(data.message);
+                    }
+                });
+            };
+
+            self.removeGroup = function (course, group) {
+                var course_id = course.id,
+                    group_id = group.id;
+                if (group_id == -1) {
+                    // Can't delete the Stray group.
+                    return false;
+                }
+                var youSureHuh = confirm("Are you really sure you want to delete this group?");
+                if (youSureHuh != null) {
+                    self.onServer(true);
+                    $.post("{{ url_for('assignment_group.remove_group') }}", {
+                        'assignment_group_id': group_id
+                    }, function (data) {
+                        self.onServer(false);
+                        if (data.success) {
+                            var course = findById(self.groups(), course_id, true);
+                            course.groups.remove(function (a_group) {
+                                return a_group.id() == group_id
+                            });
+                        } else {
+                            console.error(data.message);
+                        }
+                    });
+                }
             }
+
+            self.removeAssignment = function (parent_group, assignment) {
+                var assignment_id = assignment.id;
+                var youSureHuh = confirm("Are you really sure you want to delete this assignment?");
+                if (youSureHuh != null) {
+                    self.onServer(true);
+                    $.post("{{ url_for('assignments.remove_assignment') }}", {
+                        'assignment_id': assignment_id
+                    }, function (data) {
+                        self.onServer(false);
+                        if (data.success) {
+                            self.assignments.remove(function (item) {
+                                return item.id == assignment_id
+                            });
+                        } else {
+                            console.error(data.message);
+                        }
+                    });
+                }
+            }
+
+            self.addAssignment = function () {
+                var course_id = mainModel.createAssignmentCourse();
+                var name = mainModel.createAssignmentName();
+                var level = mainModel.createAssignmentLevel();
+                var type = mainModel.createAssignmentType().toLowerCase();
+                self.onServer(true);
+                $.post("{{ url_for('assignments.new_assignment') }}", {
+                    'menu': "{{ menu }}",
+                    'name': name,
+                    "course_id": course_id,
+                    'level': level,
+                    'type': type
+                }, function (data) {
+                    self.onServer(false);
+                    $("#assignment-create").modal('hide');
+                    if (data.success) {
+                        self.assignments.unshift({
+                            'id': data.id,
+                            'group_id': ko.observable(-1),
+                            'type': ko.observable(type),
+                            'course_id': ko.observable(parseInt(course_id)),
+                            'name': ko.observable(data.name),
+                            'title': ko.observable(data.title),
+                            'select': "{{ return_url }}?url=" + data.select,
+                            'edit': data.edit,
+                            'modified': ko.observable(data.date_modified),
+                            'instructions': ko.observable(data.instructions)
+                        });
+                        //window.open(data.redirect);
+                    } else {
+                        console.error(data.message);
+                    }
+                });
+            };
+
+            self.refreshAssignment = function (assignment) {
+                self.onServer(true);
+                $.post("{{ url_for('assignments.get_assignment') }}", {
+                    'assignment_id': assignment.id
+                }, function (data) {
+                    self.onServer(false);
+                    if (data.success) {
+                        assignment.name(data.name);
+                        assignment.title(data.title);
+                        assignment.instructions(data.instructions);
+                        assignment.modified(data.date_modified);
+                    } else {
+                        console.error(data.message);
+                    }
+                });
+            };
+        }
+
+        mainModel = new MainModel();
+        $().ready(function () {
+            ko.applyBindings(mainModel);
         });
-    };
-}
-mainModel = new MainModel();
-$().ready(function() {
-    ko.applyBindings(mainModel);
-});
 
 
-</script>
-<style>
-.btn-group {
-    display: flex;
-}
+    </script>
+    <style>
+        .btn-group {
+            display: flex;
+        }
 
-.table-hover tbody tr:hover td, .table-hover tbody tr:hover th {
-    background-color: #e9eaed;
-}
+        .table-hover tbody tr:hover td, .table-hover tbody tr:hover th {
+            background-color: #e9eaed;
+        }
 
-tr:hover.hover-movers-rows div.mover-buttons {
-    visibility: visible;
-}
+        tr:hover.hover-movers-rows div.mover-buttons {
+            visibility: visible;
+        }
 
-tr.hover-movers-rows div.mover-buttons {
-    visibility: hidden;
-}
+        tr.hover-movers-rows div.mover-buttons {
+            visibility: hidden;
+        }
 
-tr:hover.hover-remove-rows button.remove-button {
-    visibility: visible;
-}
+        tr:hover.hover-remove-rows button.remove-button {
+            visibility: visible;
+        }
 
-tr.hover-remove-rows button.remove-button {
-    visibility: hidden;
-}
+        tr.hover-remove-rows button.remove-button {
+            visibility: hidden;
+        }
 
 
-tr.hidden-group.active.hover-remove-rows {
-    font-style: italic;
-}
+        tr.hidden-group.table-active.hover-remove-rows {
+            font-style: italic;
+        }
 
-tr.hidden-group.active.hover-remove-rows td {
-    background-color: #d8d8d8;
-}
+        tr.hidden-group.table-active.hover-remove-rows td {
+            background-color: #d8d8d8;
+        }
 
-.table-hover tbody tr.hidden-group:hover td, .table-hover tbody tr.hidden-group:hover th {
-    background-color: #c9cacd;
-}
+        .table-hover tbody tr.hidden-group:hover td, .table-hover tbody tr.hidden-group:hover th {
+            background-color: #c9cacd;
+        }
 
-</style>
+    </style>
 {% endblock %}
 
 {% block body %}
 
-<div class='overlay' data-bind='visible: onServer'></div>
-<span class='pull-right text-muted' style='padding-top:10px' data-bind="visible: onServer">Loading</span>
-<h1>Select {{'an Assignment' if menu != 'embed' else 'an Ungraded Canvas'}}</h1>
+    <div class='overlay' data-bind='visible: onServer'></div>
+    <span class='pull-right text-muted' style='padding-top:10px' data-bind="visible: onServer">Loading</span>
+    <h1>Select {{ 'an Assignment' if menu != 'embed' else 'an Ungraded Canvas' }}</h1>
 
-<div class="modal fade" id="assignment-create" tabindex="-1" role="dialog" aria-labelledby="assignment-create-label">
-  <div class="modal-dialog" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-        <h4 class="modal-title" id="assignment-create-label">Create Assignment</h4>
-      </div>
-      <div class="modal-body">
-        <div class="form-group">
-            <label for="assignment-name">Type:
-            <select class="form-control" data-bind="value: createAssignmentType">
-                <option>BlockPy</option>
-                <option>Maze</option>
-                <option value='explain'>Code Explanation</option>
-                <option value='poll'>Poll</option>
-                <option value='visualizer'>CORGIS (Visualizer)</option>
-                <option value='corgis (python)'>CORGIS (Python)</option>
-            </select>
-            </label>
+    <div class="modal fade" id="assignment-create" tabindex="-1" role="dialog"
+         aria-labelledby="assignment-create-label">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title" id="assignment-create-label">Create Assignment</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                            aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group" data-bind="visible: createAssignmentType() != 'Maze'">
+                        <label for="assignment-name">Name:
+                            <input type="text" class="form-control" id="assignment-name"
+                                   data-bind="value: createAssignmentName" placeholder="Day 1 - #1.1">
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label for="assignment-name">Owning Course:
+                            <select class="form-control" data-bind="value: createAssignmentCourse">
+                                {% for course in editable_courses %}
+                                    <option value="{{ course.id }}" {{ 'selected' if course.id == g.course.id }}>{{ course.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary btn-sm" data-bind="click: $root.addAssignment">Create
+                    </button>
+                </div>
+            </div>
         </div>
-        <div class="form-group" data-bind="visible: createAssignmentType() != 'Maze'">
-            <label for="assignment-name">Name:
-            <input type="text" class="form-control" id="assignment-name"
-                   data-bind="value: createAssignmentName" placeholder="Day 1 - #1.1">
-            </label>
-        </div>
-        <div class="form-group" data-bind="visible: createAssignmentType() == 'Maze'">
-            <label for="assignment-name">Maze Level:
-            <select class="form-control" data-bind="value: createAssignmentLevel">
-                <option value='1'>Level 1</option>
-                <option value='2'>Level 2</option>
-                <option value='3'>Level 3</option>
-                <option value='4'>Level 4</option>
-                <option value='5'>Level 5</option>
-                <option value='6'>Level 6</option>
-                <option value='7'>Level 7</option>
-                <option value='8'>Level 8</option>
-                <option value='9'>Level 9</option>
-                <option value='10'>Level 10</option>
-            </select>
-            </label>
-        </div>
-        <div class="form-group">
-            <label for="assignment-name">Owning Course:
-            <select class="form-control" data-bind="value: createAssignmentCourse">
-            {% for course in editable_courses %}
-                <option value="{{ course.id }}" {{'selected' if course.id == g.course.id }}>{{ course.name }}</option>
-            {% endfor %}
-            </select>
-            </label>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
-        <button type="button" class="btn btn-primary" data-bind="click: $root.addAssignment">Create</button>
-      </div>
     </div>
-  </div>
-</div>
 
-<div class="modal fade" id="group-create" tabindex="-1" role="dialog" aria-labelledby="group-create-label">
-  <div class="modal-dialog" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-        <h4 class="modal-title" id="group-create-label">Create Assignment Group</h4>
-      </div>
-      <div class="modal-body">
-        <div class="form-group">
-            <label for="group-name">Name:
-            <input type="text" class="form-control" id="group-name"
-                   data-bind="value: createGroupName" placeholder="Day X - ">
-            </label>
+    <div class="modal fade" id="group-create" tabindex="-1" role="dialog" aria-labelledby="group-create-label">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title" id="group-create-label">Create Assignment Group</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                            aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="group-name">Name:
+                            <input type="text" class="form-control" id="group-name"
+                                   data-bind="value: createGroupName" placeholder="Day X - ">
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label for="group-name">Owning Course:
+                            <select class="form-control" data-bind="value: createGroupCourse">
+                                {% for course in editable_courses %}
+                                    <option value="{{ course.id }}" {{ 'selected' if course.id == g.course.id }}>{{ course.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-sm btn-primary" data-bind="click: $root.addGroup">Create
+                    </button>
+                </div>
+            </div>
         </div>
-        <div class="form-group">
-            <label for="group-name">Owning Course:
-            <select class="form-control" data-bind="value: createGroupCourse">
-            {% for course in editable_courses %}
-                <option value="{{ course.id }}" {{'selected' if course.id == g.course.id }}>{{ course.name }}</option>
-            {% endfor %}
-            </select>
-            </label>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
-        <button type="button" class="btn btn-primary" data-bind="click: $root.addGroup">Create</button>
-      </div>
     </div>
-  </div>
-</div>
 
-<table class="table table-condensed table-hover">
-<caption>All assignments owned by this course</caption>
-<tbody>
-    <tr id='new-row'>
-        <td colspan='1'>
-            <a href="#" data-toggle="modal" data-target="#assignment-create" class="btn btn-outline-secondary btn-sm"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span>Create Assignment</a>
-        </td>
-        <td colspan='1'>
-            <a href="#" data-toggle="modal" data-target="#group-create" class="btn btn-outline-secondary btn-sm"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span>Create Group</a>
-        </td>
-        <td colspan='3'>
-            <label>
-                Show
-                <select class="form-control" data-bind="value: filteredCourse">
-                    <option value="-1" selected>All Courses</option>
-                {% for course in editable_courses %}
-                    <option value="{{ course.id }}">{{ course.name }}</option>
-                {% endfor %}
-            </label><br>
-        </td>
-    </tr>
-    
-    <!-- ko foreach: groupedAssignments() -->
-    <tr class="hover-remove-rows">
-        <td class="col-md-12 col-sm-12 col-xs-12" colspan="4">
-            <h4 data-bind="text: name"></h4>
-        </td>
-    </tr>
-    <!-- ko foreach: groups -->
-    <tr class="active hover-remove-rows"
-        data-bind='click: $root.toggleGroup.bind($data, $parent),
+    <table class="table table-sm table-hover">
+        <caption>All assignments owned by this course</caption>
+        <tbody>
+        <tr id='new-row'>
+            <td colspan='1'>
+                <a href="#" data-toggle="modal" data-target="#assignment-create"
+                   class="btn btn-outline-secondary btn-sm"><span class="fas fa-plus"
+                                                                  aria-hidden="true"></span>Create Assignment</a>
+                <br>
+                <a href="#" data-toggle="modal" data-target="#group-create"
+                   class="btn btn-outline-secondary btn-sm"><span class="fas fa-plus"
+                                                                  aria-hidden="true"></span>Create Group</a>
+            </td>
+            <td colspan='4'>
+                <label>
+                    Show
+                    <select class="form-control" data-bind="value: filteredCourse">
+                        <option value="-1" selected>All Courses</option>
+                        {% for course in editable_courses %}
+                            <option value="{{ course.id }}">{{ course.name }}</option>
+                        {% endfor %}
+                    </select>
+                </label><br>
+            </td>
+        </tr>
+
+        <!-- ko foreach: groupedAssignments() -->
+        <tr class="hover-remove-rows">
+            <td class="" colspan="4">
+                <h4 data-bind="text: name"></h4>
+            </td>
+        </tr>
+        <!-- ko foreach: groups -->
+        <tr class="table-active hover-remove-rows"
+            data-bind='click: $root.toggleGroup.bind($data, $parent),
                    css: $root.getGroupClass(id)'>
-        <td class="col-md-12 col-sm-12 col-xs-12" colspan="3">
-            <a href="#" data-bind="click: $root.renameGroup.bind($data, $parent), clickBubble: false"><strong data-bind="text: name"></strong></a>
-        </td>
-        <td>
-            <button class='remove-button btn btn-danger btn-xs' type='button' 
-                    data-bind="click: $root.removeGroup.bind($data, $parent), clickBubble: false">
-                <span class='glyphicon glyphicon-remove' aria-hidden="true"></span>
-            </button>
-            <a data-bind="attr: { href: select }, visible: select, clickBubble: false, click: function() { return true;}" class="btn btn-primary">Select</a>
-        </td>
-    </tr>
-    <!-- ko foreach: assignments -->
-    <tr class='hover-movers-rows'
-        data-bind="visible: $root.getGroupVisibility($parent.id)">
-        <td class='col-md-3 col-sm-3 col-xs-3'>
-            <strong data-bind="text: title"></strong><br>
-            Last modified at
-            <span data-bind="text: modified"></span>
-        </td>
-        <td class='col-md-5 col-sm-5 col-xs-5'>
-            <span class='label label-default' data-bind="text: type"></span>
-            <span data-bind="text: body"></span>
-        </td>
-        <td class='col-md-1 col-sm-1 col-xs-1'>
-            <div class="mover-buttons btn-group">
-              <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                Move Group<span class="caret"></span>
-              </button>
-              <ul class="dropdown-menu dropdown-menu-right" data-bind="foreach: $parents[1].groups">
-                  <li><a href="#" data-bind="click: $root.moveMembership.bind($data, $parent, $parents[1]), text: name"></a></li>
-              </ul>
-            </div>
-            
-            <div class="mover-buttons btn-group">
-              <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                Move Course <span class="caret"></span>
-              </button>
-              <ul class="dropdown-menu dropdown-menu-right" data-bind="foreach: $root.groups()">
-                  <li><a href="#" data-bind="click: $root.moveCourse.bind($data, $parents[0], $parents[2]), text: name"></a></li>
-              </ul>
-            </div>
-        </td>
-        <td class='col-md-2 col-sm-2 col-xs-2'>
-            <div class="btn-group">
-                <!-- Select button -->
-                <a data-bind="attr: { href: select }" class="btn btn-primary">Select</a>
-                <!-- Dropdown -->
-                <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    <span class="caret"></span>
-                    <span class="sr-only">Toggle Dropdown</span>
+            <td class="" colspan="3">
+                <a href="#" data-bind="click: $root.renameGroup.bind($data, $parent), clickBubble: false"><strong
+                        data-bind="text: name"></strong></a>
+            </td>
+            <td>
+                <button class='remove-button btn btn-danger btn-sm' type='button'
+                        data-bind="click: $root.removeGroup.bind($data, $parent), clickBubble: false">
+                    <span class='fas fa-trash' aria-hidden="true"></span>
                 </button>
-                <!-- Extended buttons -->
-                <ul class="dropdown-menu">
-                    <!--<li><a target="_blank" data-bind="attr: { href: edit }">Fork</a></li>-->
-                    <li><a target="_blank" data-bind="attr: { href: edit }">Edit</a></li>
-                    <!--<li><a href="#" data-bind="click: $root.refreshAssignment">Refresh</a></li>-->
-                    <li><a href="#" data-bind="click: $root.removeAssignment.bind($data, $parent)">Delete</a></li>
-                </ul>
-            </div>
-        </td>
-    </tr>
-    <!-- /ko -->
-    <!-- /ko -->
-    <!-- /ko -->
-    
-</tbody>
-</table>
+                <a data-bind="attr: { href: select }, visible: select, clickBubble: false, click: function() { return true;}"
+                   class="btn btn-sm btn-outline-secondary">Select</a>
+            </td>
+        </tr>
+        <!-- ko foreach: assignments -->
+        <tr class='hover-movers-rows'
+            data-bind="visible: $root.getGroupVisibility($parent.id)">
+            <td class=''>
+                <strong data-bind="text: title"></strong><br>
+                <small data-bind="text: modified" tooltip="Last modified">
+                </small>
+            </td> <!--3-->
+            <td class=''>
+                <!-- ko if: type() === "maze" -->
+                <span>Maze level</span>
+                <!-- /ko -->
+                <!-- ko if: type() !== "maze" -->
+                <span data-bind="text: instructions"></span>
+                <!-- /ko -->
+            </td> <!--5-->
+            <td class=''>
+                <div class="mover-buttons btn-sm btn-group">
+                    <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                            data-toggle="dropdown"
+                            aria-haspopup="true" aria-expanded="false">
+                        Move Group<span class="caret"></span>
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-right" data-bind="foreach: $parents[1].groups">
+                        <a href="#" class="dropdown-item"
+                               data-bind="click: $root.moveMembership.bind($data, $parent, $parents[1]), text: name">
+
+                        </a>
+                    </div>
+                </div>
+
+                <div class="mover-buttons btn-group">
+                    <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                            data-toggle="dropdown"
+                            aria-haspopup="true" aria-expanded="false">
+                        Move Course <span class="caret"></span>
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-right" data-bind="foreach: $root.groups()">
+                        <a href="#" class="dropdown-item"
+                               data-bind="click: $root.moveCourse.bind($data, $parents[0], $parents[2]), text: name">
+
+                        </a>
+                    </div>
+                </div>
+            </td> <!--1-->
+            <td class=''>
+                <div class="btn-group">
+                    <!-- Select button -->
+                    <a data-bind="attr: { href: select }" class="btn btn-sm btn-outline-secondary">Select</a>
+                    <!-- Dropdown -->
+                    <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-toggle="dropdown"
+                            aria-haspopup="true" aria-expanded="false">
+                        <span class="caret"></span>
+                        <span class="sr-only">Toggle Dropdown</span>
+                    </button>
+                    <!-- Extended buttons -->
+                    <div class="dropdown-menu">
+                        <!--<li><a target="_blank" data-bind="attr: { href: edit }">Fork</a></li>-->
+                        <a class="dropdown-item" target="_blank" data-bind="attr: { href: edit }">Edit</a>
+                        <!--<li><a href="#" data-bind="click: $root.refreshAssignment">Refresh</a></li>-->
+                        <a class="dropdown-item" href="#" data-bind="click: $root.removeAssignment.bind($data, $parent)">Delete</a>
+                    </div>
+                </div>
+            </td> <!--2-->
+        </tr>
+        <!-- /ko -->
+        <!-- /ko -->
+        <!-- /ko -->
+
+        </tbody>
+    </table>
 
 
 {% endblock %}

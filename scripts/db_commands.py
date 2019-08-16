@@ -168,7 +168,7 @@ class ExportCourse(Command):
         from models.assignment_group import AssignmentGroup
         exported_data = Course.export(int(course_id))
         with open(course_data_path, 'w') as output_file:
-            json.dump(exported_data, output_file, indent=2)
+            json.dump(exported_data, output_file, indent=2, sort_keys=True)
         pprint(exported_data)
 
 

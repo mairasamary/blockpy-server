@@ -19350,6 +19350,8 @@ Sk.builtin.file.prototype["write"] = new Sk.builtin.func(function write(self, st
     } else {
         throw new Sk.builtin.IOError("File not open for writing");
     }
+
+    return Sk.builtin.none.none$;
 });
 
 
@@ -28393,6 +28395,7 @@ var print_f = function function_print(kwa) {
     }
     // ToDo:
     // cpython print function may receive another flush kwarg that flushes the output stream immediatelly
+    return Sk.builtin.none.none$;
 };
 
 print_f.co_kwargs = true;
@@ -34360,7 +34363,7 @@ var Sk = {}; // jshint ignore:line
 
 Sk.build = {
     githash: "47fc5b07c7972ad9546d522d7dd9f29285360c03",
-    date: "2019-08-12T10:48:37.018Z"
+    date: "2019-08-16T15:29:19.599Z"
 };
 
 /**

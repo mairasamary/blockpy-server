@@ -46,6 +46,10 @@ from controllers.maze import blueprint_maze
 
 app.register_blueprint(blueprint_maze)
 
+from controllers.external import blueprint_external
+
+app.register_blueprint(blueprint_external)
+
 
 @app.route('/', methods=['GET', 'POST'])
 def index():

@@ -69,6 +69,30 @@ def new_assignment(lti=lti):
                    date_modified=assignment.pretty_date_modified())
 
 
+@blueprint_assignments.route('/get/', methods=['GET', 'POST'])
+@blueprint_assignments.route('/get', methods=['GET', 'POST'])
+@login_required
+def get_assignment(lti=lti):
+    assignment_id = int(request.values.get('assignment_id'))
+    assignment = Assignment.by_id(assignment_id)
+    is_embedded = ('embed' == request.values.get('menu', "select"))
+    # Verify exists
+    check_resource_exists(assignment, "Assignment", assignment_id)
+    # Perform action
+    select_url = get_select_menu_link(assignment.id, assignment.title(), is_embedded, False)
+    return jsonify(success=True,
+                   redirect=url_for('assignments.load', assignment_id=assignment.id),
+                   id=assignment.id,
+                   name=assignment.name,
+                   type=assignment.type,
+                   instructions=strip_tags(assignment.instructions)[:255],
+                   title=assignment.title(),
+                   view=url_for('assignments.load', assignment_id=assignment.id, embed=is_embedded),
+                   select=select_url,
+                   edit=url_for('assignments.load', assignment_id=assignment.id, course_id=assignment.course_id),
+                   date_modified=assignment.pretty_date_modified())
+
+
 @blueprint_assignments.route('/remove', methods=['GET', 'POST'])
 @blueprint_assignments.route('/remove/', methods=['GET', 'POST'])
 @require_request_parameters('course_id')

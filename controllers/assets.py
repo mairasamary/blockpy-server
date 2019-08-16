@@ -3,6 +3,8 @@ from main import app
 
 bundles = {
     'libs_js': Bundle(
+        # NaturalSort
+        'libs/naturalSort/naturalSort.js',
         # JQuery
         'libs/jquery/jquery-3.4.1.min.js',
         'libs/jquery/jquery-ui.min.js',

@@ -2,7 +2,7 @@ from sqlalchemy import (event, Integer, Date, ForeignKey, Column, Table,
                         String, Boolean, DateTime, Text, ForeignKeyConstraint,
                         cast, func, and_, or_, Index)
 
-from models.models import db, Base
+from models.models import db, Base, datetime_to_string, string_to_datetime
 from models import models
 
 
