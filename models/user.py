@@ -132,7 +132,7 @@ class User(Base, UserMixin):
 
     @staticmethod
     def new_lti_user(service, lti_user_id, lti_email, lti_first_name, lti_last_name):
-        new_user = User(first_name=lti_first_name, last_name=lti_last_name, email=lti_email,
+        new_user = User(first_name=lti_first_name, last_name=lti_last_name, email=lti_email.lower(),
                         password="", active=True, confirmed_at=None)
         db.session.add(new_user)
         db.session.flush()
@@ -159,7 +159,7 @@ class User(Base, UserMixin):
         lti = models.Authentication.query.filter_by(type=service,
                                                     value=lti_user_id).first()
         if lti is None:
-            user = User.query.filter_by(email=lti_email).first()
+            user = User.find_student(lti_email)
             if user:
                 user.register_authentication(service, lti_user_id)
                 return user
