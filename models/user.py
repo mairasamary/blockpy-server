@@ -1,5 +1,5 @@
 from flask_security import UserMixin
-from sqlalchemy import Column, Integer, String, Boolean, DateTime
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, func
 
 from models import models
 from models.models import Base, relationship, db
@@ -31,7 +31,8 @@ class User(Base, UserMixin):
 
     @staticmethod
     def find_student(email):
-        return User.query.filter_by(email=email).first()
+        # Hack: We have to lowercase emails because apparently some LMSes want to SHOUT EMAIL ADDRESSES
+        return User.query.filter(func.lower(User.email) == func.lower(email)).first()
 
     def get_roles(self):
         return models.Role.query.filter_by(user_id=self.id).all()
