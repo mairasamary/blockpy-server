@@ -136,7 +136,7 @@ def select(lti, menu='select', lti_exception=None):
     assignments = Assignment.get_available()
     groups = AssignmentGroup.query.all()
     return_url = get_lti_property('launch_presentation_return_url')
-    course_groups = Course.get_all_groups()
+    course_groups = Course.get_all_groups(menu)
     editable_courses = g.user.get_editable_courses()
 
     return render_template('lti/select.html', assignments=assignments, groups=groups, return_url=return_url, menu=menu,

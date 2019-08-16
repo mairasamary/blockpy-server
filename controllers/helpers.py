@@ -210,9 +210,12 @@ def parse_assignment_load():
     assignment_group_id = parse_lookup_code()
     # Assignment Group ID
     if assignment_group_id is None:
-        assignment_group_id = maybe_int(request.args.get('assignment_group_id', None))
+        assignment_group_id = maybe_int(request.args.get('assignment_group_id'))
+    # Exact "url" code for group
+    if assignment_group_id is None:
+        assignment_group_id = AssignmentGroup.id_by_url(request.args.get('assignment_group_url'))
     # Assignment ID
-    current_assignment_id = maybe_int(request.args.get('assignment_id', None))
+    current_assignment_id = maybe_int(request.args.get('assignment_id'))
     # User
     user = g.get('user', None)
     user_id = user.id if user else None

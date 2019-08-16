@@ -159,12 +159,13 @@ class Course(Base):
                 .all())
 
     @staticmethod
-    def get_all_groups():
+    def get_all_groups(menu='embed'):
         courses = Course.query.all()
         return [{'id': course.id,
                  'name': course.name,
                  'groups': [{'id': group.id,
-                             'name': group.name}
+                             'name': group.name,
+                             'select_url': group.get_select_url(menu)}
                             for group in models.AssignmentGroup.by_course(course.id)]
                  }
                 for course in courses]

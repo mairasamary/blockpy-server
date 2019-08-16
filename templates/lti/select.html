@@ -100,7 +100,7 @@
                                 {
                                     'name': ko.observable({{ group.name|tojson }}),
                                     'id': ko.observable({{ group.id|tojson }}),
-                                    'select': ko.observable("{{ return_url }}?url={{url_for('assignments.load', assignment_group_id=group.id, _external=True, embed= menu == 'embed') | urlencode}}&return_type={{ 'lti_launch_url' if menu != 'embed' else 'iframe' }}&title={{ group.name|urlencode }}&text=BlockPy%20Exercise&width=100%25&height=600")
+                                    'select': ko.observable("{{ return_url }}?url={{group.select_url | urlencode}}&return_type={{ 'lti_launch_url' if menu != 'embed' else 'iframe' }}&title={{ group.name|urlencode }}&text=BlockPy%20Exercise&width=100%25&height=600")
                                 }{{ "," if not loop.last }}
                             {% endfor %}
                         ])

@@ -1,3 +1,4 @@
+from flask import url_for
 from sqlalchemy import Column, String, Integer, ForeignKey, func
 from natsort import natsorted
 from models import models
@@ -99,6 +100,15 @@ class AssignmentGroup(Base):
         return AssignmentGroup.query.get(assignment_group_id)
 
     @staticmethod
+    def id_by_url(assignment_group_url):
+        if assignment_group_url is None:
+            return None
+        possible = AssignmentGroup.query.filter_by(url=assignment_group_url).first()
+        if possible:
+            return possible.id
+        return None
+
+    @staticmethod
     def by_course(course_id):
         return (AssignmentGroup.query.filter_by(course_id=course_id)
                 .order_by(AssignmentGroup.name)
@@ -120,3 +130,9 @@ class AssignmentGroup(Base):
                 .order_by(models.Assignment.name, models.AssignmentGroupMembership.position)
                 .all())
         return natsorted(assignments, key=lambda a: a.title())
+
+    def get_select_url(self, menu):
+        # TODO: Refactor web logic outside of model?
+        if self.url:
+            return url_for('assignments.load', assignment_group_url=self.url, _external=True, embed=menu == 'embed')
+        return url_for('assignments.load', assignment_group_id=self.id, _external=True, embed=menu == 'embed')
