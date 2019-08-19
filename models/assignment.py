@@ -1,3 +1,4 @@
+from ipaddress import ip_address, ip_network
 import json
 from typing import Optional
 
@@ -22,6 +23,8 @@ class Assignment(Base):
     hidden = Column(Boolean(), default=False)
     # Should we allow users to see other user's submissions?
     public = Column(Boolean(), default=False)
+    # Whitelist or blacklist IP address and address ranges
+    ip_ranges = Column(Text(), default="")
     settings = Column(Text())
 
     # Code columns
@@ -309,3 +312,46 @@ class Assignment(Base):
             self.extra_starting_files = code
         self.version += 1
         db.session.commit()
+
+    def is_allowed(self, ip):
+        """
+        Given the IP address, determine if it is allowed to access this assignment.
+        If the ip_ranges is blank or null, then any address is allowed.
+        Otherwise, a comma separated string can be given.
+        Each IP address given in the string is in the whitelist, unless it begins
+        with ^ which means it is instantly rejected (blacklist), unless another begins
+        with ! which means it will override the blacklist.
+        IP Networks are supported, so you could have "192.168.0.0/24" as the ip_ranges
+        and then both "192.168.0.0" and "192.168.0.5" would be accepted.
+
+        If the string is non-empty, it is assumed that by default all addresses will be blocked.
+
+        If an invalid `ip` is supplied, then it is blocked. If any of the `ip_ranges` are invalid,
+        then they will be skipped.
+
+        :param ip: String of IP Network Ranges or None
+        :return: bool
+        """
+        ranges = self.ip_ranges
+        if ranges is None or not ranges.strip():
+            return True
+        ranges = ranges.split(",")
+        try:
+            needle = ip_address(ip)
+        except ValueError:
+            return False
+        allowed, blacklisted, whitelisted = False, False, False
+        for network in ranges:
+            network = network.strip()
+            if not network:
+                continue
+            try:
+                if network.startswith("^") and needle in ip_network(network[1:]):
+                    blacklisted = True
+                if network.startswith("!") and needle in ip_network(network[1:]):
+                    whitelisted = True
+                elif needle in ip_network(network):
+                    allowed = True
+            except ValueError:
+                continue
+        return whitelisted or (not blacklisted and allowed)

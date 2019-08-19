@@ -74,18 +74,18 @@ assignment_tag_membership = Table('assignment_tag_membership', Base.metadata,
                                   Column('tag_id', Integer, ForeignKey('assignment_tag.id'))
                                   )
 
+from models.user import User
+from models.course import Course
 from models.assignment import Assignment
 from models.assignment_tag import AssignmentTag
 from models.assignment_group import AssignmentGroup
 from models.assignment_group_membership import AssignmentGroupMembership
 from models.authentication import Authentication
-from models.course import Course
 from models.log import Log
 from models.role import Role
 from models.review import Review
 from models.submission import Submission
 from models.sample_submission import SampleSubmission
-from models.user import User
 
 ALL_TABLES = (Assignment, AssignmentTag, AssignmentGroup, AssignmentGroupMembership,
               Authentication, Course, Log, Role, Review, Submission, User, SampleSubmission)

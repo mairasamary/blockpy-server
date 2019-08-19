@@ -249,6 +249,11 @@ def parse_assignment_load():
                        for assignment in assignments]
     # Determine the users' role in relation to this information
     role = user.determine_role(assignments, submissions) if user else "anonymous"
+    # Check for any IP locked assignments
+    if role in ("student", "anonymous"):
+        for assignment in assignments:
+            if not assignment.is_allowed(request.remote_addr):
+                return abort(403, "You cannot access this assignment from your current location: "+request.remote_addr)
     # Combine the submissions and assignments
     group = list(zip(assignments, submissions))
     # Okay we've got everything

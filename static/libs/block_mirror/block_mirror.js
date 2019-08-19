@@ -66,7 +66,11 @@ Blockly.Python.finish = function (code) {
   delete Blockly.Python.functionNames_;
   Blockly.Python.variableDB_.reset(); // acbart: Don't actually inject initializations - we don't need 'em.
 
-  return code;
+  if (imports.length) {
+    return imports.join('\n') + "\n" + code;
+  } else {
+    return code;
+  }
 };
 
 Blockly.Python.INDENT = '    ';
@@ -869,6 +873,7 @@ BlockMirrorBlockEditor.prototype.getPngFromBlocks = function (callback) {
 
 function BlockMirrorTextToBlocks(blockMirror) {
   this.blockMirror = blockMirror;
+  this.hiddenImports = ["plt"];
   this.strictAnnotations = ['int', 'float', 'str', 'bool'];
   Blockly.defineBlocksWithJsonArray(BlockMirrorTextToBlocks.BLOCKS);
 }
@@ -2096,6 +2101,10 @@ BlockMirrorTextToBlocks.prototype.METHOD_SIGNATURES = {
     colour: BlockMirrorTextToBlocks.COLOR.OO
   }
 };
+BlockMirrorTextToBlocks.prototype.MODULE_FUNCTION_IMPORTS = {
+  "plt": "import matplotlib.pyplot as plt",
+  "turtle": "import turtle"
+};
 BlockMirrorTextToBlocks.prototype.MODULE_FUNCTION_SIGNATURES = {
   "turtle": {},
   'plt': {
@@ -2218,11 +2227,15 @@ BlockMirrorTextToBlocks.getFunctionBlock = function (name, values, module) {
     "@returns": signature.returns || false,
     "@parameters": true,
     "@method": method,
-    "@name": name,
+    "@name": module ? module + "." + name : name,
     "@message": signature.message ? signature.message : name,
     "@premessage": signature.premessage ? signature.premessage : "",
     "@colour": signature.colour ? signature.colour : 0
   };
+
+  if (module) {
+    argumentsMutation["@module"] = module;
+  }
 
   for (var i = 0; i < args.length; i += 1) {
     argumentsMutation["UNKNOWN_ARG:" + i] = null;
@@ -3266,7 +3279,7 @@ Blockly.Python['ast_StrDocstring'] = function (block) {
     code = code + '\n';
   }
 
-  return Blockly.Python.multiline_quote_(code);
+  return Blockly.Python.multiline_quote_(code) + "\n";
 };
 
 BlockMirrorTextToBlocks.prototype.isDocString = function (node, parent) {
@@ -4625,6 +4638,7 @@ Blockly.Blocks['ast_Call'] = {
     this.name_ = null;
     this.message_ = "function";
     this.premessage_ = "";
+    this.module_ = "";
     this.updateShape_();
   },
 
@@ -4884,6 +4898,7 @@ Blockly.Blocks['ast_Call'] = {
     container.setAttribute('method', this.isMethod_);
     container.setAttribute('message', this.message_);
     container.setAttribute('premessage', this.premessage_);
+    container.setAttribute('module', this.module_);
     container.setAttribute('colour', this.givenColour_);
 
     for (var i = 0; i < this.arguments_.length; i++) {
@@ -4909,6 +4924,7 @@ Blockly.Blocks['ast_Call'] = {
     this.isMethod_ = "true" === xmlElement.getAttribute('method');
     this.message_ = xmlElement.getAttribute('message');
     this.premessage_ = xmlElement.getAttribute('premessage');
+    this.module_ = xmlElement.getAttribute('module');
     this.givenColour_ = parseInt(xmlElement.getAttribute('colour'), 10);
     var args = [];
     var paramIds = [];
@@ -5041,8 +5057,12 @@ Blockly.Blocks['ast_Call'] = {
 
 Blockly.Python['ast_Call'] = function (block) {
   // TODO: Handle import
-  // Blockly.Python.definitions_['import_matplotlib'] = 'import matplotlib.pyplot as plt';
+  if (block.module_) {
+    Blockly.Python.definitions_["import_" + block.module_] = BlockMirrorTextToBlocks.prototype.MODULE_FUNCTION_IMPORTS[block.module_];
+  } // Blockly.Python.definitions_['import_matplotlib'] = 'import matplotlib.pyplot as plt';
   // Get the caller
+
+
   var funcName = "";
 
   if (block.isMethod_) {
@@ -5101,6 +5121,7 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
 
   var signature = null;
   var isMethod = false;
+  var module = null;
   var premessage = "";
   var message = "";
   var name = "";
@@ -5122,6 +5143,7 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
 
     if (potentialModule in this.MODULE_FUNCTION_SIGNATURES) {
       signature = this.MODULE_FUNCTION_SIGNATURES[potentialModule][attributeName];
+      module = potentialModule;
       message = name = potentialModule + message;
       isMethod = false;
     } else if (attributeName in this.METHOD_SIGNATURES) {
@@ -5175,7 +5197,8 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
     "@name": name,
     "@message": message,
     "@premessage": premessage,
-    "@colour": colour
+    "@colour": colour,
+    "@module": module || ""
   }; // Handle arguments
 
   var overallI = 0;
@@ -7209,6 +7232,7 @@ BlockMirrorTextToBlocks.prototype['ast_Import'] = function (node, parent) {
     '@names': names.length
   };
   var regulars = [];
+  var simpleName = "";
 
   for (var i = 0; i < names.length; i++) {
     fields["NAME" + i] = Sk.ffi.remapToJs(names[i].name);
@@ -7216,12 +7240,19 @@ BlockMirrorTextToBlocks.prototype['ast_Import'] = function (node, parent) {
 
     if (!isRegular) {
       fields["ASNAME" + i] = Sk.ffi.remapToJs(names[i].asname);
+      simpleName = fields["ASNAME" + i];
+    } else {
+      simpleName = fields["NAME" + i];
     }
 
     regulars.push(isRegular);
   }
 
   mutations['regular'] = regulars;
+
+  if (this.hiddenImports.indexOf(simpleName) !== -1) {
+    return null;
+  }
 
   if (node._astname === 'ImportFrom') {
     // acbart: GTS suggests module can be None for '.' but it's an empty string in Skulpt
