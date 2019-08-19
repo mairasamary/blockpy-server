@@ -2230,12 +2230,9 @@ BlockMirrorTextToBlocks.getFunctionBlock = function (name, values, module) {
     "@name": module ? module + "." + name : name,
     "@message": signature.message ? signature.message : name,
     "@premessage": signature.premessage ? signature.premessage : "",
-    "@colour": signature.colour ? signature.colour : 0
+    "@colour": signature.colour ? signature.colour : 0,
+    "@module": module || ""
   };
-
-  if (module) {
-    argumentsMutation["@module"] = module;
-  }
 
   for (var i = 0; i < args.length; i += 1) {
     argumentsMutation["UNKNOWN_ARG:" + i] = null;
