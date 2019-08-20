@@ -13,7 +13,9 @@ Blockly.Python.init = function (workspace) {
   Blockly.Python.definitions_ = Object.create(null); // Create a dictionary mapping desired function names in definitions_
   // to actual function names (to avoid collisions with user functions).
 
-  Blockly.Python.functionNames_ = Object.create(null);
+  Blockly.Python.functionNames_ = Object.create(null); // Keep track of datasets that are already imported
+
+  Blockly.Python.imported_ = Object.create(null);
 
   if (!Blockly.Python.variableDB_) {
     Blockly.Python.variableDB_ = new Blockly.Names(Blockly.Python.RESERVED_WORDS_);
@@ -53,6 +55,10 @@ Blockly.Python.finish = function (code) {
 
   for (var name in Blockly.Python.definitions_) {
     var def = Blockly.Python.definitions_[name];
+
+    if (name in Blockly.Python.imported_) {
+      continue;
+    }
 
     if (def.match(/^(from\s+\S+\s+)?import\s+\S+/)) {
       imports.push(def);
@@ -7212,11 +7218,15 @@ Blockly.Python['ast_Import'] = function (block) {
   var elements = new Array(block.nameCount_);
 
   for (var i = 0; i < block.nameCount_; i++) {
-    elements[i] = block.getFieldValue('NAME' + i);
+    var name = block.getFieldValue('NAME' + i);
+    elements[i] = name;
 
     if (!this.regulars_[i]) {
-      elements[i] += " as " + Blockly.Python.variableDB_.getName(block.getFieldValue('ASNAME' + i), Blockly.Variables.NAME_TYPE);
+      name = Blockly.Python.variableDB_.getName(block.getFieldValue('ASNAME' + i), Blockly.Variables.NAME_TYPE);
+      elements[i] += " as " + name;
     }
+
+    Blockly.Python.imported_["import_" + name] = name;
   }
 
   return from + 'import ' + elements.join(', ') + "\n";
