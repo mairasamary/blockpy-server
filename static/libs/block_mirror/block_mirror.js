@@ -73,7 +73,7 @@ Blockly.Python.finish = function (code) {
   Blockly.Python.variableDB_.reset(); // acbart: Don't actually inject initializations - we don't need 'em.
 
   if (imports.length) {
-    return imports.join('\n') + "\n" + code;
+    return imports.join('\n') + "\n\n" + code;
   } else {
     return code;
   }
@@ -578,7 +578,9 @@ function BlockMirrorBlockEditor(blockMirror) {
   this.blockEditor = blockMirror.tags.blockEditor;
   this.blockArea = blockMirror.tags.blockArea; // Null, or the source of the last update
 
-  this.outOfDate_ = null; // Inject Blockly
+  this.outOfDate_ = null; // Have to call BEFORE we inject, or Blockly will delete the css string!
+
+  this.loadBlocklyCSS(); // Inject Blockly
 
   var blocklyOptions = {
     media: blockMirror.configuration.blocklyMediaPath,
