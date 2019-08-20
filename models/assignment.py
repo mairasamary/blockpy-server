@@ -84,7 +84,8 @@ class Assignment(Base):
 
     @staticmethod
     def decode_json(data, **kwargs):
-        if data['_schema_version'] in (1, 2):
+        _schema_version = data['_schema_version']
+        if _schema_version in (1, 2):
             data = dict(data)  # shallow copy
             del data['_schema_version']
             del data['owner_id__email']
@@ -93,7 +94,7 @@ class Assignment(Base):
             data['date_created'] = string_to_datetime(data['date_created'])
             for key, value in kwargs.items():
                 data[key] = value
-            if data['_schema_version'] == 1:
+            if _schema_version == 1:
                 data['instructions'] = data.pop('body')
                 data['on_run'] = data.pop('give_feedback')
                 data['on_change'] = data.pop('on_step')

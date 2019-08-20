@@ -33,7 +33,7 @@ class Course(Base):
 
     @staticmethod
     def decode_json(data, **kwargs):
-        if data['_schema_version'] == 1:
+        if data['_schema_version'] in (1,2):
             data = dict(data)  # shallow copy
             del data['_schema_version']
             del data['owner_id__email']
