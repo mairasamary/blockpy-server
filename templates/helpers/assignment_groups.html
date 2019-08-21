@@ -4,8 +4,7 @@
     {% set ns = namespace(found=false) %}
     {% set ns.any_secretive = False %}
     {% for assignment, submission in sorted_group %}
-        {% set secret = assignment|get_setting("secret") %}
-        {% set ns.any_secretive = ns.any_secretive or secret %}
+        {% set ns.any_secretive = ns.any_secretive or assignment.hidden %}
     {% endfor %}
 
     <style>

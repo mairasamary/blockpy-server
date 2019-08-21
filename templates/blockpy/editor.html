@@ -75,6 +75,7 @@
                 // Configuration constants
                 'blockly.path': {{ url_for('static', filename='blockly/media/')|tojson }},
                 'attachment.point': document.getElementById('blockpy-div'),
+                'callback.success': markCorrect,
                 "urls": {
                     "importDatasets": {{ config['CORGIS_URL']|tojson }},
                     'loadAssignment': {{ url_for('blockpy.load_assignment')|tojson }},
