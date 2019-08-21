@@ -9,6 +9,7 @@ from sqlalchemy.orm import relationship
 
 from main import app
 from models import models
+from models.log import Log
 from models.models import Base, db, ensure_dirs, optional_encoded_field, datetime_to_string
 
 
@@ -149,6 +150,9 @@ class Submission(Base):
                                 assignment_version=assignment.version)
         db.session.add(submission)
         db.session.commit()
+        # TODO: Log extra starting files!
+        Log.new(assignment.id, assignment.version, course_id, user_id,
+                "File.Create", "answer.py", "", "", assignment.starting_code, "", "")
         return submission
 
     @staticmethod

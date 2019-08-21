@@ -5,12 +5,10 @@ import os
 from urllib.parse import quote as url_quote, urlencode
 from functools import wraps
 
+from models.log import Log
 from models.submission import Submission
 
-try:
-    from html.parser import HTMLParser
-except:
-    from HTMLParser import HTMLParser
+from html.parser import HTMLParser
 
 from urllib.parse import unquote_plus, urlparse, parse_qsl, quote_plus, urlunparse, urlencode
 
@@ -407,3 +405,11 @@ def ajax_success(original_data):
     original_data['ip'] = request.remote_addr
     original_data['success'] = True
     return jsonify(original_data)
+
+
+def make_log_entry(assignment_id, assignment_version, course_id, user_id,
+                   event_type, file_path='', category='', label='', message='', timestamp=None, timezone=None):
+    timestamp = request.values.get('timestamp') if timestamp is None else timestamp
+    timezone = request.values.get('timezone') if timezone is None else timezone
+    return Log.new(assignment_id, assignment_version, course_id, user_id,
+                   event_type, file_path, category, label, message, timestamp, timezone)

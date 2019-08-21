@@ -46,6 +46,26 @@ class Log(Base):
     # => source_location (line of code with error)
     # => score
 
+    def encode_json(self):
+        return {
+            '_schema_version': 2,
+            'id': self.id,
+            'date_modified': datetime_to_string(self.date_modified),
+            'date_created': datetime_to_string(self.date_created),
+
+            'assignment_id': self.assignment_id,
+            'assignment_version': self.assignment_version,
+            'course_id': self.course_id,
+            'subject_id': self.subject_id,
+            'event_type': self.event_type,
+            'file_path': self.file_path,
+            'category': self.category,
+            'label': self.label,
+            'message': self.message,
+            'client_timestamp': self.client_timestamp,
+            'client_timezone': self.client_timezone
+        }
+
     @staticmethod
     def new(assignment_id, assignment_version, course_id, subject_id, event_type,
             file_path, category, label, message, client_timestamp, client_timezone):
@@ -70,7 +90,7 @@ class Log(Base):
                 .filter(Log.course_id == course_id)
                 .filter(Log.event == 'feedback')
                 .filter(Log.action != "Success")
-                .group_by(Log.user_id)
+                .group_by(Log.subject_id)
                 .all())
 
     @staticmethod
@@ -79,9 +99,10 @@ class Log(Base):
 
     @staticmethod
     def get_history(course_id, assignment_id, user_id):
-        return Log.query.filter_by(course_id=course_id,
+        logs = Log.query.filter_by(course_id=course_id,
                                    assignment_id=assignment_id,
-                                   user_id=user_id).all()
+                                   subject_id=user_id).order_by(Log.client_timestamp.asc()).all()
+        return [log.encode_json() for log in logs]
 
     def for_file(self):
         return ", ".join((

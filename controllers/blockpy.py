@@ -20,7 +20,8 @@ from models.assignment_group import AssignmentGroup
 from controllers.helpers import (lti, highlight_python_code, normalize_url,
                                  ensure_dirs, ajax_failure, parse_assignment_load, require_request_parameters,
                                  get_course_id, maybe_int, get_user, check_resource_exists, ajax_success,
-                                 login_required, require_course_instructor, require_course_grader, maybe_bool)
+                                 login_required, require_course_instructor, require_course_grader, maybe_bool,
+                                 make_log_entry)
 
 blueprint_blockpy = Blueprint('blockpy', __name__, url_prefix='/blockpy')
 
@@ -88,14 +89,6 @@ def load_editor(lti, editor_information):
     return render_template('blockpy/editor.html', ip=request.remote_addr, **editor_information)
 
 
-def make_log_entry(assignment_id, assignment_version, course_id, user_id,
-                   event_type, file_path='', category='', label='', message='', timestamp=None, timezone=None):
-    timestamp = request.values.get('timestamp') if timestamp is None else timestamp
-    timezone = request.values.get('timezone') if timezone is None else timezone
-    return Log.new(assignment_id, assignment_version, course_id, user_id,
-                   event_type, file_path, category, label, message, timestamp, timezone)
-
-
 @blueprint_blockpy.route('/load_assignment/', methods=['GET', 'POST'])
 @blueprint_blockpy.route('/load_assignment', methods=['GET', 'POST'])
 @require_request_parameters('assignment_id')
@@ -156,7 +149,7 @@ def save_student_file(filename, course_id, user):
     version_change = submission.assignment.version != submission.assignment_version
     submission.save_code(filename, code)
     make_log_entry(submission.assignment_id, submission.assignment_version,
-                   course_id, user.id, "File.Save", "answer.py", message=code)
+                   course_id, user.id, "File.Edit", "answer.py", message=code)
     return ajax_success({"version_change": version_change})
 
 
@@ -173,7 +166,7 @@ def save_instructor_file(course_id, user, filename):
     # Perform update
     assignment.save_file(filename, code)
     make_log_entry(assignment_id, assignment.version, course_id, user.id,
-                   "X-Instructor.File.Save", filename, message=code)
+                   "X-Instructor.File.Edit", filename, message=code)
     return ajax_success({})
 
 
@@ -182,11 +175,12 @@ def save_instructor_file(course_id, user, filename):
 @require_request_parameters("assignment_id", "course_id", "user_id")
 def load_history():
     # Get parameters
-    course_id = int(request.values.get('course_id'))
-    assignment_id = int(request.values.get('assignment_id'))
-    student_id = int(request.values.get('student_id'))
+    course_id = maybe_int(request.values.get('course_id'))
+    assignment_id = maybe_int(request.values.get('assignment_id'))
+    student_id = maybe_int(request.values.get('user_id'))
     user, user_id = get_user()
     # Verify user can see the submission
+    print(user_id, student_id, course_id, user.is_grader(course_id))
     if user_id != student_id and not user.is_grader(course_id):
         return ajax_failure("Only graders can see logs for other people.")
     history = Log.get_history(course_id, assignment_id, student_id)
@@ -322,6 +316,8 @@ def update_submission(lti, lti_exception=None):
     if was_changed or force_update:
         submission.save_block_image(image)
         lti_post_grade(lti, submission, lis_result_sourcedid, assignment_group_id, user_id, course_id)
+        make_log_entry(submission.assignment_id, submission.assignment_version,
+                       course_id, user_id, "X-Submission.LMS", "answer.py", message=str(score))
     return ajax_success({"submitted": was_changed or force_update, "changed": was_changed})
 
 
@@ -344,33 +340,48 @@ def get_submission_image(lti=lti):
 
 @blueprint_blockpy.route('/save_assignment/', methods=['GET', 'POST'])
 @blueprint_blockpy.route('/save_assignment', methods=['GET', 'POST'])
+@require_request_parameters('assignment_id')
+@login_required
 def save_assignment(lti=lti):
-    assignment_id = request.values.get('assignment_id', None)
-    if assignment_id is None:
-        return ajax_failure("No Assignment ID given!")
-    presentation = request.values.get('introduction', "")
-    parsons = request.values.get('parsons', "false") == "true"
-    importable = request.values.get('importable', "false") == "true"
-    secret = request.values.get('secret', "false") == "true"
-    disable_algorithm_errors = request.values.get('disable_algorithm_errors', 'false') == 'true'
-    disable_timeout = request.values.get('disable_timeout', 'false') == 'true'
-    # text_first = request.values.get('text_first', "false") == "true"
-    mode = request.values.get("initial", None)
-    name = request.values.get('name', "")
-    modules = request.values.get('modules', "")
-    files = request.values.get('files', "")
-    assignment = Assignment.by_id(int(assignment_id))
-    if not g.user.is_instructor(int(assignment.course_id)):
-        return jsonify(success=False, message="You are not an instructor in this assignments' course.")
-    Assignment.edit(assignment_id=assignment_id, instructions=presentation, name=name, parsons=parsons, mode=mode,
-                    modules=modules, importable=importable, disable_algorithm_errors=disable_algorithm_errors,
-                    disable_timeout=disable_timeout, files=files, secret=secret)
-    return jsonify(success=True, ip=request.remote_addr)
+    assignment_id = request.values.get('assignment_id')
+    user, user_id = get_user()
+    course_id = get_course_id()
+    assignment = Assignment.query.get(assignment_id)
+    # Verify exists
+    check_resource_exists(assignment, "Assignment", assignment_id)
+    # Verify permissions
+    if assignment.owner_id != user.id:
+        require_course_grader(user, assignment.course_id)
+    # Parse new settings
+    updates = {}
+    if "hidden" in request.values:
+        updates["hidden"] = maybe_bool(request.values.get("hidden"))
+    if "reviewed" in request.values:
+        updates["reviewed"] = maybe_bool(request.values.get("reviewed"))
+    if "public" in request.values:
+        updates["public"] = maybe_bool(request.values.get("public"))
+    if "url" in request.values:
+        updates["url"] = request.values.get("url") or None
+    if "ip_ranges" in request.values:
+        updates["ip_ranges"] = request.values.get("ip_ranges")
+    if "name" in request.values:
+        updates["name"] = request.values.get("name")
+    if "settings" in request.values:
+        updates["settings"] = request.values.get("settings")
+    # Perform update
+    modified = assignment.edit(updates)
+    make_log_entry(assignment.id, assignment.version,
+                   course_id or assignment.course_id,
+                   user.id, "X-Instructor.Settings.Edit", "assignment_settings.blockpy",
+                   message=json.dumps(updates))
+    return ajax_success({"modified": modified})
 
 
 @blueprint_blockpy.route('/load_file/', methods=['GET', 'POST'])
 @blueprint_blockpy.route('/load_file', methods=['GET', 'POST'])
 def load_file():
+    return False
+    """
     assignment_id = request.values.get('assignment_id', '0')
     filename = request.values.get('filename', None)
     type = request.values.get('type', None)
@@ -389,6 +400,7 @@ def load_file():
         return jsonify(success=True, data=contents, ip=request.remote_addr)
     except IOError as e:
         return jsonify(success=False, message=str(e), ip=request.remote_addr)
+        """
 
 
 GAP_THRESHOLD = 2 * 60

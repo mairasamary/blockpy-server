@@ -104,73 +104,16 @@ class Assignment(Base):
     BUILTIN_MODULES = 'Properties,Decisions,Iteration,Calculation,Output,Values,Lists,Dictionaries,Separator,Input,Conversion'.split(
         ',')
 
-    @staticmethod
-    def edit(assignment_id, instructions=None, name=None,
-             on_run=None, on_change=None, starting_code=None,
-             parsons=None, text_first=None, mode=None,
-             modules=None, importable=False,
-             files=None,
-             disable_algorithm_errors=False, disable_timeout=False,
-             type='blockpy', secret=None):
-        assignment = Assignment.by_id(assignment_id)
-        if name is not None:
-            assignment.name = name
-            assignment.version += 1
-        if instructions is not None:
-            assignment.instructions = instructions
-            assignment.version += 1
-        if on_run is not None:
-            assignment.on_run = on_run
-            assignment.version += 1
-        if on_change is not None:
-            assignment.on_change = on_change
-            assignment.version += 1
-        if starting_code is not None:
-            assignment.starting_code = starting_code
-            assignment.version += 1
-        # Is this check necessary and correct? It works fine for now...
-        if modules is not None:
-            if not assignment.settings:
-                assignment.settings = "{}"
-            settings = json.loads(assignment.settings)
-            if 'modules' not in settings:
-                settings['modules'] = {'added': [], 'removed': []}
-            if 'importable' not in settings:
-                settings['importable'] = False
-            if 'disable_algorithm_errors' not in settings:
-                settings['disable_algorithm_errors'] = False
-            if 'disable_timeout' not in settings:
-                settings['disable_timeout'] = False
-            kept_modules = modules.split(",")
-            settings['importable'] = importable
-            settings['secret'] = secret if secret is not None else settings.get('secret', False)
-            settings['disable_algorithm_errors'] = disable_algorithm_errors
-            settings['disable_timeout'] = disable_timeout
-            settings['modules']['added'] = [m for m in kept_modules
-                                            if m not in Assignment.BUILTIN_MODULES]
-            settings['modules']['removed'] = [m for m in Assignment.BUILTIN_MODULES
-                                              if m not in kept_modules and m != 'Separator']
-            settings['files'] = [f for f in files.split(",") if f]
-            assignment.settings = json.dumps(settings)
-        assignment.type = type
-        if parsons is True:
-            assignment.mode = 'parsons'
-            assignment.version += 1
-        elif assignment.mode == "parsons":
-            # I'll be honest, I don't know what's going on here.
-            assignment.mode = 'parsons'
-            assignment.version += 1
-        elif parsons is False and assignment.type == 'blockpy':
-            assignment.mode = 'blocks'
-            assignment.version += 1
-        if mode is not None:
-            assignment.mode = mode
-            assignment.version += 1
-        if text_first is True:
-            assignment.mode = 'text'
-            assignment.version += 1
-        db.session.commit()
-        return assignment
+    def edit(self, updates):
+        modified = False
+        for key, value in updates.items():
+            if getattr(self, key) != value:
+                modified = True
+                setattr(self, key, value)
+        if modified:
+            self.version += 1
+            db.session.commit()
+        return modified
 
     def to_dict(self):
         return {
