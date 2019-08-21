@@ -48,6 +48,7 @@
         {% for assignment, submission in sorted_group -%}
             {{ assignment.id }}: "{{ url_for(page_type, 
                                         assignment_group_id= request.args.get("assignment_group_id"),
+                                        assignment_group_url= request.args.get("assignment_group_url"),
                                         assignment_id=assignment.id,
                                         embed=embed)|safe }}",
         {%- endfor %}

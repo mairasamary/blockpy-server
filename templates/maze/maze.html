@@ -92,10 +92,9 @@
                 if (MAZE_URL_MAP.load_success) {
                     markSuccess();
                 }
-                var result =
-                {{ submission.code.replace('\n', '\\n')|tojson }}
+                var result = {{ submission.code.replace('\n', '\\n')|tojson }};
+                Blockly.getMainWorkspace().clear();
                 if (result) {
-                    Blockly.getMainWorkspace().clear();
                     Blockly.Xml.domToWorkspace(Blockly.getMainWorkspace(),
                         Blockly.Xml.textToDom(result));
                 }

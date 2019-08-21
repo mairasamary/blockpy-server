@@ -12,6 +12,7 @@ blueprint_maze = Blueprint('maze', __name__, url_prefix='/maze')
 @blueprint_maze.route('/load', methods=['GET', 'POST'])
 def load(lti=lti, lti_exception=None, assignments=None, submissions=None, embed=False):
     editor_information = parse_assignment_load()
+    print(editor_information)
     return load_editor(lti, editor_information)
 
 
