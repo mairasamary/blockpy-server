@@ -221,7 +221,11 @@ BlockMirror.prototype.validateConfiguration = function (configuration) {
 
   this.configuration.blockDelay = configuration.blockDelay || false; // Toolbox
 
-  this.configuration.toolbox = configuration.toolbox || "normal";
+  this.configuration.toolbox = configuration.toolbox || "normal"; // IsParsons?
+
+  this.isParsons = function () {
+    return false;
+  };
 };
 
 BlockMirror.prototype.initializeVariables = function () {
@@ -798,7 +802,12 @@ BlockMirrorBlockEditor.prototype.setCode = function (code, quietly) {
       var xml_code = Blockly.Xml.textToDom(result.xml);
       this.workspace.clear();
       Blockly.Xml.domToWorkspace(xml_code, this.workspace);
-      this.workspace.cleanUp();
+
+      if (this.blockMirror.isParsons()) {
+        this.workspace.shuffle();
+      } else {
+        this.workspace.cleanUp();
+      }
     } catch (error) {
       console.error(error);
     }
