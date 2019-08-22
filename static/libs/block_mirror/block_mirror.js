@@ -2168,6 +2168,14 @@ BlockMirrorTextToBlocks.prototype.MODULE_FUNCTION_IMPORTS = {
   "turtle": "import turtle"
 };
 BlockMirrorTextToBlocks.prototype.MODULE_FUNCTION_SIGNATURES = {
+  "cisc108": {
+    'assert_equal': {
+      returns: false,
+      simple: ["left", "right"],
+      message: "assert_equal",
+      colour: BlockMirrorTextToBlocks.COLOR.PYTHON
+    }
+  },
   "turtle": {},
   'plt': {
     'show': {
