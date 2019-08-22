@@ -14929,17 +14929,20 @@ Compiler.prototype.buildcodeobj = function (n, coname, decorator_list, args, cal
     for (i = 0; args && i < args.args.length; ++i) {
         id = args.args[i].arg;
         if (this.isCell(id)) {
-            this.u.varDeclsCode += "$cell." + id.v + "=" + id.v + ";";
+            let mangled = fixReservedNames(mangleName(this.u.private_, id).v);
+            this.u.varDeclsCode += "$cell." + mangled + "=" + mangled + ";";
         }
     }
     for (i = 0; args && args.kwonlyargs && i < args.kwonlyargs.length; ++i) {
         id = args.kwonlyargs[i].arg;
         if (this.isCell(id)) {
-            this.u.varDeclsCode += "$cell." + id.v + "=" + id.v + ";";
+            let mangled = fixReservedNames(mangleName(this.u.private_, id).v);
+            this.u.varDeclsCode += "$cell." + mangled + "=" + mangled + ";";
         }
     }
     if (vararg && this.isCell(vararg.arg)) {
-        this.u.varDeclsCode += "$cell." + vararg.arg.v + "=" + vararg.arg.v + ";";
+        let mangled = fixReservedNames(mangleName(this.u.private_, vararg.arg).v);
+        this.u.varDeclsCode += "$cell." + mangled + "=" + mangled + ";";
     }
 
     //
@@ -15423,6 +15426,7 @@ var D_CELLVARS = 2;
 
 Compiler.prototype.isCell = function (name) {
     var mangled = mangleName(this.u.private_, name).v;
+    mangled = fixReservedNames(mangled);
     var scope = this.u.ste.getScope(mangled);
     var dict = null;
     return scope === Sk.SYMTAB_CONSTS.CELL;
@@ -15487,7 +15491,7 @@ Compiler.prototype.nameop = function (name, ctx, dataToStore) {
     // have to do this after looking it up in the scope
     mangled = fixReservedWords(mangled);
 
-    //print("mangled", mangled);
+    //console.log("mangled", mangled);
     // TODO TODO TODO todo; import * at global scope failing here
     Sk.asserts.assert(scope || name.v.charAt(1) === "_");
 
@@ -21189,6 +21193,7 @@ Sk.builtin.func.prototype.tp$call = function (posargs, kw) {
         co_argcount = this.func_code.co_varnames ? this.func_code.co_varnames.length : posargs.length;
     }
     let varnames = this.func_code.co_varnames || [];
+
     let co_kwonlyargcount = this.func_code.co_kwonlyargcount || 0;
     let totalArgs = co_argcount + co_kwonlyargcount;
     let kwargs;
@@ -21201,7 +21206,6 @@ Sk.builtin.func.prototype.tp$call = function (posargs, kw) {
     /* Copy positional arguments into arguments to our JS function*/
     let nposargs = posargs.length;
     let args = (posargs.length <= co_argcount) ? posargs : posargs.slice(0, co_argcount);
-
 
     /* Pack other positional arguments into the *args argument */
     if (this.func_code.co_varargs) {
@@ -21282,6 +21286,7 @@ Sk.builtin.func.prototype.tp$call = function (posargs, kw) {
             throw new Sk.builtin.TypeError(this.tp$getname() + "() missing " + missing.length + " required keyword argument" + (missing.length==1?"":"s") + ": " + missing.join(", "));
         }
     }
+
 
     if (this.func_closure) {
         // todo; OK to modify?
@@ -27690,7 +27695,6 @@ Sk.builtin.object.prototype.GenericGetAttr = function (pyName, canSuspend) {
     dict = this["$d"] || this.constructor["$d"];
     //print("getattr", tp.tp$name, name);
 
-    //console.log("OKAY", jsName, this.tp$name);
     if (jsName === "__class__") {
         if (tp !== null) {
             return tp;
@@ -34676,7 +34680,7 @@ var Sk = {}; // jshint ignore:line
 
 Sk.build = {
     githash: "9f8989f50649075d45d468e6ca8aafacaeaa793c",
-    date: "2019-08-20T20:18:50.255Z"
+    date: "2019-08-22T11:58:58.939Z"
 };
 
 /**

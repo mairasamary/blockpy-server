@@ -75,7 +75,6 @@
                 // Configuration constants
                 'blockly.path': {{ url_for('static', filename='blockly/media/')|tojson }},
                 'attachment.point': document.getElementById('blockpy-div'),
-                'callback.success': markCorrect,
                 "urls": {
                     "importDatasets": {{ config['CORGIS_URL']|tojson }},
                     'loadAssignment': {{ url_for('blockpy.load_assignment')|tojson }},
@@ -97,9 +96,11 @@
                 // Group Information
                 {% if assignment_group_id != None %}
                     "user.group_id": {{ assignment_group_id|tojson }},
-                    'completedCallback': function (data) {
-                        markCorrect(data.assignment_id)
-                    },
+                    'callback.success': markCorrect,
+                {% endif %}
+
+                {% if role in ("owner", "grader") %}
+                    "display.instructor": true,
                 {% endif %}
 
                 {% for name, value in request.args.items() %}
