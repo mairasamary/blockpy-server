@@ -232,7 +232,7 @@ def view_submissions(course_id, user_id, assignment_group_id):
     # Check permissions
     for submission in submissions:
         if submission.user_id != viewer_id:
-            require_course_grader(viewer_id, submission.course_id)
+            require_course_grader(viewer, submission.course_id)
     # Do action
     points_total, points_possible = calculate_submissions_score(assignments, submissions)
     score = round(points_total / points_possible, 2)
