@@ -14914,7 +14914,7 @@ Compiler.prototype.buildcodeobj = function (n, coname, decorator_list, args, cal
     // note special usage of 'this' to avoid having to slice globals into
     // all function invocations in call
     this.u.varDeclsCode += "var $blk=" + entryBlock + ",$exc=[],$loc=" + locals + cells + ",$gbl=this,$err=undefined,$ret=undefined,$postfinally=undefined,$currLineNo=undefined,$currColNo=undefined;";
-    this.u.varDeclsCode += "Sk.scopes.push('"+coname+"');";
+    this.u.varDeclsCode += "/*Sk.scopes.push('"+coname+"');*/";
     if (Sk.execLimit !== null) {
         this.u.varDeclsCode += "if (typeof Sk.execStart === 'undefined') {Sk.execStart = Date.now();Sk.execPaused=0}";
     }
@@ -15265,7 +15265,7 @@ Compiler.prototype.cclass = function (s) {
     entryBlock = this.newBlock("class entry");
 
     this.u.prefixCode = "var " + scopename + "=(function $" + s.name.v + "$class_outer($globals,$locals,$cell){var $gbl=$globals,$loc=$locals;$free=$globals;";
-    this.u.prefixCode += "Sk.scopes.push('"+s.name+"');";
+    this.u.prefixCode += "/*Sk.scopes.push('"+s.name+"');*/";
     this.u.switchCode += "(function $" + s.name.v + "$_closure($cell){";
     this.u.switchCode += "var $blk=" + entryBlock + ",$exc=[],$ret=undefined,$postfinally=undefined,$currLineNo=undefined,$currColNo=undefined;";
 
@@ -15638,9 +15638,9 @@ Compiler.prototype.enterScope = function (name, key, lineno, canSuspend) {
 };
 
 Compiler.prototype.exitScope = function () {
-    prev.suffixCode += "Sk.scopes.pop();";
     var mangled;
     var prev = this.u;
+    prev.suffixCode += "/*Sk.scopes.pop();*/";
     this.nestlevel--;
     if (this.stack.length - 1 >= 0) {
         this.u = this.stack.pop();
@@ -15708,7 +15708,7 @@ Compiler.prototype.cmod = function (mod) {
     this.u.varDeclsCode =
         "var $gbl = $forcegbl || {}, $blk=" + entryBlock +
         ",$exc=[],$loc=$gbl,$cell={},$err=undefined;" +
-        "if(!Sk.scopes){Sk.scopes=[];}Sk.scopes.push('<module>');"+
+        "/*if(!Sk.scopes){Sk.scopes=[];}Sk.scopes.push('<module>');*/"+
         "$loc.__file__=new Sk.builtins.str('" + this.filename +
         "');var $ret=undefined,$postfinally=undefined,$currLineNo=undefined,$currColNo=undefined;";
 
@@ -21905,7 +21905,7 @@ Sk.importModuleInternal_ = function (name, dumpJS, modname, suppliedPyBody, rela
         // }
 
         finalcode += "\n" + co.funcname + ";";
-        console.log(finalcode);
+        //console.log(finalcode);
         modscope = Sk.global["eval"](finalcode);
 
         module["$d"] = {
@@ -34776,7 +34776,7 @@ var Sk = {}; // jshint ignore:line
 
 Sk.build = {
     githash: "a55d93b35d9e7692bf9f5adcd1d1eb8550e11698",
-    date: "2019-08-27T23:52:07.624Z"
+    date: "2019-08-28T00:08:36.750Z"
 };
 
 /**
