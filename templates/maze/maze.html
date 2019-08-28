@@ -11,6 +11,35 @@
 
 {% block extrahead %}
 
+    <script>
+    // Fix localstorage if attempted to be used
+    try {
+        var mod = "BLOCKPY_LOCALSTORAGE_TEST";
+        localStorage.setItem(mod, mod);
+        localStorage.removeItem(mod);
+    } catch(e) {
+        try {
+            localStorage = {
+                _data: {},
+                setItem: function (id, val) {
+                    return this._data[id] = String(val);
+                },
+                getItem: function (id) {
+                    return this._data.hasOwnProperty(id) ? this._data[id] : undefined;
+                },
+                removeItem: function (id) {
+                    return delete this._data[id];
+                },
+                clear: function () {
+                    return this._data = {};
+                }
+            };
+        } catch(e) {
+            alert("Your browser does not support localStorage. Please either enable localStorage or switch browsers!")
+        }
+    }
+    </script>
+
     {% assets "blockly_maze_css" %}
         <link rel="stylesheet" href="{{ ASSET_URL }}"/>
     {% endassets %}
@@ -34,6 +63,7 @@
     </style>
 
     <script>
+
         URL_ROOT = "{{ url_for('static', filename='') }}";
         LEVEL_SET = {{ level }};
         MAZE_URL_MAP = {
