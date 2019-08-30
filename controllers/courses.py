@@ -234,12 +234,13 @@ def change_role():
 
 @courses.route('dashboard/', methods=['GET', 'POST'])
 @courses.route('dashboard', methods=['GET', 'POST'])
-@login_required
-@lti(request='any')
+@lti(request='initial')
 def dashboard(lti=lti):
     """
     :type lti: controllers.pylti.flask.lTI
     """
+    if 'user' not in g and not g.user:
+        return "You are not logged in."
     return render_template('courses/dashboard.html', embed=True)
 
 

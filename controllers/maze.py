@@ -19,6 +19,11 @@ def load(lti=lti, lti_exception=None, assignments=None, submissions=None, embed=
 def load_editor(lti, editor_information):
     assignment = Assignment.by_id(editor_information['current_assignment_id'])
     position = editor_information['assignments'].index(assignment)
+    if position is None:
+        return "No assignment found for this user/course/assignment (maze game):"+repr(editor_information)
+    if not editor_information['submissions']:
+        return "No submission found for this user/course/assignment (maze game):"+repr(editor_information)
+
     return render_template('maze/maze.html', ip=request.remote_addr,
                            level=assignment.name,
                            submission=editor_information['submissions'][position],

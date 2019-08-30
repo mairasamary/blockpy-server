@@ -12225,6 +12225,8 @@ Sk.builtin.setattr = function setattr (obj, pyName, value) {
             throw new Sk.builtin.TypeError("attribute name must be string");
         }
         jsName = pyName.$jsstr();
+        console.log("++++", obj, "+++++");
+        console.log("----", obj.tp$setattr, "-----");
         if (obj.tp$setattr) {
             obj.tp$setattr(new Sk.builtin.str(Sk.fixReservedWords(jsName)), value);
         } else {
@@ -12735,6 +12737,42 @@ Sk.builtin.execfile = function execfile () {
     throw new Sk.builtin.NotImplementedError("execfile is not yet implemented");
 };
 
+/**
+ * Okay, I'll be honest, this is 100% not a real code object. It just holds the source
+ * code and filename. I'm relying on the `exec` call to actually compile it. IT'S ALL
+ * A BIG LIE. I'm sorry. -acbart
+ * @param filename
+ * @param source
+ * @returns {Sk.builtin|*}
+ */
+Sk.builtin.code = function(filename, source) {
+    if (!(this instanceof Sk.builtin.code)) {
+        return new Sk.builtin.code(filename, source);
+    }
+    this.filename = filename;
+    this.source = source;
+    this.__class__ = Sk.builtin.code;
+    return this;
+};
+Sk.abstr.setUpInheritance("code", Sk.builtin.code, Sk.builtin.object);
+Sk.builtin.code.prototype["$r"] = function () {
+    return new Sk.builtin.str("<code object, file \""+this.filename+"\">");
+};
+Sk.exportSymbol("Sk.builtin.code", Sk.builtin.code);
+
+Sk.builtin.compile = function(source, filename, mode, flags, dont_inherit, optimize) {
+    Sk.builtin.pyCheckArgsLen("compile", arguments.length, 3, 6);
+    source = Sk.ffi.remapToJs(source);
+    filename = Sk.ffi.remapToJs(filename);
+    if (!Sk.compiledSources) {
+        Sk.compiledSources = {};
+    }
+    Sk.compiledSources[filename] = source;
+    return new Sk.builtin.code(filename, source);
+};
+
+
+
 var extractDict = function(obj) {
     var ret = {};
     var k, v, kAsJs, iter;
@@ -12750,11 +12788,17 @@ var extractDict = function(obj) {
     return ret;
 };
 
-Sk.builtin.exec = function execf(python_code, new_globals) {
+Sk.builtin.exec = function execf(pythonCode, new_globals) {
     Sk.builtin.pyCheckArgs("exec", arguments, 1, 2);
     var backupRG = Sk.retainGlobals;
     Sk.retainGlobals = true;
-    var filename = "test";
+    var filename = "<string>";
+    if (pythonCode instanceof Sk.builtin.code) {
+        filename = pythonCode.filename;
+        pythonCode = pythonCode.source;
+    } else {
+        pythonCode = Sk.ffi.remapToJs(pythonCode);
+    }
     var new_globals_copy = extractDict(new_globals);
     if (!new_globals_copy.__file__) {
         new_globals_copy.__file__ = Sk.ffi.remapToPy(filename);
@@ -12769,8 +12813,10 @@ Sk.builtin.exec = function execf(python_code, new_globals) {
         backupSysmodules.mp$ass_subscript(key, value);
     });
     Sk.globals = new_globals_copy; // Possibly copy over some "default" ones?
-    python_code = Sk.ffi.remapToJs(python_code);
-    Sk.importMainWithBody(filename, false, python_code, true);
+    //Sk.importMainWithBody(filename, false, python_code, true);
+    var name = filename.endsWith(".py") ? filename.slice(0, -3) : filename;
+    var modname = name;
+    Sk.importModuleInternal_(name, false, modname, pythonCode, undefined, false, true)
     Sk.globals = backupGlobals;
     Sk.misceval.iterFor(backupSysmodules.tp$iter(), function(key) {
         var value = backupSysmodules.mp$subscript(key);
@@ -12906,6 +12952,7 @@ Sk.builtins = {
     "any"       : new Sk.builtin.func(Sk.builtin.any),
     "all"       : new Sk.builtin.func(Sk.builtin.all),
 
+    "BaseException"      : Sk.builtin.BaseException,
     "AttributeError"     : Sk.builtin.AttributeError,
     "ValueError"         : Sk.builtin.ValueError,
     "Exception"          : Sk.builtin.Exception,
@@ -12966,7 +13013,9 @@ Sk.builtins = {
     "bytearray" : Sk.builtin.bytearray,
     "callable"  : Sk.builtin.callable,
     "delattr"   : Sk.builtin.delattr,
+    "__import__": Sk.builtin.__import__,
     "eval_$rn$" : Sk.builtin.eval_,
+    "compile"   : Sk.builtin.compile,
     "exec"      : Sk.builtin.exec,
     "execfile"  : Sk.builtin.execfile,
     "frozenset" : Sk.builtin.frozenset,
@@ -14150,7 +14199,7 @@ Compiler.prototype.outputSuspensionHelpers = function (unit) {
 
     output +=  ("try {"+
                     "$ret=susp.child.resume();"+
-                this.handleTraceback(false)+
+                this.handleTraceback(false, unit.scopename)+
                 // Close out function
                 ";");
 
@@ -14895,7 +14944,6 @@ Compiler.prototype.buildcodeobj = function (n, coname, decorator_list, args, cal
     if (hasCell) {
         this.u.prefixCode += "\n// has cell\n";
     }
-    this.u.prefixCode += "Sk.scopes=Sk.scopes||[];Sk.scopes.push('"+coname.v+"');\n";
 
     //
     // set up standard dicts/variables
@@ -15000,8 +15048,7 @@ Compiler.prototype.buildcodeobj = function (n, coname, decorator_list, args, cal
     this.u.switchCode = "while(true){try{";
     this.u.switchCode +=    this.outputInterruptTest();
     this.u.switchCode +=    "switch($blk){";
-    this.u.suffixCode = "}" + this.handleTraceback(true);
-    this.u.suffixCode += "Sk.scopes.pop();";
+    this.u.suffixCode = "}" + this.handleTraceback(true, coname.v);
     this.u.suffixCode += "});";
     /*this.u.suffixCode = ("} }catch(err){ "+
                          "if (err instanceof Sk.builtin.TimeLimitError) {"+
@@ -15267,7 +15314,6 @@ Compiler.prototype.cclass = function (s) {
     entryBlock = this.newBlock("class entry");
 
     this.u.prefixCode = "var " + scopename + "=(function $" + s.name.v + "$class_outer($globals,$locals,$cell){var $gbl=$globals,$loc=$locals;$free=$globals;";
-    this.u.prefixCode += "Sk.scopes=Sk.scopes||[];Sk.scopes.push('"+s.name.v+"');\n";
     this.u.switchCode += "(function $" + s.name.v + "$_closure($cell){";
     this.u.switchCode += "var $blk=" + entryBlock + ",$exc=[],$ret=undefined,$postfinally=undefined,$currLineNo=undefined,$currColNo=undefined;";
 
@@ -15281,8 +15327,7 @@ Compiler.prototype.cclass = function (s) {
     this.u.switchCode += "while(true){try{";
     this.u.switchCode += this.outputInterruptTest();
     this.u.switchCode += "switch($blk){";
-    this.u.suffixCode = "}" + this.handleTraceback(true);
-    this.u.suffixCode += "Sk.scopes.pop();";
+    this.u.suffixCode = "}" + this.handleTraceback(true, s.name.v);
     /*this.u.suffixCode = ("}}catch(err){ if (err instanceof Sk.builtin.TimeLimitError) {"+
         "Sk.execStart = Date.now();Sk.execPaused=0"+
         "} if (!(err instanceof Sk.builtin.BaseException)) {"+
@@ -15710,7 +15755,6 @@ Compiler.prototype.cmod = function (mod) {
     this.u.varDeclsCode =
         "var $gbl = $forcegbl || {}, $blk=" + entryBlock +
         ",$exc=[],$loc=$gbl,$cell={},$err=undefined;" +
-        "Sk.scopes=Sk.scopes||[];Sk.scopes.push('<module>');"+
         "$loc.__file__=new Sk.builtins.str('" + this.filename +
         "');var $ret=undefined,$postfinally=undefined,$currLineNo=undefined,$currColNo=undefined;";
 
@@ -15741,8 +15785,7 @@ Compiler.prototype.cmod = function (mod) {
     this.u.switchCode = "while(true){try{";
     this.u.switchCode += this.outputInterruptTest();
     this.u.switchCode += "switch($blk){";
-    this.u.suffixCode = "}" + this.handleTraceback(true);
-    this.u.suffixCode += "Sk.scopes.pop();";
+    this.u.suffixCode = "}" + this.handleTraceback(true, "<module>");
     this.u.suffixCode += "});";
     //this.u.suffixCode += "}catch(err){ if (err instanceof Sk.builtin.TimeLimitError) { Sk.execStart = Date.now();Sk.execPaused=0} if (!(err instanceof Sk.builtin.BaseException)) { err = new Sk.builtin.ExternalError(err); } err.traceback.push({lineno: $currLineNo, colno: $currColNo, filename: '"+this.filename+"'}); if ($exc.length>0) { $err = err; $blk=$exc.pop(); continue; } else { throw err; }} } });";
 
@@ -15773,15 +15816,19 @@ Compiler.prototype.cmod = function (mod) {
     return modf;
 };
 
-Compiler.prototype.handleTraceback = function(doContinue) {
+Compiler.prototype.handleTraceback = function(doContinue, scopeName) {
     doContinue = doContinue ? "continue" : "";
     return ("}catch(err){ "+
-        "Sk.err=[err,$blk];"+
         "if(err instanceof Sk.builtin.TimeLimitError){"+
         "Sk.execStart=Date.now();Sk.execPaused=0"+
         "}if(!(err instanceof Sk.builtin.BaseException)) {"+
         "err=new Sk.builtin.ExternalError(err);" +
-        "}err.traceback.push({lineno:$currLineNo,colno:$currColNo,filename:'"+this.filename+"'});"+
+        "}Sk.err=err;err.traceback.push({"+
+            "lineno:$currLineNo,"+
+            "colno:$currColNo,"+
+            "filename:'"+this.filename+"'," +
+            "scope:'"+scopeName+"'"+
+        "});"+
         "if($exc.length>0){$err=err;$blk=$exc.pop();"+doContinue+"}else{throw err;}}}");
 };
 
@@ -18969,11 +19016,11 @@ Sk.exportSymbol("Sk.builtin.StopIteration", Sk.builtin.StopIteration);
 /**
  * @constructor
  */
-Sk.builtin.frame = function() {
+Sk.builtin.frame = function(trace) {
     if (!(this instanceof Sk.builtin.frame)) {
-        return new Sk.builtin.frame();
+        return new Sk.builtin.frame(trace);
     }
-
+    this.trace = trace;
     this.__class__ = Sk.builtin.frame;
     return this;
 };
@@ -18995,9 +19042,11 @@ Sk.builtin.frame.prototype.tp$getattr = function (name) {
             case "f_code": return Sk.builtin.none.none$;
             case "f_globals": return Sk.builtin.none.none$;
             case "f_lasti": return Sk.builtin.none.none$;
-            case "f_lineno": return Sk.builtin.none.none$;
+            case "f_lineno": return this.trace.lineno;
             case "f_locals": return Sk.builtin.none.none$;
             case "f_trace": return Sk.builtin.none.none$;
+            case "co_filename": return this.trace.filename;
+            case "co_name": return this.trace.scope;
         }
     }
 
@@ -19013,28 +19062,35 @@ Sk.exportSymbol("Sk.builtin.frame", Sk.builtin.frame);
  * @constructor
  * @param {Object} err
  */
-Sk.builtin.traceback = function(err) {
+Sk.builtin.traceback = function(trace) {
     if (!(this instanceof Sk.builtin.traceback)) {
-        return new Sk.builtin.traceback(err);
+        return new Sk.builtin.traceback(trace);
     }
-    
-    var lineno = null;
-    if (err.traceback.length > 0) {
-        lineno = err.traceback[0].lineno;
-    }
-    
-    this.tb_lineno = new Sk.builtin.int_(lineno);
+
+    this.trace = trace;
+
+    this.tb_lineno = new Sk.builtin.int_(trace.lineno);
     // TODO: Hack, you know this isn't right
-    this.tb_frame = Sk.builtin.none.none$;
+    this.tb_frame = new Sk.builtin.frame(trace);
     
     //tb_frame, tb_lasti, tb_lineno, tb_next
     
     this.__class__ = Sk.builtin.traceback;
-    
+
     return this;
 };
 
 Sk.abstr.setUpInheritance("traceback", Sk.builtin.traceback, Sk.builtin.object);
+Sk.builtin.traceback.fromList = function(traces) {
+    var current = Sk.builtin.traceback(traces[0]),
+        first = current;
+    for (var i=1; i<traces.length;i++) {
+        current.tb_next = Sk.builtin.traceback(traces[i]);
+        current = current.tb_next;
+    }
+    current.tb_next = Sk.builtin.none.none$;
+    return first;
+};
 Sk.builtin.traceback.prototype.tp$getattr = function (name) {
     if (name != null && (Sk.builtin.checkString(name) || typeof name === "string")) {
         var _name = name;
@@ -19045,9 +19101,9 @@ Sk.builtin.traceback.prototype.tp$getattr = function (name) {
         }
 
         switch (_name) {
-            case "tb_lineno": return this[_name];
-            case "tb_frame": return new Sk.builtin.frame();
-            case "tb_next": return Sk.builtin.none.none$;
+            case "tb_lineno":
+            case "tb_frame":
+            case "tb_next": return this[_name];
         }
     }
 
@@ -21733,8 +21789,11 @@ Sk.importSetUpPath = function (canSuspend) {
 Sk.importModuleInternal_ = function (name, dumpJS, modname, suppliedPyBody, relativeToPackage, returnUndefinedOnTopLevelNotFound, canSuspend) {
     //dumpJS = true;
     /* TODO: temporary hack, need to delete! */
-    if (name === "pedal.sandbox.sandbox") {
+    /*if (name === "pedal.sandbox.sandbox") {
         suppliedPyBody= "class Sandbox: pass\ndef run(): pass\ndef reset(): pass";
+    }*/
+    if (name === "pedal.sandbox.timeout") {
+        suppliedPyBody = "def timeout(delay, func, *args, **kwargs):\n    return func(*args, **kwargs)";
     }
     /* End hack */
     var filename;
@@ -26718,7 +26777,12 @@ Sk.exportSymbol("Sk.misceval.buildClass", Sk.misceval.buildClass);
 /**
  * @constructor
  */
-Sk.builtin.module = function module () {
+Sk.builtin.module = function module (name) {
+    if (!(this instanceof Sk.builtin.module)) {
+        return new Sk.builtin.module(name);
+    }
+    this["$d"] = {__name__: name};
+    return this;
 };
 Sk.exportSymbol("Sk.builtin.module", Sk.builtin.module);
 
@@ -33085,10 +33149,10 @@ Sk.exportSymbol("Sk.token.ISEOF", Sk.token.ISEOF);
 /*! no static exports found */
 /***/ (function(module, exports) {
 
-var tokens = Sk.token.tokens
+var tokens = Sk.token.tokens;
 
-const TokenError = Error;
-const IndentationError = Error;
+const TokenError = Sk.builtin.SyntaxError;
+const IndentationError = Sk.builtin.SyntaxError;
 
 /**
  *
@@ -34779,8 +34843,8 @@ Sk.builtin.super_.__doc__ = new Sk.builtin.str(
 var Sk = {}; // jshint ignore:line
 
 Sk.build = {
-    githash: "a55d93b35d9e7692bf9f5adcd1d1eb8550e11698",
-    date: "2019-08-28T19:28:39.640Z"
+    githash: "28512af6778fca0068832c88804d88586f7e5475",
+    date: "2019-08-29T20:36:25.483Z"
 };
 
 /**

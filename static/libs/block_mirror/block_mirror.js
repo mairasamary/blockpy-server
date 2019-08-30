@@ -2269,9 +2269,16 @@ makeTurtleBlock("penup", false, [], "pull turtle pen up ", ["pu", "up"]); // Ski
 makeTurtleBlock("pensize", false, [], "set or get the pen size ", ["width"]); // Skipped some
 
 makeTurtleBlock("pencolor", false, [], "set or get the pen color ", []);
-makeTurtleBlock("fillcolor", false, [], "set or get the fill color ", []); // Skipped some
+makeTurtleBlock("fillcolor", false, [], "set or get the fill color ", []);
+makeTurtleBlock("reset", false, [], "reset drawing", []);
+makeTurtleBlock("clear", false, [], "clear drawing", []);
+makeTurtleBlock("write", false, ["message"], "write text ", []); // Skipped some
 
 makeTurtleBlock("bgpic", false, ["url"], "set background to ", []);
+makeTurtleBlock("done", false, [], "start the turtle loop ", ["mainloop"]);
+makeTurtleBlock("setup", false, ["width", "height"], "set drawing area size ", []);
+makeTurtleBlock("title", false, ["message"], "set title of drawing area ", []);
+makeTurtleBlock("bye", false, [], "say goodbye to turtles ", []);
 BlockMirrorTextToBlocks.prototype.MODULE_FUNCTION_SIGNATURES['matplotlib.pyplot'] = BlockMirrorTextToBlocks.prototype.MODULE_FUNCTION_SIGNATURES['plt'];
 
 BlockMirrorTextToBlocks.getFunctionBlock = function (name, values, module) {
