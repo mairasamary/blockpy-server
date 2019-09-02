@@ -12225,8 +12225,7 @@ Sk.builtin.setattr = function setattr (obj, pyName, value) {
             throw new Sk.builtin.TypeError("attribute name must be string");
         }
         jsName = pyName.$jsstr();
-        console.log("++++", obj, "+++++");
-        console.log("----", obj.tp$setattr, "-----");
+
         if (obj.tp$setattr) {
             obj.tp$setattr(new Sk.builtin.str(Sk.fixReservedWords(jsName)), value);
         } else {
@@ -12806,6 +12805,9 @@ Sk.builtin.exec = function execf(pythonCode, new_globals) {
     if (!new_globals_copy.__name__) {
         new_globals_copy.__name__ = Sk.ffi.remapToPy(filename);
     }
+    if (!new_globals_copy.__package__) {
+        new_globals_copy.__package__ = Sk.builtin.none.none$;
+    }
     var backupGlobals = Sk.globals,
         backupSysmodules = new Sk.builtin.dict([]);
     Sk.misceval.iterFor(Sk.sysmodules.tp$iter(), function(key) {
@@ -13033,7 +13035,8 @@ Sk.builtins = {
     "apply_$rn$": Sk.builtin.apply_,
     "buffer"    : Sk.builtin.buffer,
     "coerce"    : Sk.builtin.coerce,
-    "intern"    : Sk.builtin.intern
+    "intern"    : Sk.builtin.intern,
+    //"classmethod": Sk.builtin.classmethod,
 };
 
 Sk.setupObjects = function (py3) {
@@ -17275,6 +17278,12 @@ for (var i = 0; i < builtinNames.length; i++) {
     Sk.builtin[builtinNames[i]].co_name = new Sk.builtin.str(builtinNames[i]);
 }
 
+Sk.builtin.str.prototype["split"].co_varnames = ["sep", "maxsplit"];
+Sk.builtin.str.prototype["split"].$defaults = [Sk.builtin.none.none$, Sk.builtin.int_(-1)];
+Sk.builtin.str.prototype["split"].co_kwargs = true;
+Sk.builtin.str.prototype["rsplit"].co_varnames = ["sep", "maxsplit"];
+Sk.builtin.str.prototype["rsplit"].$defaults = [Sk.builtin.none.none$, Sk.builtin.int_(-1)];
+Sk.builtin.str.prototype["rsplit"].co_kwargs = true;
 
 /***/ }),
 
@@ -18500,7 +18509,13 @@ Sk.builtin.BaseException.prototype.tp$str = function () {
         ret += ": " + (this.args.v.length > 0 ? this.args.v[0].v : "");
     }
     if (this.traceback.length !== 0) {
-        ret += " on line " + this.traceback[0].lineno;
+        var lineno = this.traceback[0].lineno;
+        ret += " on line ";
+        if (Sk.builtin.checkInt(lineno)) {
+            ret += lineno.v;
+        } else {
+            ret += lineno;
+        }
     } else {
         ret += " at <unknown>";
     }
@@ -21826,10 +21841,10 @@ Sk.importModuleInternal_ = function (name, dumpJS, modname, suppliedPyBody, rela
 
     // if leaf is already in sys.modules, early out
     try {
-        prev = Sk.sysmodules.mp$subscript(modname);
+        prev = Sk.sysmodules.mp$subscript(new Sk.builtin.str(modname));
         // if we're a dotted module, return the top level, otherwise ourselves
         if (modNameSplit.length > 1) {
-            return Sk.sysmodules.mp$subscript(absolutePackagePrefix + modNameSplit[0]);
+            return Sk.sysmodules.mp$subscript(new Sk.builtin.str(absolutePackagePrefix + modNameSplit[0]));
         } else {
             return prev;
         }
@@ -21858,7 +21873,7 @@ Sk.importModuleInternal_ = function (name, dumpJS, modname, suppliedPyBody, rela
             if (!topLevelModuleToReturn) {
                 return undefined;
             }
-            parentModule = Sk.sysmodules.mp$subscript(absolutePackagePrefix + parentModName);
+            parentModule = Sk.sysmodules.mp$subscript(new Sk.builtin.str(absolutePackagePrefix + parentModName));
             searchFileName = modNameSplit[modNameSplit.length-1];
             searchPath = parentModule.tp$getattr(Sk.builtin.str.$path);
         }
@@ -21928,7 +21943,7 @@ Sk.importModuleInternal_ = function (name, dumpJS, modname, suppliedPyBody, rela
         }
 
         // Now we know this module exists, we can add it to the cache
-        Sk.sysmodules.mp$ass_subscript(modname, module);
+        Sk.sysmodules.mp$ass_subscript(new Sk.builtin.str(modname), module);
 
         module.$js = co.code; // todo; only in DEBUG?
         finalcode = co.code;
@@ -21968,7 +21983,7 @@ Sk.importModuleInternal_ = function (name, dumpJS, modname, suppliedPyBody, rela
         // }
 
         finalcode += "\n" + co.funcname + ";";
-        //console.log(finalcode);
+
         modscope = Sk.global["eval"](finalcode);
 
         module["$d"] = {
@@ -22103,6 +22118,14 @@ Sk.builtin.__import__ = function (name, globals, locals, fromlist, level) {
     // a Python language module.
     var saveSk = Sk.globals;
 
+    if (Sk.builtin.checkString(name)) {
+        name = name.v;
+    }
+
+    if (globals === undefined) {
+        globals = Sk.globals;
+    }
+
     // This might be a relative import, so first we get hold of the module object
     // representing this module's package (so we can search its __path__).
     // module.__package__ contains its name, so we use that to look it up in sys.modules.
@@ -22127,7 +22150,7 @@ Sk.builtin.__import__ = function (name, globals, locals, fromlist, level) {
             relativeToPackageName = relativeToPackageNames.join(".");
         }
         try {
-            relativeToPackage = Sk.sysmodules.mp$subscript(relativeToPackageName);
+            relativeToPackage = Sk.sysmodules.mp$subscript(new Sk.builtin.str(relativeToPackageName));
         } catch(e) {
             relativeToPackageName = undefined;
         }
@@ -22175,9 +22198,10 @@ Sk.builtin.__import__ = function (name, globals, locals, fromlist, level) {
             var importChain;
 
             leafModule = Sk.sysmodules.mp$subscript(
-                (relativeToPackageName || "") +
-                    ((relativeToPackageName && name) ? "." : "") +
-                    name);
+                new Sk.builtin.str((relativeToPackageName || "") +
+                                    ((relativeToPackageName && name) ? "." : "") +
+                                    name)
+            );
 
             for (i = 0; i < fromlist.length; i++) {
                 fromName = fromlist[i];
@@ -25189,6 +25213,7 @@ __webpack_require__(/*! ./enumerate.js */ "./src/enumerate.js");
 __webpack_require__(/*! ./filter.js */ "./src/filter.js");
 __webpack_require__(/*! ./zip.js */ "./src/zip.js");
 __webpack_require__(/*! ./map.js */ "./src/map.js");
+//require("./classmethod.js");
 __webpack_require__(/*! ./token.js */ "./src/token.js");
 __webpack_require__(/*! ./tokenize.js */ "./src/tokenize.js");
 __webpack_require__(/*! ../gen/parse_tables.js */ "./gen/parse_tables.js");
@@ -28718,7 +28743,7 @@ Sk.parse = function parse (filename, input) {
                 endmarker_seen = true;
             }
         }
-    });
+    }, filename);
 
     if (!endmarker_seen) {
         throw new Sk.builtin.SyntaxError("incomplete input", this.filename);
@@ -30045,7 +30070,7 @@ Sk.builtin.str.prototype["join"] = new Sk.builtin.func(function (self, seq) {
     return new Sk.builtin.str(arrOfStrs.join(self.v));
 });
 
-Sk.builtin.str.prototype["split"] = new Sk.builtin.func(function (self, on, howmany) {
+var genericsSplit = function genericsSplit(self, on, howmany) {
     var splits;
     var index;
     var match;
@@ -30103,6 +30128,23 @@ Sk.builtin.str.prototype["split"] = new Sk.builtin.func(function (self, on, howm
     }
 
     return new Sk.builtin.list(result);
+};
+
+Sk.builtin.str.prototype["split"] = new Sk.builtin.func(function (self, sep, maxsplit) {
+    return genericsSplit(self, sep, maxsplit);
+});
+
+Sk.builtin.str.prototype["rsplit"] = new Sk.builtin.func(function (self, sep, maxsplit) {
+    var allSplit = genericsSplit(self, sep, undefined);
+    if (maxsplit !== undefined) {
+        if (!Sk.builtin.checkInt(maxsplit)) {
+            throw new Sk.builtin.TypeError("an integer is required");
+        }
+        // TODO
+        return allSplit;
+    } else {
+        return allSplit;
+    }
 });
 
 Sk.builtin.str.prototype["strip"] = new Sk.builtin.func(function (self, chars) {
@@ -33386,7 +33428,7 @@ Sk.exportSymbol("Sk._setupTokenRegexes", Sk._setupTokenRegexes);
  * @param {string} encoding
  * @param {function(TokenInfo): void} yield_
  */
-function _tokenize(readline, encoding, yield_) {
+function _tokenize(readline, encoding, yield_, filename) {
     
 
     var lnum = 0,
@@ -33435,7 +33477,8 @@ function _tokenize(readline, encoding, yield_) {
 
         if (contstr) {                       // continued string
             if (!line) {
-                throw new TokenError("EOF in multi-line string", strstart);
+                //throw new TokenError("EOF in multi-line string", strstart);
+                throw new TokenError("EOF in multi-line string", filename, spos[0], [spos, epos]);
             }
             endprog.lastIndex = 0;
             var endmatch = endprog.exec(line);
@@ -33499,7 +33542,7 @@ function _tokenize(readline, encoding, yield_) {
                 if (!contains(indents, column)) {
                     throw new IndentationError(
                         "unindent does not match any outer indentation level",
-                        ["<tokenize>", lnum, pos, line]);
+                        filename, spos[0], [spos, epos]); //["<tokenize>", lnum, pos, line]);
                 }
 
                 indents = indents.slice(0, -1);
@@ -33508,7 +33551,8 @@ function _tokenize(readline, encoding, yield_) {
             }
         } else {                                  // continued statement
             if (!line) {
-                throw new TokenError("EOF in multi-line statement", [lnum, 0]);
+                //throw new TokenError("EOF in multi-line statement", [lnum, 0]);
+                throw new TokenError("EOF in multi-line statement", filename, spos[0], [spos, epos]);
             }
             continued = 0;
         }
@@ -34843,8 +34887,8 @@ Sk.builtin.super_.__doc__ = new Sk.builtin.str(
 var Sk = {}; // jshint ignore:line
 
 Sk.build = {
-    githash: "28512af6778fca0068832c88804d88586f7e5475",
-    date: "2019-08-29T20:36:25.483Z"
+    githash: "0547fea66d6c6d2ef9877d859a68da9a79034104",
+    date: "2019-09-02T00:39:35.558Z"
 };
 
 /**
