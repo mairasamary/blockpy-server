@@ -297,7 +297,7 @@ def get_lti_property(property_name, default_value=None):
 
 
 def get_course_id(okay_if_failure=False):
-    course_id = request.args.get('course_id')
+    course_id = request.values.get('course_id')
     if course_id is None:
         if 'course' in g:
             return g.course.id

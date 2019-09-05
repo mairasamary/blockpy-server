@@ -169,7 +169,7 @@ class Assignment(Base):
     def by_course(course_id, exclude_builtins=True):
         if exclude_builtins:
             return (Assignment.query.filter_by(course_id=course_id)
-                    .filter(Assignment.mode != 'maze')
+                    .filter(Assignment.type != 'maze')
                     .all())
         else:
             return Assignment.query.filter_by(course_id=course_id).all()
