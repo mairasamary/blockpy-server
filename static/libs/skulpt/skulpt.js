@@ -17233,6 +17233,11 @@ Sk.misceval.op2method_ = {
 
 var builtinNames = [
     "int_",
+    "float_",
+    "bool",
+    "dict",
+    "list",
+    "str",
     "lng",
     "sorted",
     "range",
@@ -17275,7 +17280,12 @@ var builtinNames = [
 ];
 
 for (var i = 0; i < builtinNames.length; i++) {
-    Sk.builtin[builtinNames[i]].co_name = new Sk.builtin.str(builtinNames[i]);
+    var renamed = builtinNames[i];
+    if (renamed.endsWith("_")) {
+        renamed = renamed.slice(0, -1);
+    }
+    Sk.builtin[builtinNames[i]].co_name = new Sk.builtin.str(renamed);
+    Sk.builtin[builtinNames[i]].__name__ = new Sk.builtin.str(renamed);
 }
 
 Sk.builtin.str.prototype["split"].co_varnames = ["sep", "maxsplit"];
@@ -34888,7 +34898,7 @@ var Sk = {}; // jshint ignore:line
 
 Sk.build = {
     githash: "0547fea66d6c6d2ef9877d859a68da9a79034104",
-    date: "2019-09-03T14:04:06.485Z"
+    date: "2019-09-06T04:38:51.980Z"
 };
 
 /**
