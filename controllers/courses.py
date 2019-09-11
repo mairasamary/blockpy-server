@@ -15,7 +15,7 @@ from sqlalchemy import Date, cast, func, desc, or_
 from controllers.helpers import (lti, strip_tags,
                                  get_lti_property, require_request_parameters, login_required,
                                  require_course_instructor, get_select_menu_link,
-                                 check_resource_exists)
+                                 check_resource_exists, get_course_id, get_user)
 
 from main import app
 from models.models import db, AssignmentGroup
@@ -232,6 +232,11 @@ def change_role():
     pass
 
 
+def grader_dashboard(user, course_id):
+    pending_review = Submission.by_pending_review(course_id)
+    return render_template('courses/dashboard_grader.html', embed=True,
+                           course_id=course_id, user=user, pending_review=pending_review)
+
 @courses.route('dashboard/', methods=['GET', 'POST'])
 @courses.route('dashboard', methods=['GET', 'POST'])
 @lti(request='initial')
@@ -241,7 +246,24 @@ def dashboard(lti=lti):
     """
     if 'user' not in g and not g.user:
         return "You are not logged in."
-    return render_template('courses/dashboard.html', embed=True)
+    course_id = get_course_id()
+    user, user_id = get_user()
+    if course_id is None:
+        return "You are not in a course context."
+    is_grader = user.is_grader(course_id)
+    if is_grader:
+        return grader_dashboard(user, course_id)
+
+    course = Course.by_id(course_id)
+    assignments = natsorted([a for a, m in course.get_submitted_assignments()],
+                            key=lambda r: r.name)
+    all_subs = Submission.by_student(user_id, course_id)
+    all_subs = {s[0].assignment_id: s for s in all_subs}
+    submissions = [all_subs.get(assignment.id, (None, None, assignment))
+                   for assignment in assignments]
+    return render_template('courses/dashboard.html', embed=True,
+                           course_id=course_id, user=user, is_grader=is_grader,
+                           submissions=submissions, criteria='student')
 
 
 @courses.route('/config/', methods=['GET', 'POST'])
@@ -357,3 +379,6 @@ def making_problems():
 def switch_course():
     # TODO: Create the ability to switch current course without going through canvas
     pass
+
+# TODO: update problem via JSON file or API
+# TODO: update course via JSON file or API

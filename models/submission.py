@@ -23,6 +23,7 @@ class SubmissionStatuses:
     # Completed -> Either formally Submitted and FullyGraded, or auto graded as "correct"
     COMPLETED = "Completed"
 
+    VALID_CHOICES = (STARTED, IN_PROGRESS, SUBMITTED, COMPLETED)
 
 class GradingStatuses:
     FULLY_GRADED = 'FullyGraded'
@@ -31,6 +32,7 @@ class GradingStatuses:
     FAILED = 'Failed'
     NOT_READY = 'NotReady'
 
+    VALID_CHOICES = (FULLY_GRADED, PENDING, PENDING_MANUAL, FAILED, NOT_READY)
 
 class Submission(Base):
     code = Column(Text(), default="")
@@ -120,6 +122,16 @@ class Submission(Base):
                 .filter(Submission.course_id == course_id)
                 .all())
 
+    @staticmethod
+    def by_pending_review(course_id):
+        return (db.session.query(Submission, models.User, models.Assignment)
+                .filter(Submission.submission_status == SubmissionStatuses.SUBMITTED)
+                .filter(Submission.user_id == models.User.id)
+                .filter(Submission.assignment_id == models.Assignment.id)
+                .filter(models.Assignment.reviewed)
+                .filter(Submission.course_id == course_id)
+                .all())
+
     def __str__(self):
         return '<Submission {} for {}>'.format(self.id, self.user_id)
 
@@ -131,6 +143,8 @@ class Submission(Base):
         elif self.assignment.reviewed:
             if self.grading_status == "PendingManual":
                 return "Pending review"
+            else:
+                return self.submission_status
         elif self.score:
             return "Incomplete ({}%)".format(self.status)
         else:
@@ -193,6 +207,13 @@ class Submission(Base):
         db.session.commit()
         return was_changed
 
+    def update_submission_status(self, status):
+        if status not in SubmissionStatuses.VALID_CHOICES:
+            return False
+        self.submission_status = status
+        db.session.commit()
+        return True
+
     @staticmethod
     def save_correct(user_id, assignment_id, course_id):
         submission = Submission.query.filter_by(user_id=user_id,
@@ -222,24 +243,26 @@ class Submission(Base):
             message = "Incomplete"
 
     def get_block_image(self):
-        sub_blocks_folder = os.path.join(app.config['UPLOADS_DIR'], 'submission_blocks')
+        return self.get_image('submission_blocks', 'blockpy.get_submission_image')
+
+    def get_image(self, directory, endpoint='blockpy.get_image'):
+        sub_blocks_folder = os.path.join(app.config['UPLOADS_DIR'], directory)
         image_path = os.path.join(sub_blocks_folder, str(self.id) + '.png')
         if os.path.exists(image_path):
-            return url_for('blockpy.get_submission_image',
-                           submission_id=self.id,
-                           _external=True)
+            return url_for(endpoint, submission_id=self.id, directory=directory, _external=True)
         return ""
 
     def save_block_image(self, image=""):
-        sub_blocks_folder = os.path.join(app.config['UPLOADS_DIR'], 'submission_blocks')
-        image_path = os.path.join(sub_blocks_folder, str(self.id) + '.png')
-        if image != "":
-            converted_image = base64.b64decode(image[22:])
+        return self.save_image('submission_blocks', image, 'blockpy.get_submission_image')
+
+    def save_image(self, directory, data, endpoint='blockpy.get_image'):
+        sub_folder = os.path.join(app.config['UPLOADS_DIR'], directory)
+        image_path = os.path.join(sub_folder, str(self.id) + '.png')
+        if data != "":
+            converted_image = base64.b64decode(data[22:])
             with open(image_path, 'wb') as image_file:
                 image_file.write(converted_image)
-            return url_for('blockpy.get_submission_image',
-                           submission_id=self.id,
-                           _external=True)
+            return url_for(endpoint, submission_id=self.id, _external=True)
         elif os.path.exists(image_path):
             try:
                 os.remove(image_path)

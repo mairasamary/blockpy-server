@@ -4,6 +4,13 @@
     Submission - {{ assignment.name }}
 {% endblock %}
 
+{% block extrahead %}
+    <script>
+    URLS_UPDATE_SUBMISSION = "{{ url_for('blockpy.update_submission') }}";
+    </script>
+    <script src="{{  url_for('static', filename='libs/blockpy_server/blockpy_server.js') }}"></script>
+{% endblock %}
+
 {% block body %}
 
 {% if assignment.type == "blockpy" %}

@@ -12808,29 +12808,43 @@ Sk.builtin.exec = function execf(pythonCode, new_globals) {
     if (!new_globals_copy.__package__) {
         new_globals_copy.__package__ = Sk.builtin.none.none$;
     }
-    var backupGlobals = Sk.globals,
-        backupSysmodules = new Sk.builtin.dict([]);
+    var backupGlobals = Sk.globals;
+    /*var backupSysmodules = new Sk.builtin.dict([]);
     Sk.misceval.iterFor(Sk.sysmodules.tp$iter(), function(key) {
         var value = Sk.sysmodules.mp$subscript(key);
         backupSysmodules.mp$ass_subscript(key, value);
-    });
+    });*/
     Sk.globals = new_globals_copy; // Possibly copy over some "default" ones?
     //Sk.importMainWithBody(filename, false, python_code, true);
     var name = filename.endsWith(".py") ? filename.slice(0, -3) : filename;
     var modname = name;
-    Sk.importModuleInternal_(name, false, modname, pythonCode, undefined, false, true)
+    var caughtError = null;
+    /*var friendlyKeys = [];
+    Sk.misceval.iterFor(Sk.sysmodules.tp$iter(), function(key) {
+        friendlyKeys.push(key.v);
+    });
+    console.log("LOADING", friendlyKeys);*/
+    try {
+        Sk.importModuleInternal_(name, false, modname, pythonCode, undefined, false, true)
+    } catch (e) {
+        caughtError = e;
+    }
     Sk.globals = backupGlobals;
-    Sk.misceval.iterFor(backupSysmodules.tp$iter(), function(key) {
+    /*Sk.misceval.iterFor(backupSysmodules.tp$iter(), function(key) {
         var value = backupSysmodules.mp$subscript(key);
         Sk.sysmodules.mp$ass_subscript(key, value);
-    });
+    });*/
+    Sk.getCurrentSysModules().mp$del_subscript(Sk.builtin.str(name));
     for (var key in new_globals_copy) {
         if (new_globals_copy.hasOwnProperty(key)) {
             var pykey = Sk.ffi.remapToPy(key);
-            Sk.builtin.dict.prototype.mp$ass_subscript.call(new_globals, pykey, new_globals_copy[key])
+            Sk.builtin.dict.prototype.mp$ass_subscript.call(new_globals, pykey, new_globals_copy[key]);
         }
     }
     Sk.retainGlobals = backupRG;
+    if (caughtError !== null) {
+        throw caughtError;
+    }
 };
 
 Sk.builtin.frozenset = function frozenset () {
@@ -12967,6 +12981,7 @@ Sk.builtins = {
     "KeyError"           : Sk.builtin.KeyError,
     "TypeError"          : Sk.builtin.TypeError,
     "NameError"          : Sk.builtin.NameError,
+    "OSError"            : Sk.builtin.OSError,
     "IOError"            : Sk.builtin.IOError,
     "NotImplementedError": Sk.builtin.NotImplementedError,
     "StandardError"      : Sk.builtin.StandardError,
@@ -13167,18 +13182,20 @@ Compiler.prototype.annotateSource = function (ast, shouldStep) {
     var i;
     var col_offset;
     var lineno;
+    var sourceLine;
     if (this.source) {
         lineno = ast.lineno;
         col_offset = ast.col_offset;
-        out("\n//\n// line ", lineno, ":\n// ", this.getSourceLine(lineno), "\n// ");
+        sourceLine = this.getSourceLine(lineno);
+        /*out("\n//\n// line ", lineno, ":\n// ", sourceLine, "\n// ");
         for (i = 0; i < col_offset; ++i) {
             out(" ");
         }
-        out("^\n//\n");
+        out("^\n//\n");*/
 
         Sk.asserts.assert(ast.lineno !== undefined && ast.col_offset !== undefined);
         out("\n$currLineNo=Sk.currLineNo=",lineno, ";$currColNo=Sk.currColNo=",col_offset,";");
-        out("Sk.currFilename='",this.filename,"';");
+        out("Sk.currFilename='",this.filename,"';$currSource=",JSON.stringify(sourceLine),";");
         // Do not trace the standard library
         if (shouldStep && (!this.filename || 
                            !this.filename.startsWith("src/lib/"))) {
@@ -13395,7 +13412,7 @@ Compiler.prototype.outputInterruptTest = function () { // Added by RNL
         }
         if (Sk.yieldLimit !== null && this.u.canSuspend) {
             output += "if ($dateNow - Sk.lastYield > Sk.yieldLimit) {";
-            output += "var $susp = $saveSuspension({data: {type: 'Sk.yield'}, resume: function() {}}, '"+this.filename+"',$currLineNo,$currColNo);";
+            output += "var $susp = $saveSuspension({data: {type: 'Sk.yield'}, resume: function() {}}, '"+this.filename+"',$currLineNo,$currColNo, $currSource);";
             output += "$susp.$blk = $blk;";
             output += "$susp.optional = true;";
             output += "return $susp;";
@@ -13442,9 +13459,9 @@ Compiler.prototype._checkSuspension = function(e) {
         this._jump(retblk);
         this.setBlock(retblk);
 
-        e = e || {lineno: "$currLineNo", col_offset: "$currColNo"};
+        e = e || {lineno: "$currLineNo", col_offset: "$currColNo", source: "$currSource"};
 
-        out ("if ($ret && $ret.$isSuspension) { return $saveSuspension($ret,'"+this.filename+"',"+e.lineno+","+e.col_offset+"); }");
+        out ("if ($ret && $ret.$isSuspension) { return $saveSuspension($ret,'"+this.filename+"',"+e.lineno+","+e.col_offset+","+e.source+"); }");
 
         this.u.doesSuspend = true;
         this.u.tempsToSave = this.u.tempsToSave.concat(this.u.localtemps);
@@ -14189,7 +14206,7 @@ Compiler.prototype.outputSuspensionHelpers = function (unit) {
                  "var $wakeFromSuspension = function() {" +
                     "var susp = "+unit.scopename+".$wakingSuspension; "+unit.scopename+".$wakingSuspension = undefined;" +
                     "$blk=susp.$blk; $loc=susp.$loc; $gbl=susp.$gbl; $exc=susp.$exc; $err=susp.$err; $postfinally=susp.$postfinally;" +
-                    "$currLineNo=susp.$lineno; $currColNo=susp.$colno; Sk.lastYield=Date.now();" +
+                    "$currLineNo=susp.$lineno;$currColNo=susp.$colno;$currSource=susp.$source;Sk.lastYield=Date.now();" +
                     (hasCell?"$cell=susp.$cell;":"");
 
     for (i = 0; i < localsToSave.length; i++) {
@@ -14206,11 +14223,11 @@ Compiler.prototype.outputSuspensionHelpers = function (unit) {
                 // Close out function
                 ";");
 
-    output += "var $saveSuspension = function($child, $filename, $lineno, $colno) {" +
+    output += "var $saveSuspension = function($child, $filename, $lineno, $colno, $source) {" +
                 "var susp = new Sk.misceval.Suspension(); susp.child=$child;" +
                 "susp.resume=function(){"+unit.scopename+".$wakingSuspension=susp; return "+unit.scopename+"("+(unit.ste.generator?"$gen":"")+"); };" +
                 "susp.data=susp.child.data;susp.$blk=$blk;susp.$loc=$loc;susp.$gbl=$gbl;susp.$exc=$exc;susp.$err=$err;susp.$postfinally=$postfinally;" +
-                "susp.$filename=$filename;susp.$lineno=$lineno;susp.$colno=$colno;" +
+                "susp.$filename=$filename;susp.$lineno=$lineno;susp.$colno=$colno;susp.source=$source;" +
                 "susp.optional=susp.child.optional;" +
                 (hasCell ? "susp.$cell=$cell;" : "");
 
@@ -14346,7 +14363,7 @@ Compiler.prototype.cwhile = function (s) {
             var suspType = "Sk.delay";
             var debugBlock = this.newBlock("debug breakpoint for line "+s.lineno);
             out("if (Sk.breakpoints('"+this.filename+"',"+s.lineno+","+s.col_offset+")) {",
-                "var $susp = $saveSuspension({data: {type: '"+suspType+"'}, resume: function() {}}, '"+this.filename+"',"+s.lineno+","+s.col_offset+");",
+                "var $susp = $saveSuspension({data: {type: '"+suspType+"'}, resume: function() {}}, '"+this.filename+"',"+s.lineno+","+s.col_offset+","+s.source+");",
                 "$susp.$blk = "+debugBlock+";",
                 "$susp.optional = true;",
                 "return $susp;",
@@ -14414,7 +14431,7 @@ Compiler.prototype.cfor = function (s) {
         var suspType = "Sk.delay";
         var debugBlock = this.newBlock("debug breakpoint for line "+s.lineno);
         out("if (Sk.breakpoints('"+this.filename+"',"+s.lineno+","+s.col_offset+")) {",
-            "var $susp = $saveSuspension({data: {type: '"+suspType+"'}, resume: function() {}}, '"+this.filename+"',"+s.lineno+","+s.col_offset+");",
+            "var $susp = $saveSuspension({data: {type: '"+suspType+"'}, resume: function() {}}, '"+this.filename+"',"+s.lineno+","+s.col_offset+","+s.source+");",
             "$susp.$blk = "+debugBlock+";",
             "$susp.optional = true;",
             "return $susp;",
@@ -14965,7 +14982,7 @@ Compiler.prototype.buildcodeobj = function (n, coname, decorator_list, args, cal
 
     // note special usage of 'this' to avoid having to slice globals into
     // all function invocations in call
-    this.u.varDeclsCode += "var $blk=" + entryBlock + ",$exc=[],$loc=" + locals + cells + ",$gbl=this,$err=undefined,$ret=undefined,$postfinally=undefined,$currLineNo=undefined,$currColNo=undefined;";
+    this.u.varDeclsCode += "var $blk=" + entryBlock + ",$exc=[],$loc=" + locals + cells + ",$gbl=this,$err=undefined,$ret=undefined,$postfinally=undefined,$currLineNo=undefined,$currColNo=undefined;$currSource=undefined;";
     if (Sk.execLimit !== null) {
         this.u.varDeclsCode += "if (typeof Sk.execStart === 'undefined') {Sk.execStart = Date.now();Sk.execPaused=0}";
     }
@@ -15318,7 +15335,7 @@ Compiler.prototype.cclass = function (s) {
 
     this.u.prefixCode = "var " + scopename + "=(function $" + s.name.v + "$class_outer($globals,$locals,$cell){var $gbl=$globals,$loc=$locals;$free=$globals;";
     this.u.switchCode += "(function $" + s.name.v + "$_closure($cell){";
-    this.u.switchCode += "var $blk=" + entryBlock + ",$exc=[],$ret=undefined,$postfinally=undefined,$currLineNo=undefined,$currColNo=undefined;";
+    this.u.switchCode += "var $blk=" + entryBlock + ",$exc=[],$ret=undefined,$postfinally=undefined,$currLineNo=undefined,$currColNo=undefined;$currSource=undefined;";
 
     if (Sk.execLimit !== null) {
         this.u.switchCode += "if (typeof Sk.execStart === 'undefined') {Sk.execStart = Date.now();Sk.execPaused=0}";
@@ -15403,7 +15420,7 @@ Compiler.prototype.vstmt = function (s, class_for_super) {
     if (Sk.debugging && this.u.canSuspend) {
         debugBlock = this.newBlock("debug breakpoint for line "+s.lineno);
         out("if (Sk.breakpoints('"+this.filename+"',"+s.lineno+","+s.col_offset+")) {",
-            "var $susp = $saveSuspension({data: {type: 'Sk.debug'}, resume: function() {}}, '"+this.filename+"',"+s.lineno+","+s.col_offset+");",
+            "var $susp = $saveSuspension({data: {type: 'Sk.debug'}, resume: function() {}}, '"+this.filename+"',"+s.lineno+","+s.col_offset+","+s.source+");",
             "$susp.$blk = " + debugBlock + ";",
             "$susp.optional = true;",
             "return $susp;",
@@ -15759,7 +15776,7 @@ Compiler.prototype.cmod = function (mod) {
         "var $gbl = $forcegbl || {}, $blk=" + entryBlock +
         ",$exc=[],$loc=$gbl,$cell={},$err=undefined;" +
         "$loc.__file__=new Sk.builtins.str('" + this.filename +
-        "');var $ret=undefined,$postfinally=undefined,$currLineNo=undefined,$currColNo=undefined;";
+        "');var $ret=undefined,$postfinally=undefined,$currLineNo=undefined,$currColNo=undefined;$currSource=undefined;";
 
     if (Sk.execLimit !== null) {
         this.u.varDeclsCode += "if (typeof Sk.execStart === 'undefined') {Sk.execStart = Date.now();Sk.execPaused=0}";
@@ -15829,6 +15846,7 @@ Compiler.prototype.handleTraceback = function(doContinue, scopeName) {
         "}Sk.err=err;err.traceback.push({"+
             "lineno:$currLineNo,"+
             "colno:$currColNo,"+
+            "source:$currSource,"+
             "filename:'"+this.filename+"'," +
             "scope:'"+scopeName+"'"+
         "});"+
@@ -15857,6 +15875,7 @@ Sk.compile = function (source, filename, mode, canSuspend, annotate) {
     // compilers flags, later we can add other ones too
     var flags = {};
     flags.cf_flags = parse.flags;
+
 
     var st = Sk.symboltable(ast, filename);
     var c = new Compiler(filename, st, flags.cf_flags, canSuspend, annotate ? source : false); // todo; CO_xxx
@@ -17190,6 +17209,7 @@ Sk.builtin.str.$contains = new Sk.builtin.str("__contains__");
 Sk.builtin.str.$copy = new Sk.builtin.str("__copy__");
 Sk.builtin.str.$dict = new Sk.builtin.str("__dict__");
 Sk.builtin.str.$dir = new Sk.builtin.str("__dir__");
+Sk.builtin.str.$doc = new Sk.builtin.str("__doc__");
 Sk.builtin.str.$enter = new Sk.builtin.str("__enter__");
 Sk.builtin.str.$eq = new Sk.builtin.str("__eq__");
 Sk.builtin.str.$exit = new Sk.builtin.str("__exit__");
@@ -17213,6 +17233,7 @@ Sk.builtin.str.$new = new Sk.builtin.str("__new__");
 Sk.builtin.str.$next2 = new Sk.builtin.str("next");
 Sk.builtin.str.$next3 = new Sk.builtin.str("__next__");
 Sk.builtin.str.$path = new Sk.builtin.str("__path__");
+Sk.builtin.str.$package = new Sk.builtin.str("__package__");
 Sk.builtin.str.$repr = new Sk.builtin.str("__repr__");
 Sk.builtin.str.$reversed = new Sk.builtin.str("__reversed__");
 Sk.builtin.str.$round = new Sk.builtin.str("__round__");
@@ -17276,7 +17297,36 @@ var builtinNames = [
     "divmod",
     "format",
     "globals",
-    "issubclass"
+    "issubclass",
+
+    "BaseException",
+    "Exception",
+    "StandardError",
+    "AssertionError",
+    "AttributeError",
+    "ImportError",
+    "IndentationError",
+    "IndexError",
+    "KeyError",
+    "NameError",
+    "UnboundLocalError",
+    "OverflowError",
+    "SyntaxError",
+    "RuntimeError",
+    "OSError",
+    "SuspensionError",
+    "SystemExit",
+    "TypeError",
+    "ValueError",
+    "ZeroDivisionError",
+    "TimeLimitError",
+    "IOError",
+    "NotImplementedError",
+    "NegativePowerError",
+    "ExternalError",
+    "OperationError",
+    "SystemError",
+    "StopIteration",
 ];
 
 for (var i = 0; i < builtinNames.length; i++) {
@@ -18493,6 +18543,9 @@ Sk.builtin.BaseException = function (args) {
     this.traceback = [];
     // TODO: Hack, this exception isn't guaranteed to be thrown!
     this.err = Sk.err;
+    this.__cause__ = Sk.builtin.none.none$;
+    this.__context__ = Sk.builtin.none.none$;
+    this.__suppress_context__ = Sk.builtin.none.none$;
     //Sk.err = this;
 
     // For errors occurring during normal execution, the line/col/etc
@@ -18521,8 +18574,9 @@ Sk.builtin.BaseException.prototype.tp$str = function () {
     if (this.traceback.length !== 0) {
         var lineno = this.traceback[0].lineno;
         ret += " on line ";
+        console.log(lineno);
         if (Sk.builtin.checkInt(lineno)) {
-            ret += lineno.v;
+            ret += lineno.v !== undefined ? lineno.v : lineno;
         } else {
             ret += lineno;
         }
@@ -18558,6 +18612,36 @@ Sk.builtin.BaseException.prototype.toString = function () {
 Sk.builtin.BaseException.prototype.args = {
     "tp$descr_get": function(self, clstype) {
         return self.args;
+    },
+    "tp$descr_set": function(self, value) {
+        self.args = value;
+    }
+};
+
+Sk.builtin.BaseException.prototype.__cause__ = {
+    "tp$descr_get": function(self, clstype) {
+        return self.__cause__;
+    },
+    "tp$descr_set": function(self, value) {
+        self.__cause__ = value;
+    }
+};
+
+Sk.builtin.BaseException.prototype.__context__ = {
+    "tp$descr_get": function(self, clstype) {
+        return self.__context__;
+    },
+    "tp$descr_set": function(self, value) {
+        self.__context__ = value;
+    }
+};
+
+Sk.builtin.BaseException.prototype.__suppress_context__ = {
+    "tp$descr_get": function(self, clstype) {
+        return self.__suppress_context__;
+    },
+    "tp$descr_set": function(self, value) {
+        self.__suppress_context__ = value;
     }
 };
 
@@ -18782,6 +18866,8 @@ Sk.builtin.SyntaxError.prototype.tp$getattr = function (name) {
 
         if (_name === "lineno") {
             return this[_name];
+        } else if (_name == "__name__") {
+            return Sk.builtin.str("SyntaxError");
         }
     }
 
@@ -18805,6 +18891,24 @@ Sk.builtin.RuntimeError = function (args) {
 };
 Sk.abstr.setUpInheritance("RuntimeError", Sk.builtin.RuntimeError, Sk.builtin.StandardError);
 Sk.exportSymbol("Sk.builtin.RuntimeError", Sk.builtin.RuntimeError);
+
+
+/**
+ * @constructor
+ * @extends Sk.builtin.StandardError
+ * @param {...*} args
+ */
+Sk.builtin.OSError = function (args) {
+    var o;
+    if (!(this instanceof Sk.builtin.OSError)) {
+        o = Object.create(Sk.builtin.OSError.prototype);
+        o.constructor.apply(o, arguments);
+        return o;
+    }
+    Sk.builtin.StandardError.apply(this, arguments);
+};
+Sk.abstr.setUpInheritance("OSError", Sk.builtin.OSError, Sk.builtin.StandardError);
+Sk.exportSymbol("Sk.builtin.OSError", Sk.builtin.OSError);
 
 
 /**
@@ -19067,11 +19171,12 @@ Sk.builtin.frame.prototype.tp$getattr = function (name) {
             case "f_code": return Sk.builtin.none.none$;
             case "f_globals": return Sk.builtin.none.none$;
             case "f_lasti": return Sk.builtin.none.none$;
-            case "f_lineno": return this.trace.lineno;
+            case "f_lineno": return Sk.ffi.remapToPy(this.trace.lineno);
+            case "f_line": return Sk.ffi.remapToPy(this.trace.source);
             case "f_locals": return Sk.builtin.none.none$;
             case "f_trace": return Sk.builtin.none.none$;
-            case "co_filename": return this.trace.filename;
-            case "co_name": return this.trace.scope;
+            case "co_filename": return Sk.ffi.remapToPy(this.trace.filename);
+            case "co_name": return Sk.ffi.remapToPy(this.trace.scope);
         }
     }
 
@@ -19097,6 +19202,7 @@ Sk.builtin.traceback = function(trace) {
     this.tb_lineno = new Sk.builtin.int_(trace.lineno);
     // TODO: Hack, you know this isn't right
     this.tb_frame = new Sk.builtin.frame(trace);
+    this.tb_source = new Sk.builtin.str(trace.source);
     
     //tb_frame, tb_lasti, tb_lineno, tb_next
     
@@ -19127,6 +19233,7 @@ Sk.builtin.traceback.prototype.tp$getattr = function (name) {
 
         switch (_name) {
             case "tb_lineno":
+            case "tb_source":
             case "tb_frame":
             case "tb_next": return this[_name];
         }
@@ -21660,6 +21767,15 @@ Sk.exportSymbol("Sk.builtin.makeGenerator", Sk.builtin.makeGenerator);
 Sk.sysmodules = new Sk.builtin.dict([]);
 Sk.realsyspath = undefined;
 
+Sk.getCurrentSysModules = function() {
+    var sys = Sk.sysmodules.mp$lookup(Sk.builtin.str("sys"));
+    if (sys === undefined) {
+        return Sk.sysmodules;
+    } else {
+        return sys.tp$getattr(Sk.builtin.str("modules"));
+    }
+};
+
 /**
  * @param {string} name to look for
  * @param {string} ext extension to use (.py or .js)
@@ -21768,6 +21884,42 @@ Sk.doOneTimeInitialization = function (canSuspend) {
         }
     }
 
+    // Mock builtin module
+    var modname = new Sk.builtin.str("builtins");
+    Sk.builtins["__builtins__"] = new Sk.builtin.module();
+    Sk.builtins["__builtins__"].$d = {
+        "__name__": modname,
+        "__doc__":new Sk.builtin.str("Built-in functions, exceptions, and other objects.\n\nNoteworthy: None is the `nil' object; Ellipsis represents `...' in slices."),
+        "__package__": Sk.builtin.str.$emptystr
+    };
+    Sk.builtins["__builtins__"].overrides = new Sk.builtin.dict([]);
+    Sk.builtins["__builtins__"].tp$getattr = function(pyName, canSuspend) {
+        var jsName = Sk.ffi.remapToJs(pyName);
+        var overrides = this.overrides;
+        if (jsName === "__dict__") {
+            return this;
+        } else if (jsName === "copy") {
+            return function(k, d) {
+                return overrides.copy.tp$call([overrides]);
+            };
+        } else if (jsName === "get") {
+            return function(k, d) {
+                return overrides.get.tp$call([overrides, k, d]);
+            };
+        }
+    };
+    Sk.builtins["__builtins__"].tp$getitem = function(key) {
+        var overridden = this.overrides.mp$lookup(key);
+        if (overridden !== undefined) {
+            return overridden;
+        }
+        var jsName = Sk.ffi.remapToJs(key);
+        if (Sk.builtins[jsName] !== undefined) {
+            return Sk.builtins[jsName];
+        }
+        throw new Sk.builtin.NameError("name '" + Sk.unfixReserved(name) + "' is not defined");
+    };
+    Sk.getCurrentSysModules().mp$ass_subscript(modname, Sk.builtins["__builtins__"]);
 
     for (var file in Sk.internalPy.files) {
         var fileWithoutExtension = file.split(".")[0].split("/")[1];
@@ -21851,10 +22003,10 @@ Sk.importModuleInternal_ = function (name, dumpJS, modname, suppliedPyBody, rela
 
     // if leaf is already in sys.modules, early out
     try {
-        prev = Sk.sysmodules.mp$subscript(new Sk.builtin.str(modname));
+        prev = Sk.getCurrentSysModules().mp$subscript(new Sk.builtin.str(modname));
         // if we're a dotted module, return the top level, otherwise ourselves
         if (modNameSplit.length > 1) {
-            return Sk.sysmodules.mp$subscript(new Sk.builtin.str(absolutePackagePrefix + modNameSplit[0]));
+            return Sk.getCurrentSysModules().mp$subscript(new Sk.builtin.str(absolutePackagePrefix + modNameSplit[0]));
         } else {
             return prev;
         }
@@ -21883,7 +22035,7 @@ Sk.importModuleInternal_ = function (name, dumpJS, modname, suppliedPyBody, rela
             if (!topLevelModuleToReturn) {
                 return undefined;
             }
-            parentModule = Sk.sysmodules.mp$subscript(new Sk.builtin.str(absolutePackagePrefix + parentModName));
+            parentModule = Sk.getCurrentSysModules().mp$subscript(new Sk.builtin.str(absolutePackagePrefix + parentModName));
             searchFileName = modNameSplit[modNameSplit.length-1];
             searchPath = parentModule.tp$getattr(Sk.builtin.str.$path);
         }
@@ -21953,7 +22105,7 @@ Sk.importModuleInternal_ = function (name, dumpJS, modname, suppliedPyBody, rela
         }
 
         // Now we know this module exists, we can add it to the cache
-        Sk.sysmodules.mp$ass_subscript(new Sk.builtin.str(modname), module);
+        Sk.getCurrentSysModules().mp$ass_subscript(new Sk.builtin.str(modname), module);
 
         module.$js = co.code; // todo; only in DEBUG?
         finalcode = co.code;
@@ -22042,6 +22194,9 @@ Sk.importModuleInternal_ = function (name, dumpJS, modname, suppliedPyBody, rela
             }
         }
 
+        // TODO: answer.py.instructor_append
+        // Somehow adding it into the name of the module
+
         if (topLevelModuleToReturn) {
             // if we were a dotted name, then we want to return the top-most
             // package. we store ourselves into our parent as an attribute
@@ -22121,7 +22276,7 @@ Sk.importBuiltinWithBody = function (name, dumpJS, body, canSuspend) {
 };
 
 Sk.builtin.__import__ = function (name, globals, locals, fromlist, level) {
-    //console.log("Importing: ", JSON.stringify(name), JSON.stringify(fromlist), level);
+
     //if (name == "") { debugger; }
 
     // Save the Sk.globals variable importModuleInternal_ may replace it when it compiles
@@ -22160,7 +22315,7 @@ Sk.builtin.__import__ = function (name, globals, locals, fromlist, level) {
             relativeToPackageName = relativeToPackageNames.join(".");
         }
         try {
-            relativeToPackage = Sk.sysmodules.mp$subscript(new Sk.builtin.str(relativeToPackageName));
+            relativeToPackage = Sk.getCurrentSysModules().mp$subscript(new Sk.builtin.str(relativeToPackageName));
         } catch(e) {
             relativeToPackageName = undefined;
         }
@@ -22207,7 +22362,7 @@ Sk.builtin.__import__ = function (name, globals, locals, fromlist, level) {
             var leafModule;
             var importChain;
 
-            leafModule = Sk.sysmodules.mp$subscript(
+            leafModule = Sk.getCurrentSysModules().mp$subscript(
                 new Sk.builtin.str((relativeToPackageName || "") +
                                     ((relativeToPackageName && name) ? "." : "") +
                                     name)
@@ -22256,7 +22411,7 @@ Sk.exportSymbol("Sk.importMainWithBody", Sk.importMainWithBody);
 Sk.exportSymbol("Sk.importBuiltinWithBody", Sk.importBuiltinWithBody);
 Sk.exportSymbol("Sk.builtin.__import__", Sk.builtin.__import__);
 Sk.exportSymbol("Sk.importStar", Sk.importStar);
-
+Sk.exportSymbol("Sk.getCurrentSysModules", Sk.getCurrentSysModules);
 
 /***/ }),
 
@@ -23349,6 +23504,10 @@ Sk.builtin.int_.prototype.str$ = function (base, sign) {
     }
 
     return tmp;
+};
+
+Sk.builtin.int_.prototype.bit_length = function () {
+    return new Sk.builtin.int_(Math.abs(this.v).toString(2).length);
 };
 
 /**
@@ -26191,13 +26350,21 @@ Sk.exportSymbol("Sk.misceval.print_", Sk.misceval.print_);
  * @param {Object=} other generally globals
  */
 Sk.misceval.loadname = function (name, other) {
-    var bi;
+    var builtinModule, bi;
     var v = other[name];
     if (v !== undefined) {
         if (typeof v === "function" && v["$d"] === undefined && v["tp$name"] === undefined) {
             return v();
         }
         return v;
+    }
+
+    // Check if we've overridden the builtin via the builtin's module
+    if (other["__builtins__"] !== undefined) {
+        builtinModule = other["__builtins__"].mp$lookup(new Sk.builtin.str(name));
+        if (builtinModule !== undefined) {
+            return builtinModule;
+        }
     }
 
     bi = Sk.builtins[name];
@@ -28706,14 +28873,14 @@ Sk.parse = function parse (filename, input) {
      * @returns {function(): string}
      */
     function readline(input) {
-        var lines = input.split("\n").reverse().map(function (l) { return l + "\n"; });
+        var lines = input.split("\n").reverse();//.map(function (l) { return l + "\n"; });
 
         return function() {
             if (lines.length === 0) {
                 throw new Sk.builtin.Exception("EOF");
             }
 
-            return lines.pop();
+            return lines.pop()+"\n";
         };
     }
 
@@ -34898,7 +35065,7 @@ var Sk = {}; // jshint ignore:line
 
 Sk.build = {
     githash: "0547fea66d6c6d2ef9877d859a68da9a79034104",
-    date: "2019-09-06T13:57:15.146Z"
+    date: "2019-09-11T05:07:06.442Z"
 };
 
 /**

@@ -83,7 +83,9 @@
                         'loadHistory': {{ url_for('blockpy.load_history')|tojson }},
                         'logEvent': {{ url_for('blockpy.log_event')|tojson }},
                         'saveFile': {{ url_for('blockpy.save_file')|tojson }},
+                        'saveImage': {{ url_for('blockpy.save_image')|tojson }},
                         'updateSubmission': {{ url_for('blockpy.update_submission')|tojson }},
+                        'updateSubmissionStatus': {{ url_for('blockpy.update_submission_status')|tojson }},
                     {% endif %}
                 },
                 // User information

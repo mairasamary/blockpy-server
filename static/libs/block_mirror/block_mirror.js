@@ -597,7 +597,13 @@ BlockMirrorTextEditor.prototype.clearHighlightedLines = function () {
     var removed = this.highlightedHandles.map(function (h) {
       _this3.codeMirror.doc.removeLineClass(h.handle, "background", h.style);
 
-      return _this3.codeMirror.doc.lineInfo(h.handle).line + 1;
+      var info = _this3.codeMirror.doc.lineInfo(h.handle);
+
+      if (info) {
+        return info.line + 1;
+      } else {
+        return info;
+      }
     });
     this.highlightedHandles = [];
     return removed;
@@ -1275,7 +1281,12 @@ BlockMirrorTextToBlocks.prototype.convertBody = function (node, parent) {
   if (lastLineNumber in this.comments) {
     var _commentChild = this.ast_Comment(this.comments[lastLineNumber], lastLineNumber);
 
-    nestChild(_commentChild);
+    if (is_top_level && !previousWasStatement) {
+      addPeer(_commentChild);
+    } else {
+      nestChild(_commentChild);
+    }
+
     delete this.comments[lastLineNumber];
   } // Handle any extra comments that stuck around
 

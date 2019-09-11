@@ -1,4 +1,28 @@
 <h2 id='{{ assignment.slug() }}'>{{ assignment.name }}</h2>
+
+{% if is_grader %}
+    {% if assignment.reviewed %}
+        {% if submission.submission_status == "Submitted" %}
+            <script>
+                $(document).ready(function() {
+                    $("#assign-grade").click(function() {
+                        let grade = $("#grade-value").val();
+                        let correct = $("#correct-value").val();
+                        submitGrade({{ submission.id }}, grade, correct);
+                    })
+                });
+            </script>
+            <div>
+            <form>
+                <label>Correct: <input type="checkbox" id="correct-value"></label>
+                <label>Grade: <input type="text" id="grade-value"></label>
+                <button class='btn btn-success' id="assign-grade">Assign Grade</button>
+            </form>
+            </div>
+        {% endif %}
+    {% endif %}
+{% endif %}
+
 <div>Status: {{ submission.full_status() }}</div>
 <!-- TODO: Use the LTI information to build the proper URL
 <div>Open in Canvas: <a href='' target='_blank'>View</a></div>
@@ -6,6 +30,12 @@
 -->
 <div>Touches: {{ submission.version }}</div>
 <div>Estimated Duration: {{ (submission.version/60.0)|round(2) }} minutes</div>
+{% set turtle_output = submission.get_image('turtle_output') %}
+{% if turtle_output %}
+    <div>Turtle Output: <br>
+        <img alt='Image of Turtle Output' src='{{ turtle_output }}'>
+    </div>
+{% endif %}
 {% set image = submission.get_block_image() %}
 {% if image %}
     <div>Submitted Blocks: <br>

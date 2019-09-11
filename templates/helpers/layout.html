@@ -185,7 +185,7 @@
     <div class="container-fluid">
         <p class="pull-right">
             {% if g.user %}
-                You are <span>{{ g.user.email }}</span>
+                You are {{ g.user.name() }}<span> ({{ g.user.email }})</span>
                 {%  if g.course %}
                     <span>in {{ g.course.name }}</span>
                 {% endif %}

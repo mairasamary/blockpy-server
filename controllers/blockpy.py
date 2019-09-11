@@ -256,9 +256,11 @@ def view_submission():
     # Check permissions
     if submission.user_id != viewer_id:
         require_course_grader(viewer, submission.course_id)
+    is_grader = viewer.is_grader(submission.course_id)
     # Do action
     return render_template("reports/alone.html", embed=embed,
                            submission=submission, assignment=submission.assignment,
+                           is_grader=is_grader,
                            user_id=submission.user_id, course_id=submission.course_id)
 
 
@@ -312,13 +314,62 @@ def update_submission(lti, lti_exception=None):
         return ajax_failure("This is not your submission and you are not a grader in its course.")
     # Do action
     was_changed = submission.update_submission(score, correct)
+    if assignment_group_id is None:
+        assignment_group_id = submission.assignment_group_id
     # TODO: Document that we currently only pass back grade if it changed
     if was_changed or force_update:
         submission.save_block_image(image)
-        lti_post_grade(lti, submission, lis_result_sourcedid, assignment_group_id, user_id, course_id)
+        lti_post_grade(lti, submission, lis_result_sourcedid, assignment_group_id,
+                       submission.user_id, submission.course_id)
         make_log_entry(submission.assignment_id, submission.assignment_version,
                        course_id, user_id, "X-Submission.LMS", "answer.py", message=str(score))
     return ajax_success({"submitted": was_changed or force_update, "changed": was_changed})
+
+
+@blueprint_blockpy.route('/update_submission_status/', methods=['GET', 'POST'])
+@blueprint_blockpy.route('/update_submission_status', methods=['GET', 'POST'])
+@require_request_parameters('submission_id', 'status')
+@lti()
+def update_submission_status(lti, lti_exception=None):
+    # Get parameters
+    submission_id = maybe_int(request.values.get("submission_id"))
+    status = request.values.get('status')
+    course_id = get_course_id()
+    user, user_id = get_user()
+    submission = Submission.by_id(submission_id)
+    # Check resource exists
+    check_resource_exists(submission, "Submission", submission_id)
+    # Verify permissions
+    if submission.user_id != user_id and not user.is_grader(submission.course_id):
+        return ajax_failure("This is not your submission and you are not a grader in its course.")
+    # Do action
+    success = submission.update_submission_status(status)
+    make_log_entry(submission.assignment_id, submission.assignment_version,
+                   course_id, user_id, "Submit", "answer.py", category=status, message=str(success))
+    return ajax_success({"success": success})
+
+
+@blueprint_blockpy.route('/save_image/', methods=['GET', 'POST'])
+@blueprint_blockpy.route('/save_image', methods=['GET', 'POST'])
+@require_request_parameters('submission_id', 'directory', 'image')
+def save_image():
+    # Get parameters
+    submission_id = maybe_int(request.values.get("submission_id"))
+    directory = request.values.get('directory')
+    image = request.values.get('image')
+    course_id = get_course_id()
+    user, user_id = get_user()
+    submission = Submission.by_id(submission_id)
+    # Check resource exists
+    check_resource_exists(submission, "Submission", submission_id)
+    # Verify permissions
+    if submission.user_id != user_id and not user.is_grader(submission.course_id):
+        return ajax_failure("This is not your submission and you are not a grader in its course.")
+    # Do action
+    success = submission.save_image(directory, image)
+    make_log_entry(submission.assignment_id, submission.assignment_version,
+                   course_id, user_id, "X-Image.Save", directory)
+    return ajax_success({"success": success})
 
 
 @blueprint_blockpy.route('/get_submission_image/', methods=['GET', 'POST'])
@@ -327,6 +378,24 @@ def update_submission(lti, lti_exception=None):
 def get_submission_image(lti=lti):
     submission_id = int(request.values.get('submission_id'))
     relative_image_path = 'uploads/submission_blocks/{}.png'.format(submission_id)
+    submission = Submission.query.get(submission_id)
+    user, user_id = get_user()
+    # Check exists
+    check_resource_exists(submission, "Submission", submission_id)
+    # Check permissions
+    if submission.user_id != user_id:
+        require_course_instructor(user, submission.course_id)
+    # Do action
+    return app.send_static_file(relative_image_path)
+
+
+@blueprint_blockpy.route('/get_image/', methods=['GET', 'POST'])
+@blueprint_blockpy.route('/get_image', methods=['GET', 'POST'])
+@require_request_parameters('submission_id', 'directory')
+def get_image():
+    submission_id = int(request.values.get('submission_id'))
+    directory = request.values.get('directory')
+    relative_image_path = 'uploads/{}/{}.png'.format(directory, submission_id)
     submission = Submission.query.get(submission_id)
     user, user_id = get_user()
     # Check exists

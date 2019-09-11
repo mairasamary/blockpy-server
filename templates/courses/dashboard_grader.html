@@ -1,0 +1,48 @@
+{% extends 'helpers/layout.html' %}
+
+{% block title %}
+Dashboard
+{% endblock %}
+
+{% block statusbar %}
+{% endblock %}
+
+{% block extrahead %}
+    <script>
+    URLS_UPDATE_SUBMISSION = "{{ url_for('blockpy.update_submission') }}";
+    </script>
+    <script src="{{  url_for('static', filename='libs/blockpy_server/blockpy_server.js') }}"></script>
+{% endblock %}
+
+{% block body %}
+
+    <h1>Grader Dashboard</h1>
+
+    <p>Welcome to your dashboard! This feature is in beta. Expect issues!</p>
+
+    <p>The following submissions are ready for review</p>
+
+    <table class="table table-condensed table-hover table-striped table-bordered">
+    <caption>Student's submissions pending review.</caption>
+    <tbody>
+    <tr>
+        <th>Assignment</th>
+        <th>Student</th>
+        <th>View</th>
+    </tr>
+    {% for submission in pending_review %}
+    <tr>
+        <td>{{ submission[2].title() }}</td>
+        <td>{{ submission[1].name() }}</td>
+        <td>{% if submission[0] != None -%}
+            <a target=_blank
+               href="{{ url_for('blockpy.view_submission', submission_id=submission[0].id) }}">View</a>
+        {% endif %}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+    </table>
+
+    <p>Currently in "{{ g.course.name }}"</p>
+
+{% endblock %}
