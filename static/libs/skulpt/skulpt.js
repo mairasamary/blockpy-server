@@ -12119,8 +12119,18 @@ Sk.builtin.isinstance = function isinstance (obj, type) {
         }
     }
 
+    var objType;
+
+    // Overridden __class__
+    var __class__ = obj.tp$getattr(Sk.builtin.str.$class);
+    if (__class__ !== undefined) {
+        objType = __class__;
+    } else {
+        objType = obj.ob$type;
+    }
+
     // Normal case
-    if (obj.ob$type === type) {
+    if (objType === type) {
         return Sk.builtin.bool.true$;
     }
 
@@ -12158,7 +12168,7 @@ Sk.builtin.isinstance = function isinstance (obj, type) {
         return Sk.builtin.bool.false$;
     };
 
-    return issubclass(obj.ob$type, type);
+    return issubclass(objType, type);
 };
 
 Sk.builtin.hash = function hash (value) {
@@ -17203,6 +17213,7 @@ Sk.builtin.str.$real = new Sk.builtin.str("real");
 
 Sk.builtin.str.$abs = new Sk.builtin.str("__abs__");
 Sk.builtin.str.$call = new Sk.builtin.str("__call__");
+Sk.builtin.str.$class = new Sk.builtin.str("__class__");
 Sk.builtin.str.$cmp = new Sk.builtin.str("__cmp__");
 Sk.builtin.str.$complex = new Sk.builtin.str("__complex__");
 Sk.builtin.str.$contains = new Sk.builtin.str("__contains__");
@@ -34421,8 +34432,8 @@ Sk.builtin.type = function (name, bases, dict) {
             klass[k.v] = v;
         }
 
-        klass["__class__"] = klass;
-        klass["__name__"] = name;
+        klass.prototype.__class__ = klass;
+        klass.prototype.__name__ = name;
         klass.sk$klass = true;
         klass.prototype["$r"] = function () {
             var cname;
@@ -34649,6 +34660,7 @@ Sk.builtin.type.makeIntoTypeObj = function (name, t) {
     Sk.asserts.assert(name !== undefined);
     Sk.asserts.assert(t !== undefined);
     t.ob$type = Sk.builtin.type;
+    t.__class__ = Sk.builtin.type;
     t.tp$name = name;
     t["$r"] = function () {
         var ctype;
@@ -35065,7 +35077,7 @@ var Sk = {}; // jshint ignore:line
 
 Sk.build = {
     githash: "b358af4824d08ce74dc6dd9bfffe9df9d619f806",
-    date: "2019-09-11T06:24:11.835Z"
+    date: "2019-09-12T03:07:07.552Z"
 };
 
 /**
