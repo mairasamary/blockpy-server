@@ -29,6 +29,8 @@
 <div>Instructor Link: <a href='' target='_blank'>View</a></div>
 -->
 <div>Touches: {{ submission.version }}</div>
+<div>History: <a href="{{ url_for('blockpy.load_history', assignment_id=submission.assignment_id,
+        user_id=submission.user_id, course_id=submission.course_id) }}">view</a></div>
 <div>Estimated Duration: {{ (submission.version/60.0)|round(2) }} minutes</div>
 {% set turtle_output = submission.get_image('turtle_output') %}
 {% if turtle_output %}

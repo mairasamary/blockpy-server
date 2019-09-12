@@ -17356,6 +17356,22 @@ Sk.builtin.str.prototype["rsplit"].co_varnames = ["sep", "maxsplit"];
 Sk.builtin.str.prototype["rsplit"].$defaults = [Sk.builtin.none.none$, Sk.builtin.int_(-1)];
 Sk.builtin.str.prototype["rsplit"].co_kwargs = true;
 
+var builtinStringMethods = [
+    "capitalize", "center", "count", "endswith", "expandtabs",
+    "find", "format", "index", "isalnum", "isalpha",
+    "isdigit", "islower", "isnumeric", "isspace",
+    "istitle", "isupper", "join", "ljust", "lower", "lstrip",
+    "partition", "replace", "rfind", "rindex", "rjust", "rpartition", "rsplit",
+    "rstrip", "split", "splitlines", "startswith", "strip", "swapcase", "title",
+    "upper", "zfill"
+];
+for (i = 0; i < builtinStringMethods.length; i++) {
+    renamed = builtinStringMethods[i];
+    Sk.builtin.str.prototype[renamed].co_name = new Sk.builtin.str(renamed);
+    Sk.builtin.str.prototype[renamed].__name__ = new Sk.builtin.str(renamed);
+    Sk.builtin.str.prototype[renamed].tp$name = renamed;
+}
+
 /***/ }),
 
 /***/ "./src/dict.js":
@@ -35077,7 +35093,7 @@ var Sk = {}; // jshint ignore:line
 
 Sk.build = {
     githash: "b358af4824d08ce74dc6dd9bfffe9df9d619f806",
-    date: "2019-09-12T03:07:07.552Z"
+    date: "2019-09-12T04:21:23.623Z"
 };
 
 /**
