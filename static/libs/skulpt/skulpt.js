@@ -12840,7 +12840,7 @@ Sk.builtin.exec = function execf(pythonCode, new_globals) {
     }
     for (var key in new_globals_copy) {
         if (new_globals_copy.hasOwnProperty(key)) {
-            var pykey = Sk.ffi.remapToPy(key);
+            var pykey = Sk.ffi.remapToPy(Sk.unfixReserved(key));
             Sk.builtin.dict.prototype.mp$ass_subscript.call(new_globals, pykey, new_globals_copy[key]);
         }
     }
@@ -17350,7 +17350,7 @@ Sk.builtin.str.prototype["rsplit"].$defaults = [Sk.builtin.none.none$, Sk.builti
 Sk.builtin.str.prototype["rsplit"].co_kwargs = true;
 
 var builtinStringMethods = [
-    "capitalize", "center", "count", "endswith", "expandtabs",
+    "capitalize", "center", "count", "encode", "endswith", "expandtabs",
     "find", "format", "index", "isalnum", "isalpha",
     "isdigit", "islower", "isnumeric", "isspace",
     "istitle", "isupper", "join", "ljust", "lower", "lstrip",
@@ -30217,6 +30217,11 @@ Sk.builtin.str.re_escape_ = function (s) {
     return ret.join("");
 };
 
+Sk.builtin.str.prototype["encode"] = new Sk.builtin.func(function (self) {
+    //Sk.builtin.pyCheckArgsLen("encode", arguments.length, 1, 1);
+    return self;
+});
+
 Sk.builtin.str.prototype["lower"] = new Sk.builtin.func(function (self) {
     Sk.builtin.pyCheckArgsLen("lower", arguments.length, 1, 1);
     return new Sk.builtin.str(self.v.toLowerCase());
@@ -35079,7 +35084,7 @@ var Sk = {}; // jshint ignore:line
 
 Sk.build = {
     githash: "b358af4824d08ce74dc6dd9bfffe9df9d619f806",
-    date: "2019-09-12T22:38:21.227Z"
+    date: "2019-09-14T19:10:50.555Z"
 };
 
 /**
