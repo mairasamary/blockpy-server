@@ -384,7 +384,7 @@ def get_submission_image(lti=lti):
     check_resource_exists(submission, "Submission", submission_id)
     # Check permissions
     if submission.user_id != user_id:
-        require_course_instructor(user, submission.course_id)
+        require_course_grader(user, submission.course_id)
     # Do action
     return app.send_static_file(relative_image_path)
 
@@ -401,8 +401,8 @@ def get_image():
     # Check exists
     check_resource_exists(submission, "Submission", submission_id)
     # Check permissions
-    if submission.user_id != user_id:
-        require_course_instructor(user, submission.course_id)
+    if submission.user_id != user_id and not user.is_grader(submission.course_id):
+        return ajax_failure("This is not your submission and you are not a grader in its course.")
     # Do action
     return app.send_static_file(relative_image_path)
 
