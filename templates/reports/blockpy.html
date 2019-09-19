@@ -7,16 +7,34 @@
                 $(document).ready(function() {
                     $("#assign-grade").click(function() {
                         let grade = $("#grade-value").val();
-                        let correct = $("#correct-value").val();
-                        submitGrade({{ submission.id }}, grade, correct);
+                        let correct = $("#correct-value").is(":checked");
+                        submitGrade({{ submission.id }}, grade, correct)
+                            .done(function() {
+                                $("#assign-grade").text("Assigned!")
+                                    .removeClass("btn-success btn-danger").addClass("btn-success");
+                            })
+                            .fail(function() {
+                                $("#assign-grade").text("Failed to assign!")
+                                    .removeClass("btn-success").addClass("btn-danger");
+                            });
                     })
+                    $("#correct-value").on('change keyup input', function() {
+                        let correct = $("#correct-value").is(":checked");
+                        console.log(correct);
+                        $("#grade-value").prop("disabled", correct);
+                        if (correct) {
+                            $("#grade-value").val("100");
+                        } else {
+                            $("#grade-value").val("0");
+                        }
+                    });
                 });
             </script>
             <div>
             <form>
-                <label>Correct: <input type="checkbox" id="correct-value"></label>
-                <label>Grade: <input type="text" id="grade-value"></label>
-                <button class='btn btn-success' id="assign-grade">Assign Grade</button>
+                <label>Is Correct?: <input type="checkbox" id="correct-value"></label> or
+                <label>Grade: <input type="text" id="grade-value" value="0">/100</label><br>
+                <button class='btn btn-success' id="assign-grade" type="button">Assign Grade</button>
             </form>
             </div>
         {% endif %}

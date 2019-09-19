@@ -130,6 +130,9 @@ class Submission(Base):
                 .filter(Submission.assignment_id == models.Assignment.id)
                 .filter(models.Assignment.reviewed)
                 .filter(Submission.course_id == course_id)
+                .order_by(models.Assignment.name.asc(),
+                          models.User.last_name.asc(),
+                          models.User.first_name.asc())
                 .all())
 
     def __str__(self):

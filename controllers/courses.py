@@ -141,7 +141,8 @@ def view_assignments(course_id):
     assignments = Assignment.by_course(course_id)
     groups = AssignmentGroup.by_course(course_id)
 
-    return render_template('courses/view_assignments.html', assignments=assignments, groups=groups, course=course,
+    return render_template('courses/view_assignments.html', assignments=assignments,
+                           groups=groups, course=course,
                            course_id=course_id)
 
 
