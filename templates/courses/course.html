@@ -35,6 +35,7 @@ $().ready(function() {
 {% if is_instructor %}
 <h3>Manage Assignments</h3>
 <a href="{{ url_for('courses.assignments', course_id=course.id) }}" class='btn btn-outline-secondary'>Manage Assignments</a><br><br>
+<a href="{{ url_for('assignments.bulk_upload', course_id=course.id) }}" class='btn btn-outline-secondary'>Import Assignments</a><br><br>
 {% else %}
 <h3>View Assignments</h3>
 {% endif %}

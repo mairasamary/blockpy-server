@@ -4,6 +4,7 @@ from typing import Optional
 
 from slugify import slugify
 from sqlalchemy import Column, String, Text, DateTime, Integer, ForeignKey, JSON, UniqueConstraint, Boolean
+from werkzeug.utils import secure_filename
 
 from models import models
 from models.models import Base, datetime_to_string, string_to_datetime, db, optional_encoded_field
@@ -82,38 +83,13 @@ class Assignment(Base):
             'sample_submissions': [sample.encode_json(use_owner) for sample in self.sample_submissions],
         }
 
-    @staticmethod
-    def decode_json(data, **kwargs):
-        _schema_version = data['_schema_version']
-        if _schema_version in (1, 2):
-            data = dict(data)  # shallow copy
-            del data['_schema_version']
-            del data['owner_id__email']
-            del data['id']
-            del data['date_modified']
-            data['date_created'] = string_to_datetime(data['date_created'])
-            for key, value in kwargs.items():
-                data[key] = value
-            if _schema_version == 1:
-                data['instructions'] = data.pop('body')
-                data['on_run'] = data.pop('give_feedback')
-                data['on_change'] = data.pop('on_step')
-            return Assignment(**data)
-        raise Exception("Unknown schema version: {}".format(data.get('_schema_version', "Unknown")))
+    SCHEMA_V1_IGNORE_COLUMNS = Base.SCHEMA_V1_IGNORE_COLUMNS + ('owner_id__email',)
+    SCHEMA_V2_IGNORE_COLUMNS = Base.SCHEMA_V2_IGNORE_COLUMNS + ('owner_id__email',)
+    SCHEMA_V1_RENAME_COLUMNS = (("body", "instructions"), ("give_feedback", "on_run"),
+                                ("on_step", "on_change"))
 
     BUILTIN_MODULES = 'Properties,Decisions,Iteration,Calculation,Output,Values,Lists,Dictionaries,Separator,Input,Conversion'.split(
         ',')
-
-    def edit(self, updates):
-        modified = False
-        for key, value in updates.items():
-            if getattr(self, key) != value:
-                modified = True
-                setattr(self, key, value)
-        if modified:
-            self.version += 1
-            db.session.commit()
-        return modified
 
     def to_dict(self):
         return {
@@ -131,6 +107,12 @@ class Assignment(Base):
 
     def slug(self):
         return slugify(self.name)
+
+    def get_filename(self):
+        if self.url:
+            return secure_filename(self.url) + ".json"
+        else:
+            return secure_filename(self.name) + ".json"
 
     @staticmethod
     def get_available():
@@ -183,6 +165,12 @@ class Assignment(Base):
         if assignment_id is None:
             return None
         return Assignment.query.get(assignment_id)
+
+    @staticmethod
+    def by_url(assignment_url):
+        if assignment_url is None:
+            return None
+        return Assignment.query.filter_by(url=assignment_url).first()
 
     @staticmethod
     def by_builtin(type, id, owner_id, course_id):

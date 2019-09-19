@@ -380,5 +380,4 @@ def switch_course():
     # TODO: Create the ability to switch current course without going through canvas
     pass
 
-# TODO: update problem via JSON file or API
 # TODO: update course via JSON file or API

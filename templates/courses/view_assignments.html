@@ -63,25 +63,32 @@ tr.hover-remove-rows button.remove-button {
     
     {% for group in groups %}
     
-    
-    <tr class="active hover-remove-rows">
-        <td class="col-md-12 col-sm-12 col-xs-12" colspan="3">
+    <tr class="table-active hover-remove-rows">
+        <td class="col-md-12 col-sm-12 col-xs-12" colspan="2">
             <strong>{{ group.name }}</strong>
+        </td>
+        <td>
+            <a href="{{ url_for('assignment_group.export', assignment_group_id=group.id) }}">
+                Export
+            </a>
         </td>
     </tr>
     
     {% for assignment in group.get_assignments() %}
     
     <tr class='hover-movers-rows'>
-        <td class='col-md-5 col-sm-5 col-xs-5'>
-            <a href="{{ url_for('assignments.load', assignment_id=assignment.id, course_id=course_id) }}"><strong>{{ assignment.title() }}</strong></a><br>
+        <td class=''>
+            <a href="{{ url_for('assignments.load', assignment_id=assignment.id, course_id=course_id) }}">
+                <strong>{{ assignment.title() }}</strong></a><br>
             Last modified at
-            <span>{{ assignment.modified }}</span>
+            <span>
+                {{ assignment.date_modified.strftime(" %I:%M%p on %a %d, %b %Y").replace(" 0", " ") }}
+            </span>
         </td>
-        <td class='col-md-7 col-sm-7 col-xs-7'>
-            <span class='label label-default'>{{ assignment.type }}</span>
-            <span>{{ assignment.body|safe }}</span>
+        <td class=''>
+            <span>{{ assignment.instructions|safe }}</span>
         </td>
+        <td></td>
     </tr>
     
     {% endfor %}

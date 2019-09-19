@@ -1,17 +1,21 @@
 import json
 
+from werkzeug.utils import secure_filename
+
+from models.portation import export_bundle, import_bundle
+
 try:
     from urllib.parse import quote as url_quote
 except:
     from urllib import quote as url_quote
 
 from flask import (Blueprint, g, session, render_template, url_for, request, jsonify, abort, make_response,
-                   flash, redirect)
+                   flash, redirect, Response)
 
 from controllers.helpers import (lti, strip_tags,
                                  get_lti_property, require_request_parameters, login_required,
                                  require_course_instructor, get_select_menu_link,
-                                 check_resource_exists, parse_assignment_load)
+                                 check_resource_exists, parse_assignment_load, get_course_id, get_user, ajax_success)
 
 from main import app
 
@@ -152,26 +156,21 @@ def select_embed(lti, lti_exception=None):
     return select(menu='embed', lti=lti)
 
 
-def process_assignments(assignments, user_id, course_id):
-    id_map = {}
-    for assignment in assignments:
-        id = assignment['id']
-        a = Assignment(name=assignment['name'],
-                       instructions=assignment['instructions'],
-                       give_feedback=assignment['on_run'],
-                       starting_code=assignment['on_start'],
-                       type='blockpy',
-                       visibility=assignment['visibility'],
-                       disabled=assignment['disabled'],
-                       mode=assignment['mode'],
-                       owner_id=user_id,
-                       course_id=course_id,
-                       version=assignment['version'],
-                       )
-        db.session.add(a)
-        db.session.commit()
-        id_map[id] = a.id
-    return id_map
+@blueprint_assignments.route('/export/', methods=['GET', 'POST'])
+@blueprint_assignments.route('/export', methods=['GET', 'POST'])
+@require_request_parameters('assignment_id')
+def export():
+    assignment_id = int(request.values.get('assignment_id'))
+    assignment = Assignment.by_id(assignment_id)
+    course_id = get_course_id(True)
+    user, user_id = get_user()
+    # Verify exists
+    check_resource_exists(assignment, "Assignment", assignment_id)
+    # Verify permissions
+    bundle = export_bundle(assignments=[assignment])
+    filename = assignment.get_filename()
+    return Response(json.dumps(bundle), mimetype='application/json',
+                    headers={'Content-Disposition':'attachment;filename={}'.format(filename)})
 
 
 @blueprint_assignments.route('/bulk_upload/', methods=['GET', 'POST'])
@@ -191,7 +190,12 @@ def bulk_upload():
             flash('No selected file')
             return redirect(request.url)
         if file:
-            return json.dumps(process_assignments(json.loads(file.read()), user_id=g.user.id, course_id=course_id))
+            bundle = json.loads(file.read().decode('utf-8'))
+            import_bundle(bundle, course_id=course_id)
+            flash("File uploaded successfully")
+            return redirect(request.url)
+        flash("No file contents")
+        return redirect(request.url)
     else:
         return '''
     <!doctype html>

@@ -68,6 +68,50 @@ class Base(Model):
     date_modified = Column(DateTime, default=func.current_timestamp(),
                            onupdate=func.current_timestamp())
 
+    SCHEMA_V1_IGNORE_COLUMNS = ('id', 'date_modified')
+    SCHEMA_V2_IGNORE_COLUMNS = SCHEMA_V1_IGNORE_COLUMNS
+    SCHEMA_V1_RENAME_COLUMNS = {}
+    SCHEMA_V2_RENAME_COLUMNS = {}
+
+    @classmethod
+    def decode_json(cls, data, **kwargs):
+        existing = cls.get_existing(data)
+        data = dict(data)
+        schema_version = data.pop('_schema_version')
+        if schema_version == 1:
+            ignored, renamed = cls.SCHEMA_V1_IGNORE_COLUMNS, cls.SCHEMA_V1_RENAME_COLUMNS
+        elif schema_version == 2:
+            ignored, renamed = cls.SCHEMA_V2_IGNORE_COLUMNS, cls.SCHEMA_V2_RENAME_COLUMNS
+        else:
+            raise Exception("Unknown schema version: {}".format(data.get('_schema_version', "Unknown")))
+        data['date_created'] = string_to_datetime(data['date_created'])
+        for old, new in renamed:
+            data[new] = data.pop(old)
+        for key, value in kwargs.items():
+            data[key] = value
+        for ignore in ignored:
+            if ignore in data:
+                del data[ignore]
+        if existing:
+            existing.edit(data, update_version=False)
+            return None
+        return cls(**data)
+
+    @classmethod
+    def get_existing(cls, data):
+        if 'url' in data and data['url']:
+            return cls.by_url(data['url'])
+
+    def edit(self, updates, update_version=True):
+        modified = False
+        for key, value in updates.items():
+            if getattr(self, key) != value:
+                modified = True
+                setattr(self, key, value)
+        if modified and update_version:
+            self.version += 1
+            db.session.commit()
+        return modified
 
 assignment_tag_membership = Table('assignment_tag_membership', Base.metadata,
                                   Column('assignment_id', Integer, ForeignKey('assignment.id')),

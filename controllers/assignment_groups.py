@@ -1,12 +1,15 @@
-from flask import Blueprint, send_from_directory
+import json
+
+from flask import Blueprint, send_from_directory, Response
 from flask import Flask, redirect, url_for, session, request, jsonify, g
 
 from controllers.helpers import (lti, require_request_parameters, require_course_instructor, login_required,
-                                 check_resource_exists, get_select_menu_link)
+                                 check_resource_exists, get_select_menu_link, get_course_id, get_user, ajax_success)
 
 from models.assignment import Assignment
 from models.assignment_group import AssignmentGroup
 from models.assignment_group_membership import AssignmentGroupMembership
+from models.portation import export_bundle
 
 blueprint_assignment_group = Blueprint('assignment_group', __name__, url_prefix='/assignment_group')
 
@@ -87,7 +90,7 @@ def edit_group(lti=lti):
     # Verify permissions
     require_course_instructor(g.user, assignment_group.course_id)
     # Perform action
-    group = AssignmentGroup.edit(assignment_group_id, name=new_name)
+    group = assignment_group.edit(name=new_name)
     # Result
     return jsonify(success=True, name=group.name)
 
@@ -118,3 +121,23 @@ def move_membership(lti=None):
     AssignmentGroupMembership.move_assignment(assignment_id, new_group_id)
     # Result
     return jsonify(success=True)
+
+
+@blueprint_assignment_group.route('/export/', methods=['GET', 'POST'])
+@blueprint_assignment_group.route('/export', methods=['GET', 'POST'])
+@require_request_parameters('assignment_group_id')
+def export():
+    assignment_group_id = int(request.values.get('assignment_group_id'))
+    assignment_group = AssignmentGroup.by_id(assignment_group_id)
+    course_id = get_course_id(True)
+    user, user_id = get_user()
+    # Verify exists
+    check_resource_exists(assignment_group, "Assignment Group", assignment_group_id)
+    # Perform action
+    assignments = assignment_group.get_assignments()
+    memberships = assignment_group.get_memberships()
+    bundle = export_bundle(groups=[assignment_group], assignments=assignments,
+                           memberships=memberships)
+    filename = assignment_group.get_filename()
+    return Response(json.dumps(bundle, indent=2), mimetype='application/json',
+                    headers={'Content-Disposition': 'attachment;filename={}'.format(filename)})

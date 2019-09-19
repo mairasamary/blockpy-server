@@ -1,6 +1,8 @@
 from flask import url_for
 from sqlalchemy import Column, String, Integer, ForeignKey, func
 from natsort import natsorted
+from werkzeug.utils import secure_filename
+
 from models import models
 from models.models import Base, datetime_to_string, string_to_datetime, db
 from typing import List
@@ -35,19 +37,8 @@ class AssignmentGroup(Base):
                 'date_modified': datetime_to_string(self.date_modified),
                 'date_created': datetime_to_string(self.date_created)}
 
-    @staticmethod
-    def decode_json(data, **kwargs):
-        if data['_schema_version'] in (1, 2):
-            data = dict(data)  # shallow copy
-            del data['_schema_version']
-            del data['owner_id__email']
-            del data['id']
-            del data['date_modified']
-            data['date_created'] = string_to_datetime(data['date_created'])
-            for key, value in kwargs.items():
-                data[key] = value
-            return AssignmentGroup(**data)
-        raise Exception("Unknown schema version: {}".format(data.get('_schema_version', "Unknown")))
+    SCHEMA_V1_IGNORE_COLUMNS = Base.SCHEMA_V1_IGNORE_COLUMNS + ('owner_id__email',)
+    SCHEMA_V2_IGNORE_COLUMNS = Base.SCHEMA_V2_IGNORE_COLUMNS + ('owner_id__email',)
 
     @staticmethod
     def new(owner_id, course_id, name="Untitled Group"):
@@ -75,21 +66,6 @@ class AssignmentGroup(Base):
         db.session.commit()
 
     @staticmethod
-    def edit(assignment_group_id, name=None, move=0):
-        assignment_group = AssignmentGroup.by_id(assignment_group_id)
-        if name is not None:
-            assignment_group.name = name
-        if move == 1 or move == -1:
-            adjacent_group = (AssignmentGroup.query.filter_by(course_id=assignment_group.course_id,
-                                                              position=assignment_group.position + move).first())
-            if adjacent_group:
-                adjacent_group.position -= move
-                assignment_group.position += move
-        assignment_group.version += 1
-        db.session.commit()
-        return assignment_group
-
-    @staticmethod
     def is_in_course(assignment_group_id, course_id):
         return AssignmentGroup.query.get(assignment_group_id).course_id == course_id
 
@@ -107,6 +83,13 @@ class AssignmentGroup(Base):
         if possible:
             return possible.id
         return None
+
+    @staticmethod
+    def by_url(assignment_group_url):
+        if assignment_group_url is None:
+            return None
+        possible = AssignmentGroup.query.filter_by(url=assignment_group_url).first()
+        return possible
 
     @staticmethod
     def by_course(course_id):
@@ -131,8 +114,21 @@ class AssignmentGroup(Base):
                 .all())
         return natsorted(assignments, key=lambda a: a.title())
 
+    def get_memberships(self):
+        return (models.AssignmentGroupMembership.query
+                       .filter(models.AssignmentGroupMembership.assignment_group_id == self.id)
+                       .order_by(models.AssignmentGroupMembership.position,
+                                 models.AssignmentGroupMembership.id)
+                       .all())
+
     def get_select_url(self, menu):
         # TODO: Refactor web logic outside of model?
         if self.url:
             return url_for('assignments.load', assignment_group_url=self.url, _external=True, embed=menu == 'embed')
         return url_for('assignments.load', assignment_group_id=self.id, _external=True, embed=menu == 'embed')
+
+    def get_filename(self):
+        if self.url:
+            return secure_filename(self.url) + ".json"
+        else:
+            return secure_filename(self.name) + ".json"

@@ -19,34 +19,25 @@ class Course(Base):
 
     def encode_json(self):
         user = models.User.query.get(self.owner_id)
-        return {'_schema_version': 2,
+        return {'_schema_version': 3,
                 'name': self.name,
+                'url': self.url,
                 'owner_id': self.owner_id,
                 'owner_id__email': user.email if user else '',
                 'service': self.service,
                 'external_id': self.external_id,
                 'visibility': self.visibility,
+                'settings': self.settings,
                 'term': self.term,
                 'id': self.id,
                 'date_modified': datetime_to_string(self.date_modified),
                 'date_created': datetime_to_string(self.date_created)}
 
-    @staticmethod
-    def decode_json(data, **kwargs):
-        if data['_schema_version'] in (1,2):
-            data = dict(data)  # shallow copy
-            del data['_schema_version']
-            del data['owner_id__email']
-            del data['id']
-            del data['date_modified']
-            data['date_created'] = string_to_datetime(data['date_created'])
-            for key, value in kwargs.items():
-                data[key] = value
-            return Course(**data)
-        raise Exception("Unknown schema version: {}".format(data.get('_schema_version', "Unknown")))
+    SCHEMA_V1_IGNORE_COLUMNS = Base.SCHEMA_V1_IGNORE_COLUMNS + ('owner_id__email',)
+    SCHEMA_V2_IGNORE_COLUMNS = Base.SCHEMA_V2_IGNORE_COLUMNS + ('owner_id__email',)
 
     @staticmethod
-    def import_json(data, owner_id):
+    def import_json(data, owner_id, update=True):
         course = Course.decode_json(data['course'], owner_id=owner_id)
         db.session.add(course)
         db.session.commit()
@@ -203,6 +194,10 @@ class Course(Base):
     @staticmethod
     def by_id(course_id):
         return Course.query.get(course_id)
+
+    @staticmethod
+    def by_url(course_url):
+        return Course.query.filter_by(url=course_url).first()
 
     @staticmethod
     def from_lti(service, lti_context_id, name, user_id):
