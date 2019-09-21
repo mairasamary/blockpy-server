@@ -72,7 +72,7 @@ Dashboard
         let submissionRows = $(".submission-row");
         this.emails.subscribe(function() {
             let current = this.currentSet();
-            if (current.default() || current.emails().trim() === "") {
+            if (current === undefined ||current.default() || current.emails().trim() === "") {
                 // Filter nothing
                 submissionRows.show();
             } else {
