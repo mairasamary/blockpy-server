@@ -72,8 +72,9 @@ Dashboard
         let submissionRows = $(".submission-row");
         this.emails.subscribe(function() {
             let current = this.currentSet();
-            if (current.default()) {
+            if (current.default() || current.emails().trim() === "") {
                 // Filter nothing
+                submissionRows.show();
             } else {
                 let emails = current.emails().split(",").map(item => item.trim());
                 submissionRows.filter(function() {
@@ -146,7 +147,7 @@ Dashboard
     <tr data-student="{{ submission[1].email }}" data-assignment="{{ submission[2].id }}"
         class="submission-row">
         <td>{{ submission[2].title() }}</td>
-        <td>{{ submission[1].name() }}</td>
+        <td>{{ submission[1].name() }} ({{ submission[1].email }})</td>
         <td>{% if submission[0] != None -%}
             <a target=_blank
                href="{{ url_for('blockpy.view_submission', submission_id=submission[0].id) }}">View</a>
