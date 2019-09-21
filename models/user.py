@@ -21,6 +21,14 @@ class User(Base, UserMixin):
     authentications = relationship("Authentication", backref='user', lazy='dynamic')
     assignments = relationship("Assignment", backref='user', lazy='dynamic')
 
+    def encode_json(self, use_owner=True):
+        return {
+            'id': self.id,
+            'first_name': self.first_name,
+            'last_name': self.last_name,
+            'email': self.email
+        }
+
     @staticmethod
     def new_from_instructor(email, first_name='', last_name=''):
         new_user = User(first_name=first_name, last_name=last_name,

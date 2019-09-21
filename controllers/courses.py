@@ -235,8 +235,10 @@ def change_role():
 
 def grader_dashboard(user, course_id):
     pending_review = Submission.by_pending_review(course_id)
+    users = {user.email: user.encode_json() for _, user, _ in pending_review}
     return render_template('courses/dashboard_grader.html', embed=True,
-                           course_id=course_id, user=user, pending_review=pending_review)
+                           course_id=course_id, user=user, pending_review=pending_review,
+                           users=users)
 
 @courses.route('dashboard/', methods=['GET', 'POST'])
 @courses.route('dashboard', methods=['GET', 'POST'])

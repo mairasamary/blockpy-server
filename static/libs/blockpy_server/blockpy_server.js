@@ -1,6 +1,4 @@
 
-
-
 function submitGrade(submissionId, score, correct) {
     let data = {
         submission_id: submissionId,

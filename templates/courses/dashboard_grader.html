@@ -10,6 +10,89 @@ Dashboard
 {% block extrahead %}
     <script>
     URLS_UPDATE_SUBMISSION = "{{ url_for('blockpy.update_submission') }}";
+    USER_DATA = {{ users|tojson }};
+
+    function SetModel(params) {
+        this.name = ko.observable(params.name);
+        this.emails = ko.observable(params.emails);
+        this.default = ko.observable(params.default);
+    }
+
+    const GRADING_LOCAL_STORAGE_ITEM_USERSETS = "Grading-Usersets";
+    function UserSetModel() {
+        let sets = localStorage.getItem(GRADING_LOCAL_STORAGE_ITEM_USERSETS);
+        if (sets === null) {
+            sets = [{"name": "All students", "default": true, "emails": ""}];
+        } else {
+            sets = JSON.parse(sets);
+        }
+        this.sets = ko.observableArray(sets.map(function(item) { return new SetModel(item);}));
+        this.currentSet = ko.observable(this.sets[0]);
+        this.editorVisible = ko.observable(false);
+        this.startEditing = function() {
+            this.editorVisible(true);
+        }.bind(this);
+        this.startAdding = function() {
+            let newest = new SetModel({"name": "New Userset", "default": false, "emails": ""});
+            this.sets.push(newest);
+            this.currentSet(newest);
+            this.editorVisible(true);
+        }.bind(this);
+        this.saveSet = function() {
+            localStorage.setItem(GRADING_LOCAL_STORAGE_ITEM_USERSETS,
+                JSON.stringify(this.sets().map(function(set) {return {
+                    "name": set.name(),
+                    "default": set.default(),
+                    "emails": set.emails()
+                }})));
+            this.editorVisible(false);
+        }.bind(this);
+        this.deleteSet = function() {
+            if (this.currentSet().default()) {
+                this.editorVisible(false);
+                return false;
+            }
+            if (confirm("Are you sure you want to delete this set?")) {
+                let deleted = this.currentSet();
+                this.currentSet(this.sets[0]);
+                this.sets.remove(deleted);
+                this.editorVisible(false);
+            }
+        }.bind(this);
+        this.selectableSets = ko.pureComputed(function() {
+            return this.sets().map(function(item) { return item.name(); });
+        }.bind(this));
+
+        this.emails = ko.pureComputed(function() {
+            if (this.currentSet() === undefined) {
+                return "";
+            }
+            return this.currentSet().emails();
+        }.bind(this));
+        let submissionRows = $(".submission-row");
+        this.emails.subscribe(function() {
+            let current = this.currentSet();
+            if (current.default()) {
+                // Filter nothing
+            } else {
+                let emails = current.emails().split(",").map(item => item.trim());
+                submissionRows.filter(function() {
+                    return -1!==emails.indexOf($(this).data('student'));
+                }).show();
+                submissionRows.filter(function() {
+                    return -1===emails.indexOf($(this).data('student'));
+                }).hide();
+            }
+        }.bind(this));
+    }
+
+    function GradingModel() {
+        this.userSet = new UserSetModel();
+    }
+    $(document).ready(function() {
+        grading = new GradingModel();
+        ko.applyBindings(grading);
+    });
     </script>
     <script src="{{  url_for('static', filename='libs/blockpy_server/blockpy_server.js') }}"></script>
 {% endblock %}
@@ -22,6 +105,35 @@ Dashboard
 
     <p>The following submissions are ready for review</p>
 
+    <!-- User Set Selector -->
+    <div>
+        Show students:
+        <select data-bind="options: userSet.sets,
+                           optionsText: 'name',
+                           value: userSet.currentSet">
+        </select>
+        <button type="button" class="btn btn-sm btn-outline-secondary"
+                data-bind="click: userSet.startEditing,
+                                         visible: !userSet.editorVisible()">Edit this user set</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary"
+                data-bind="click: userSet.startAdding,
+                                         visible: !userSet.editorVisible()">Add new user set</button>
+        <div data-bind="visible: userSet.editorVisible">
+            <label>User Set Name:
+                <input type="text"
+                       data-bind="value: userSet.currentSet().name,
+                                  disable: userSet.currentSet().default"></label><br>
+            <label style="min-width: 100%">Emails (separated by commas):<br>
+                <textarea data-bind="value: userSet.currentSet().emails,
+                                     disable: userSet.currentSet().default"
+                 style="min-width: 100%"></textarea></label><br>
+            <button type="button" class="btn btn-danger btn-sm"
+                    data-bind="click: userSet.deleteSet">Delete current user set</button>
+            <button type="button" class="btn btn-success btn-sm"
+                    data-bind="click: userSet.saveSet">Save user set</button>
+        </div>
+    </div>
+
     <table class="table table-condensed table-hover table-striped table-bordered">
     <caption>Student's submissions pending review.</caption>
     <tbody>
@@ -31,7 +143,8 @@ Dashboard
         <th>View</th>
     </tr>
     {% for submission in pending_review %}
-    <tr>
+    <tr data-student="{{ submission[1].email }}" data-assignment="{{ submission[2].id }}"
+        class="submission-row">
         <td>{{ submission[2].title() }}</td>
         <td>{{ submission[1].name() }}</td>
         <td>{% if submission[0] != None -%}
