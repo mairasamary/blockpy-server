@@ -1,4 +1,3 @@
-from natsort import natsorted
 from sqlalchemy import Column, String, Integer, ForeignKey, Text
 
 from models import models
@@ -36,36 +35,6 @@ class Course(Base):
     SCHEMA_V1_IGNORE_COLUMNS = Base.SCHEMA_V1_IGNORE_COLUMNS + ('owner_id__email',)
     SCHEMA_V2_IGNORE_COLUMNS = Base.SCHEMA_V2_IGNORE_COLUMNS + ('owner_id__email',)
 
-    @staticmethod
-    def import_json(data, owner_id, update=True):
-        course = Course.decode_json(data['course'], owner_id=owner_id)
-        db.session.add(course)
-        db.session.commit()
-        assignment_remap = {}
-        for assignment_data in natsorted(data['assignments'], key=lambda a: a['name']):
-            assignment = models.Assignment.decode_json(assignment_data,
-                                                       course_id=course.id,
-                                                       owner_id=owner_id)
-            db.session.add(assignment)
-            db.session.commit()
-            assignment_remap[assignment_data['id']] = assignment.id
-        group_remap = {}
-        for group_data in natsorted(data['assignment_groups'], key=lambda g: g['name']):
-            group = models.AssignmentGroup.decode_json(group_data,
-                                                       course_id=course.id,
-                                                       owner_id=owner_id)
-            db.session.add(group)
-            db.session.commit()
-            group_remap[group_data['id']] = group.id
-        sorter = lambda m: (m['assignment_group_id'], m['assignment_id'])
-        for member_data in sorted(data['assignment_memberships'], key=sorter):
-            assignment_id = assignment_remap[member_data['assignment_id']]
-            group_id = group_remap[member_data['assignment_group_id']]
-            member = models.AssignmentGroupMembership.decode_json(member_data,
-                                                                  assignment_id=assignment_id,
-                                                                  assignment_group_id=group_id)
-            db.session.add(member)
-        db.session.commit()
 
     @staticmethod
     def export(course_id):

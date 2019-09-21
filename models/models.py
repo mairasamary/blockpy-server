@@ -94,8 +94,11 @@ class Base(Model):
                 del data[ignore]
         if existing:
             existing.edit(data, update_version=False)
-            return None
-        return cls(**data)
+        else:
+            existing = cls(**data)
+            db.session.add(existing)
+            db.session.commit()
+        return existing
 
     @classmethod
     def get_existing(cls, data):
@@ -108,10 +111,12 @@ class Base(Model):
             if getattr(self, key) != value:
                 modified = True
                 setattr(self, key, value)
-        if modified and update_version:
-            self.version += 1
+        if modified:
+            if update_version:
+                self.version += 1
             db.session.commit()
         return modified
+
 
 assignment_tag_membership = Table('assignment_tag_membership', Base.metadata,
                                   Column('assignment_id', Integer, ForeignKey('assignment.id')),

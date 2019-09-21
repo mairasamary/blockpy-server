@@ -8,10 +8,13 @@ Functions for importing/exporting to various formats
 """
 from typing import Type, Union
 
+from natsort import natsorted
+
 from models.assignment import Assignment
 from models.assignment_group import AssignmentGroup
 from models.assignment_group_membership import AssignmentGroupMembership
 from models.course import Course
+import models
 
 from main import app
 from models.models import db, AssignmentGroup
@@ -24,19 +27,58 @@ CATEGORY_MODELS = {
 }
 
 
-def import_bundle(bundle, course_id=None, update=True):
-    for category, values in bundle.items():
-        if category not in CATEGORY_MODELS:
-            raise ValueError('Unknown import category: ' + repr(category))
-        table = CATEGORY_MODELS[category]
-        for value in values:
-            overrides = {}
-            if course_id is not None:
-                overrides['course_id'] = course_id
-            decoded = table.decode_json(value, **overrides)
-            if decoded is not None:
-                db.session.add(decoded)
-                db.session.commit()
+# TODO: More sophisticated class for using either ID or URL to keep track of elements.
+class Identifier:
+    def __init__(self, entity):
+        self.id = entity.id
+        self.url= entity.url
+
+    def __hash__(self):
+        return hash((self.id, self.url))
+
+    def __equal__(self, right):
+        if not isinstance(right, Identifier):
+            return False
+        if self.id is not None and right.id is not None:
+            return self.id == right.id
+        else:
+            return self.url == right.url
+        # TODO Handle case where we need to look up the other one
+
+
+def sorter(membership):
+    return membership.get('assignment_group_url', ""), membership.get('assignment_url', "")
+
+
+def import_bundle(bundle, owner_id, course_id=None, update=True):
+    if 'course' in bundle:
+        course = Course.decode_json(bundle['course'], owner_id=owner_id)
+        db.session.add(course)
+        db.session.commit()
+    else:
+        course = Course.by_id(course_id)
+    assignment_remap = {}
+    assignments = bundle.get('assignments', [])
+    for assignment_data in natsorted(assignments, key=lambda a: a['name']):
+        assignment = Assignment.decode_json(assignment_data,
+                                            course_id=course.id,
+                                            owner_id=owner_id)
+        assignment_remap[assignment_data['url']] = assignment.id
+    group_remap = {}
+    groups = bundle.get('groups', [])
+    for group_data in natsorted(groups, key=lambda g: g['name']):
+        group = AssignmentGroup.decode_json(group_data,
+                                            course_id=course.id,
+                                            owner_id=owner_id)
+        group_remap[group_data['url']] = group.id
+    memberships = bundle.get('memberships', [])
+    for member_data in sorted(memberships, key=sorter):
+        assignment_id = assignment_remap[member_data['assignment_url']]
+        group_id = group_remap[member_data['assignment_group_url']]
+        member = AssignmentGroupMembership.decode_json(member_data,
+                                                       assignment_id=assignment_id,
+                                                       assignment_group_id=group_id)
+    return True
 
 
 # noinspection PyTypeHints
