@@ -76,12 +76,12 @@ Dashboard
                 // Filter nothing
                 submissionRows.show();
             } else {
-                let emails = current.emails().split(",").map(item => item.trim());
+                let emails = current.emails().split(",").map(item => item.trim().toLowerCase());
                 submissionRows.filter(function() {
-                    return -1!==emails.indexOf($(this).data('student'));
+                    return -1!==emails.indexOf($(this).data('student').toLowerCase());
                 }).show();
                 submissionRows.filter(function() {
-                    return -1===emails.indexOf($(this).data('student'));
+                    return -1===emails.indexOf($(this).data('student').toLowerCase());
                 }).hide();
             }
         }.bind(this));
