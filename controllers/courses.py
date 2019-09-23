@@ -258,7 +258,7 @@ def dashboard(lti=lti):
         return grader_dashboard(user, course_id)
 
     course = Course.by_id(course_id)
-    assignments = natsorted([a for a, m in course.get_submitted_assignments()],
+    assignments = natsorted(course.get_submitted_assignments(),
                             key=lambda r: r.name)
     all_subs = Submission.by_student(user_id, course_id)
     all_subs = {s[0].assignment_id: s for s in all_subs}
@@ -293,7 +293,7 @@ def submissions_filter(course_id):
     course_id = int(course_id)
     course = Course.by_id(course_id)
     students = natsorted(course.get_students(), key=lambda r: r.name())
-    assignments = natsorted([a for a, m in course.get_submitted_assignments()],
+    assignments = natsorted(course.get_submitted_assignments(),
                             key=lambda r: r.name)
     criteria = request.values.get("criteria", "none")
     search_key = int(request.values.get("search_key", "-1"))
@@ -355,9 +355,8 @@ def submissions_grid(course_id):
     assignments = natsorted(course.get_submitted_assignments(),
                             key=lambda r: r[0].name)
     grouped_assignments = defaultdict(list)
-    for assig_pair in assignments:
-        assignment, membership = assig_pair
-        grouped_assignments[membership.assignment_group_id].append(assignment)
+    #for assignment in assignments:
+    #    grouped_assignments[membership.assignment_group_id].append(assignment)
     assignment_groups = course.get_assignment_groups()
     submissions = {(s.assignment_id, s.user_id): s for s in course.get_submissions()}
     return render_template('courses/submissions_grid.html',

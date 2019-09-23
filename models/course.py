@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, ForeignKey, Text
+from sqlalchemy import Column, String, Integer, ForeignKey, Text, or_
 
 from models import models
 from models.models import Base, datetime_to_string, string_to_datetime, db
@@ -101,10 +101,9 @@ class Course(Base):
                 .all())
 
     def get_submitted_assignments(self):
-        return (db.session.query(models.Assignment, models.AssignmentGroupMembership)
+        return (db.session.query(models.Assignment)
                 .join(models.Submission, models.Submission.assignment_id == models.Assignment.id)
-                .filter(models.Submission.course_id == self.id,
-                        models.AssignmentGroupMembership.assignment_id == models.Assignment.id)
+                .filter(models.Submission.course_id == self.id)
                 .distinct())
 
     def get_submissions(self):
