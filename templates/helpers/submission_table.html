@@ -15,7 +15,7 @@
     {% if criteria=="assignment" %}<td>{{ submission[1].name() }}</td>{%endif %}
     <td>
         {% if submission[0].correct%}Yes{% else %}No{% endif %}
-        {% if submission[0].score != None %}
+        {% if submission[0].score is defined %}
         ({{ submission[0].score|round(1) }}%)
         {% endif %}
     </td>
