@@ -298,7 +298,7 @@ def update_submission(lti, lti_exception=None):
     submission_id = maybe_int(request.values.get("submission_id"))
     lis_result_sourcedid = request.values.get('lis_result_sourcedid')
     assignment_group_id = maybe_int(request.values.get('assignment_group_id'))
-    score = int(request.values.get('score', '0'))
+    score = float(request.values.get('score', '0'))
     correct = maybe_bool(request.values.get("correct"))
     # TODO: Only send image if the assignment settings starts as Block or Split
     image = request.values.get('image', "")

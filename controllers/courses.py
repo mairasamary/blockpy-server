@@ -346,6 +346,7 @@ def submissions_specific(submission_id):
 @login_required
 def submissions_grid(course_id):
     ''' List all the users in the course '''
+    # TODO: Fix this
     course_id = int(course_id)
     is_instructor = g.user.is_instructor(course_id)
     if not is_instructor:
