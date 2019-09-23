@@ -70,9 +70,11 @@ class Log(Base):
     def new(assignment_id, assignment_version, course_id, subject_id, event_type,
             file_path, category, label, message, client_timestamp, client_timezone):
         # Database logging
-        log = Log(assignment_id=assignment_id, assignment_version=assignment_version, course_id=course_id,
+        log = Log(assignment_id=assignment_id, assignment_version=assignment_version,
+                  course_id=course_id,
                   subject_id=subject_id, file_path=file_path, event_type=event_type,
-                  category=category, label=label, message=message, client_timestamp=client_timestamp,
+                  category=category, label=label, message=message.replace("\0", ""),
+                  client_timestamp=client_timestamp,
                   client_timezone=client_timezone)
         db.session.add(log)
         db.session.commit()
