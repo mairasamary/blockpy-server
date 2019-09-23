@@ -13,8 +13,12 @@
 <tr class='{% if submission[0].correct%}table-success{% endif %}'>
     {% if criteria=="student" %}<td>{{ submission[2].title() }}</td>{%endif %}
     {% if criteria=="assignment" %}<td>{{ submission[1].name() }}</td>{%endif %}
-    <td>{% if submission[0].correct%}Yes{% else %}No{% endif %}
-        ({{ submission[0].score|round(1) }}%)</td>
+    <td>
+        {% if submission[0].correct%}Yes{% else %}No{% endif %}
+        {% if submission[0].score != None %}
+        ({{ submission[0].score|round(1) }}%)
+        {% endif %}
+    </td>
     <td>{{ submission[0].submission_status }}</td>
     <td>{% if submission[0] != None -%}
     <a href="{{ url_for('blockpy.view_submission', submission_id=submission[0].id, embed=True) }}"
