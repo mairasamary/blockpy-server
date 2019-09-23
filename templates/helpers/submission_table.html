@@ -10,11 +10,12 @@
     <th>Touches</th>
 </tr>
 {% for submission in submissions %}
-<tr class='{% if submission[0].correct%}success{% endif %}'>
+<tr class='{% if submission[0].correct%}table-success{% endif %}'>
     {% if criteria=="student" %}<td>{{ submission[2].title() }}</td>{%endif %}
     {% if criteria=="assignment" %}<td>{{ submission[1].name() }}</td>{%endif %}
-    <td>{% if submission[0].correct%}Yes{% else %}No{% endif %}</td>
-    <td>{{ submission[0].submissionStatus }}</td>
+    <td>{% if submission[0].correct%}Yes{% else %}No{% endif %}
+        ({{ round(submission[0].score, 1) }})</td>
+    <td>{{ submission[0].submission_status }}</td>
     <td>{% if submission[0] != None -%}
     <a href="{{ url_for('blockpy.view_submission', submission_id=submission[0].id, embed=True) }}"
         target="_blank">View</a>{% endif %}</td>

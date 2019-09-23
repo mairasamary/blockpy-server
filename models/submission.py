@@ -138,8 +138,8 @@ class Submission(Base):
     def __str__(self):
         return '<Submission {} for {}>'.format(self.id, self.user_id)
 
-    def full_status(self):
-        if self.assignment.hidden:
+    def full_status(self, allow_hide=True):
+        if allow_hide and self.assignment.hidden:
             return "????"
         elif self.correct:
             return "Complete"
