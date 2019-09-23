@@ -18,9 +18,7 @@ depends_on = None
 
 def upgrade():
     op.add_column('review', sa.Column('location', sa.Text))
-    op.add_column('review', sa.Column('forked_id', sa.Integer(),
-                                      sa.ForeignKeyConstraint(('forked_id',), ['review.id']),
-                                      nullable=True))
+    op.add_column('review', sa.Column('forked_id', sa.Integer(), nullable=True))
     op.add_column('review', sa.Column('forked_version', sa.Integer(), nullable=True))
 
     op.create_foreign_key("fk_review_forked_id", 'review', 'review', ['forked_id'], ['id'])
