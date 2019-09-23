@@ -9,7 +9,7 @@ class AssignmentTag(Base):
     name = Column(String(255), default="Blank Tag")
     owner_id = Column(Integer(), ForeignKey('user.id'))
     course_id = Column(Integer(), ForeignKey('course.id'))
-    KINDS = ['objective', 'topic', 'mistake', 'misconception']
+    KINDS = ['objective', 'topic', 'mistake', 'misconception', 'compliment']
     kind = Column(String(255), default="objective")
     description = Column(Text(), default="")
     LEVELS = ['familiar', 'exposed', 'mastered', 'learning']

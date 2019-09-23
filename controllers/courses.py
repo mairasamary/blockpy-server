@@ -107,8 +107,10 @@ def course(course_id):
         flash("Course does not exist.")
         return redirect(url_for('courses.index'))
     is_instructor = g.user.is_instructor(course_id)
+    is_grader = g.user.is_grader(course_id)
     return render_template('courses/course.html',
                            course=course,
+                           is_grader=is_grader,
                            is_instructor=is_instructor)
 
 

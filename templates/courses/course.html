@@ -42,7 +42,7 @@ $().ready(function() {
 
 <a href="{{ url_for('courses.view_assignments', course_id=course.id) }}" class='btn btn-outline-secondary'>View Assignments</a><br><br>
 
-{% if is_instructor %}
+{% if is_grader %}
 
 <a href="{{ url_for('courses.manage_users', course_id=course.id) }}" class='btn btn-outline-secondary'>Manage Students</a>
 

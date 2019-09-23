@@ -30,9 +30,9 @@ def upgrade():
     sa.Column('assignment_version', sa.Integer(), nullable=True),
     sa.Column('submission_version', sa.Integer(), nullable=True),
     sa.Column('version', sa.Integer(), nullable=True),
-    sa.ForeignKeyConstraint(['author_id'], ['user.id'], ),
-    sa.ForeignKeyConstraint(['submission_id'], ['submission.id'], ),
-    sa.ForeignKeyConstraint(['tag_id'], ['assignment_tag.id'], ),
+    sa.ForeignKeyConstraint(('author_id',), ['user.id'], ),
+    sa.ForeignKeyConstraint(('submission_id',), ['submission.id'], ),
+    sa.ForeignKeyConstraint(('tag_id',), ['assignment_tag.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_foreign_key(None, 'submission', 'assignment_group', ['assignment_group_id'], ['id'])
