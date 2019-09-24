@@ -9,6 +9,7 @@ from natsort import natsorted
 from flask import Blueprint, url_for, session, request, jsonify, g, render_template, redirect
 from werkzeug.utils import secure_filename
 
+from controllers.pylti.common import LTIPostMessageException
 from main import app
 
 from models.models import (db)
@@ -319,10 +320,20 @@ def update_submission(lti, lti_exception=None):
     # TODO: Document that we currently only pass back grade if it changed
     if was_changed or force_update:
         submission.save_block_image(image)
-        lti_post_grade(lti, submission, lis_result_sourcedid, assignment_group_id,
-                       submission.user_id, submission.course_id)
-        make_log_entry(submission.assignment_id, submission.assignment_version,
-                       course_id, user_id, "X-Submission.LMS", "answer.py", message=str(score))
+        error = "Generic LTI Failure - perhaps not logged into LTI session?"
+        try:
+            success = lti_post_grade(lti, submission, lis_result_sourcedid, assignment_group_id,
+                                     submission.user_id, submission.course_id)
+        except LTIPostMessageException as e:
+            success = False
+            error = str(e)
+        if success:
+            make_log_entry(submission.assignment_id, submission.assignment_version,
+                           course_id, user_id, "X-Submission.LMS", "answer.py", message=str(score))
+        else:
+            make_log_entry(submission.assignment_id, submission.assignment_version,
+                           course_id, user_id, "X-Submission.LMS.Failure", "answer.py", message=error)
+            return ajax_failure({"submitted": False, "changed": was_changed, "message": error})
     return ajax_success({"submitted": was_changed or force_update, "changed": was_changed})
 
 

@@ -7,15 +7,20 @@
                 $("#assign-grade").click(function() {
                     let grade = $("#grade-value").val();
                     let correct = $("#correct-value").is(":checked");
-                    submitGrade({{ submission.id }}, grade, correct)
-                        .done(function() {
-                            $("#assign-grade").text("Assigned!")
-                                .removeClass("btn-success btn-danger").addClass("btn-success");
-                        })
-                        .fail(function() {
+                    let failButton = function(reason) {
                             $("#assign-grade").text("Failed to assign!")
                                 .removeClass("btn-success").addClass("btn-danger");
-                        });
+                            console.error(reason);
+                        };
+                    submitGrade({{ submission.id }}, {{ submission.course_id }}, grade, correct)
+                        .done(function(response) {
+                            if (response.success) {
+                                $("#assign-grade").text("Assigned!")
+                                .removeClass("btn-success btn-danger").addClass("btn-success");
+                            } else {
+                                failButton(response.message);
+                            }
+                        }).fail(failButton);
                 })
                 $("#correct-value").on('change keyup input', function() {
                     let correct = $("#correct-value").is(":checked");
@@ -31,8 +36,9 @@
         </script>
         <div>
         <form>
-            <label>Is Correct?: <input type="checkbox" id="correct-value"></label> or
-            <label>Grade: <input type="text" id="grade-value" value="0">/100</label><br>
+            <label>Is Correct?: <input type="checkbox" id="correct-value"
+            {% if submission.correct %}checked{% endif %}></label> or
+            <label>Grade: <input type="text" id="grade-value" value="{{ submission.score }}">/100</label><br>
             <button class='btn btn-success' id="assign-grade" type="button">Assign Grade</button>
         </form>
         </div>
