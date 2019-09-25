@@ -11,6 +11,7 @@ from werkzeug.utils import secure_filename
 
 from controllers.pylti.common import LTIPostMessageException
 from main import app
+from models.course import Course
 
 from models.models import (db)
 from models.log import Log
@@ -284,6 +285,9 @@ def lti_post_grade(lti, submission, lis_result_sourcedid, assignment_group_id, u
     total_score, view_url = get_outcomes(submission, assignment_group_id, user_id, course_id)
     print(submission.endpoint)
     lis_result_sourcedid = submission.endpoint if lis_result_sourcedid is None else lis_result_sourcedid
+    if 'lis_outcome_service_url' not in session:
+        course = Course.by_id(course_id)
+        session['lis_outcome_service_url'] = course.endpoint
     session['lis_result_sourcedid'] = lis_result_sourcedid
     if lis_result_sourcedid and lti:
         lti.post_grade(total_score, view_url, endpoint=lis_result_sourcedid, url=True)

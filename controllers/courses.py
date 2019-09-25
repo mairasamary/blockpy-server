@@ -15,7 +15,7 @@ from sqlalchemy import Date, cast, func, desc, or_
 from controllers.helpers import (lti, strip_tags,
                                  get_lti_property, require_request_parameters, login_required,
                                  require_course_instructor, get_select_menu_link,
-                                 check_resource_exists, get_course_id, get_user)
+                                 check_resource_exists, get_course_id, get_user, ajax_success)
 
 from main import app
 from models.models import db, AssignmentGroup
@@ -238,9 +238,10 @@ def change_role():
 def grader_dashboard(user, course_id):
     pending_review = Submission.by_pending_review(course_id)
     users = {user.email: user.encode_json() for _, user, _ in pending_review}
+    is_instructor = user.is_instructor(course_id)
     return render_template('courses/dashboard_grader.html', embed=True,
                            course_id=course_id, user=user, pending_review=pending_review,
-                           users=users)
+                           users=users, is_instructor=is_instructor)
 
 @courses.route('dashboard/', methods=['GET', 'POST'])
 @courses.route('dashboard', methods=['GET', 'POST'])
@@ -386,3 +387,16 @@ def switch_course():
     pass
 
 # TODO: update course via JSON file or API
+
+@courses.route('/fix_course_outcome_url/', methods=['GET', 'POST'])
+@courses.route('/fix_course_outcome_url', methods=['GET', 'POST'])
+@require_request_parameters('new_url')
+@login_required
+def fix_course_outcome_url():
+    new_url = request.values.get("new_url")
+    course_id = get_course_id()
+    user, user_id = get_user()
+    require_course_instructor(user, course_id)
+    course = Course.by_id(course_id)
+    course.update_endpoint(new_url)
+    return ajax_success({"success": "True"})

@@ -157,6 +157,24 @@ Dashboard
     </tbody>
     </table>
 
-    <p>Currently in "{{ g.course.name }}"</p>
+    <p>You are {{ g.user.name() }} ({{ g.user.id }}), currently in "{{ g.course.name }}" ({{g.course.id}})</p>
+
+    {% if is_instructor %}
+        <h4>Instructor Tools</h4>
+        {% if g.course.endpoint != session.get("lis_outcome_service_url", "") %}
+            <script>$(document).ready(function() {
+                $("#update-course-outcome-url").click(function() {
+                    $.post("{{ url_for("courses.fix_course_outcome_url") }}",
+                        {
+                            "new_url": {{ session.get("lis_outcome_service_url", "")|tojson }}
+                        });
+                });
+            });</script>
+        <button type="button" class="btn btn-info" id="update-course-outcome-url">
+            Update LTI course outcome URL </button>
+        to <code>{{ session.get("lis_outcome_service_url", "") }}</code><br>
+            <small>Use this button if your initial course outcome URL is not correct.</small>
+        {% endif %}
+    {% endif %}
 
 {% endblock %}

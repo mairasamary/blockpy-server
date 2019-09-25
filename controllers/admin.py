@@ -147,6 +147,30 @@ class RoleView(RegularView):
     form_columns = ('name', 'user_id', 'course_id')
 
 
+def _render_course_service(view, context, model, name):
+    return Markup(model.service+"<br>"+
+                  (model.external_id+"<br>" if model.external_id else "")+
+                  (model.endpoint+"<br>" if model.endpoint else ""))
+
+
+class CourseView(RegularView):
+    '''name = Column(String(255))
+    url = Column(String(255), default=None, nullable=True)
+    owner_id = Column(Integer(), ForeignKey('user.id'))
+    SERVICES = ['native', 'lti']
+    service = Column(String(80), default="native")
+    external_id = Column(String(255), default="")
+    endpoint = Column(Text(), default="")
+    VISIBILITIES = ['private', 'public']
+    visibility = Column(String(80), default="private")
+    term = Column(String(255), default="")
+    settings = Column(Text(), default="")'''
+    column_list = ('id', 'date_modified', 'name', 'url', 'owner_id',
+                   'service', 'visibility', 'term', 'settings')
+    column_searchable_list = ('name', 'url')
+    column_filters = ('name', 'date_modified', 'url', 'term', 'owner_id', 'service')
+    column_formatters = {'service': _render_course_service}
+
 class AssignmentView(RegularView):
     column_list = ('id', 'date_modified',
                    'owner_id', 'course_id',
@@ -242,7 +266,7 @@ class SubmissionView(RegularView):
 
 
 admin.add_view(UserView(User, db.session, category='Tables'))
-admin.add_view(ModelIdView(Course, db.session, category='Tables'))
+admin.add_view(CourseView(Course, db.session, category='Tables'))
 admin.add_view(SubmissionView(Submission, db.session, category='Tables'))
 admin.add_view(SampleSubmissionView(SampleSubmission, db.session, category='Tables'))
 admin.add_view(AssignmentView(Assignment, db.session, category='Tables'))

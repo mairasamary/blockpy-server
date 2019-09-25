@@ -120,6 +120,10 @@ class Course(Base):
                 .order_by(models.AssignmentGroup.name)
                 .all())
 
+    def update_endpoint(self, endpoint):
+        self.endpoint = endpoint
+        db.session.commit()
+
     @staticmethod
     def get_all_groups(menu='embed'):
         courses = Course.query.all()
