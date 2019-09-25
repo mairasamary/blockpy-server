@@ -24,6 +24,7 @@ from controllers.helpers import (lti, highlight_python_code, normalize_url,
                                  get_course_id, maybe_int, get_user, check_resource_exists, ajax_success,
                                  login_required, require_course_instructor, require_course_grader, maybe_bool,
                                  make_log_entry)
+from models.user import User
 
 blueprint_blockpy = Blueprint('blockpy', __name__, url_prefix='/blockpy')
 
@@ -182,10 +183,9 @@ def load_history():
     student_id = maybe_int(request.values.get('user_id'))
     user, user_id = get_user()
     # Verify user can see the submission
-    print(user_id, student_id, course_id, user.is_grader(course_id))
     if user_id != student_id and not user.is_grader(course_id):
         return ajax_failure("Only graders can see logs for other people.")
-    history = Log.get_history(course_id, assignment_id, student_id)
+    history = reversed(Log.get_history(course_id, assignment_id, student_id))
     return ajax_success({"history": history})
 
 
@@ -283,7 +283,6 @@ def get_outcomes(submission, assignment_group_id, user_id, course_id) -> 'Tuple[
 
 def lti_post_grade(lti, submission, lis_result_sourcedid, assignment_group_id, user_id, course_id):
     total_score, view_url = get_outcomes(submission, assignment_group_id, user_id, course_id)
-    print(submission.endpoint)
     lis_result_sourcedid = submission.endpoint if lis_result_sourcedid is None else lis_result_sourcedid
     if 'lis_outcome_service_url' not in session:
         course = Course.by_id(course_id)
@@ -521,7 +520,8 @@ def browse_submissions():
     submissions = Submission.by_assignment(assignment_id, int(course_id))
     for submission, user, assignment in submissions:
         submission.highlighted_code = highlight_python_code(submission.code)
-        submission.history = process_history([h['time'] for h in submission.get_history()])
+        submission.history = process_history([h['time']
+                                              for h in reversed(submission.get_history())])
     return render_template('blockpy/browse_submissions.html',
                            course_id=course_id,
                            assignment_id=assignment_id,
@@ -584,3 +584,30 @@ def load_assignment_give_feedback():
         return ajax_failure("No Assignment ID given!")
     assignment = Assignment.by_id(assignment_id)
     return jsonify(success=True, give_feedback=assignment.on_run)
+
+
+HISTORY_PAGE_LIMIT = 250
+
+
+@blueprint_blockpy.route('/browse_history/', methods=['GET', 'POST'])
+@blueprint_blockpy.route('/browse_history', methods=['GET', 'POST'])
+@require_request_parameters("assignment_id", "course_id", "user_id")
+def browse_history():
+    # Get parameters
+    course_id = maybe_int(request.values.get('course_id'))
+    assignment_id = maybe_int(request.values.get('assignment_id'))
+    student_id = maybe_int(request.values.get('user_id'))
+    page_offset = maybe_int(request.values.get('page_offset', 0))
+    user, user_id = get_user()
+    # Get resources
+    assignment = Assignment.by_id(assignment_id)
+    student = User.by_id(student_id)
+    course = Course.by_id(course_id)
+    # Verify user can see the submission
+    if user_id != student_id and not user.is_grader(course_id):
+        return ajax_failure("Only graders can see logs for other people.")
+    history = Log.get_history(course_id, assignment_id, student_id,
+                              page_offset, HISTORY_PAGE_LIMIT)
+    return render_template('blockpy/browse_history.html', assignment=assignment,
+                           student=student, course=course, history=history)
+

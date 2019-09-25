@@ -100,11 +100,19 @@ class Log(Base):
         return Log.query.filter_by(course_id=course_id).all()
 
     @staticmethod
-    def get_history(course_id, assignment_id, user_id):
-        logs = Log.query.filter_by(course_id=course_id,
-                                   assignment_id=assignment_id,
-                                   subject_id=user_id).order_by(Log.client_timestamp.asc()).all()
-        return [log.encode_json() for log in logs]
+    def get_history(course_id, assignment_id, user_id, page_offset=None, page_limit=None):
+        logs = (
+            Log.query.filter_by(
+                course_id=course_id,
+                assignment_id=assignment_id,
+                subject_id=user_id
+            ).order_by(Log.client_timestamp.desc())
+        )
+        if page_offset is not None:
+            logs.offset(page_offset)
+        if page_limit is not None:
+            logs.limit(page_limit)
+        return [log.encode_json() for log in logs.all()]
 
     def for_file(self):
         return ", ".join((

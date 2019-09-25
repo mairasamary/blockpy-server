@@ -130,7 +130,10 @@ def _render_version(view, context, model, name):
     return Markup(body)
 
 def _render_assignment_name(view, context, model, name):
-    return Markup(model.name+"<br><br>"+model.url)
+    return Markup((model.name if model.name else "")+
+                  "<br><br>"+
+                  (model.url if model.url else ""))
+
 
 def _smaller(view, context, model, name):
     return Markup("<small>" + (getattr(model, name) or "") + "</small>")

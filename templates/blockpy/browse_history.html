@@ -1,0 +1,74 @@
+{% extends 'helpers/layout.html' %}
+
+{% block title %}
+Browse Submission History
+{% endblock %}
+
+{% block statusbar %}
+{% endblock %}
+
+{% block extrahead %}
+<script>
+HISTORY = [
+    {% for log in history %}
+    {
+        "name": "{{ log.client_timestamp }} - {{ log.event_type }}",
+        {% for key, value in log.items() %}
+            {{ key|tojson }}: {{ value|tojson }},
+        {% endfor %}
+    }
+    {% endfor %}
+];
+
+    $(document).ready(function() {
+        let historyModel = {
+            "selected": ko.observable(HISTORY[0]),
+            "history": HISTORY
+        };
+        historyModel.start = function() {
+            historyModel.selected()
+        };
+
+        ko.applyBindings(historyModel);
+    });
+</script>
+{% endblock %}
+
+{% block body %}
+
+    <h1>Browse History</h1>
+
+    <p>User: {{ student.name() }}</p>
+    <p>Assignment: {{ assignment.name }}</p>
+    <p>Course: {{ course.name }}</p>
+
+    <form class="form-inline">
+        <button class="blockpy-history-start btn btn-outline-secondary mr-2 btn-sm" type="button"
+            data-bind="click: start">
+            <span class='fas fa-step-backward'></span> Start
+        </button>
+        <button class="btn btn-outline-secondary mr-2 btn-sm" type="button"
+            data-bind="click: previous">
+            <span class='fas fa-backward'></span> Previous
+        </button>
+        <select class="blockpy-history-selector form-control custom-select mr-2"
+                aria-title="History Selector"
+                data-bind="options: history, optionsText: 'name', value: selected">
+        </select>
+        <button class="btn btn-outline-secondary mr-2 btn-sm" type="button"
+            data-bind="click: next">
+            <span class='fas fa-forward'></span> Next
+        </button>
+        <button class="btn btn-outline-secondary btn-sm" type="button"
+            data-bind="click: mostRecent">
+            <span class='fas fa-step-forward'></span> Most Recent
+        </button>
+    </form>
+
+    {% for log in history %}
+    <div>
+        {{ log }}
+    </div>
+    {% endfor %}
+
+{% endblock %}
