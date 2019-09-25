@@ -11,6 +11,7 @@ class Course(Base):
     SERVICES = ['native', 'lti']
     service = Column(String(80), default="native")
     external_id = Column(String(255), default="")
+    endpoint = Column(Text(), default="")
     VISIBILITIES = ['private', 'public']
     visibility = Column(String(80), default="private")
     term = Column(String(255), default="")
@@ -25,6 +26,7 @@ class Course(Base):
                 'owner_id__email': user.email if user else '',
                 'service': self.service,
                 'external_id': self.external_id,
+                'endpoint': self.endpoint,
                 'visibility': self.visibility,
                 'settings': self.settings,
                 'term': self.term,
@@ -34,6 +36,7 @@ class Course(Base):
 
     SCHEMA_V1_IGNORE_COLUMNS = Base.SCHEMA_V1_IGNORE_COLUMNS + ('owner_id__email',)
     SCHEMA_V2_IGNORE_COLUMNS = Base.SCHEMA_V2_IGNORE_COLUMNS + ('owner_id__email',)
+    SCHEMA_V3_IGNORE_COLUMNS = SCHEMA_V2_IGNORE_COLUMNS
 
 
     @staticmethod
@@ -152,9 +155,10 @@ class Course(Base):
         return new_course
 
     @staticmethod
-    def new_lti_course(service, external_id, name, user_id):
+    def new_lti_course(service, external_id, name, user_id, endpoint=""):
         new_course = Course(name=name, owner_id=user_id,
-                            service=service, external_id=external_id)
+                            service=service, external_id=external_id,
+                            endpoint=endpoint)
         db.session.add(new_course)
         db.session.commit()
         return new_course
@@ -168,13 +172,14 @@ class Course(Base):
         return Course.query.filter_by(url=course_url).first()
 
     @staticmethod
-    def from_lti(service, lti_context_id, name, user_id):
+    def from_lti(service, lti_context_id, name, user_id, endpoint=""):
         lti_course = Course.query.filter_by(external_id=lti_context_id).first()
         if lti_course is None:
             return Course.new_lti_course(service=service,
                                          external_id=lti_context_id,
                                          name=name,
-                                         user_id=user_id)
+                                         user_id=user_id,
+                                         endpoint=endpoint)
         else:
             return lti_course
 

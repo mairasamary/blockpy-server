@@ -282,6 +282,7 @@ def get_outcomes(submission, assignment_group_id, user_id, course_id) -> 'Tuple[
 
 def lti_post_grade(lti, submission, lis_result_sourcedid, assignment_group_id, user_id, course_id):
     total_score, view_url = get_outcomes(submission, assignment_group_id, user_id, course_id)
+    print(submission.endpoint)
     lis_result_sourcedid = submission.endpoint if lis_result_sourcedid is None else lis_result_sourcedid
     session['lis_result_sourcedid'] = lis_result_sourcedid
     if lis_result_sourcedid and lti:

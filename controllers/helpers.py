@@ -61,8 +61,10 @@ def lti(request='any', *lti_args, **lti_kwargs):
                 g.course = Course.from_lti("canvas",
                                            session["context_id"],
                                            session.get("context_title", ""),
-                                           g.user.id)
+                                           g.user.id,
+                                           session.get("lis_outcome_service_url", ""))
                 session['lti_course'] = g.course.id
+                session['is_lti_active'] = True
                 g.user.update_roles(g.roles, g.course.id)
                 if old_user != g.user:
                     flask_security.utils.logout_user()
@@ -70,6 +72,7 @@ def lti(request='any', *lti_args, **lti_kwargs):
                 if not old_user:
                     flask_security.utils.login_user(g.user, remember=True)
             except LTIException as lti_exception:
+                session['is_lti_active'] = False
                 kwargs['lti'] = None
                 kwargs['lti_exception'] = dict()
                 kwargs['lti_exception']['exception'] = lti_exception

@@ -2,6 +2,12 @@
 
 {% if is_grader %}
     {% if assignment.reviewed %}
+        {% if not session['is_lti_active'] or g.course.id != submission.course_id %}
+            <div class="alert alert-warning" role="alert">
+                You are not in an LTI session for this course. Launch an LTI session by opening
+                the dashboard.
+            </div>
+        {% endif %}
         <script>
             $(document).ready(function() {
                 $("#assign-grade").click(function() {
@@ -75,3 +81,14 @@
         {% endfor %}
     {% endif %}
 </div>
+
+{% if is_grader %}
+    <div><small>
+
+        Assignment: {{ submission.assignment_id }},
+        User: {{ submission.user_id }},
+        Course: {{ submission.course_id }}
+
+    </small></div>
+
+{% endif %}
