@@ -9,24 +9,38 @@ Browse Submission History
 
 {% block extrahead %}
 <script>
+
 HISTORY = [
-    {% for log in history %}
-    {
-        "name": "{{ log.client_timestamp }} - {{ log.event_type }}",
-        {% for key, value in log.items() %}
+    {% for log in history -%}
+    {"name": "{{ log.date_created }} - {{ log.event_type }}",
+        {%- for key, value in log.items() -%}
             {{ key|tojson }}: {{ value|tojson }},
-        {% endfor %}
-    }
-    {% endfor %}
+        {%- endfor -%}
+    },
+    {%- endfor %}
 ];
 
     $(document).ready(function() {
-        let historyModel = {
-            "selected": ko.observable(HISTORY[0]),
+        let index = 0;
+        historyModel = {
+            "selected": ko.observable(HISTORY[index]),
             "history": HISTORY
         };
         historyModel.start = function() {
-            historyModel.selected()
+            index = 0;
+            historyModel.selected(HISTORY[index]);
+        };
+        historyModel.previous = function() {
+            index = Math.max(0, index-1);
+            historyModel.selected(HISTORY[index]);
+        };
+        historyModel.next = function() {
+            index = Math.min(HISTORY.length-1, index+1);
+            historyModel.selected(HISTORY[index]);
+        };
+        historyModel.mostRecent = function() {
+            index = HISTORY.length-1;
+            historyModel.selected(HISTORY[index]);
         };
 
         ko.applyBindings(historyModel);
@@ -65,10 +79,14 @@ HISTORY = [
         </button>
     </form>
 
-    {% for log in history %}
+
     <div>
-        {{ log }}
+        <p>When: <span data-bind="text: selected().date_created"></span></p>
+        <p>Event: <span data-bind="text: selected().event_type"></span></p>
+        <p>Label: <span data-bind="text: selected().category"></span>
+            /
+            <span data-bind="text: selected().label"></span></p>
+        <p>Message: <pre data-bind="text: selected().message"></pre></p>
     </div>
-    {% endfor %}
 
 {% endblock %}
