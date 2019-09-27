@@ -185,7 +185,7 @@ def load_history():
     # Verify user can see the submission
     if user_id != student_id and not user.is_grader(course_id):
         return ajax_failure("Only graders can see logs for other people.")
-    history = reversed(Log.get_history(course_id, assignment_id, student_id))
+    history = list(reversed(Log.get_history(course_id, assignment_id, student_id)))
     return ajax_success({"history": history})
 
 

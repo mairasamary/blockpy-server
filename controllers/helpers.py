@@ -370,6 +370,8 @@ def get_assignment_id(f):
 
 def highlight_python_code(code, linenos=True):
     formatter = HtmlFormatter(linenos=linenos, noclasses=True,
+                              lineanchors="code-lineno",
+                              linespans="code-span",
                               # style='colorful'
                               )
     return highlight(code, PythonLexer(), formatter)

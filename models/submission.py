@@ -11,6 +11,7 @@ from main import app
 from models import models
 from models.log import Log
 from models.models import Base, db, ensure_dirs, optional_encoded_field, datetime_to_string
+from models.review import Review
 
 
 class SubmissionStatuses:
@@ -292,3 +293,6 @@ class Submission(Base):
 
         with open(file_name, 'w') as blockly_logfile:
             blockly_logfile.write(self.code)
+
+    def get_reviews(self):
+        return Review.query.filter_by(submission_id=self.id).all()
