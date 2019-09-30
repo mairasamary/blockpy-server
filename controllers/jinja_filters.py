@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 
 from natsort import natsorted
 
@@ -25,6 +26,17 @@ def get_setting(assignment, *keys):
     return settings
 
 
+FRIENDLY_DATE_FORMAT = "%B %d %Y, %I%M %p"
+
+
+def to_friendly_date(date):
+    return date.strftime(FRIENDLY_DATE_FORMAT)
+
+
+def from_friendly_date(date):
+    return datetime.strptime(date, FRIENDLY_DATE_FORMAT)
+
+
 def setup_jinja_filters(app):
     app.jinja_env.filters['zip'] = zip
     app.jinja_env.filters['json_load'] = attempt_json_load
@@ -32,3 +44,5 @@ def setup_jinja_filters(app):
     app.jinja_env.filters['natsorted'] = natsorted
     app.jinja_env.filters['get_setting'] = get_setting
     app.jinja_env.filters['highlight_python_code'] = highlight_python_code
+    app.jinja_env.filters['to_friendly_date'] = to_friendly_date
+    app.jinja_env.filters['from_friendly_date'] = from_friendly_date

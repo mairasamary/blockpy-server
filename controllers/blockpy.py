@@ -15,7 +15,7 @@ from models.course import Course
 
 from models.models import (db)
 from models.log import Log
-from models.submission import Submission
+from models.submission import Submission, GradingStatuses
 from models.assignment import Assignment
 from models.assignment_group import AssignmentGroup
 
@@ -335,6 +335,7 @@ def update_submission(lti, lti_exception=None):
             make_log_entry(submission.assignment_id, submission.assignment_version,
                            course_id, user_id, "X-Submission.LMS", "answer.py", message=str(score))
         else:
+            submission.update_grading_status(GradingStatuses.FAILED)
             make_log_entry(submission.assignment_id, submission.assignment_version,
                            course_id, user_id, "X-Submission.LMS.Failure", "answer.py", message=error)
             return ajax_failure({"submitted": False, "changed": was_changed, "message": error})

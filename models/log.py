@@ -106,7 +106,7 @@ class Log(Base):
                 course_id=course_id,
                 assignment_id=assignment_id,
                 subject_id=user_id
-            ).order_by(Log.client_timestamp.desc())
+            ).order_by(Log.date_created.desc())
         )
         if page_offset is not None:
             logs.offset(page_offset)

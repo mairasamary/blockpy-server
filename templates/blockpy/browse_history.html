@@ -8,13 +8,33 @@ Browse Submission History
 {% endblock %}
 
 {% block extrahead %}
+<script src="{{ url_for('static', filename="libs/blockpy_server/common.js") }}"></script>
 <script>
 
 HISTORY = [
     {% for log in history -%}
-    {"name": "{{ log.date_created }} - {{ log.event_type }}",
+    {"name": prettyPrintDateTime({% if log.client_timestamp -%}
+                {{ log.client_timestamp|tojson }}
+              {%- else -%}
+                {{ log.date_created|tojson }}
+              {%- endif -%})
+             +" - " +
+             (REMAP_EVENT_TYPES[{{ log.event_type|tojson }}] || {{ log.event_type|tojson }}),
+     "event_label": "{{ log.event_type }}
+                     {%- if log.category %}/ {{ log.category }}{% endif -%}
+                     {%- if log.label %}/ {{ log.label }}{% endif -%}",
+        message:
+            {%- if log.event_type.lower() == "file.edit" -%}
+                {{ log.message|highlight_python_code|tojson }}
+            {%- elif log.event_type.lower() == "intervention" -%}
+                {{ log.message|tojson }}
+            {%- else -%}
+                {{ ("<pre>"+log.message+"</pre>")|tojson }}
+            {%- endif -%},
         {%- for key, value in log.items() -%}
+            {% if key != "message" %}
             {{ key|tojson }}: {{ value|tojson }},
+            {%- endif -%}
         {%- endfor -%}
     },
     {%- endfor %}
@@ -26,19 +46,19 @@ HISTORY = [
             "selected": ko.observable(HISTORY[index]),
             "history": HISTORY
         };
-        historyModel.start = function() {
+        historyModel.mostRecent = function() {
             index = 0;
             historyModel.selected(HISTORY[index]);
         };
-        historyModel.previous = function() {
+        historyModel.next = function() {
             index = Math.max(0, index-1);
             historyModel.selected(HISTORY[index]);
         };
-        historyModel.next = function() {
+        historyModel.previous = function() {
             index = Math.min(HISTORY.length-1, index+1);
             historyModel.selected(HISTORY[index]);
         };
-        historyModel.mostRecent = function() {
+        historyModel.start = function() {
             index = HISTORY.length-1;
             historyModel.selected(HISTORY[index]);
         };
@@ -81,12 +101,9 @@ HISTORY = [
 
 
     <div>
-        <p>When: <span data-bind="text: selected().date_created"></span></p>
-        <p>Event: <span data-bind="text: selected().event_type"></span></p>
-        <p>Label: <span data-bind="text: selected().category"></span>
-            /
-            <span data-bind="text: selected().label"></span></p>
-        <p>Message: <pre data-bind="text: selected().message"></pre></p>
+        <!--<p>When: <span data-bind="text: selected().date_created"></span></p>
+        <p>Event: <span data-bind="text: selected().event_label"></span></p>-->
     </div>
+    <div data-bind="html: selected().message"></div>
 
 {% endblock %}

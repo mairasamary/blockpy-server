@@ -22,6 +22,17 @@
 <div>History: <a href="{{ url_for('blockpy.browse_history', assignment_id=submission.assignment_id,
         user_id=submission.user_id, course_id=submission.course_id) }}">view</a></div>
 <div>Estimated Duration: {{ (submission.version/60.0)|round(2) }} minutes</div>
+
+<div>Submitted code:<br>
+    {{ submission.code|highlight_python_code|safe }}
+    {% if submission.extra_files %}
+        {% for filename, contents in submission.extra_files|json_load %}
+            <strong>{{ filename }}</strong>
+            {{ contents|highlight_python_code|safe }}
+        {% endfor %}
+    {% endif %}
+</div>
+
 {% set turtle_output = submission.get_image('turtle_output') %}
 {% if turtle_output %}
     <div>Turtle Output: <br>
@@ -35,15 +46,6 @@
         <img alt='Block version of code' src='{{ image }}'>
     </div>
 {% endif %}
-<div>Submitted code:<br>
-    {{ submission.code|highlight_python_code|safe }}
-    {% if submission.extra_files %}
-        {% for filename, contents in submission.extra_files|json_load %}
-            <strong>{{ filename }}</strong>
-            {{ contents|highlight_python_code|safe }}
-        {% endfor %}
-    {% endif %}
-</div>
 
 {% if is_grader %}
     <div><small>

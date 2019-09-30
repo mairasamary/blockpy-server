@@ -9,6 +9,7 @@ from sqlalchemy.orm import relationship
 
 from main import app
 from models import models
+from models.assignment import Assignment
 from models.log import Log
 from models.models import Base, db, ensure_dirs, optional_encoded_field, datetime_to_string
 from models.review import Review
@@ -203,9 +204,16 @@ class Submission(Base):
         was_changed = self.score != score or self.correct != correct
         self.score = score
         self.correct = correct
-        if self.correct:
+        assignment = Assignment.by_id(self.assignment_id)
+        if assignment.reviewed:
+            self.submission_status = SubmissionStatuses.IN_PROGRESS
+            self.grading_status = GradingStatuses.NOT_READY
+        elif self.correct:
             self.submission_status = SubmissionStatuses.COMPLETED
             self.grading_status = GradingStatuses.FULLY_GRADED
+        else:
+            self.submission_status = SubmissionStatuses.SUBMITTED
+            self.grading_status = GradingStatuses.PENDING
         db.session.commit()
         return was_changed
 
@@ -213,6 +221,13 @@ class Submission(Base):
         if status not in SubmissionStatuses.VALID_CHOICES:
             return False
         self.submission_status = status
+        db.session.commit()
+        return True
+
+    def update_grading_status(self, status):
+        if status not in GradingStatuses.VALID_CHOICES:
+            return False
+        self.grading_status = status
         db.session.commit()
         return True
 
