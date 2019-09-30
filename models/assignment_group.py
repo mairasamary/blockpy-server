@@ -70,12 +70,6 @@ class AssignmentGroup(Base):
         return AssignmentGroup.query.get(assignment_group_id).course_id == course_id
 
     @staticmethod
-    def by_id(assignment_group_id):
-        if assignment_group_id is None:
-            return None
-        return AssignmentGroup.query.get(assignment_group_id)
-
-    @staticmethod
     def id_by_url(assignment_group_url):
         if assignment_group_url is None:
             return None

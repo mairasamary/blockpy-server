@@ -1,107 +1,18 @@
 <h2 id='{{ assignment.slug() }}'>{{ assignment.name }}</h2>
 
+<div>
+    {{ assignment.instructions|safe }}
+</div>
+<hr>
+
 {% if is_grader %}
     {% if assignment.reviewed %}
-        {% if not session['is_lti_active'] or g.course.id != submission.course_id %}
-            <div class="alert alert-warning" role="alert">
-                You are not in an LTI session for this course. Launch an LTI session by opening
-                the dashboard.
-            </div>
-        {% endif %}
-        <script>
-            $(document).ready(function() {
-                $("#assign-grade").click(function() {
-                    let grade = $("#grade-value").val();
-                    let correct = $("#correct-value").is(":checked");
-                    let failButton = function(reason) {
-                            $("#assign-grade").text("Failed to assign!")
-                                .removeClass("btn-success").addClass("btn-danger");
-                            console.error(reason);
-                        };
-                    submitGrade({{ submission.id }}, {{ submission.course_id }}, grade, correct)
-                        .done(function(response) {
-                            if (response.success) {
-                                $("#assign-grade").text("Assigned!")
-                                .removeClass("btn-success btn-danger").addClass("btn-success");
-                            } else {
-                                failButton(response.message);
-                            }
-                        }).fail(failButton);
-                })
-                $("#correct-value").on('change keyup input', function() {
-                    let correct = $("#correct-value").is(":checked");
-                    $("#grade-value").prop("disabled", correct);
-                    if (correct) {
-                        $("#grade-value").val("100");
-                    } else {
-                        $("#grade-value").val("0");
-                    }
-                });
-            });
-        </script>
-        <div>
-        <form>
-            <label>Is Correct?: <input type="checkbox" id="correct-value"
-            {% if submission.correct %}checked{% endif %}></label> or
-            <label>Grade: <input type="text" id="grade-value" value="{{ submission.score }}">/100</label><br>
-            <button class='btn btn-success' id="assign-grade" type="button">Assign Grade</button>
-        </form>
-        </div>
-
-
-        <!-- Reviews -->
-        <style>
-        .highlighttable pre {
-            font-size: 15px;
-        }
-        td.comment-column {
-            vertical-align: top;
-        }
-        span.add-comment {
-            padding: 0px;
-            margin: 0px;
-            line-height: 125%;
-            font-size: 15px;
-            display: block;
-            color: #EEE;
-        }
-        span.add-comment:hover {
-            color: darkgray;
-        }
-        span.add-comment:active {
-            color: black;
-        }
-        </style>
-
-        <script>
-        function addReview(root) {
-
-        }
-        $(document).ready(function() {
-            let commentColumn = $("<td class='comment-column'></td>");
-            $(".highlighttable").find("td").after(commentColumn);
-            $(".highlighttable span[id^='code-span-']").each(function(index, elem) {
-                let button = $("<span class=\"fas fa-plus-circle\"></span>");
-                commentColumn.append(button);//.append("<br>");
-                button.addClass("add-comment");
-                button.css({"top": elem.top});
-                button.click(function() {
-                    console.log(index, elem);
-                });
-                button.popover({
-                    content: $("<div>Dr. Bart says: This is a great line of code!</div><textarea></textarea>"),
-                    html: true,
-                    template:'<div><span class="popover-header"></span></div>'
-                });
-            });
-        });
-        </script>
-        {% for review in submission.get_reviews() %}
-            {{ review }}
-        {% endfor %}
+        {% include "helpers/review_interface.html" %}
     {% endif %}
 {% endif %}
 
+<div>Submission Status: {{ submission.submission_status }}</div>
+<div>Grading Status: {{ submission.grading_status }}</div>
 <div>Status: {{ submission.full_status() }}</div>
 <!-- TODO: Use the LTI information to build the proper URL
 <div>Open in Canvas: <a href='' target='_blank'>View</a></div>
@@ -114,7 +25,8 @@
 {% set turtle_output = submission.get_image('turtle_output') %}
 {% if turtle_output %}
     <div>Turtle Output: <br>
-        <img alt='Image of Turtle Output' src='{{ turtle_output }}'>
+        <img alt='Image of Turtle Output' src='{{ turtle_output }}'
+        style="border: 1px solid lightgray">
     </div>
 {% endif %}
 {% set image = submission.get_block_image() %}

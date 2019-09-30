@@ -68,10 +68,6 @@ class AssignmentTag(Base):
         db.session.commit()
 
     @staticmethod
-    def by_id(assignment_tag_id):
-        return AssignmentTag.query.get(assignment_tag_id)
-
-    @staticmethod
     def by_course(course_id):
         return (AssignmentTag.query.filter_by(course_id=course_id)
                 .order_by(AssignmentTag.name)

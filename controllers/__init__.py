@@ -50,6 +50,8 @@ from controllers.external import blueprint_external
 
 app.register_blueprint(blueprint_external)
 
+from controllers.grading import blueprint_grading
+app.register_blueprint(blueprint_grading)
 
 @app.route('/', methods=['GET', 'POST'])
 def index():

@@ -23,9 +23,5 @@ class Role(Base, RoleMixin):
         db.session.commit()
 
     @staticmethod
-    def by_id(role_id):
-        return Role.query.get(role_id)
-
-    @staticmethod
     def by_course(course_id):
         return Role.query.filter_by(course_id=course_id).all()

@@ -78,10 +78,6 @@ class SampleSubmission(Base):
         db.session.commit()
 
     @staticmethod
-    def by_id(assignment_tag_id):
-        return SampleSubmission.query.get(assignment_tag_id)
-
-    @staticmethod
     def by_assignment(assignment_id):
         return (SampleSubmission.query.filter_by(assignment_id=assignment_id)
                 .order_by(SampleSubmission.name)

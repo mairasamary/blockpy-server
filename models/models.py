@@ -105,6 +105,12 @@ class Base(Model):
         if 'url' in data and data['url']:
             return cls.by_url(data['url'])
 
+    @classmethod
+    def by_id(cls, pk_id):
+        if pk_id is None:
+            return None
+        return cls.query.get(pk_id)
+
     def edit(self, updates, update_version=True):
         modified = False
         for key, value in updates.items():

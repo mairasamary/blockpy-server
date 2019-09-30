@@ -139,7 +139,6 @@ def require_course_grader(user, course_id):
         return False
     return True
 
-
 def check_resource_exists(resource, kind, id):
     if not resource:
         message = "The specified resource does not exist ({} {})".format(kind, id)

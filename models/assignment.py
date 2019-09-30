@@ -157,16 +157,6 @@ class Assignment(Base):
             return Assignment.query.filter_by(course_id=course_id).all()
 
     @staticmethod
-    def by_id(assignment_id) -> "Optional[Assignment]":
-        """
-        :param assignment_id:
-        :return: models.assignment.Assignment
-        """
-        if assignment_id is None:
-            return None
-        return Assignment.query.get(assignment_id)
-
-    @staticmethod
     def by_url(assignment_url):
         if assignment_url is None:
             return None

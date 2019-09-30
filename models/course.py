@@ -168,10 +168,6 @@ class Course(Base):
         return new_course
 
     @staticmethod
-    def by_id(course_id):
-        return Course.query.get(course_id)
-
-    @staticmethod
     def by_url(course_url):
         return Course.query.filter_by(url=course_url).first()
 

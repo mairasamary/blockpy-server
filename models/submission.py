@@ -15,6 +15,8 @@ from models.review import Review
 
 
 class SubmissionStatuses:
+    # Not yet begun - the value if the submission does not exist
+    INITIALIZED = "Initialized"
     # Started -> not yet run
     STARTED = "Started"
     # inProgress -> Run, but not yet marked formally as "submitted"
@@ -79,10 +81,6 @@ class Submission(Base):
             'date_modified': datetime_to_string(self.date_modified),
             'date_created': datetime_to_string(self.date_created)
         }
-
-    @staticmethod
-    def by_id(submission_id):
-        return Submission.query.get(submission_id)
 
     @staticmethod
     def full_by_id(submission_id):

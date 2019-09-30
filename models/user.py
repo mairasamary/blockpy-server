@@ -42,10 +42,6 @@ class User(Base, UserMixin):
         # Hack: We have to lowercase emails because apparently some LMSes want to SHOUT EMAIL ADDRESSES
         return User.query.filter(func.lower(User.email) == func.lower(email)).first()
 
-    @staticmethod
-    def by_id(id):
-        return User.query.get(id)
-
     def get_roles(self):
         return models.Role.query.filter_by(user_id=self.id).all()
 
