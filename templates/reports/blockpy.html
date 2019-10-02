@@ -1,14 +1,16 @@
 <h2 id='{{ assignment.slug() }}'>{{ assignment.name }}</h2>
 
+{% set hiding = assignment.hidden or assignment.get_setting('hide_submission', False) %}
+
 <div>
+    {% if is_grader or not hiding %}
     {{ assignment.instructions|safe }}
+    {% endif  %}
 </div>
 <hr>
 
-{% if is_grader %}
-    {% if assignment.reviewed %}
-        {% include "helpers/review_interface.html" %}
-    {% endif %}
+{% if assignment.reviewed %}
+    {% include "helpers/review_interface.html" %}
 {% endif %}
 
 <div>Submission Status: {{ submission.submission_status }}</div>
@@ -19,10 +21,13 @@
 <div>Instructor Link: <a href='' target='_blank'>View</a></div>
 -->
 <div>Touches: {{ submission.version }}</div>
+{% if is_grader or not hiding %}
 <div>History: <a href="{{ url_for('blockpy.browse_history', assignment_id=submission.assignment_id,
         user_id=submission.user_id, course_id=submission.course_id) }}">view</a></div>
+{% endif %}
 <div>Estimated Duration: {{ (submission.version/60.0)|round(2) }} minutes</div>
 
+{% if is_grader or not hiding %}
 <div>Submitted code:<br>
     {{ submission.code|highlight_python_code|safe }}
     {% if submission.extra_files %}
@@ -45,6 +50,8 @@
     <div>Submitted Blocks: <br>
         <img alt='Block version of code' src='{{ image }}'>
     </div>
+{% endif %}
+
 {% endif %}
 
 {% if is_grader %}

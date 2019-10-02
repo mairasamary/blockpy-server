@@ -309,3 +309,6 @@ class Submission(Base):
 
     def get_reviews(self):
         return Review.query.filter_by(submission_id=self.id).all()
+
+    def get_meta_reviews(self):
+        return Review.query.filter_by(generic=True).all()

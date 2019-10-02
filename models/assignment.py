@@ -277,3 +277,7 @@ class Assignment(Base):
             except ValueError:
                 continue
         return whitelisted or (not blacklisted and allowed)
+
+    def get_setting(self, key, default_value=None):
+        settings = json.loads(self.settings)
+        return settings.get(key, default_value)

@@ -1,49 +1,4 @@
-{% if not session['is_lti_active'] or g.course.id != submission.course_id %}
-    <div class="alert alert-warning" role="alert">
-        You are not in an LTI session for this course.
-        Launch an LTI session by opening the dashboard.
-    </div>
-{% endif %}
-
-<script>
-
-    function ReviewModel(params) {
-        this.comment = params.comment;
-    }
-
-
-    $(document).ready(function() {
-        $("#assign-grade").click(function() {
-            let grade = $("#grade-value").val();
-            let correct = $("#correct-value").is(":checked");
-            let failButton = function(reason) {
-                    $("#assign-grade").text("Failed to assign!")
-                        .removeClass("btn-success").addClass("btn-danger");
-                    console.error(reason);
-                };
-            submitGrade({{ submission.id }}, {{ submission.course_id }}, grade, correct)
-                .done(function(response) {
-                    if (response.success) {
-                        $("#assign-grade").text("Assigned!")
-                        .removeClass("btn-success btn-danger").addClass("btn-success");
-                    } else {
-                        failButton(response.message);
-                    }
-                }).fail(failButton);
-        })
-        $("#correct-value").on('change keyup input', function() {
-            let correct = $("#correct-value").is(":checked");
-            $("#grade-value").prop("disabled", correct);
-            if (correct) {
-                $("#grade-value").val("100");
-            } else {
-                $("#grade-value").val("0");
-            }
-        });
-    });
-</script>
-
-<!-- Reviews -->
+<!-- Style -->
 <style>
 .highlighttable pre {
     font-size: 15px;
@@ -65,31 +20,240 @@ span.add-comment:hover {
 span.add-comment:active {
     color: black;
 }
+
+table.review-report td:last-child {
+    text-align: right;
+}
 </style>
 
-<script>
-function addReview(root) {
+<!-- Scripts -->
 
-}
-$(document).ready(function() {
-    let commentColumn = $("<td class='comment-column'></td>");
-    $(".highlighttable").find("td").after(commentColumn);
-    $(".highlighttable span[id^='code-span-']").each(function(index, elem) {
-        let button = $("<span class=\"fas fa-plus-circle\"></span>");
-        commentColumn.append(button);//.append("<br>");
-        button.addClass("add-comment");
-        button.css({"top": elem.top});
-        button.click(function() {
-            console.log(index, elem);
+<script>
+
+    ko.components.register('review-editor', {
+        template: `Comment: <input data-bind="value: comment" />`
+    });
+
+    function ReviewInterfaceModel(params) {
+        this.submission = new SubmissionModel(params.submission);
+        this.reviews = ko.observableArray(params.reviews.map(
+            review => new ReviewModel(review)
+        ));
+        this.metaReviews = ko.observableArray(params.metaReviews.map(
+            review => new ReviewModel(review)
+        ));
+        this.tags = ko.observableArray(params.tags.map(
+            tag => new TagModel(tag)
+        ));
+        this.isGrader = ko.observable(params.isGrader);
+
+        this.ui = {};
+        this.ui.totalScore = ko.pureComputed( ()=> {
+            let totalReviewScore = this.reviews().map(review => review.score())
+                                               .reduce( (score, total) => score+total, 0);
+            return this.submission.score() + totalReviewScore;
         });
-        button.popover({
-            content: $("<div>Dr. Bart says: This is a great line of code!</div><textarea></textarea>"),
-            html: true,
-            template:'<div><span class="popover-header"></span></div>'
+
+        this.ui.releaseFeedback = {
+            text: ko.pureComputed( ()=>
+                this.submission.gradingStatus().toLowerCase() !== "fullygraded" ?
+                    "Release feedback" : "Revise feedback"
+            ),
+            submit: () => {
+                let newStatus = this.submission.gradingStatus().toLowerCase() !== "fullygraded" ?
+                    "FullyGraded" : "PendingManual";
+                $.post("{{ url_for('grading.update_status') }}", {
+                    "submission_id": this.submission.id,
+                    "new_grading_status": newStatus,
+                }, (data) => {
+                    this.submission.gradingStatus(newStatus);
+                });
+            }
+        };
+
+        this.ui.closeSubmission = {
+            text: ko.pureComputed( ()=>
+                this.submission.submissionStatus().toLowerCase() !== "completed" ?
+                    "Close submission" : "Reopen submission"
+            ),
+            submit: () => {
+                // TODO: Finish closeSubmission
+            }
+        };
+
+        this.ui.generalReviews = ko.pureComputed(() => {
+            return this.reviews().filter(review => (review.location() === "" || review.location() === null));
+        });
+
+    }
+
+    function SubmissionModel(params) {
+        this.submissionStatus = ko.observable(params.submission_status);
+        this.gradingStatus = ko.observable(params.grading_status);
+        this.correct = ko.observable(params.correct);
+        this.score = ko.observable(params.score);
+        this.version = ko.observable(params.version);
+        this.assignmentVersion = ko.observable(params.assignment_version);
+        this.id = ko.observable(params.id);
+
+        this.ui = {};
+        this.ui.correct = ko.pureComputed( ()=> this.correct() ? "&#10004;": "&#10060;");
+    }
+
+    function ReviewModel(params) {
+        this.comment = ko.observable(params.comment);
+        this.generic = ko.observable(params.generic);
+        this.location = ko.observable(params.location);
+        this.tagId = ko.observable(params.tagId);
+        this.score = ko.observable(params.score);
+        this.authorId = ko.observable(params.authorId);
+        this.assignmentVersion = ko.observable(params.assignment_version);
+        this.submissionVersion = ko.observable(params.submission_version);
+        this.version = ko.observable(params.version);
+        this.forkedId = ko.observable(params.forked_id);
+        this.dateCreated = ko.observable(params.date_created);
+    }
+
+    function TagModel(params) {
+        this.name = ko.observable(params.name);
+        this.kind = ko.observable(params.kinds);
+        this.description = ko.observable(params.description);
+        this.level = ko.observable(params.level);
+        this.version = ko.observable(params.version);
+        this.ownerId = ko.observable(params.owner_id);
+        this.courseId = ko.observable(params.course_id);
+    }
+
+    main = new ReviewInterfaceModel({
+        submission: {{ submission.encode_json()|tojson }},
+        reviews: {{ submission.get_reviews()|tojson }},
+        metaReviews: {{ submission.get_meta_reviews()|tojson }},
+        tags: {{ tags }},
+        isGrader: {{ is_grader|tojson }}
+    });
+
+    {% if is_grader %}
+    $(document).ready(function() {
+
+        ko.applyBindings(main);
+
+        $("#assign-grade").click(function() {
+            let grade = $("#grade-value").val();
+            let correct = $("#correct-value").is(":checked");
+            let failButton = function(reason) {
+                    $("#assign-grade").text("Failed to assign!")
+                        .removeClass("btn-success").addClass("btn-danger");
+                    console.error(reason);
+                };
+            submitGrade({{ submission.id }}, {{ submission.course_id }}, grade, correct)
+                .done(function(response) {
+                    if (response.success) {
+                        $("#assign-grade").text("Assigned!")
+                        .removeClass("btn-success btn-danger").addClass("btn-success");
+                    } else {
+                        failButton(response.message);
+                    }
+                }).fail(failButton);
+        });
+        $("#correct-value").on('change keyup input', function() {
+            let correct = $("#correct-value").is(":checked");
+            $("#grade-value").prop("disabled", correct);
+            if (correct) {
+                $("#grade-value").val("100");
+            } else {
+                $("#grade-value").val("0");
+            }
         });
     });
-});
+
+    function addReview(root) {
+
+    }
+    $(document).ready(function() {
+        let commentColumn = $("<td class='comment-column'></td>");
+        $(".highlighttable").find("td").after(commentColumn);
+        $(".highlighttable span[id^='code-span-']").each(function(index, elem) {
+            let button = $("<span class=\"fas fa-plus-circle\"></span>");
+            // fa-chevron-circle-left
+            // fa-chevron-circle-right
+            commentColumn.append(button);//.append("<br>");
+            button.addClass("add-comment");
+            button.css({"top": elem.top});
+            button.click(function() {
+                console.log(index, elem);
+            });
+            button.popover({
+                content: $("<div>Dr. Bart says: This is a great line of code!</div><textarea></textarea>"),
+                html: true,
+                template:'<div><span class="popover-header"></span></div>'
+            });
+        });
+    });
+{% endif %}
 </script>
+
+<!-- HTML -->
+
+{% if is_grader and not session['is_lti_active'] or g.course.id != submission.course_id %}
+    <div class="alert alert-warning" role="alert">
+        You are not in an LTI session for this course.
+        Launch an LTI session by opening the dashboard.
+    </div>
+{% endif %}
+
+<p class="col-lg-6 col-md-12">
+    <button type="button" class="btn btn-sm btn-success"
+        data-bind="text: ui.releaseFeedback.text, click: ui.releaseFeedback.submit"></button>
+    Released feedback is visible to students.
+</p>
+<p class="col-lg-6 col-md-12">
+    <button type="button" class="btn btn-sm btn-info"
+        data-bind="text: ui.closeSubmission.text, click: ui.closeSubmission.submit"></button>
+    Closed assignments prevent students from submitting.
+</p>
+
+<div class="col-lg-6 col-md-12">
+<table class="review-report table table-bordered table-hover table-sm">
+    <thead>
+    <th>Category</th>
+    <th>Score</th>
+    </thead>
+    <tr>
+        <td>Is correct?</td>
+        <td data-bind="html: submission.ui.correct"></td>
+    </tr>
+    <tr>
+        <td>Submission score:</td>
+        <td data-bind="text: submission.score"></td>
+    </tr>
+    <!-- ko foreach: reviews -->
+    <tr>
+        <td data-bind="text: $data.comment"></td>
+        <td data-bind="text: $data.score"></td>
+    </tr>
+    <!-- /ko -->
+    <tr>
+        <td>Total</td>
+        <td data-bind="text: ui.totalScore"></td>
+    </tr>
+</table>
+</div>
+
+<div class="col-lg-6 col-md-12">
+    <h4>General Feedback</h4>
+    <div class="list-group d-flex w-100 justify-content-between"
+         data-bind="foreach: ui.generalReviews">
+        <div data-bind='component: {name: "review-editor", params: $data}'></div>
+        <span data-bind="text: $data.comment"></span> - <span data-bind="text: $data.score"></span>
+    </div>
+    <button type="button" class="btn btn-sm btn-success">Add new</button>
+</div>
+
+<div class="col-lg-6 col-md-12">
+    <h4>Specific Feedback</h4>
+</div>
+
+{% if is_grader %}
 
 <div>
 <form>
@@ -101,6 +265,7 @@ $(document).ready(function() {
     <button class='btn btn-success btn-sm' id="assign-grade" type="button">Assign Grade</button>
 </form>
 </div>
+{% endif %}
 
 {% for review in submission.get_reviews() %}
     {{ review }}

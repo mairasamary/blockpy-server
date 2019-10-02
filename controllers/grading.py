@@ -36,6 +36,11 @@ def grading_static(path):
     return app.send_static_file(path)
 
 
+@blueprint_grading.route('/update_status', methods=['POST'])
+def update_status():
+    return "Success"
+
+
 class ReviewAPI(MethodView):
 
     def get(self, review_id):

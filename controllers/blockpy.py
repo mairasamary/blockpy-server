@@ -11,6 +11,7 @@ from werkzeug.utils import secure_filename
 
 from controllers.pylti.common import LTIPostMessageException
 from main import app
+from models.assignment_tag import AssignmentTag
 from models.course import Course
 
 from models.models import (db)
@@ -259,10 +260,13 @@ def view_submission():
     if submission.user_id != viewer_id:
         require_course_grader(viewer, submission.course_id)
     is_grader = viewer.is_grader(submission.course_id)
+    tags = []
+    if is_grader:
+        tags = AssignmentTag.get_all()
     # Do action
     return render_template("reports/alone.html", embed=embed,
                            submission=submission, assignment=submission.assignment,
-                           is_grader=is_grader,
+                           is_grader=is_grader, tags=tags,
                            user_id=submission.user_id, course_id=submission.course_id)
 
 

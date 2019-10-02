@@ -209,9 +209,9 @@ def maybe_float(value):
 def maybe_bool(value):
     if value is None:
         return False
-    elif value.lower() == "false":
-        return False
-    return True
+    elif value.lower() == "true":
+        return True
+    return False
 
 
 def parse_assignment_load():

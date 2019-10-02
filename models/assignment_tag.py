@@ -72,3 +72,12 @@ class AssignmentTag(Base):
         return (AssignmentTag.query.filter_by(course_id=course_id)
                 .order_by(AssignmentTag.name)
                 .all())
+
+    @staticmethod
+    def get_all():
+        return (AssignmentTag.query
+                .order_by(AssignmentTag.course_id,
+                          AssignmentTag.kind,
+                          AssignmentTag.level,
+                          AssignmentTag.name)
+                .all())
