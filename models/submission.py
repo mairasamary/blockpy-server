@@ -149,7 +149,7 @@ class Submission(Base):
             else:
                 return self.submission_status
         elif self.score:
-            return "Incomplete ({}%)".format(self.status)
+            return "Incomplete ({}%)".format(self.score)
         else:
             return "Incomplete"
 
