@@ -61,6 +61,7 @@ class Assignment(Base):
             'hidden': self.hidden,
             'public': self.public,
             'settings': self.settings,
+            'ip_ranges': self.ip_ranges,
 
             'on_run': self.on_run,
             'on_change': self.on_change,

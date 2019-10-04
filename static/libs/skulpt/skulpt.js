@@ -11853,9 +11853,9 @@ Sk.builtin.abs = function abs (x) {
     }
 
     // call custom __abs__ methods
-    if (x.tp$getattr) {
-        var f = x.tp$getattr(Sk.builtin.str.$abs);
-        return Sk.misceval.callsimArray(f);
+    if (x.__class__.tp$getattr) {
+        var f = x.__class__.tp$getattr(Sk.builtin.str.$abs);
+        return Sk.misceval.callsimArray(f, [x]);
     }
 
     throw new TypeError("bad operand type for abs(): '" + Sk.abstr.typeName(x) + "'");
@@ -22536,18 +22536,18 @@ Sk.builtin.int_ = function (x, base) {
      *  1. __int__
      *  2. __trunc__
      */
-    if(x !== undefined && (x.tp$getattr && (func = x.tp$getattr(Sk.builtin.str.$int_)))) {
+    if(x !== undefined && (x.__class__ && x.__class__.tp$getattr && (func = x.__class__.tp$getattr(Sk.builtin.str.$int_)))) {
         // calling a method which contains im_self and im_func
         // causes skulpt to automatically map the im_self as first argument
-        ret = Sk.misceval.callsimArray(func);
+        ret = Sk.misceval.callsimArray(func, [x]);
         magicName = "__int__";
     } else if(x !== undefined && x.__int__) {
         // required for internal types
         // __int__ method is on prototype
         ret = Sk.misceval.callsimArray(x.__int__, [x]);
         magicName = "__int__";
-    } else if(x !== undefined && (x.tp$getattr && (func = x.tp$getattr(Sk.builtin.str.$trunc)))) {
-        ret = Sk.misceval.callsimArray(func);
+    } else if(x !== undefined && (x.__class__ && x.__class__.tp$getattr && (func = x.__class__.tp$getattr(Sk.builtin.str.$trunc)))) {
+        ret = Sk.misceval.callsimArray(func, [x]);
         magicName = "__trunc__";
     } else if(x !== undefined && x.__trunc__) {
         ret = Sk.misceval.callsimArray(x.__trunc__, [x]);
@@ -31107,9 +31107,9 @@ Sk.builtin.str.prototype.nb$remainder = function (rhs) {
                     if (Sk.__future__.python3) {
                         precision = 6;
                     } else {
-                    precision = 7;
+                        precision = 7;
+                    }
                 }
-            }
             }
             result = (convValue)[convName](precision); // possible loose of negative zero sign
 
@@ -34445,9 +34445,9 @@ Sk.builtin.type = function (name, bases, dict) {
         klass.prototype["$r"] = function () {
             var cname;
             var mod;
-            var reprf = this.tp$getattr(Sk.builtin.str.$repr);
+            var reprf = this.__class__.tp$getattr(Sk.builtin.str.$repr);
             if (reprf !== undefined && reprf.im_func !== Sk.builtin.object.prototype["__repr__"]) {
-                return Sk.misceval.apply(reprf, undefined, undefined, undefined, []);
+                return Sk.misceval.apply(reprf, undefined, undefined, undefined, [this]);
             }
 
             if ((klass.prototype.tp$base !== undefined) &&
@@ -34506,9 +34506,9 @@ Sk.builtin.type = function (name, bases, dict) {
         };
 
         klass.prototype.tp$str = function () {
-            var strf = this.tp$getattr(Sk.builtin.str.$str);
+            var strf = this.__class__.tp$getattr(Sk.builtin.str.$str);
             if (strf !== undefined && strf.im_func !== Sk.builtin.object.prototype["__str__"]) {
-                return Sk.misceval.apply(strf, undefined, undefined, undefined, []);
+                return Sk.misceval.apply(strf, undefined, undefined, undefined, [this]);
             }
             if ((klass.prototype.tp$base !== undefined) &&
                 (klass.prototype.tp$base !== Sk.builtin.object) &&
@@ -35084,7 +35084,7 @@ var Sk = {}; // jshint ignore:line
 
 Sk.build = {
     githash: "b8dee6c3cb1f88780e8ea1283153576da749a488",
-    date: "2019-09-30T03:45:14.266Z"
+    date: "2019-10-04T02:09:25.235Z"
 };
 
 /**

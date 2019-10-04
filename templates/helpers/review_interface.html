@@ -24,17 +24,29 @@ span.add-comment:active {
 table.review-report td:last-child {
     text-align: right;
 }
+
+.draft-review {
+    border: 1px solid lightgray;
+    padding: 4px;
+    background-color: #EEE;
+}
+
 </style>
 
 <!-- Scripts -->
 
 <script>
 
-    ko.components.register('review-editor', {
-        template: `Comment: <input data-bind="value: comment" />`
+    let AUTHOR_ID = {{ g.user.id|tojson }};
+    let ASSIGNMENT_VERSION = {{ assignment.version|tojson }};
+    let SUBMISSION_VERSION = {{ submission.version|tojson }};
+
+    ko.components.register('individual-review-editor', {
+        template: { element: "individual-review-editor-template" }
     });
 
     function ReviewInterfaceModel(params) {
+        // Data models
         this.submission = new SubmissionModel(params.submission);
         this.reviews = ko.observableArray(params.reviews.map(
             review => new ReviewModel(review)
@@ -47,6 +59,9 @@ table.review-report td:last-child {
         ));
         this.isGrader = ko.observable(params.isGrader);
 
+        this.draftReviews = ko.observableArray([]);
+
+        // Interface models
         this.ui = {};
         this.ui.totalScore = ko.pureComputed( ()=> {
             let totalReviewScore = this.reviews().map(review => review.score())
@@ -85,6 +100,30 @@ table.review-report td:last-child {
             return this.reviews().filter(review => (review.location() === "" || review.location() === null));
         });
 
+        this.ui.generalFeedback = {
+            active: ko.observable(false),
+            add: () => {
+                let draftReview = ReviewModel.BLANK();
+                let reviewEditor = new IndividualReviewEditorModel({
+                    parent: this,
+                    review: draftReview
+                });
+                this.draftReviews.push(reviewEditor);
+            }
+        };
+        this.ui.addGeneralFeedback = function() {
+
+        };
+        this.ui.editGeneralFeedback = function(reviewId) {
+
+        };
+        this.ui.saveGeneralFeedback = function() {
+
+        };
+        this.ui.deleteGeneralFeedback = function(reviewId) {
+
+        };
+
     }
 
     function SubmissionModel(params) {
@@ -112,7 +151,58 @@ table.review-report td:last-child {
         this.version = ko.observable(params.version);
         this.forkedId = ko.observable(params.forked_id);
         this.dateCreated = ko.observable(params.date_created);
+
+        this.inherits = ko.pureComputed({
+            read: () => {
+                if (this.review.tagId() != null) {
+                    return "tag";
+                } else if (this.review.forkedId() != null) {
+                    return "review";
+                } else {
+                    return "nothing";
+                }
+            },
+            write: (value) => {
+                if (value === "tag") {
+                    this.review.forkedId(null);
+                    this.review.tagId(this.parent.tags()[0])
+                } else if (value === "review") {
+                    this.review.tagId(null);
+                    this.review.forkedId(this.parent.metaReviews()[0])
+                } else if (value === "nothing") {
+                    this.review.forkedId(null);
+                    this.review.tagId(null);
+                }
+            },
+            owner: this
+        });
     }
+
+    ReviewModel.BLANK = function() {
+        return new ReviewModel({
+            comment: "",
+            generic: false,
+            location: null,
+            tagId: null,
+            score: -10,
+            authorId: AUTHOR_ID,
+            assignmentVersion: ASSIGNMENT_VERSION,
+            submissionVersion: SUBMISSION_VERSION,
+            version: 0,
+            forkedId: null,
+            dateCreated: new Date()
+        });
+    };
+
+    ReviewModel.prototype.save = function() {
+        // TODO: Save to server, then make local change
+        this.parent.draftReviews.remove(this);
+        this.parent.reviews.push(this.review);
+    };
+
+    ReviewModel.prototype.cancel = function() {
+        this.parent.draftReviews.remove(this);
+    };
 
     function TagModel(params) {
         this.name = ko.observable(params.name);
@@ -194,6 +284,7 @@ table.review-report td:last-child {
 
 <!-- HTML -->
 
+<!-- Errors -->
 {% if is_grader and not session['is_lti_active'] or g.course.id != submission.course_id %}
     <div class="alert alert-warning" role="alert">
         You are not in an LTI session for this course.
@@ -201,6 +292,7 @@ table.review-report td:last-child {
     </div>
 {% endif %}
 
+<!-- Controls -->
 <p class="col-lg-6 col-md-12">
     <button type="button" class="btn btn-sm btn-success"
         data-bind="text: ui.releaseFeedback.text, click: ui.releaseFeedback.submit"></button>
@@ -212,6 +304,8 @@ table.review-report td:last-child {
     Closed assignments prevent students from submitting.
 </p>
 
+
+<!-- Summary Area -->
 <div class="col-lg-6 col-md-12">
 <table class="review-report table table-bordered table-hover table-sm">
     <thead>
@@ -239,22 +333,36 @@ table.review-report td:last-child {
 </table>
 </div>
 
+
+<!-- General Feedback -->
 <div class="col-lg-6 col-md-12">
     <h4>General Feedback</h4>
+
+    <button type="button" class="btn btn-sm btn-success"
+        data-bind="click: ui.generalFeedback.add">Add feedback</button>
+
     <div class="list-group d-flex w-100 justify-content-between"
          data-bind="foreach: ui.generalReviews">
-        <div data-bind='component: {name: "review-editor", params: $data}'></div>
+        <div data-bind='component: {name: "individual-review-editor", params: $data}'></div>
         <span data-bind="text: $data.comment"></span> - <span data-bind="text: $data.score"></span>
     </div>
-    <button type="button" class="btn btn-sm btn-success">Add new</button>
+
+    <div class="list-group d-flex w-100 justify-content-between"
+         data-bind="foreach: draftReviews">
+        <div class="draft-review">
+            <div data-bind='component: {name: "individual-review-editor", params: $data}'></div>
+        </div>
+    </div>
+
 </div>
 
+<!-- Line Feedback -->
 <div class="col-lg-6 col-md-12">
-    <h4>Specific Feedback</h4>
+    <h4>Line Feedback</h4>
 </div>
 
+<!-- Old Interface -->
 {% if is_grader %}
-
 <div>
 <form>
     <label>Is Correct?: <input type="checkbox" id="correct-value"
@@ -270,3 +378,53 @@ table.review-report td:last-child {
 {% for review in submission.get_reviews() %}
     {{ review }}
 {% endfor %}
+
+
+<!-- Template for Individual Review Editing -->
+<template id="individual-review-editor-template">
+<div class="form-group">
+    <div class="mb-2">
+        <label class="mr-2" for="iret-comment">Comment:</label>
+        <input data-bind="value: comment" class="form-control form-control-sm" id="iret-comment"/>
+    </div>
+    <div class="form-inline mb-2">
+        <label class="mr-2" for="iret-score">Score:</label>
+        <input data-bind="value: score" class="form-control form-control-sm" id="iret-score"/>
+    </div>
+    <div class="form-inline mb-2">
+        <label class="mr-2" for="iret-inherit">Inherit from:</label>
+        <select class="custom-select form-control" id="iret-inherit"
+            data-bind="value: inherits">
+            <option value="nothing">Nothing</option>
+            <option value="tag">Tag</option>
+            <option value="review">Review</option>
+        </select>
+    </div>
+    <div class="form-inline mb-2"
+        data-bind="visible: inherits() =='tag'">
+        <label class="mr-2" for="iret-tag">Tag:</label>
+        <select class="custom-select" id="iret-tag"
+            data-bind="value: tagId">
+            <option>Bad Functional Decomposition</option>
+            <option>Function should not be printing</option>
+            <option>Line is excessively long</option>
+        </select>
+    </div>
+    <div class="form-inline mb-2"
+        data-bind="visible: inherits() == 'review'">
+        <label class="mr-2" for="iret-forked">Parent:</label>
+        <select class="custom-select" id="iret-forked"
+            data-bind="value: forkedId">
+            <option>Project 3- Bad Functional Decomposition</option>
+            <option>Project 3- Bad Functional Decomposition</option>
+            <option>Line is excessively long</option>
+        </select>
+    </div>
+    <div class="float-right">
+        <button type="button" class="btn btn-outline-secondary btn-sm mr-2"
+            data-bind="click: cancel">Cancel</button>
+        <button type="button" class="btn btn-success btn-sm mr-2"
+            data-bind="click: save">Save</button>
+    </div>
+</div>
+</template>
