@@ -63,7 +63,7 @@ class Base(Model):
     def pretty_date_created(self):
         return self.date_created.strftime(" %I:%M%p on %a %d, %b %Y").replace(" 0", " ")
 
-    id = Column(Integer(), primary_key=True)
+    id = Column(Integer(), primary_key=True, autoincrement=True)
     date_created = Column(DateTime, default=func.current_timestamp())
     date_modified = Column(DateTime, default=func.current_timestamp(),
                            onupdate=func.current_timestamp())

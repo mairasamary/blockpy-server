@@ -213,6 +213,16 @@ table.review-report td:last-child {
         }
     });
 
+    function parseReviewInheritance(review) {
+        if (review.tag_id != null) {
+            return "tag";
+        } else if (review.forked_id != null) {
+            return "review";
+        } else {
+            return "nothing";
+        }
+    }
+
     function ReviewInterfaceModel(params) {
         // Data models
         this.submission = new SubmissionModel(params.submission);
@@ -220,6 +230,8 @@ table.review-report td:last-child {
         this.metaReviews = ko.observableArray(params.metaReviews.map(
             review => {
                 this.lookups.metaReviews[review.id] = review;
+                review.parent = this;
+                review.inherits = parseReviewInheritance(review);
                 return new ReviewModel(review, true)
             }
         ));
@@ -233,13 +245,7 @@ table.review-report td:last-child {
         this.reviews = ko.observableArray(params.reviews.map(
             review => {
                 review.parent = this;
-                if (review.tag_id != null) {
-                    review.inherits = "tag";
-                } else if (review.forked_id != null) {
-                    review.inherits = "review";
-                } else {
-                    review.inherits = "nothing";
-                }
+                review.inherits = parseReviewInheritance(review);
                 return new ReviewModel(review, true);
             }
         ));
