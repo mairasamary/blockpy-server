@@ -73,6 +73,18 @@ table.review-report td:last-child {
     padding-top: .25rem;
 }
 
+div.overlay {
+    height: 100%;
+    width: 100%;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    background-color: rgba(16, 16, 16, 0.5);
+    overflow-x: hidden; /* Disable horizontal scroll */
+    transition: 0.5s;
+}
+
 </style>
 
 <!-- Scripts -->
@@ -97,6 +109,13 @@ table.review-report td:last-child {
         template: { element: "individual-review-show-template"}
     });
 
+    function hideOverlay() {
+        $('.overlay').hide();
+    }
+    function showOverlay() {
+        $('.overlay').show();
+    }
+
     function findReviewByLocation(reviews, location) {
         reviews = reviews().filter((review) => parseInt(review.location()) === location);
         if (reviews.length) {
@@ -111,6 +130,7 @@ table.review-report td:last-child {
             this.isGrader = params.isGrader;
             this.location = ko.observable(params.location);
             this.reviews = params.reviews;
+            this.parent = params.parent;
             this.review = ko.pureComputed(() => findReviewByLocation(this.reviews, this.location()));
 
             this.quickButtonIcon = ko.pureComputed(() => {
@@ -136,7 +156,7 @@ table.review-report td:last-child {
             this.addLineFeedback = () => {
                 let location = this.location();
                 if (findReviewByLocation(this.reviews, location) === null) {
-                    let draftReview = ReviewModel.BLANK(this);
+                    let draftReview = ReviewModel.BLANK(this.parent);
                     draftReview.location(location);
                     this.reviews.push(draftReview);
                 }
@@ -173,10 +193,12 @@ table.review-report td:last-child {
                         this.review().create();
                         break;
                     case ReviewModelState.EDITING:
-                        this.review().state(ReviewModelState.SAVED);
+                        //this.review().state(ReviewModelState.SAVED);
+                        this.review().update();
                         break;
                     case ReviewModelState.SAVED:
-                        this.review().update();
+                        //this.review().update();
+                        this.review().state(ReviewModelState.EDITING);
                         break;
                     case ReviewModelState.EXPANDED:
                         this.review().state(ReviewModelState.EDITING);
@@ -227,18 +249,18 @@ table.review-report td:last-child {
         // Data models
         this.submission = new SubmissionModel(params.submission);
         this.lookups = {metaReviews: {}, tags: {}};
+        this.tags = ko.observableArray(params.tags.map(
+            tag => {
+                this.lookups.tags[tag.id] = tag;
+                return new TagModel(tag);
+            }
+        ));
         this.metaReviews = ko.observableArray(params.metaReviews.map(
             review => {
                 this.lookups.metaReviews[review.id] = review;
                 review.parent = this;
                 review.inherits = parseReviewInheritance(review);
                 return new ReviewModel(review, true)
-            }
-        ));
-        this.tags = ko.observableArray(params.tags.map(
-            tag => {
-                this.lookups.tags[tag.id] = tag;
-                return new TagModel(tag);
             }
         ));
 
@@ -276,6 +298,7 @@ table.review-report td:last-child {
                     "Release feedback" : "Revise feedback"
             ),
             submit: () => {
+                showOverlay();
                 let newStatus = this.submission.gradingStatus().toLowerCase() !== "fullygraded" ?
                     "FullyGraded" : "PendingManual";
                 $.post("{{ url_for('grading.update_status') }}", {
@@ -285,7 +308,7 @@ table.review-report td:last-child {
                     "new_grading_status": newStatus,
                 }, (data) => {
                     this.submission.gradingStatus(newStatus);
-                });
+                }).always(hideOverlay);
             }
         };
 
@@ -372,9 +395,9 @@ table.review-report td:last-child {
                     return text;
                 case "review":
                     let metaReviewId = this.forkedId() == null ? null : this.forkedId().id();
-                    let metaReview = this.parent.lookups.tags[metaReviewId];
+                    let metaReview = this.parent.lookups.metaReviews[metaReviewId];
                     if (metaReview != null) {
-                        text = metaReview.comment()+(text ? "- "+text : "");
+                        text = metaReview.comment+(text ? "- "+text : "");
                     }
                     return text;
             }
@@ -414,7 +437,7 @@ table.review-report td:last-child {
             comment: this.comment(),
             generic: this.generic(),
             location: this.location(),
-            tag_id: this.tagId() != null ? parseInt(this.tagId().id(), 10) : null,
+            tag_id: this.tagId() != null ? parseInt(this.tagId().id, 10) : null,
             score: this.score(),
             author_id: this.authorId(),
             assignment_version: this.assignmentVersion(),
@@ -436,16 +459,19 @@ table.review-report td:last-child {
     ReviewModel.prototype.create = function() {
         let serialized = this.serialized();
         serialized.submission_id = SUBMISSION_ID;
+        showOverlay();
         $.post(SERVER_URLS.REVIEW_URL, serialized)
             .done((response) => {
                 let review = response.review;
                 this.id(review.id);
                 this.state(ReviewModelState.SAVED);
-            });
+            })
+            .always(hideOverlay);
     };
 
     ReviewModel.prototype.update = function() {
         let serialized = this.serialized();
+        showOverlay();
         $.ajax({
             type: 'PUT',
             url: SERVER_URLS.REVIEW_URL+this.id(),
@@ -453,7 +479,7 @@ table.review-report td:last-child {
             data: JSON.stringify(serialized),
         }).done((response) => {
             this.state(ReviewModelState.SAVED);
-        });
+        }).always(hideOverlay);
     };
 
     ReviewModel.prototype.cancel = function() {
@@ -469,12 +495,13 @@ table.review-report td:last-child {
     };
 
     ReviewModel.prototype.remove = function() {
+        showOverlay();
         $.ajax({
             type: 'DELETE',
             url: SERVER_URLS.REVIEW_URL+this.id(),
         }).done((response) => {
             this.parent.reviews.remove(this);
-        });
+        }).always(hideOverlay);
     };
 
     ReviewModel.prototype.edit = function() {
@@ -523,7 +550,7 @@ table.review-report td:last-child {
 
         $(".highlighttable").find("td.code").after(COMMENT_COLUMN);
         $(".highlighttable span[id^='code-span-']").each(function(index, elem) {
-            let parameters = "location: "+index+",reviews: reviews,isGrader: isGrader";
+            let parameters = "location: "+index+",reviews: reviews,isGrader: isGrader,parent: $root";
             let button = $("<line-review params='"+parameters+"'></line-review>");
             button.css({"top": elem.top});
             COMMENT_COLUMN.append(button);
@@ -639,6 +666,8 @@ table.review-report td:last-child {
 <div class="col-lg-6 col-md-12">
     <h4>Line Feedback</h4>
 </div>
+
+<div class="overlay" style="display:none"></div>
 
 <!-- Old Interface -->
 {% if is_grader %}
