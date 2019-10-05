@@ -17,6 +17,8 @@ class Course(Base):
     term = Column(String(255), default="")
     settings = Column(Text(), default="")
 
+    owner = db.relationship("User")
+
     def encode_json(self):
         user = models.User.query.get(self.owner_id)
         return {'_schema_version': 3,

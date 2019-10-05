@@ -1,6 +1,6 @@
 from sqlalchemy import Column, String, Integer, ForeignKey
 
-from models.models import Base
+from models.models import Base, db
 
 
 class Authentication(Base):

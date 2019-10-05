@@ -18,6 +18,8 @@ class AssignmentTag(Base):
 
     assignments = db.relationship("Assignment", secondary=models.assignment_tag_membership,
                                   back_populates='tags')
+    owner = db.relationship("User")
+    course = db.relationship("Course")
 
     def __str__(self):
         return '{} Tag {}'.format(self.kind.title(), self.name)

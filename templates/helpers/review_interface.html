@@ -3,22 +3,38 @@
 .highlighttable pre {
     font-size: 15px;
 }
+.highlighttable tr:first-child {
+    vertical-align: top;
+}
+td.code div.highlight {
+    max-width: 500px;
+    overflow-x: auto;
+}
 td.comment-column {
     vertical-align: top;
 }
-span.add-comment {
-    padding: 0px;
-    margin: 0px;
+span.line-review-quick-button {
+    padding: 0;
+    margin: 0;
     line-height: 125%;
     font-size: 15px;
     display: block;
     color: #EEE;
+    position: relative;
 }
-span.add-comment:hover {
+span.line-review-quick-button:hover {
     color: darkgray;
 }
-span.add-comment:active {
+span.line-review-quick-button:active {
     color: black;
+}
+
+.draft-comment {
+    font-style: italic;
+}
+
+div.line-review-box {
+    position: relative;
 }
 
 table.review-report td:last-child {
@@ -31,6 +47,32 @@ table.review-report td:last-child {
     background-color: #EEE;
 }
 
+.static-popover {
+    position: absolute;
+    min-width: 500px;
+}
+.static-popover.expanded {
+
+}
+.static-popover.collapsed {
+    min-width: 300px;
+}
+.static-popover .arrow {
+    top: -1px;
+}
+
+.static-popover.inactive {
+    border: 0;
+}
+
+.popover-header-sm {
+    padding: 1px .5rem;
+}
+
+.popover-control {
+    padding-top: .25rem;
+}
+
 </style>
 
 <!-- Scripts -->
@@ -38,28 +80,177 @@ table.review-report td:last-child {
 <script>
 
     let AUTHOR_ID = {{ g.user.id|tojson }};
+    let SUBMISSION_ID = {{ submission.id|tojson }};
+    let COURSE_ID = {{ submission.course_id|tojson }};
     let ASSIGNMENT_VERSION = {{ assignment.version|tojson }};
     let SUBMISSION_VERSION = {{ submission.version|tojson }};
+
+    let SERVER_URLS = {
+        REVIEW_URL: {{ url_for('grading.review_api')|tojson }}
+    };
 
     ko.components.register('individual-review-editor', {
         template: { element: "individual-review-editor-template" }
     });
 
+    ko.components.register('individual-review-show', {
+        template: { element: "individual-review-show-template"}
+    });
+
+    function findReviewByLocation(reviews, location) {
+        reviews = reviews().filter((review) => parseInt(review.location()) === location);
+        if (reviews.length) {
+            return reviews[0];
+        } else {
+            return null;
+        }
+    }
+
+    ko.components.register('line-review', {
+        viewModel: function(params) {
+            this.isGrader = params.isGrader;
+            this.location = ko.observable(params.location);
+            this.reviews = params.reviews;
+            this.review = ko.pureComputed(() => findReviewByLocation(this.reviews, this.location()));
+
+            this.quickButtonIcon = ko.pureComputed(() => {
+                if (this.review() === null) {
+                    if (this.isGrader()) {
+                        return "fa-plus-circle";
+                    } else {
+                        return "";
+                    }
+                }
+                switch (this.review().state()) {
+                    case ReviewModelState.DRAFT:
+                        return "fa-save";
+                    case ReviewModelState.EDITING:
+                        return "fa-save";
+                    case ReviewModelState.SAVED:
+                        return "fa-chevron-circle-right";
+                    case ReviewModelState.EXPANDED:
+                        return "fa-chevron-circle-left";
+                }
+            });
+
+            this.addLineFeedback = () => {
+                let location = this.location();
+                if (findReviewByLocation(this.reviews, location) === null) {
+                    let draftReview = ReviewModel.BLANK(this);
+                    draftReview.location(location);
+                    this.reviews.push(draftReview);
+                }
+            };
+
+            this.collapse = () => {
+                this.review().state(ReviewModelState.COLLAPSED);
+            };
+
+            this.edit = () => {
+                if (this.review() !== null) {
+                    if (this.review().state() === ReviewModelState.EDITING) {
+                        this.review().state(ReviewModelState.EXPANDED);
+                    } else {
+                        this.review().state(ReviewModelState.EDITING);
+                    }
+                }
+            };
+
+            this.remove = () => {
+                if (this.review() !== null) {
+                    this.review().remove();
+                }
+            };
+
+
+            this.quickButtonClick = () => {
+                if (this.review() === null) {
+                    this.addLineFeedback();
+                    return;
+                }
+                switch (this.review().state()) {
+                    case ReviewModelState.DRAFT:
+                        this.review().create();
+                        break;
+                    case ReviewModelState.EDITING:
+                        this.review().state(ReviewModelState.SAVED);
+                        break;
+                    case ReviewModelState.SAVED:
+                        this.review().update();
+                        break;
+                    case ReviewModelState.EXPANDED:
+                        this.review().state(ReviewModelState.EDITING);
+                        break;
+                }
+            };
+            this.fixPopoverPosition = (elements)=> {
+                let popover, button;
+                elements.map((element) => {
+                    if (element.classList) {
+                        if (element.classList.contains("popover")) {
+                            popover = element;
+                        }
+                        if (element.classList.contains("line-review-quick-button")) {
+                            button = element;
+                        }
+                    }
+                });
+                let offset = $(button).offset();
+                let width = $(button).width()+5;
+                $(popover).offset({"top": -$(button).height()/2+5, "left": width});
+                //popover.style.top = -$(button).height()/2;
+                //popover.style.left = width;
+                $(popover).show();
+            };
+
+            this.takeFocus = (x, y, z) => {
+                $(".popover").css({"z-index": 1060});
+                $(y.currentTarget).css({"z-index": 1061});
+            };
+        },
+        template: {
+            element: "line-review-button-template"
+        }
+    });
+
     function ReviewInterfaceModel(params) {
         // Data models
         this.submission = new SubmissionModel(params.submission);
+        this.lookups = {metaReviews: {}, tags: {}};
+        params.metaReviews.forEach((review) => {
+            this.lookups.metaReviews[review.id] = review;
+        });
+        params.tags.forEach((tag) => {
+            this.lookups.tags[tag.id] = tag;
+        });
+
         this.reviews = ko.observableArray(params.reviews.map(
-            review => new ReviewModel(review)
+            review => {
+                review.parent = this;
+                return new ReviewModel(review, true);
+            }
         ));
-        this.metaReviews = ko.observableArray(params.metaReviews.map(
-            review => new ReviewModel(review)
+        /*this.metaReviews = ko.observableArray(params.metaReviews.map(
+            review => {
+                this.lookups.metaReviews[review.id] = review;
+                return new ReviewModel(review, true)
+            }
         ));
         this.tags = ko.observableArray(params.tags.map(
             tag => new TagModel(tag)
-        ));
+        ));*/
         this.isGrader = ko.observable(params.isGrader);
 
-        this.draftReviews = ko.observableArray([]);
+        // Dummy test data
+        /*
+        let TAG0 = TagModel.BLANK(this);
+        TAG0.name = "Not Functionally Decomposed";
+        this.tags.push(TAG0);
+
+        let META_REVIEW0 = ReviewModel.BLANK(this);
+        META_REVIEW0.comment("Banana");
+        META_REVIEW0.score(-10);
+        this.metaReviews.push(META_REVIEW0);*/
 
         // Interface models
         this.ui = {};
@@ -100,28 +291,15 @@ table.review-report td:last-child {
             return this.reviews().filter(review => (review.location() === "" || review.location() === null));
         });
 
+        this.ui.lineReviews = ko.pureComputed(() => {
+            return this.reviews().filter(review => (review.location() !== "" && review.location() !== null));
+        });
+
         this.ui.generalFeedback = {
-            active: ko.observable(false),
             add: () => {
-                let draftReview = ReviewModel.BLANK();
-                let reviewEditor = new IndividualReviewEditorModel({
-                    parent: this,
-                    review: draftReview
-                });
-                this.draftReviews.push(reviewEditor);
+                let draftReview = ReviewModel.BLANK(this);
+                this.reviews.push(draftReview);
             }
-        };
-        this.ui.addGeneralFeedback = function() {
-
-        };
-        this.ui.editGeneralFeedback = function(reviewId) {
-
-        };
-        this.ui.saveGeneralFeedback = function() {
-
-        };
-        this.ui.deleteGeneralFeedback = function(reviewId) {
-
         };
 
     }
@@ -139,7 +317,15 @@ table.review-report td:last-child {
         this.ui.correct = ko.pureComputed( ()=> this.correct() ? "&#10004;": "&#10060;");
     }
 
-    function ReviewModel(params) {
+    const ReviewModelState = {
+        DRAFT: "DRAFT",
+        SAVED: "SAVED",
+        EDITING: "EDITING",
+        EXPANDED: "EXPANDED"
+    };
+
+    function ReviewModel(params, startSaved) {
+        this.id = ko.observable(params.id);
         this.comment = ko.observable(params.comment);
         this.generic = ko.observable(params.generic);
         this.location = ko.observable(params.location);
@@ -152,35 +338,54 @@ table.review-report td:last-child {
         this.forkedId = ko.observable(params.forked_id);
         this.dateCreated = ko.observable(params.date_created);
 
-        this.inherits = ko.pureComputed({
-            read: () => {
-                if (this.review.tagId() != null) {
-                    return "tag";
-                } else if (this.review.forkedId() != null) {
-                    return "review";
-                } else {
-                    return "nothing";
-                }
-            },
-            write: (value) => {
-                if (value === "tag") {
-                    this.review.forkedId(null);
-                    this.review.tagId(this.parent.tags()[0])
-                } else if (value === "review") {
-                    this.review.tagId(null);
-                    this.review.forkedId(this.parent.metaReviews()[0])
-                } else if (value === "nothing") {
-                    this.review.forkedId(null);
-                    this.review.tagId(null);
-                }
-            },
-            owner: this
+        // Interface model
+        this.parent = params.parent;
+        if (startSaved) {
+            this.state = ko.observable(ReviewModelState.SAVED);
+        } else {
+            this.state = ko.observable(params.state);
+        }
+        this.inherits = ko.observable(params.inherits);
+
+        this.getText = ko.pureComputed(() => {
+            switch (this.inherits()) {
+                case "nothing": return this.comment();
+                case "tag":
+                    if (this.comment()) {
+                        let tag = this.parent.lookups.tags[this.tagId()];
+                        if (tag != null) {
+                            return "<strong>"+tag.name()+"</strong> "+this.comment();
+                        } else {
+                            return this.comment();
+                        }
+                    } else {
+                        return "<strong>"+tag.name()+"</strong>";
+                    }
+                case "review":
+                    if (this.comment()) {
+                        let metaReview = this.parent.lookups.metaReviews[this.tagId()];
+                        if (metaReview != null) {
+                            return "<strong>"+metaReview.comment()+"</strong> "+this.comment();
+                        } else {
+                            return this.comment();
+                        }
+                    } else {
+                        return "<strong>"+metaReview.comment()+"</strong>";
+                    }
+            }
+            if (this.inherits() === "nothing") {
+                return this.comment();
+            } else
+            if (this.comment() !== "") {
+                return this.comment();
+            }
         });
     }
 
-    ReviewModel.BLANK = function() {
+    ReviewModel.BLANK = function(parent) {
         return new ReviewModel({
-            comment: "",
+            id: null,
+            comment: "New Comment",
             generic: false,
             location: null,
             tagId: null,
@@ -190,21 +395,93 @@ table.review-report td:last-child {
             submissionVersion: SUBMISSION_VERSION,
             version: 0,
             forkedId: null,
-            dateCreated: new Date()
+            dateCreated: new Date(),
+            parent: parent,
+            inherits: "review",
+            // UI
+            state: ReviewModelState.DRAFT
         });
     };
 
+    ReviewModel.prototype.serialized = function() {
+        return {
+            id: this.id(),
+            comment: this.comment(),
+            generic: this.generic(),
+            location: this.location(),
+            tag_id: parseInt(this.tagId(), 10),
+            score: this.score(),
+            author_id: this.authorId(),
+            assignment_version: this.assignmentVersion(),
+            submission_version: this.submissionVersion(),
+            version: this.version(),
+            forked_id: parseInt(this.forkedId(), 10),
+            date_created: this.dateCreated()
+        };
+    };
+
     ReviewModel.prototype.save = function() {
-        // TODO: Save to server, then make local change
-        this.parent.draftReviews.remove(this);
-        this.parent.reviews.push(this.review);
+        if (this.state() === ReviewModelState.DRAFT) {
+            this.create();
+        } else {
+            this.update();
+        }
+    };
+
+    ReviewModel.prototype.create = function() {
+        let serialized = this.serialized();
+        serialized.submission_id = SUBMISSION_ID;
+        $.post(SERVER_URLS.REVIEW_URL, serialized)
+            .done((response) => {
+                let review = response.review;
+                this.id(review.id);
+                this.state(ReviewModelState.SAVED);
+            });
+    };
+
+    ReviewModel.prototype.update = function() {
+        let serialized = this.serialized();
+        $.ajax({
+            type: 'PUT',
+            url: SERVER_URLS.REVIEW_URL+this.id(),
+            contentType: 'application/json',
+            data: JSON.stringify(serialized),
+        }).done((response) => {
+            this.state(ReviewModelState.SAVED);
+        });
     };
 
     ReviewModel.prototype.cancel = function() {
-        this.parent.draftReviews.remove(this);
+        switch (this.state()) {
+            case ReviewModelState.EDITING:
+                // Persist change to server
+                this.state(ReviewModelState.SAVED);
+                break;
+            case ReviewModelState.DRAFT:
+                this.parent.reviews.remove(this);
+                break;
+        }
+    };
+
+    ReviewModel.prototype.remove = function() {
+        $.ajax({
+            type: 'DELETE',
+            url: SERVER_URLS.REVIEW_URL+this.id(),
+        }).done((response) => {
+            this.parent.reviews.remove(this);
+        });
+    };
+
+    ReviewModel.prototype.edit = function() {
+        this.state(ReviewModelState.EDITING);
+    };
+
+    ReviewModel.prototype.isEditing = function() {
+        return this.state() === ReviewModelState.EDITING || this.state() === ReviewModelState.DRAFT;
     };
 
     function TagModel(params) {
+        this.id = ko.observable(params.id);
         this.name = ko.observable(params.name);
         this.kind = ko.observable(params.kinds);
         this.description = ko.observable(params.description);
@@ -214,6 +491,19 @@ table.review-report td:last-child {
         this.courseId = ko.observable(params.course_id);
     }
 
+    TagModel.BLANK = () => {
+        return new TagModel({
+            id: null,
+            name: "New Tag",
+            kind: "Mistake",
+            description: "",
+            level: "",
+            version: "",
+            ownerId: null,
+            courseId: null,
+        });
+    };
+
     main = new ReviewInterfaceModel({
         submission: {{ submission.encode_json()|tojson }},
         reviews: {{ submission.get_reviews()|tojson }},
@@ -222,11 +512,21 @@ table.review-report td:last-child {
         isGrader: {{ is_grader|tojson }}
     });
 
-    {% if is_grader %}
+    const COMMENT_COLUMN = $("<td class='comment-column'></td>");
+
     $(document).ready(function() {
+
+        $(".highlighttable").find("td.code").after(COMMENT_COLUMN);
+        $(".highlighttable span[id^='code-span-']").each(function(index, elem) {
+            let parameters = "location: "+index+",reviews: reviews,isGrader: isGrader";
+            let button = $("<line-review params='"+parameters+"'></line-review>");
+            button.css({"top": elem.top});
+            COMMENT_COLUMN.append(button);
+        });
 
         ko.applyBindings(main);
 
+        {% if is_grader %}
         $("#assign-grade").click(function() {
             let grade = $("#grade-value").val();
             let correct = $("#correct-value").is(":checked");
@@ -254,32 +554,9 @@ table.review-report td:last-child {
                 $("#grade-value").val("0");
             }
         });
+        {% endif %}
     });
 
-    function addReview(root) {
-
-    }
-    $(document).ready(function() {
-        let commentColumn = $("<td class='comment-column'></td>");
-        $(".highlighttable").find("td").after(commentColumn);
-        $(".highlighttable span[id^='code-span-']").each(function(index, elem) {
-            let button = $("<span class=\"fas fa-plus-circle\"></span>");
-            // fa-chevron-circle-left
-            // fa-chevron-circle-right
-            commentColumn.append(button);//.append("<br>");
-            button.addClass("add-comment");
-            button.css({"top": elem.top});
-            button.click(function() {
-                console.log(index, elem);
-            });
-            button.popover({
-                content: $("<div>Dr. Bart says: This is a great line of code!</div><textarea></textarea>"),
-                html: true,
-                template:'<div><span class="popover-header"></span></div>'
-            });
-        });
-    });
-{% endif %}
 </script>
 
 <!-- HTML -->
@@ -322,7 +599,7 @@ table.review-report td:last-child {
     </tr>
     <!-- ko foreach: reviews -->
     <tr>
-        <td data-bind="text: $data.comment"></td>
+        <td data-bind="text: $data.comment, css: {'draft-comment': $data.state() === 'DRAFT'}"></td>
         <td data-bind="text: $data.score"></td>
     </tr>
     <!-- /ko -->
@@ -343,15 +620,12 @@ table.review-report td:last-child {
 
     <div class="list-group d-flex w-100 justify-content-between"
          data-bind="foreach: ui.generalReviews">
+        <!-- ko if: state() !== 'SAVED' -->
         <div data-bind='component: {name: "individual-review-editor", params: $data}'></div>
-        <span data-bind="text: $data.comment"></span> - <span data-bind="text: $data.score"></span>
-    </div>
-
-    <div class="list-group d-flex w-100 justify-content-between"
-         data-bind="foreach: draftReviews">
-        <div class="draft-review">
-            <div data-bind='component: {name: "individual-review-editor", params: $data}'></div>
-        </div>
+        <!-- /ko -->
+        <!-- ko if: state() === 'SAVED' -->
+        <div data-bind='component: {name: "individual-review-show", params: $data}'></div>
+        <!-- /ko -->
     </div>
 
 </div>
@@ -363,6 +637,7 @@ table.review-report td:last-child {
 
 <!-- Old Interface -->
 {% if is_grader %}
+    <!--
 <div>
 <form>
     <label>Is Correct?: <input type="checkbox" id="correct-value"
@@ -372,13 +647,8 @@ table.review-report td:last-child {
     <button class='btn btn-warning btn-sm' type="button">Close Submission</button>
     <button class='btn btn-success btn-sm' id="assign-grade" type="button">Assign Grade</button>
 </form>
-</div>
+</div>-->
 {% endif %}
-
-{% for review in submission.get_reviews() %}
-    {{ review }}
-{% endfor %}
-
 
 <!-- Template for Individual Review Editing -->
 <template id="individual-review-editor-template">
@@ -405,9 +675,9 @@ table.review-report td:last-child {
         <label class="mr-2" for="iret-tag">Tag:</label>
         <select class="custom-select" id="iret-tag"
             data-bind="value: tagId">
-            <option>Bad Functional Decomposition</option>
-            <option>Function should not be printing</option>
-            <option>Line is excessively long</option>
+            <option value="0">Bad Functional Decomposition</option>
+            <option value="1">Function should not be printing</option>
+            <option value="2">Line is excessively long</option>
         </select>
     </div>
     <div class="form-inline mb-2"
@@ -415,9 +685,9 @@ table.review-report td:last-child {
         <label class="mr-2" for="iret-forked">Parent:</label>
         <select class="custom-select" id="iret-forked"
             data-bind="value: forkedId">
-            <option>Project 3- Bad Functional Decomposition</option>
-            <option>Project 3- Bad Functional Decomposition</option>
-            <option>Line is excessively long</option>
+            <option value="0">Project 3- Bad Functional Decomposition</option>
+            <option value="1">Project 3- Bad Functional Decomposition</option>
+            <option value="2">Line is excessively long</option>
         </select>
     </div>
     <div class="float-right">
@@ -427,4 +697,48 @@ table.review-report td:last-child {
             data-bind="click: save">Save</button>
     </div>
 </div>
+</template>
+
+<template id="individual-review-show-template">
+    <div>
+        <span data-bind="text: getText"></span>
+        <span data-bind="text: score"></span>
+        <button type="button" class="btn btn-sm btn-outline-secondary"
+            data-bind="click: edit">Edit</button>
+        <button type="button" class="btn btn-sm btn-danger"
+            data-bind="click: remove">Remove</button>
+    </div>
+</template>
+
+<template id="line-review-button-template">
+    <div data-bind="template: {afterRender: fixPopoverPosition }"
+        class="line-review-box">
+    <span class="line-review-quick-button fas"
+          data-bind="click: quickButtonClick,
+                     class: quickButtonIcon"></span>
+    <div class="popover bs-popover-right static-popover"
+        data-bind="css: {inactive: review() == null},
+                   click: takeFocus" style="display:none">
+    <!-- ko if: review() !== null -->
+        <div class="arrow"></div>
+        <div class="popover-body popover-header-sm">
+        <!-- ko if: !review().isEditing() -->
+            <code data-bind="text: review().score"></code>
+            <span data-bind="text: review().getText()"></span>
+            <!-- ko if: $parent.isGrader -->
+            <span class="fas fa-trash float-right popover-control"
+                  data-bind="click: remove"></span>
+            <span class="fas fa-edit float-right mr-2 popover-control"
+                  data-bind="click: edit"></span>
+            <span class="fas fa-chevron-left float-right mr-2 popover-control"
+                  data-bind="click: collapse"></span>
+            <!-- /ko -->
+        <!-- /ko -->
+        <!-- ko if: review().isEditing() -->
+            <div data-bind='component: {name: "individual-review-editor", params: review()}'></div>
+        <!-- /ko -->
+        </div>
+    <!-- /ko -->
+    </div>
+    </div>
 </template>

@@ -14,6 +14,9 @@ class AssignmentGroupMembership(Base):
     assignment_id = Column(Integer(), ForeignKey('assignment.id'))
     position = Column(Integer())
 
+    assignment_group = db.relationship("AssignmentGroup")
+    assignment = db.relationship("Assignment")
+
     SCHEMA_V1_IGNORE_COLUMNS = Base.SCHEMA_V1_IGNORE_COLUMNS + ("assignment_group_url",
                                                                 "assignment_url", "course_id")
     SCHEMA_V2_IGNORE_COLUMNS = Base.SCHEMA_V2_IGNORE_COLUMNS + ("assignment_group_url",

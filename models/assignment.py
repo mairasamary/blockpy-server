@@ -43,6 +43,9 @@ class Assignment(Base):
     course_id = Column(Integer(), ForeignKey('course.id'))
     version = Column(Integer(), default=0)
 
+    forked = db.relationship("Assignment")
+    owner = db.relationship("User")
+    course = db.relationship("Course")
     tags = db.relationship("AssignmentTag", secondary=models.assignment_tag_membership,
                            back_populates='assignments')
     sample_submissions = db.relationship("SampleSubmission", backref='assignment', lazy='dynamic')
@@ -101,7 +104,7 @@ class Assignment(Base):
         }
 
     def __str__(self):
-        return '<Assignment {} for {}>'.format(self.id, self.course_id)
+        return '<Assignment {} for {} ({})>'.format(self.id, self.course_id, self.url)
 
     def title(self):
         return self.name if self.name != "Untitled" else "Untitled ({})".format(self.id)

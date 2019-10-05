@@ -57,6 +57,9 @@ class Submission(Base):
     version = Column(Integer(), default=0)
 
     assignment = relationship("Assignment")
+    assignment_group = relationship("AssignmentGroup")
+    course = relationship("Course")
+    user = relationship("User")
 
     __table_args__ = (Index('submission_index', "assignment_id",
                             "course_id", "user_id"),)
@@ -308,7 +311,10 @@ class Submission(Base):
             blockly_logfile.write(self.code)
 
     def get_reviews(self):
-        return Review.query.filter_by(submission_id=self.id).all()
+        return [review.encode_json() for review in
+                Review.query.filter_by(submission_id=self.id).all()]
 
-    def get_meta_reviews(self):
-        return Review.query.filter_by(generic=True).all()
+    @staticmethod
+    def get_meta_reviews():
+        return [review.encode_json() for review in
+                Review.query.filter_by(generic=True).all()]

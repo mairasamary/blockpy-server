@@ -18,6 +18,7 @@ from jinja2 import Markup
 from main import app
 from controllers.helpers import admin_required
 from models.models import (db, AssignmentGroupMembership)
+from models.review import Review
 from models.user import User
 from models.course import Course
 from models.role import Role
@@ -147,7 +148,7 @@ class RoleView(RegularView):
     column_sortable_list = ('id', 'date_created', 'name', 'user_id', 'course_id')
     column_formatters = {'user_id': _id(User),
                          'course_id': _id(Course)}
-    form_columns = ('name', 'user_id', 'course_id')
+    #form_columns = ('name', 'user_id', 'course_id')
 
 
 def _render_course_service(view, context, model, name):
@@ -228,7 +229,7 @@ class AssignmentGroupMembershipView(RegularView):
                    'assignment_group_id', 'assignment_id',
                    'position'
                    )
-    form_columns = ('assignment_group_id', 'assignment_id', 'position')
+    #form_columns = ('assignment_group_id', 'assignment_id', 'position')
     column_filters = ('assignment_id', 'assignment_group_id')
     column_formatters = {'user_id': _editable(User, 'id'),
                          'course_id': _editable(Course, 'id')}
@@ -242,6 +243,16 @@ class AssignmentTagView(RegularView):
                    )
     column_formatters = {'owner_id': _editable(User, 'id'),
                          'course_id': _editable(Course, 'id')}
+
+
+class ReviewView(RegularView):
+    column_list = ('id', 'date_modified',
+                   'comment', 'location', 'generic',
+                   'tag_id', 'score', 'submission_id',
+                   'author_id', 'assignment_version',
+                   'submission_version', 'version',
+                   'forked_id', 'forked_version')
+    column_formatters = {'author_id': _editable(User, 'id')}
 
 
 class SampleSubmissionView(RegularView):
@@ -279,6 +290,7 @@ admin.add_view(AssignmentTagView(AssignmentTag, db.session, category='Tables'))
 admin.add_view(ModelIdView(Authentication, db.session, category='Tables'))
 admin.add_view(RoleView(Role, db.session, category='Tables'))
 admin.add_view(LogView(Log, db.session, category='Tables'))
+admin.add_view(ReviewView(Review, db.session, category='Tables'))
 
 # admin.add_view(FileAdmin(app.config['BLOCKPY_LOG_DIR'], base_url='/admin/code_logs/', name='Disk Logs'))
 admin.add_view(FileAdmin(app.config['UPLOADS_DIR'], '',

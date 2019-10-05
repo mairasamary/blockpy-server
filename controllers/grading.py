@@ -1,6 +1,7 @@
 from datetime import datetime
 import os
 import json
+from pprint import pprint
 from typing import Tuple
 
 from flask.views import MethodView
@@ -73,13 +74,41 @@ class ReviewAPI(MethodView):
         return ajax_success(dict(review=review.encode_json()))
 
     def post(self):
-        pass
+        user, user_id = get_user()
+        submission_id = maybe_int(request.values.get('submission_id'))
+        submission = Submission.by_id(submission_id)
+        check_resource_exists(submission, "Submission", submission_id)
+        require_course_grader(user, submission.course_id)
+        review_data = request.values.copy()
+        del review_data['id']
+        review_data['author_id'] = user_id
+        review_data['submission_version'] = submission.version
+        review_data['assignment_version'] = submission.assignment_version
+        new_review = Review.new(review_data)
+        return ajax_success(dict(review=new_review.encode_json()))
 
     def put(self, review_id):
-        pass
+        user, user_id = get_user()
+        review = Review.by_id(review_id)
+        check_resource_exists(review, "Review", review_id)
+        submission = Submission.by_id(review.submission_id)
+        check_resource_exists(submission, "Submission", review.submission_id)
+        require_course_grader(user, submission.course_id)
+        review_data = request.json.copy()
+        del review_data['id']
+        review_data['author_id'] = user_id
+        edited_review = review.edit(review_data)
+        return ajax_success(dict(review=edited_review.encode_json()))
 
     def delete(self, review_id):
-        pass
+        user, user_id = get_user()
+        review = Review.by_id(review_id)
+        check_resource_exists(review, "Review", review_id)
+        submission = Submission.by_id(review.submission_id)
+        check_resource_exists(submission, "Submission", review.submission_id)
+        require_course_grader(user, submission.course_id)
+        review.delete()
+        return ajax_success(dict(success=True))
 
 
 review_view = ReviewAPI.as_view('review_api')

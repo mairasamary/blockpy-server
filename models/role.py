@@ -9,6 +9,8 @@ class Role(Base, RoleMixin):
     user_id = Column(Integer(), ForeignKey('user.id'))
     course_id = Column(Integer(), ForeignKey('course.id'), default=None)
 
+    course = db.relationship("Course")
+
     NAMES = ['instructor', 'admin', 'student']
 
     def update_role(self, new_role):

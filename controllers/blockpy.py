@@ -262,7 +262,7 @@ def view_submission():
     is_grader = viewer.is_grader(submission.course_id)
     tags = []
     if is_grader:
-        tags = AssignmentTag.get_all()
+        tags = [tag.encode_json() for tag in AssignmentTag.get_all()]
     # Do action
     return render_template("reports/alone.html", embed=embed,
                            submission=submission, assignment=submission.assignment,

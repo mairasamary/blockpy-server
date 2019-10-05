@@ -23,6 +23,10 @@ class Log(Base):
     client_timestamp = Column(String(255), default="")
     client_timezone = Column(String(255), default="")
 
+    assignment = db.relationship("Assignment")
+    subject = db.relationship("User")
+    course = db.relationship("Course")
+
     # event_type
     # => event_id
     # subject_id

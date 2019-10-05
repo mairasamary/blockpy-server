@@ -19,8 +19,12 @@ class AssignmentGroup(Base):
     position = Column(Integer(), default=0)
     version = Column(Integer(), default=0)
 
+    forked = db.relationship("AssignmentGroup")
+    owner = db.relationship("User")
+    course = db.relationship("Course")
+
     def __str__(self):
-        return 'Group {} in {}'.format(self.name, self.course_id)
+        return '<Group {} in {} ({})>'.format(self.name, self.course_id, self.url)
 
     def encode_json(self):
         user = models.User.query.get(self.owner_id)

@@ -27,9 +27,20 @@ class Review(Base):
     forked_id = Column(Integer(), ForeignKey('review.id'), nullable=True)
     forked_version = Column(Integer(), nullable=True)
 
+    tag = db.relationship("AssignmentTag")
+    submission = db.relationship("Submission")
+    author = db.relationship("User")
+    forked = db.relationship("Review")
+
+    def __str__(self):
+        return "<Review {} for {}>".format(self.id, self.submission_id)
+
     def encode_json(self):
         return {
             '_schema_version': 2,
+            'id': self.id,
+            'date_modified': self.date_modified,
+            'date_created': self.date_created,
             'comment': self.comment,
             'location': self.location,
             'generic': self.generic,
@@ -43,6 +54,44 @@ class Review(Base):
             'forked_id': self.forked_id,
             'forked_version': self.forked_version
         }
+
+    @staticmethod
+    def new(data):
+        new_review = Review(comment=data['comment'],
+                            location=data['location'],
+                            generic=data['generic'].lower() == 'true',
+                            tag_id=int(data['tag_id']),
+                            score=int(data['score']),
+                            submission_id=int(data['submission_id']),
+                            author_id=int(data['author_id']),
+                            assignment_version=data['assignment_version'],
+                            submission_version=data['submission_version'],
+                            version=0,
+                            forked_id=int(data['forked_id']),
+                            forked_version=0) #TODO: Handle forked_version
+        db.session.add(new_review)
+        db.session.commit()
+        return new_review
+
+    EDITABLE_SETTINGS = ('comment', 'location', 'score', 'generic',
+                         'tag_id', 'forked_id', 'forked_version')
+
+    def edit(self, data):
+        changes = False
+        for key in self.EDITABLE_SETTINGS:
+            if key in data:
+                old = getattr(self, key)
+                new = data[key]
+                setattr(self, key, new)
+                changes = changes or (old != new)
+        if changes:
+            self.version += 1
+        db.session.commit()
+        return self
+
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
 
     @staticmethod
     def get_for_submission(submission_id):
