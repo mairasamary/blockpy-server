@@ -360,32 +360,23 @@ table.review-report td:last-child {
         this.inherits = ko.observable(params.inherits);
 
         this.getText = ko.pureComputed(() => {
+            let text = this.comment();
             switch (this.inherits()) {
-                case "nothing": return this.comment();
+                case "nothing": return text;
                 case "tag":
-                    if (this.comment()) {
-                        let tagId = this.tagId() == null ? null : this.tagId().id;
-                        let tag = this.parent.lookups.tags[tagId];
-                        if (tag != null) {
-                            return tag.name+"- "+this.comment();
-                        } else {
-                            return this.comment();
-                        }
-                    } else {
-                        return tag.name;
+                    let tagId = this.tagId() == null ? null : this.tagId().id;
+                    let tag = this.parent.lookups.tags[tagId];
+                    if (tag != null) {
+                        text = tag.name+(text ? "- "+text : "");
                     }
+                    return text;
                 case "review":
-                    if (this.comment()) {
-                        let metaReviewId = this.metaReview() == null ? null : this.metaReview().id();
-                        let metaReview = this.parent.lookups.tags[metaReviewId];
-                        if (metaReview != null) {
-                            return metaReview.comment()+"- "+this.comment();
-                        } else {
-                            return this.comment();
-                        }
-                    } else {
-                        return metaReview.comment();
+                    let metaReviewId = this.forkedId() == null ? null : this.forkedId().id();
+                    let metaReview = this.parent.lookups.tags[metaReviewId];
+                    if (metaReview != null) {
+                        text = metaReview.comment()+(text ? "- "+text : "");
                     }
+                    return text;
             }
             if (this.inherits() === "nothing") {
                 return this.comment();
