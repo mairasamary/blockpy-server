@@ -252,7 +252,7 @@ div.overlay {
         this.tags = ko.observableArray(params.tags.map(
             tag => {
                 this.lookups.tags[tag.id] = tag;
-                return new TagModel(tag);
+                return tag;
             }
         ));
         this.metaReviews = ko.observableArray(params.metaReviews.map(
@@ -260,7 +260,7 @@ div.overlay {
                 this.lookups.metaReviews[review.id] = review;
                 review.parent = this;
                 review.inherits = parseReviewInheritance(review);
-                return new ReviewModel(review, true)
+                return review;
             }
         ));
 
@@ -384,11 +384,11 @@ div.overlay {
 
         this.getScore = ko.pureComputed(() => {
             let score = this.score();
-            if (score === null) {
-                let metaReviewId = this.forkedId() == null ? null : this.forkedId().id();
+            if (score === null || score === "") {
+                let metaReviewId = this.forkedId() == null ? null : this.forkedId().id;
                 let metaReview = this.parent.lookups.metaReviews[metaReviewId];
                 if (metaReview != null) {
-                    score = metaReview.score();
+                    score = metaReview.score;
                 }
             }
             if (score > 0) {
@@ -412,7 +412,7 @@ div.overlay {
                     }
                     return text;
                 case "review":
-                    let metaReviewId = this.forkedId() == null ? null : this.forkedId().id();
+                    let metaReviewId = this.forkedId() == null ? null : this.forkedId().id;
                     let metaReview = this.parent.lookups.metaReviews[metaReviewId];
                     if (metaReview != null) {
                         text = metaReview.comment+(text ? "- "+text : "");
@@ -450,18 +450,23 @@ div.overlay {
     };
 
     ReviewModel.prototype.serialized = function() {
+        let tag_id = this.tagId() != null ? parseInt(this.tagId().id, 10) : null;
+        let forked_id = this.forkedId() != null ? parseInt(this.forkedId().id, 10) : null;
+        if (tag_id && forked_id) {
+            tag_id = null;
+        }
         return {
             id: this.id(),
             comment: this.comment(),
             generic: this.generic(),
             location: this.location(),
-            tag_id: this.tagId() != null ? parseInt(this.tagId().id(), 10) : null,
+            tag_id: tag_id,
             score: this.score(),
             author_id: this.authorId(),
             assignment_version: this.assignmentVersion(),
             submission_version: this.submissionVersion(),
             version: this.version(),
-            forked_id: this.forkedId() != null ? parseInt(this.forkedId().id(), 10) : null,
+            forked_id: forked_id,
             date_created: this.dateCreated()
         };
     };
@@ -736,11 +741,14 @@ div.overlay {
     </div>
     <div class="form-inline mb-2">
         <label class="mr-2" for="iret-score">Score Modifier:</label>
-        <input data-bind="value: score" class="form-control form-control-sm" id="iret-score"/>
+        <input data-bind="value: score" class="form-control form-control-sm" id="iret-score" size="5"/>
+        <!-- ko if: score() == null || score() === '' -->
+        <span class="ml-2">(Modifier blank, will use <code data-bind="text: getScore"></code>)</span>
+        <!-- /ko -->
     </div>
-    <div class="float-right">
-        <button type="button" class="btn btn-outline-secondary btn-sm mr-2"
+    <button type="button" class="btn btn-outline-secondary btn-sm mr-2"
             data-bind="click: cancel">Cancel</button>
+    <div class="float-right">
         <button type="button" class="btn btn-success btn-sm mr-2"
             data-bind="click: save">Save</button>
     </div>
@@ -749,9 +757,9 @@ div.overlay {
 
 <template id="individual-review-show-template">
     <div>
+        <code data-bind="text: getScore"></code>
         <span data-bind="text: getText"></span>
-        <span data-bind="text: score"></span>
-        <button type="button" class="btn btn-sm btn-outline-secondary"
+        <button type="button" class="btn btn-sm btn-outline-secondary ml-5"
             data-bind="click: edit">Edit</button>
         <button type="button" class="btn btn-sm btn-danger"
             data-bind="click: remove">Remove</button>
