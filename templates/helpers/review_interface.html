@@ -461,7 +461,7 @@ div.overlay {
             generic: this.generic(),
             location: this.location(),
             tag_id: tag_id,
-            score: this.score(),
+            score: (this.score() == null || this.score() === "") ? null : this.score(),
             author_id: this.authorId(),
             assignment_version: this.assignmentVersion(),
             submission_version: this.submissionVersion(),

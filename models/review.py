@@ -57,11 +57,15 @@ class Review(Base):
 
     @staticmethod
     def new(data):
+        if 'score' not in data or data['score'] in (None, '', 'null'):
+            score = None
+        else:
+            score = data['score']
         new_review = Review(comment=data['comment'],
                             location=data['location'],
                             generic=data['generic'].lower() == 'true',
                             tag_id=(data['tag_id']),
-                            score=int(data['score']),
+                            score=score,
                             submission_id=int(data['submission_id']),
                             author_id=int(data['author_id']),
                             assignment_version=data['assignment_version'],
