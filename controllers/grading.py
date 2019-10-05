@@ -11,6 +11,7 @@ from natsort import natsorted
 from flask import Blueprint, url_for, session, request, jsonify, g, render_template, redirect
 from werkzeug.utils import secure_filename
 
+from controllers.blockpy import lti_post_grade
 from controllers.pylti.common import LTIPostMessageException
 from main import app
 from models.course import Course
@@ -18,7 +19,7 @@ from models.course import Course
 from models.models import db
 from models.log import Log
 from models.review import Review
-from models.submission import Submission
+from models.submission import Submission, GradingStatuses
 from models.assignment import Assignment
 from models.assignment_group import AssignmentGroup
 
@@ -38,8 +39,40 @@ def grading_static(path):
 
 
 @blueprint_grading.route('/update_status', methods=['POST'])
-def update_status():
-    return "Success"
+@lti()
+def update_status(lti):
+    submission_id = maybe_int(request.values.get("submission_id"))
+    # TODO: Pretty sure multiple assignments are broken for grading
+    assignment_group_id = maybe_int(request.values.get('assignment_group_id'))
+    score = float(request.values.get('score', '0'))
+    correct = maybe_bool(request.values.get("correct"))
+    user, user_id = get_user()
+    submission = Submission.by_id(submission_id)
+    # Check resource exists
+    check_resource_exists(submission, "Submission", submission_id)
+    # Verify permissions
+    if submission.user_id != user_id and not user.is_grader(submission.course_id):
+        return ajax_failure("This is not your submission and you are not a grader in its course.")
+    # Do action
+    submission.update_submission(score, correct)
+    if assignment_group_id is None:
+        assignment_group_id = submission.assignment_group_id
+    error = "Generic LTI Failure - perhaps not logged into LTI session?"
+    try:
+        success = lti_post_grade(lti, submission, None, assignment_group_id,
+                                 submission.user_id, submission.course_id)
+    except LTIPostMessageException as e:
+        success = False
+        error = str(e)
+    if success:
+        make_log_entry(submission.assignment_id, submission.assignment_version,
+                       submission.course_id, user_id, "X-Submission.LMS", "answer.py", message=str(score))
+        return ajax_success({"submitted": True})
+    else:
+        submission.update_grading_status(GradingStatuses.FAILED)
+        make_log_entry(submission.assignment_id, submission.assignment_version,
+                       submission.course_id, user_id, "X-Submission.LMS.Failure", "answer.py", message=error)
+        return ajax_failure({"submitted": False, "message": error})
 
 
 class ReviewAPI(MethodView):

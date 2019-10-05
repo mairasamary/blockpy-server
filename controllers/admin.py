@@ -258,7 +258,7 @@ class ReviewView(RegularView):
 class SampleSubmissionView(RegularView):
     column_list = ('id', 'date_modified',
                    'owner_id', 'assignment_id', 'version'
-                                                'name', 'status', 'code',
+                                                'name', 'score', 'code',
                    'correct', 'forked_id', 'forked_version',
                    'version'
                    )
@@ -269,7 +269,7 @@ class SampleSubmissionView(RegularView):
 class SubmissionView(RegularView):
     column_list = ('id', 'date_modified',
                    'user_id', 'assignment_id', 'course_id',
-                   'code', 'correct', 'status',
+                   'code', 'correct', 'score',
                    "submission_status", "grading_status",
                    'version', 'url'
                    )

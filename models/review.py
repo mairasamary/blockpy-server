@@ -60,14 +60,14 @@ class Review(Base):
         new_review = Review(comment=data['comment'],
                             location=data['location'],
                             generic=data['generic'].lower() == 'true',
-                            tag_id=int(data['tag_id']),
+                            tag_id=(data['tag_id']),
                             score=int(data['score']),
                             submission_id=int(data['submission_id']),
                             author_id=int(data['author_id']),
                             assignment_version=data['assignment_version'],
                             submission_version=data['submission_version'],
                             version=0,
-                            forked_id=int(data['forked_id']),
+                            forked_id=(data['forked_id']),
                             forked_version=0) #TODO: Handle forked_version
         db.session.add(new_review)
         db.session.commit()

@@ -203,6 +203,12 @@ class Submission(Base):
         self.assignment_version = self.assignment.version
         db.session.commit()
 
+    def set_submission(self, score, correct):
+        self.score = score
+        self.correct = correct
+        self.grading_status = GradingStatuses.FULLY_GRADED
+        db.session.commit()
+
     def update_submission(self, score, correct):
         was_changed = self.score != score or self.correct != correct
         self.score = score

@@ -217,28 +217,32 @@ table.review-report td:last-child {
         // Data models
         this.submission = new SubmissionModel(params.submission);
         this.lookups = {metaReviews: {}, tags: {}};
-        params.metaReviews.forEach((review) => {
-            this.lookups.metaReviews[review.id] = review;
-        });
-        params.tags.forEach((tag) => {
-            this.lookups.tags[tag.id] = tag;
-        });
-
-        this.reviews = ko.observableArray(params.reviews.map(
-            review => {
-                review.parent = this;
-                return new ReviewModel(review, true);
-            }
-        ));
-        /*this.metaReviews = ko.observableArray(params.metaReviews.map(
+        this.metaReviews = ko.observableArray(params.metaReviews.map(
             review => {
                 this.lookups.metaReviews[review.id] = review;
                 return new ReviewModel(review, true)
             }
         ));
         this.tags = ko.observableArray(params.tags.map(
-            tag => new TagModel(tag)
-        ));*/
+            tag => {
+                this.lookups.tags[tag.id] = tag;
+                return new TagModel(tag);
+            }
+        ));
+
+        this.reviews = ko.observableArray(params.reviews.map(
+            review => {
+                review.parent = this;
+                if (review.tag_id != null) {
+                    review.inherits = "tag";
+                } else if (review.forked_id != null) {
+                    review.inherits = "review";
+                } else {
+                    review.inherits = "nothing";
+                }
+                return new ReviewModel(review, true);
+            }
+        ));
         this.isGrader = ko.observable(params.isGrader);
 
         // Dummy test data
@@ -255,7 +259,7 @@ table.review-report td:last-child {
         // Interface models
         this.ui = {};
         this.ui.totalScore = ko.pureComputed( ()=> {
-            let totalReviewScore = this.reviews().map(review => review.score())
+            let totalReviewScore = this.reviews().map(review => parseInt(review.score(), 10))
                                                .reduce( (score, total) => score+total, 0);
             return this.submission.score() + totalReviewScore;
         });
@@ -270,6 +274,8 @@ table.review-report td:last-child {
                     "FullyGraded" : "PendingManual";
                 $.post("{{ url_for('grading.update_status') }}", {
                     "submission_id": this.submission.id,
+                    "correct": this.submission.correct(),
+                    "score": this.ui.totalScore(),
                     "new_grading_status": newStatus,
                 }, (data) => {
                     this.submission.gradingStatus(newStatus);
@@ -329,13 +335,13 @@ table.review-report td:last-child {
         this.comment = ko.observable(params.comment);
         this.generic = ko.observable(params.generic);
         this.location = ko.observable(params.location);
-        this.tagId = ko.observable(params.tagId);
+        this.tagId = ko.observable(params.tag_id != null ? params.parent.lookups.tags[params.tag_id] : null);
         this.score = ko.observable(params.score);
-        this.authorId = ko.observable(params.authorId);
+        this.authorId = ko.observable(params.author_id);
         this.assignmentVersion = ko.observable(params.assignment_version);
         this.submissionVersion = ko.observable(params.submission_version);
         this.version = ko.observable(params.version);
-        this.forkedId = ko.observable(params.forked_id);
+        this.forkedId = ko.observable(params.forked_id != null ? params.parent.lookups.metaReviews[params.forked_id] : null);
         this.dateCreated = ko.observable(params.date_created);
 
         // Interface model
@@ -352,25 +358,27 @@ table.review-report td:last-child {
                 case "nothing": return this.comment();
                 case "tag":
                     if (this.comment()) {
-                        let tag = this.parent.lookups.tags[this.tagId()];
+                        let tagId = this.tagId() == null ? null : this.tagId().id;
+                        let tag = this.parent.lookups.tags[tagId];
                         if (tag != null) {
-                            return "<strong>"+tag.name()+"</strong> "+this.comment();
+                            return tag.name+"- "+this.comment();
                         } else {
                             return this.comment();
                         }
                     } else {
-                        return "<strong>"+tag.name()+"</strong>";
+                        return tag.name;
                     }
                 case "review":
                     if (this.comment()) {
-                        let metaReview = this.parent.lookups.metaReviews[this.tagId()];
+                        let metaReviewId = this.metaReview() == null ? null : this.metaReview().id();
+                        let metaReview = this.parent.lookups.tags[metaReviewId];
                         if (metaReview != null) {
-                            return "<strong>"+metaReview.comment()+"</strong> "+this.comment();
+                            return metaReview.comment()+"- "+this.comment();
                         } else {
                             return this.comment();
                         }
                     } else {
-                        return "<strong>"+metaReview.comment()+"</strong>";
+                        return metaReview.comment();
                     }
             }
             if (this.inherits() === "nothing") {
@@ -409,13 +417,13 @@ table.review-report td:last-child {
             comment: this.comment(),
             generic: this.generic(),
             location: this.location(),
-            tag_id: parseInt(this.tagId(), 10),
+            tag_id: this.tagId() != null ? parseInt(this.tagId().id(), 10) : null,
             score: this.score(),
             author_id: this.authorId(),
             assignment_version: this.assignmentVersion(),
             submission_version: this.submissionVersion(),
             version: this.version(),
-            forked_id: parseInt(this.forkedId(), 10),
+            forked_id: this.forkedId() != null ? parseInt(this.forkedId().id(), 10) : null,
             date_created: this.dateCreated()
         };
     };
@@ -508,7 +516,7 @@ table.review-report td:last-child {
         submission: {{ submission.encode_json()|tojson }},
         reviews: {{ submission.get_reviews()|tojson }},
         metaReviews: {{ submission.get_meta_reviews()|tojson }},
-        tags: {{ tags }},
+        tags: {{ tags|tojson }},
         isGrader: {{ is_grader|tojson }}
     });
 
@@ -571,12 +579,12 @@ table.review-report td:last-child {
 
 <!-- Controls -->
 <p class="col-lg-6 col-md-12">
-    <button type="button" class="btn btn-sm btn-success"
+    <button type="button" class="btn btn-sm btn-success" disabled="disabled"
         data-bind="text: ui.releaseFeedback.text, click: ui.releaseFeedback.submit"></button>
     Released feedback is visible to students.
 </p>
 <p class="col-lg-6 col-md-12">
-    <button type="button" class="btn btn-sm btn-info"
+    <button type="button" class="btn btn-sm btn-info" disabled="disabled"
         data-bind="text: ui.closeSubmission.text, click: ui.closeSubmission.submit"></button>
     Closed assignments prevent students from submitting.
 </p>
@@ -599,7 +607,7 @@ table.review-report td:last-child {
     </tr>
     <!-- ko foreach: reviews -->
     <tr>
-        <td data-bind="text: $data.comment, css: {'draft-comment': $data.state() === 'DRAFT'}"></td>
+        <td data-bind="text: $data.getText(), css: {'draft-comment': $data.state() === 'DRAFT'}"></td>
         <td data-bind="text: $data.score"></td>
     </tr>
     <!-- /ko -->
@@ -674,20 +682,16 @@ table.review-report td:last-child {
         data-bind="visible: inherits() =='tag'">
         <label class="mr-2" for="iret-tag">Tag:</label>
         <select class="custom-select" id="iret-tag"
-            data-bind="value: tagId">
-            <option value="0">Bad Functional Decomposition</option>
-            <option value="1">Function should not be printing</option>
-            <option value="2">Line is excessively long</option>
+            data-bind="value: tagId, options: $root.tags,
+                       optionsText: 'name'">
         </select>
     </div>
     <div class="form-inline mb-2"
         data-bind="visible: inherits() == 'review'">
         <label class="mr-2" for="iret-forked">Parent:</label>
         <select class="custom-select" id="iret-forked"
-            data-bind="value: forkedId">
-            <option value="0">Project 3- Bad Functional Decomposition</option>
-            <option value="1">Project 3- Bad Functional Decomposition</option>
-            <option value="2">Line is excessively long</option>
+            data-bind="value: forkedId, options: $root.metaReviews,
+                        optionsText: 'comment'">
         </select>
     </div>
     <div class="float-right">
