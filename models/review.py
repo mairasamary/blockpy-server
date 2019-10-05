@@ -15,11 +15,11 @@ class Review(Base):
     comment = Column(Text(), default="")
     location = Column(Text(), default="")
     generic = Column(Boolean(), default=False)
-    tag_id = Column(Integer(), ForeignKey('assignment_tag.id'))
+    tag_id = Column(Integer(), ForeignKey('assignment_tag.id'), nullable=True)
     # Should be treated as out of X/100
     score = Column(Integer(), default=0)
     # Tracking
-    submission_id = Column(Integer(), ForeignKey('submission.id'))
+    submission_id = Column(Integer(), ForeignKey('submission.id'), nullable=True)
     author_id = Column(Integer(), ForeignKey('user.id'))
     assignment_version = Column(Integer(), default=0)
     submission_version = Column(Integer(), default=0)
