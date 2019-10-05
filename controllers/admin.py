@@ -12,6 +12,7 @@ from flask_admin import Admin, BaseView, expose, form
 from flask_admin.contrib.sqla import ModelView
 from flask_admin.contrib.fileadmin import FileAdmin
 from flask import g, Blueprint, request, url_for, render_template, Response
+from flask_admin.contrib.sqla.ajax import QueryAjaxModelLoader
 from jinja2 import Markup
 
 # Import runestone
@@ -158,6 +159,7 @@ def _render_course_service(view, context, model, name):
 
 
 class CourseView(RegularView):
+    can_export = True
     '''name = Column(String(255))
     url = Column(String(255), default=None, nullable=True)
     owner_id = Column(Integer(), ForeignKey('user.id'))
@@ -175,7 +177,9 @@ class CourseView(RegularView):
     column_filters = ('name', 'date_modified', 'url', 'term', 'owner_id', 'service')
     column_formatters = {'service': _render_course_service}
 
+
 class AssignmentView(RegularView):
+    can_export = True
     column_list = ('id', 'date_modified',
                    'owner_id', 'course_id',
                    'name',  #"url", # 'type', #'body',
@@ -200,6 +204,7 @@ class AssignmentView(RegularView):
 
 
 class AssignmentGroupView(RegularView):
+    can_export = True
     def _list_assignments(view, context, model, name):
         assignments = model.get_assignments()
         if assignments and assignments[0].type == 'maze':
@@ -215,6 +220,7 @@ class AssignmentGroupView(RegularView):
 
 
 class LogView(RegularView):
+    can_export=True
     column_list = ('id', 'date_modified',
                    'course_id', 'assignment_id', 'subject_id',
                    'event_type', 'category',
@@ -225,6 +231,7 @@ class LogView(RegularView):
 
 
 class AssignmentGroupMembershipView(RegularView):
+    can_export = True
     column_list = ('id', 'date_modified',
                    'assignment_group_id', 'assignment_id',
                    'position'
@@ -236,6 +243,7 @@ class AssignmentGroupMembershipView(RegularView):
 
 
 class AssignmentTagView(RegularView):
+    can_export = True
     column_list = ('id', 'date_modified',
                    'owner_id', 'course_id',
                    'name', 'kind', 'description',
@@ -246,16 +254,22 @@ class AssignmentTagView(RegularView):
 
 
 class ReviewView(RegularView):
+    can_export = True
     column_list = ('id', 'date_modified',
                    'comment', 'location', 'generic',
                    'tag_id', 'score', 'submission_id',
                    'author_id', 'assignment_version',
                    'submission_version', 'version',
                    'forked_id', 'forked_version')
-    column_formatters = {'author_id': _editable(User, 'id')}
+    column_formatters = {'author_id': _editable(User, 'id'), 'submission_id': _editable(Submission, 'id')}
+
+    form_ajax_refs = {
+        'submission': QueryAjaxModelLoader('submission', db.session, Submission, fields=['id'], page_size=10)
+    }
 
 
 class SampleSubmissionView(RegularView):
+    can_export = True
     column_list = ('id', 'date_modified',
                    'owner_id', 'assignment_id', 'version'
                                                 'name', 'score', 'code',
@@ -267,6 +281,7 @@ class SampleSubmissionView(RegularView):
 
 
 class SubmissionView(RegularView):
+    can_export = True
     column_list = ('id', 'date_modified',
                    'user_id', 'assignment_id', 'course_id',
                    'code', 'correct', 'score',

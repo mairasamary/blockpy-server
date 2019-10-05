@@ -28,7 +28,7 @@ class Review(Base):
     forked_version = Column(Integer(), nullable=True)
 
     tag = db.relationship("AssignmentTag")
-    #ssubmission = db.relationship("Submission")
+    submission = db.relationship("Submission")
     author = db.relationship("User")
     forked = db.relationship("Review")
 
