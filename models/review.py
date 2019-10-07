@@ -61,7 +61,7 @@ class Review(Base):
                             location=data['location'],
                             generic=data['generic'].lower() == 'true',
                             tag_id=(data['tag_id']),
-                            score=score,
+                            score=data['score'],
                             submission_id=int(data['submission_id']),
                             author_id=int(data['author_id']),
                             assignment_version=data['assignment_version'],
