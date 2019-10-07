@@ -117,6 +117,8 @@ class ReviewAPI(MethodView):
         review_data['author_id'] = user_id
         review_data['submission_version'] = submission.version
         review_data['assignment_version'] = submission.assignment_version
+        if 'score' not in review_data or review_data['score'] in (None, '', 'null'):
+            review_data['score'] = None
         new_review = Review.new(review_data)
         return ajax_success(dict(review=new_review.encode_json()))
 
@@ -129,6 +131,8 @@ class ReviewAPI(MethodView):
         require_course_grader(user, submission.course_id)
         review_data = request.json.copy()
         del review_data['id']
+        if 'score' not in review_data or review_data['score'] in (None, '', 'null'):
+            review_data['score'] = None
         review_data['author_id'] = user_id
         edited_review = review.edit(review_data)
         return ajax_success(dict(review=edited_review.encode_json()))

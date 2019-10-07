@@ -17,7 +17,7 @@ class Review(Base):
     generic = Column(Boolean(), default=False)
     tag_id = Column(Integer(), ForeignKey('assignment_tag.id'), nullable=True)
     # Should be treated as out of X/100
-    score = Column(Integer(), default=0)
+    score = Column(Integer(), default=0, nullable=True)
     # Tracking
     submission_id = Column(Integer(), ForeignKey('submission.id'), nullable=True)
     author_id = Column(Integer(), ForeignKey('user.id'))
@@ -57,10 +57,6 @@ class Review(Base):
 
     @staticmethod
     def new(data):
-        if 'score' not in data or data['score'] in (None, '', 'null'):
-            score = None
-        else:
-            score = data['score']
         new_review = Review(comment=data['comment'],
                             location=data['location'],
                             generic=data['generic'].lower() == 'true',
