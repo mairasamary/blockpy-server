@@ -133,6 +133,7 @@ class ReviewAPI(MethodView):
         del review_data['id']
         if 'score' not in review_data or review_data['score'] in (None, '', 'null'):
             review_data['score'] = None
+        print(review_data['score'], type(review_data['score']), repr(review_data['score']))
         review_data['author_id'] = user_id
         edited_review = review.edit(review_data)
         return ajax_success(dict(review=edited_review.encode_json()))
