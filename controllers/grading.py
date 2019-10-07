@@ -75,6 +75,12 @@ def update_status(lti):
         return ajax_failure({"submitted": False, "message": error})
 
 
+def fix_nullables(review_data):
+    for nullable in ['score', 'tag_id', 'forked_id', 'submission_id']:
+        if nullable not in review_data or review_data[nullable] in (None, '', 'null'):
+            review_data[nullable] = None
+
+
 class ReviewAPI(MethodView):
 
     def get(self, review_id):
@@ -117,8 +123,7 @@ class ReviewAPI(MethodView):
         review_data['author_id'] = user_id
         review_data['submission_version'] = submission.version
         review_data['assignment_version'] = submission.assignment_version
-        if 'score' not in review_data or review_data['score'] in (None, '', 'null'):
-            review_data['score'] = None
+        fix_nullables(review_data)
         new_review = Review.new(review_data)
         return ajax_success(dict(review=new_review.encode_json()))
 
@@ -131,9 +136,7 @@ class ReviewAPI(MethodView):
         require_course_grader(user, submission.course_id)
         review_data = request.json.copy()
         del review_data['id']
-        if 'score' not in review_data or review_data['score'] in (None, '', 'null'):
-            review_data['score'] = None
-        print(review_data['score'], type(review_data['score']), repr(review_data['score']))
+        fix_nullables(review_data)
         review_data['author_id'] = user_id
         edited_review = review.edit(review_data)
         return ajax_success(dict(review=edited_review.encode_json()))
