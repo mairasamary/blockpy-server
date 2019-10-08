@@ -29,6 +29,11 @@ span.line-review-quick-button:active {
     color: black;
 }
 
+.individual-review-show-box {
+    padding: 7px;
+    border-bottom: 1px solid lightgray;
+}
+
 .draft-comment {
     font-style: italic;
 }
@@ -382,6 +387,17 @@ div.overlay {
         }
         this.inherits = ko.observable(params.inherits);
 
+        this.getScoreText = ko.pureComputed(() => {
+            let score = this.getScore();
+            if (score > 0) {
+                return "+"+score;
+            } else if (score == null) {
+                return "";
+            } else {
+                return ""+score;
+            }
+        });
+
         this.getScore = ko.pureComputed(() => {
             let score = this.score();
             if (score === null || score === "") {
@@ -391,13 +407,7 @@ div.overlay {
                     score = metaReview.score;
                 }
             }
-            if (score > 0) {
-                return "+"+score;
-            } else if (score == null) {
-                return "";
-            } else {
-                return ""+score;
-            }
+            return score;
         });
 
         this.getText = ko.pureComputed(() => {
@@ -666,7 +676,7 @@ div.overlay {
     <!-- ko foreach: reviews -->
     <tr>
         <td data-bind="text: $data.getText(), css: {'draft-comment': $data.state() === 'DRAFT'}"></td>
-        <td data-bind="text: $data.getScore()"></td>
+        <td data-bind="text: $data.getScoreText()"></td>
     </tr>
     <!-- /ko -->
     <tr>
@@ -767,13 +777,13 @@ div.overlay {
 </template>
 
 <template id="individual-review-show-template">
-    <div>
+    <div class="individual-review-show-box">
         <code data-bind="text: getScore"></code>
         <span data-bind="text: getText"></span>
-        <button type="button" class="btn btn-sm btn-outline-secondary ml-5"
-            data-bind="click: edit">Edit</button>
-        <button type="button" class="btn btn-sm btn-danger"
+        <button type="button" class="btn btn-sm btn-danger float-right"
             data-bind="click: remove">Remove</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary mr-2 float-right"
+            data-bind="click: edit">Edit</button>
     </div>
 </template>
 
@@ -790,7 +800,7 @@ div.overlay {
         <div class="arrow"></div>
         <div class="popover-body popover-header-sm">
         <!-- ko if: !review().isEditing() -->
-            <code data-bind="text: review().getScore()"></code>
+            <code data-bind="text: review().getScoreText()"></code>
             <span data-bind="text: review().getText()"></span>
             <!-- ko if: $parent.isGrader -->
             <span class="fas fa-trash float-right popover-control"
