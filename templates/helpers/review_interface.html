@@ -292,7 +292,8 @@ div.overlay {
         // Interface models
         this.ui = {};
         this.ui.totalScore = ko.pureComputed( ()=> {
-            let totalReviewScore = this.reviews().map(review => parseInt(review.getScore(), 10))
+            let totalReviewScore = this.reviews().map(review =>
+                review.getScore() ? parseInt(review.getScore(), 10) : 0)
                                                .reduce( (score, total) => score+total, 0);
             return this.submission.score() + totalReviewScore;
         });
@@ -386,6 +387,16 @@ div.overlay {
             this.state = ko.observable(params.state);
         }
         this.inherits = ko.observable(params.inherits);
+        this.inherits.subscribe((changed) => {
+            if (changed === "review") {
+                this.tagId(null);
+            } else if (changed === "tag") {
+                this.forkedId(null);
+            } else {
+                this.tagId(null);
+                this.forkedId(null);
+            }
+        });
 
         this.getScoreText = ko.pureComputed(() => {
             let score = this.getScore();
@@ -740,22 +751,24 @@ div.overlay {
             <option value="review">Review</option>
         </select>
     </div>
-    <div class="form-inline mb-2"
-        data-bind="visible: inherits() =='tag'">
+    <!-- ko if: inherits() == 'tag' -->
+    <div class="form-inline mb-2">
         <label class="mr-2" for="iret-tag">Tag:</label>
         <select class="custom-select" id="iret-tag"
-            data-bind="value: tagId, options: $root.tags,
+            data-bind="value: tagId, options: $root.tags, valueAllowUnset: true,
                        optionsText: 'name'">
         </select>
     </div>
-    <div class="form-inline mb-2"
-        data-bind="visible: inherits() == 'review'">
+    <!-- /ko -->
+    <!-- ko if: inherits() == 'review' -->
+    <div class="form-inline mb-2">
         <label class="mr-2" for="iret-forked">Parent:</label>
         <select class="custom-select" id="iret-forked"
-            data-bind="value: forkedId, options: $root.metaReviews,
+            data-bind="value: forkedId, options: $root.metaReviews, valueAllowUnset: true,
                         optionsText: 'comment'">
         </select>
     </div>
+    <!-- /ko -->
     <div class="mb-2">
         <label class="mr-2" for="iret-comment">Additional Comment:</label>
         <input data-bind="value: comment" class="form-control form-control-sm" id="iret-comment"/>
