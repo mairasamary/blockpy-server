@@ -450,10 +450,21 @@ div.overlay {
     };
 
     ReviewModel.prototype.serialized = function() {
-        let tag_id = this.tagId() != null ? parseInt(this.tagId().id, 10) : null;
-        let forked_id = this.forkedId() != null ? parseInt(this.forkedId().id, 10) : null;
-        if (tag_id && forked_id) {
-            tag_id = null;
+        let tag_id, forked_id;
+        tag_id = this.tagId() != null ? parseInt(this.tagId().id, 10) : null;
+            forked_id = this.forkedId() != null ? parseInt(this.forkedId().id, 10) : null;
+            if (tag_id && forked_id) {
+                tag_id = null;
+            }
+        if (this.inherits() !== undefined) {
+            if (this.inherits() === 'tag') {
+                forked_id = null;
+            } else if (this.inherits() ==='review') {
+                tag_id = null;
+            } else {
+                forked_id = null;
+                tag_id = null;
+            }
         }
         return {
             id: this.id(),
