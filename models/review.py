@@ -17,7 +17,7 @@ class Review(Base):
     generic = Column(Boolean(), default=False)
     tag_id = Column(Integer(), ForeignKey('assignment_tag.id'), nullable=True)
     # Should be treated as out of X/100
-    score = Column(Integer(), default=0, nullable=True)
+    score = Column(Integer(), nullable=True)
     # Tracking
     submission_id = Column(Integer(), ForeignKey('submission.id'), nullable=True)
     author_id = Column(Integer(), ForeignKey('user.id'))
