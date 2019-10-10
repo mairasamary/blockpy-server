@@ -100,3 +100,15 @@ class Review(Base):
     @staticmethod
     def get_generic_reviews():
         return Review.query.filter_by(generic=True).all()
+
+    def get_actual_score(self):
+        if self.score is not None:
+            return self.score
+        elif self.forked_id is None:
+            return 0
+        else:
+            forked = Review.query.get(self.forked_id)
+            if forked is None:
+                return 0
+            else:
+                return forked.get_actual_score()

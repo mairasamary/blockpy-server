@@ -294,8 +294,8 @@ def lti_post_grade(lti, submission, lis_result_sourcedid, assignment_group_id, u
     session['lis_result_sourcedid'] = lis_result_sourcedid
     if lis_result_sourcedid and lti:
         lti.post_grade(total_score, view_url, endpoint=lis_result_sourcedid, url=True)
-        return True
-    return False
+        return True, total_score
+    return False, total_score
 
 
 @blueprint_blockpy.route('/update_submission/', methods=['GET', 'POST'])
@@ -330,7 +330,7 @@ def update_submission(lti, lti_exception=None):
         submission.save_block_image(image)
         error = "Generic LTI Failure - perhaps not logged into LTI session?"
         try:
-            success = lti_post_grade(lti, submission, lis_result_sourcedid, assignment_group_id,
+            success, score = lti_post_grade(lti, submission, lis_result_sourcedid, assignment_group_id,
                                      submission.user_id, submission.course_id)
         except LTIPostMessageException as e:
             success = False

@@ -38,42 +38,73 @@ def grading_static(path):
     return app.send_static_file(path)
 
 
-@blueprint_grading.route('/update_status', methods=['POST'])
+@blueprint_grading.route('/update_grading_status', methods=['POST'])
 @lti()
-def update_status(lti):
+def update_grading_status(lti, lti_exception=None):
     submission_id = maybe_int(request.values.get("submission_id"))
     # TODO: Pretty sure multiple assignments are broken for grading
     assignment_group_id = maybe_int(request.values.get('assignment_group_id'))
-    score = float(request.values.get('score', '0'))
-    correct = maybe_bool(request.values.get("correct"))
+    new_grading_status = request.values.get("new_grading_status")
     user, user_id = get_user()
     submission = Submission.by_id(submission_id)
     # Check resource exists
     check_resource_exists(submission, "Submission", submission_id)
     # Verify permissions
-    if submission.user_id != user_id and not user.is_grader(submission.course_id):
+    if not user.is_grader(submission.course_id):
         return ajax_failure("This is not your submission and you are not a grader in its course.")
+    submission.update_grading_status(new_grading_status)
+    if submission.grading_status != GradingStatuses.FULLY_GRADED:
+        return ajax_success({'new_status': new_grading_status})
     # Do action
-    submission.update_submission(score, correct)
     if assignment_group_id is None:
         assignment_group_id = submission.assignment_group_id
     error = "Generic LTI Failure - perhaps not logged into LTI session?"
     try:
-        success = lti_post_grade(lti, submission, None, assignment_group_id,
-                                 submission.user_id, submission.course_id)
+        success, score = lti_post_grade(lti, submission, None, assignment_group_id,
+                                        submission.user_id, submission.course_id)
     except LTIPostMessageException as e:
         success = False
         error = str(e)
     if success:
         make_log_entry(submission.assignment_id, submission.assignment_version,
                        submission.course_id, user_id, "X-Submission.LMS", "answer.py", message=str(score))
-        return ajax_success({"submitted": True})
+        return ajax_success({"submitted": True, "new_status": "FullyGraded"})
     else:
         submission.update_grading_status(GradingStatuses.FAILED)
         make_log_entry(submission.assignment_id, submission.assignment_version,
                        submission.course_id, user_id, "X-Submission.LMS.Failure", "answer.py", message=error)
-        return ajax_failure({"submitted": False, "message": error})
+        return ajax_failure({"submitted": False, "message": error, "new_status": "Failed"})
 
+
+@blueprint_grading.route('/update_submission_status', methods=['POST'])
+def update_submission_status():
+    submission_id = maybe_int(request.values.get("submission_id"))
+    new_submission_status = request.values.get("new_submission_status")
+    user, user_id = get_user()
+    submission = Submission.by_id(submission_id)
+    # Check resource exists
+    check_resource_exists(submission, "Submission", submission_id)
+    # Verify permissions
+    if not user.is_grader(submission.course_id):
+        return ajax_failure("You are not a grader in this submission's course.")
+    submission.update_submission_status(new_submission_status)
+    return ajax_success({'new_status': new_submission_status})
+
+
+@blueprint_grading.route('/mass_close_assignment', methods=['GET', 'POST'])
+def mass_close_assignment():
+    assignment_id = maybe_int(request.values.get("assignment_id"))
+    course_id = maybe_int(request.values.get("course_id"))
+    new_submission_status = request.values.get("new_submission_status")
+    user, user_id = get_user()
+    submissions = Submission.by_assignment(assignment_id=assignment_id, course_id=course_id)
+    # Verify permissions
+    if not user.is_grader(course_id):
+        return ajax_failure("You are not a grader in this course.")
+    # Do action
+    for submission in submissions:
+        submission.update_submission_status(new_submission_status)
+    return ajax_success({'new_status': new_submission_status})
 
 def fix_nullables(review_data):
     for nullable in ['score', 'tag_id', 'forked_id', 'submission_id']:
@@ -158,4 +189,3 @@ blueprint_grading.add_url_rule('/review/', defaults={'review_id': None},
 blueprint_grading.add_url_rule('/review/', view_func=review_view, methods=['POST'])
 blueprint_grading.add_url_rule('/review/<int:review_id>', view_func=review_view,
                                methods=['GET', 'PUT', 'DELETE'])
-
