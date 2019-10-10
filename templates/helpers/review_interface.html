@@ -717,8 +717,9 @@ div.overlay {
 {% if is_grader and not session['is_lti_active'] or g.course.id != submission.course_id %}
     <!-- ko if: canEditFeedback -->
     <div class="alert alert-warning" role="alert">
-        You are not in an LTI session for this course.
-        Launch an LTI session by opening the dashboard.
+        You are not in a grading LTI session for this course.
+        Launch an LTI session by opening any random BlockPy question.
+        This will store a cookie that lets Canvas recognize that you can grade questions.
     </div>
     <!-- /ko -->
 {% endif %}

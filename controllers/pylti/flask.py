@@ -283,6 +283,7 @@ class LTI(object):
             ret = post_message(self._consumers(), self.key,
                                self.response_url, xml)
             if not ret:
+                log.error("Post Message Failed")
                 raise LTIPostMessageException("Post Message Failed")
             return True
 
