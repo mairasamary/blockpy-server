@@ -58,9 +58,9 @@
 {% if is_grader %}
     <div><small>
 
-        Assignment: {{ submission.assignment_id }},
-        User: {{ submission.user_id }},
-        Course: {{ submission.course_id }}
+        Assignment: {{ submission.assignment_id }} ({{ submission.assignment.name }}),
+        User: {{ submission.user_id }} ({{ submission.user.name() }}),
+        Course: {{ submission.course_id }} ({{ submission.course.name }})
 
     </small></div>
 
