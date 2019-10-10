@@ -771,6 +771,7 @@ div.overlay {
     </tr>
     <!-- ko foreach: ui.lineReviews -->
     <tr>
+        <!-- TODO: Markdown -->
         <td data-bind="text: $data.getText(), css: {'draft-comment': $data.state() === 'DRAFT'}"></td>
         <td data-bind="text: $data.getScoreText()"></td>
     </tr>
