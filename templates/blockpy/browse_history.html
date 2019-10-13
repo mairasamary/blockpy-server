@@ -46,6 +46,9 @@ HISTORY = [
             "selected": ko.observable(HISTORY[index]),
             "history": HISTORY
         };
+        historyModel.selected.subscribe((newValue) => {
+            index = HISTORY.indexOf(newValue);
+        });
         historyModel.mostRecent = function() {
             index = 0;
             historyModel.selected(HISTORY[index]);
