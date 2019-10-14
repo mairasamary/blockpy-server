@@ -34568,17 +34568,17 @@ Sk.builtin.type = function (name, bases, dict) {
         };
 
         klass.prototype.tp$getitem = function (key, canSuspend) {
-            var getf = this.tp$getattr(Sk.builtin.str.$getitem, canSuspend), r;
+            var getf = this.__class__.tp$getattr(Sk.builtin.str.$getitem, canSuspend), r;
             if (getf !== undefined) {
-                r = Sk.misceval.applyOrSuspend(getf, undefined, undefined, undefined, [key]);
+                r = Sk.misceval.applyOrSuspend(getf, undefined, undefined, undefined, [this, key]);
                 return canSuspend ? r : Sk.misceval.retryOptionalSuspensionOrThrow(r);
             }
             throw new Sk.builtin.TypeError("'" + Sk.abstr.typeName(this) + "' object does not support indexing");
         };
         klass.prototype.tp$setitem = function (key, value, canSuspend) {
-            var setf = this.tp$getattr(Sk.builtin.str.$setitem, canSuspend), r;
+            var setf = this.__class__.tp$getattr(Sk.builtin.str.$setitem, canSuspend), r;
             if (setf !== undefined) {
-                r = Sk.misceval.applyOrSuspend(setf, undefined, undefined, undefined, [key, value]);
+                r = Sk.misceval.applyOrSuspend(setf, undefined, undefined, undefined, [this, key, value]);
                 return canSuspend ? r : Sk.misceval.retryOptionalSuspensionOrThrow(r);
             }
             throw new Sk.builtin.TypeError("'" + Sk.abstr.typeName(this) + "' object does not support item assignment");
@@ -35084,7 +35084,7 @@ var Sk = {}; // jshint ignore:line
 
 Sk.build = {
     githash: "bb6ff875875cf70c8362e922413ff3ddd0ed560f",
-    date: "2019-10-13T01:07:13.131Z"
+    date: "2019-10-13T04:45:48.564Z"
 };
 
 /**
