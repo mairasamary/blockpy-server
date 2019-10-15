@@ -330,6 +330,7 @@ def update_submission(lti, lti_exception=None):
     if assignment_group_id is None:
         assignment_group_id = submission.assignment_group_id
     # TODO: Document that we currently only pass back grade if it changed
+    # TODO: If failure on previous submission grading, then retry
     if was_changed or force_update:
         submission.save_block_image(image)
         error = "Generic LTI Failure - perhaps not logged into LTI session?"

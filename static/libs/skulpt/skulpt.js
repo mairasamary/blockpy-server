@@ -11653,9 +11653,9 @@ Sk.builtin.len = function len (item) {
 
     if (item.tp$length) {
         if (Sk.builtin.checkFunction(item)) {
-            special = Sk.abstr.lookupSpecial(item, Sk.builtin.str.$len);
+            special = Sk.abstr.lookupSpecial(item.__class__, Sk.builtin.str.$len);
             if (special != null) {
-                return Sk.misceval.callsimArray(special, [item]);
+                return Sk.misceval.callsimArray(special, [this, item]);
             } else {
                 if (Sk.__future__.exceptions) {
                     throw new Sk.builtin.TypeError("object of type '" + Sk.abstr.typeName(item) + "' has no len()");
@@ -35084,7 +35084,7 @@ var Sk = {}; // jshint ignore:line
 
 Sk.build = {
     githash: "bb6ff875875cf70c8362e922413ff3ddd0ed560f",
-    date: "2019-10-13T04:45:48.564Z"
+    date: "2019-10-15T02:26:42.667Z"
 };
 
 /**
