@@ -34525,11 +34525,12 @@ Sk.builtin.type = function (name, bases, dict) {
             return canSuspend ? r : Sk.misceval.retryOptionalSuspensionOrThrow(r);
         };
         klass.prototype.tp$call = function (args, kw) {
-            return Sk.misceval.chain(this.tp$getattr(Sk.builtin.str.$call, true), function(callf) {
+            var that = this;
+            return Sk.misceval.chain(this.__class__.tp$getattr(Sk.builtin.str.$call, true), function(callf) {
                 if (callf === undefined) {
                     throw new Sk.builtin.TypeError("'" + Sk.abstr.typeName(this) + "' object is not callable");
                 }
-                return Sk.misceval.applyOrSuspend(callf, undefined, undefined, kw, args);
+                return Sk.misceval.applyOrSuspend(callf, undefined, undefined, kw, [that].concat(args));
             });
         };
         klass.prototype.tp$iter = function () {
@@ -35084,7 +35085,7 @@ var Sk = {}; // jshint ignore:line
 
 Sk.build = {
     githash: "bb6ff875875cf70c8362e922413ff3ddd0ed560f",
-    date: "2019-10-15T02:26:42.667Z"
+    date: "2019-10-15T02:42:28.101Z"
 };
 
 /**
