@@ -292,6 +292,9 @@ class SubmissionView(RegularView):
                       'date_modified', 'correct', 'submission_status', 'grading_status')
     column_formatters = {'code': _render_code, 'endpoint': _smaller,
                          'version': _render_version}
+    column_formatters_export = None
+    column_type_formatters_export = None
+    column_export_list = None
 
 
 admin.add_view(UserView(User, db.session, category='Tables'))
