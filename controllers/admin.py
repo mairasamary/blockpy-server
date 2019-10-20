@@ -293,7 +293,6 @@ class SubmissionView(RegularView):
     column_formatters = {'code': _render_code, 'endpoint': _smaller,
                          'version': _render_version}
     column_formatters_export = None
-    column_type_formatters_export = None
     column_export_list = None
 
 

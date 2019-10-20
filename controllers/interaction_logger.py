@@ -1,6 +1,7 @@
 import logging
 import logging.config
 
+
 def setup_logging(app):
     error_log_path = app.config['ERROR_FILE_PATH']
     event_log_path = app.config['EVENTS_FILE_PATH']
