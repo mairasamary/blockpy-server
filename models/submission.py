@@ -130,7 +130,8 @@ class Submission(Base):
         return (db.session.query(Submission, models.User, models.Assignment)
                 .filter(or_(Submission.submission_status == SubmissionStatuses.SUBMITTED,
                             Submission.submission_status == SubmissionStatuses.COMPLETED))
-                .filter(Submission.grading_status == GradingStatuses.PENDING_MANUAL)
+                .filter(or_(Submission.grading_status == GradingStatuses.PENDING_MANUAL,
+                            Submission.grading_status == GradingStatuses.NOT_READY))
                 .filter(Submission.user_id == models.User.id)
                 .filter(Submission.assignment_id == models.Assignment.id)
                 .filter(models.Assignment.reviewed)
