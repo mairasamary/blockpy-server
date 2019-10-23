@@ -4,7 +4,7 @@ import time
 import base64
 
 from flask import url_for
-from sqlalchemy import Column, Text, Integer, Boolean, ForeignKey, Index, func, String
+from sqlalchemy import Column, Text, Integer, Boolean, ForeignKey, Index, func, String, or_
 from sqlalchemy.orm import relationship
 
 from main import app
@@ -128,7 +128,9 @@ class Submission(Base):
     @staticmethod
     def by_pending_review(course_id):
         return (db.session.query(Submission, models.User, models.Assignment)
-                .filter(Submission.submission_status == SubmissionStatuses.SUBMITTED)
+                .filter(or_(Submission.submission_status == SubmissionStatuses.SUBMITTED,
+                            Submission.submission_status == SubmissionStatuses.COMPLETED))
+                .filter(Submission.grading_status == GradingStatuses.PENDING_MANUAL)
                 .filter(Submission.user_id == models.User.id)
                 .filter(Submission.assignment_id == models.Assignment.id)
                 .filter(models.Assignment.reviewed)
