@@ -65,7 +65,9 @@ tr.hover-remove-rows button.remove-button {
     
     <tr class="table-active hover-remove-rows">
         <td class="col-md-12 col-sm-12 col-xs-12" colspan="2">
-            <strong>{{ group.name }}</strong>
+            <a href="{{ url_for('assignments.load', assignment_group_id=group.id, course_id=course_id) }}">
+                <strong>{{ group.name }}</strong>
+            </a>
         </td>
         <td>
             <a href="{{ url_for('assignment_group.export', assignment_group_id=group.id) }}">
