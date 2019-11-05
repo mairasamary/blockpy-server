@@ -12802,52 +12802,60 @@ var extractDict = function(obj) {
 
 Sk.builtin.exec = function execf(pythonCode, new_globals) {
     Sk.builtin.pyCheckArgs("exec", arguments, 1, 2);
-    var backupRG = Sk.retainGlobals;
-    Sk.retainGlobals = true;
-    var filename = "<string>";
-    if (pythonCode instanceof Sk.builtin.code) {
-        filename = pythonCode.filename;
-        pythonCode = pythonCode.source;
-    } else {
-        pythonCode = Sk.ffi.remapToJs(pythonCode);
-    }
-    var new_globals_copy = extractDict(new_globals);
-    if (!new_globals_copy.__file__) {
-        new_globals_copy.__file__ = Sk.ffi.remapToPy(filename);
-    }
-    if (!new_globals_copy.__name__) {
-        new_globals_copy.__name__ = Sk.ffi.remapToPy(filename);
-    }
-    if (!new_globals_copy.__package__) {
-        new_globals_copy.__package__ = Sk.builtin.none.none$;
-    }
-    var backupGlobals = Sk.globals;
-    Sk.globals = new_globals_copy; // Possibly copy over some "default" ones?
-    var name = filename.endsWith(".py") ? filename.slice(0, -3) : filename;
-    var pyName = Sk.builtin.str(name);
-    var sysModules = Sk.getCurrentSysModules();
-    var modname = name;
-    var caughtError = null;
-    try {
-        Sk.importModuleInternal_(name, false, modname, pythonCode, undefined, false, true)
-    } catch (e) {
-        caughtError = e;
-    }
-    Sk.globals = backupGlobals;
-    // Only try to delete if we succeeded in creating it!
-    if (sysModules.mp$lookup(pyName)) {
-        Sk.getCurrentSysModules().mp$del_subscript(pyName);
-    }
-    for (var key in new_globals_copy) {
-        if (new_globals_copy.hasOwnProperty(key)) {
-            var pykey = Sk.ffi.remapToPy(Sk.unfixReserved(key));
-            Sk.builtin.dict.prototype.mp$ass_subscript.call(new_globals, pykey, new_globals_copy[key]);
+
+    var prom = new Promise(function(resolve, reject) {
+        var backupRG = Sk.retainGlobals;
+        Sk.retainGlobals = true;
+        var filename = "<string>";
+        if (pythonCode instanceof Sk.builtin.code) {
+            filename = pythonCode.filename;
+            pythonCode = pythonCode.source;
+        } else {
+            pythonCode = Sk.ffi.remapToJs(pythonCode);
         }
-    }
-    Sk.retainGlobals = backupRG;
-    if (caughtError !== null) {
-        throw caughtError;
-    }
+        var new_globals_copy = extractDict(new_globals);
+        if (!new_globals_copy.__file__) {
+            new_globals_copy.__file__ = Sk.ffi.remapToPy(filename);
+        }
+        if (!new_globals_copy.__name__) {
+            new_globals_copy.__name__ = Sk.ffi.remapToPy(filename);
+        }
+        if (!new_globals_copy.__package__) {
+            new_globals_copy.__package__ = Sk.builtin.none.none$;
+        }
+        var backupGlobals = Sk.globals;
+        Sk.globals = new_globals_copy; // Possibly copy over some "default" ones?
+        var name = filename.endsWith(".py") ? filename.slice(0, -3) : filename;
+        var pyName = Sk.builtin.str(name);
+        var sysModules = Sk.getCurrentSysModules();
+        var modname = name;
+        var caughtError = null;
+        try {
+            Sk.importModuleInternal_(name, false, modname, pythonCode, undefined, false, true);
+        } catch (e) {
+            console.log("SYSTEMATIC ERROR");
+            caughtError = e;
+        }
+        console.log("FINISHED EVAL");
+        Sk.globals = backupGlobals;
+        // Only try to delete if we succeeded in creating it!
+        if (sysModules.mp$lookup(pyName)) {
+            Sk.getCurrentSysModules().mp$del_subscript(pyName);
+        }
+        for (var key in new_globals_copy) {
+            if (new_globals_copy.hasOwnProperty(key)) {
+                var pykey = Sk.ffi.remapToPy(Sk.unfixReserved(key));
+                Sk.builtin.dict.prototype.mp$ass_subscript.call(new_globals, pykey, new_globals_copy[key]);
+            }
+        }
+        Sk.retainGlobals = backupRG;
+        if (caughtError !== null) {
+            throw caughtError;
+        }
+        resolve();
+    });
+
+    return Sk.misceval.promiseToSuspension(prom);
 };
 
 Sk.builtin.frozenset = function frozenset () {
@@ -18594,7 +18602,6 @@ Sk.builtin.BaseException.prototype.tp$str = function () {
     if (this.traceback.length !== 0) {
         var lineno = this.traceback[0].lineno;
         ret += " on line ";
-        console.log(lineno);
         if (Sk.builtin.checkInt(lineno)) {
             ret += lineno.v !== undefined ? lineno.v : lineno;
         } else {
@@ -22178,6 +22185,7 @@ Sk.importModuleInternal_ = function (name, dumpJS, modname, suppliedPyBody, rela
             parentModName ? new Sk.builtin.str(absolutePackagePrefix + parentModName) :
             relativePackageName ? relativePackageName : Sk.builtin.none.none$
         };
+        //module["$d"]["__dict__"] = module["$d"];
         if (co.packagePath) {
             module["$d"]["__path__"] = new Sk.builtin.tuple([new Sk.builtin.str(co.packagePath)]);
         }
@@ -27007,6 +27015,7 @@ Sk.builtin.module = function module (name) {
         return new Sk.builtin.module(name);
     }
     this["$d"] = {__name__: name};
+    this["$d"]["__dict__"] = this["$d"];
     return this;
 };
 Sk.exportSymbol("Sk.builtin.module", Sk.builtin.module);
@@ -35084,8 +35093,8 @@ Sk.builtin.super_.__doc__ = new Sk.builtin.str(
 var Sk = {}; // jshint ignore:line
 
 Sk.build = {
-    githash: "c4967af8d02c280e4fe0a88a4b5d4a229c158d43",
-    date: "2019-11-04T04:30:06.757Z"
+    githash: "669a5bf2602c8165ee6493762e1e5aa0a8b9cd06",
+    date: "2019-11-05T04:18:58.092Z"
 };
 
 /**
