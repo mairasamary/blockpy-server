@@ -242,8 +242,10 @@ def view_submissions(course_id, user_id, assignment_group_id):
     points_total, points_possible = calculate_submissions_score(assignments, submissions)
     score = round(points_total / points_possible, 2)
     # TODO: Handle tags
-    tags = []
     is_grader = viewer.is_grader(course_id)
+    tags = []
+    if is_grader:
+        tags = [tag.encode_json() for tag in AssignmentTag.get_all()]
     return render_template("reports/group.html", embed=embed,
                            points_total=points_total, points_possible=points_possible,
                            score=score, tags=tags, is_grader=is_grader,
