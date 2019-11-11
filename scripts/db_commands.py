@@ -242,3 +242,17 @@ class DumpDB(Command):
         }
         for table_name, table_class in tables.items():
             self.dump_rows(table_class.query.all(), output, table_name)
+
+class ExportProgSnap(Command):
+    option_list = (
+        Option('--output', '-o', dest='output', default='backups/progsnap2_{}.zip'),
+        Option('--log_for_course', '-l', dest='log_for_course', default=1),
+    )
+
+    def run(self, output, log_for_course, **kwargs):
+        from models.portation import export_progsnap2
+
+        data = export_progsnap2(log_for_course)
+        with open(output.format(log_for_course), 'wb') as f:
+            f.write(data.getvalue())
+

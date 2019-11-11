@@ -6,6 +6,8 @@ Functions for importing/exporting to various formats
 * ProgSnap2: Log format for sharing student code snapshots
 * PEML: common format for sharing human-readable/editable assignments.
 """
+import io
+import zipfile
 from typing import Type, Union
 
 from natsort import natsorted
@@ -15,6 +17,8 @@ from models.assignment_group import AssignmentGroup
 from models.assignment_group_membership import AssignmentGroupMembership
 from models.course import Course
 import models
+
+from models.data_formats.progsnap2 import dump_progsnap
 
 from main import app
 from models.models import db, AssignmentGroup
@@ -111,9 +115,12 @@ def export_bundle(**kwargs):
     return dumped
 
 
-def export_progsnap2():
-    # TODO
-    pass
+def export_progsnap2(course_id):
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
+        for filename, contents in dump_progsnap(course_id):
+            zip_file.writestr(filename, contents.getvalue())
+    return zip_buffer
 
 
 def export_peml():

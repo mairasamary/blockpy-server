@@ -6,7 +6,8 @@ from flask_migrate import Migrate, MigrateCommand
 from main import app
 from scripts.db_commands import (ResetDB, PopulateDB, DisplayDB, ExportCourse,
                                  ImportCourse, CreateDB, RemoveCourse,
-                                 DumpDB, AddTestUsersDB, AddMazeCourse)
+                                 DumpDB, AddTestUsersDB, AddMazeCourse,
+                                 ExportProgSnap)
 from scripts.external_commands import UpdateBlockPy
 
 # Read in secrets
@@ -32,6 +33,7 @@ manager.add_command("export_course", ExportCourse())
 manager.add_command("import_course", ImportCourse())
 manager.add_command("remove_course", RemoveCourse())
 manager.add_command("dump_db", DumpDB())
+manager.add_command("export_progsnap2", ExportProgSnap())
 
 # External commands
 manager.add_command("update_blockpy", UpdateBlockPy())
