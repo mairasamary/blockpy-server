@@ -117,7 +117,7 @@ def export_bundle(**kwargs):
 
 def export_progsnap2(course_id):
     zip_buffer = io.BytesIO()
-    with zipfile.ZipFile(zip_buffer, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
+    with zipfile.ZipFile(zip_buffer, "a", zipfile.ZIP_DEFLATED) as zip_file:
         for filename, contents in dump_progsnap(course_id):
             zip_file.writestr(filename, contents.getvalue())
     return zip_buffer
