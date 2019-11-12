@@ -172,7 +172,7 @@ def to_progsnap_event(log, order_id, code_states, latest_code_states, scores):
 
 def generate_maintable(course_id):
     code_states, latest_code_states, scores = {}, {}, {}
-    logs = Log.query.filter_by(course_id=course_id)
+    logs = Log.query.filter_by(course_id=course_id).order_by(Log.date_created.asc()).all()
     maintable_file = io.StringIO()
     writer = csv.writer(maintable_file, **PROGSNAP_CSV_WRITER_OPTIONS)
     writer.writerow(HEADERS)
