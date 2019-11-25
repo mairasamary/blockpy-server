@@ -4,7 +4,9 @@ import json
 
 from sqlalchemy import Column, String, Integer, ForeignKey, Text, func, JSON
 
+from models.assignment import Assignment
 from models.models import Base, db, datetime_to_string
+from models.user import User
 
 
 class Log(Base):
@@ -102,6 +104,22 @@ class Log(Base):
     @staticmethod
     def get_logs_for_course(course_id):
         return Log.query.filter_by(course_id=course_id).all()
+
+    @staticmethod
+    def get_users_for_course(course_id):
+        return (db.session.query(User)
+                .filter(Log.course_id == course_id)
+                .filter(Log.subject_id == User.id)
+                .group_by(Log.subject_id)
+                .all())
+
+    @staticmethod
+    def get_assignments_for_course(course_id) -> 'List[models.Assignment]':
+        return (db.session.query(Assignment)
+                .filter(Log.course_id == course_id)
+                .filter(Log.assignment_id == Assignment.id)
+                .group_by(Log.assignment_id)
+                .all())
 
     @staticmethod
     def get_history(course_id, assignment_id, user_id, page_offset=None, page_limit=None):

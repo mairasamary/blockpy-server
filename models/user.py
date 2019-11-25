@@ -21,6 +21,11 @@ class User(Base, UserMixin):
     authentications = relationship("Authentication", backref='user', lazy='dynamic')
     assignments = relationship("Assignment", backref='user', lazy='dynamic')
 
+    STAFF_ROLES = ["urn:lti:role:ims/lis/teachingassistant",
+                   "instructor", "contentdeveloper", "teachingassistant",
+                   "urn:lti:role:ims/lis/instructor",
+                   "urn:lti:role:ims/lis/contentdeveloper"]
+
     def encode_json(self, use_owner=True):
         return {
             'id': self.id,
@@ -44,6 +49,9 @@ class User(Base, UserMixin):
 
     def get_roles(self):
         return models.Role.query.filter_by(user_id=self.id).all()
+
+    def get_course_roles(self, course_id):
+        return models.Role.query.filter_by(user_id=self.id, course_id=course_id).all()
 
     def get_editable_courses(self):
         return (db.session.query(models.Course)
@@ -132,11 +140,7 @@ class User(Base, UserMixin):
 
     @staticmethod
     def is_lti_instructor(given_roles):
-        ROLES = ["urn:lti:role:ims/lis/TeachingAssistant",
-                 "Instructor", "ContentDeveloper",
-                 "urn:lti:role:ims/lis/Instructor",
-                 "urn:lti:role:ims/lis/ContentDeveloper"]
-        return any(role for role in ROLES if role in given_roles)
+        return any(role.lower() for role in User.STAFF_ROLES if role in given_roles)
 
     @staticmethod
     def new_lti_user(service, lti_user_id, lti_email, lti_first_name, lti_last_name):

@@ -96,6 +96,15 @@ class AssignmentGroup(Base):
                 .all())
 
     @staticmethod
+    def by_assignment(assignment_id):
+        return (AssignmentGroup.query
+                .filter(AssignmentGroup.id == models.AssignmentGroupMembership.assignment_group_id,
+                        models.AssignmentGroupMembership.assignment_id == assignment_id,
+                        models.Assignment.id == assignment_id)
+                .order_by(AssignmentGroup.course_id == models.Assignment.course_id)
+                .all())
+
+    @staticmethod
     def get_ungrouped_assignments(course_id):
         return (models.Assignment.query
                 .filter_by(course_id=course_id)
