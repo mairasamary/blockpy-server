@@ -110,7 +110,7 @@ class Log(Base):
         return (db.session.query(User)
                 .filter(Log.course_id == course_id)
                 .filter(Log.subject_id == User.id)
-                .group_by(Log.subject_id)
+                .group_by(Log.subject_id, User)
                 .all())
 
     @staticmethod
@@ -118,7 +118,7 @@ class Log(Base):
         return (db.session.query(Assignment)
                 .filter(Log.course_id == course_id)
                 .filter(Log.assignment_id == Assignment.id)
-                .group_by(Log.assignment_id)
+                .group_by(Log.assignment_id, Assignment)
                 .all())
 
     @staticmethod
