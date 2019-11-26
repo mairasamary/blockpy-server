@@ -252,7 +252,5 @@ class ExportProgSnap(Command):
     def run(self, output, log_for_course, **kwargs):
         from models.portation import export_progsnap2
 
-        data = export_progsnap2(log_for_course)
-        with open(output.format(log_for_course), 'wb') as f:
-            f.write(data.getvalue())
+        export_progsnap2(output.format(log_for_course), log_for_course)
 
