@@ -6,6 +6,7 @@ import io
 import time
 
 from natsort import natsorted
+from tqdm import tqdm
 
 from models.assignment_group import AssignmentGroup
 from models.course import Course
@@ -180,7 +181,7 @@ def generate_maintable(output_dir, course_id):
         writer = csv.writer(maintable_file, **PROGSNAP_CSV_WRITER_OPTIONS)
         writer.writerow(HEADERS)
         order_id = 0
-        for log in logs:
+        for log in tqdm(logs):
             writer.writerow(to_progsnap_event(log, order_id, code_states, latest_code_states, scores))
             order_id += 1
         return maintable_file.name, code_states
