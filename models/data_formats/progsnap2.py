@@ -176,12 +176,13 @@ def to_progsnap_event(log, order_id, code_states, latest_code_states, scores):
 
 def generate_maintable(output_dir, course_id):
     code_states, latest_code_states, scores = {}, {}, {}
-    logs = Log.query.filter_by(course_id=course_id).order_by(Log.date_created.asc()).all()
+    estimated_size = Log.query.filter_by(course_id=course_id).count()
+    logs = Log.query.filter_by(course_id=course_id).order_by(Log.date_created.asc()).yield_per(100)
     with open(output_dir+"MainTable.csv", 'w', newline='\n', encoding='utf-8') as maintable_file:
         writer = csv.writer(maintable_file, **PROGSNAP_CSV_WRITER_OPTIONS)
         writer.writerow(HEADERS)
         order_id = 0
-        for log in tqdm(logs):
+        for log in tqdm(logs, total=estimated_size):
             writer.writerow(to_progsnap_event(log, order_id, code_states, latest_code_states, scores))
             order_id += 1
         return maintable_file.name, code_states
