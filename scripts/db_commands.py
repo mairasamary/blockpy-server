@@ -245,7 +245,7 @@ class DumpDB(Command):
 
 class ExportProgSnap(Command):
     option_list = (
-        Option('--output', '-o', dest='output', default='backups/progsnap2_{}.zip'),
+        Option('--output', '-o', dest='output', default='backups/progsnap2_{}'),
         Option('--log_for_course', '-l', dest='log_for_course', default=1),
     )
 

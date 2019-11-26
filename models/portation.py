@@ -7,6 +7,8 @@ Functions for importing/exporting to various formats
 * PEML: common format for sharing human-readable/editable assignments.
 """
 import io
+import os
+import shutil
 import zipfile
 from typing import Type, Union
 
@@ -115,14 +117,36 @@ def export_bundle(**kwargs):
     return dumped
 
 
+def make_zipfile(output_filename, source_dir):
+    relroot = os.path.abspath(source_dir)
+    with zipfile.ZipFile(output_filename, "w", zipfile.ZIP_DEFLATED) as zip:
+        for root, dirs, files in os.walk(source_dir):
+            # add directory (needed for empty dirs)
+            if os.path.relpath(root, relroot) != '.':
+                zip.write(root, os.path.relpath(root, relroot))
+            for file in files:
+                filename = os.path.join(root, file)
+                if os.path.isfile(filename): # regular files only
+                    arcname = os.path.join(os.path.relpath(root, relroot), file)
+                    zip.write(filename, arcname)
+
+
 def export_progsnap2(output, course_id):
-    zip_buffer = io.BytesIO()
-    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
-        print("Starting")
-        for filename in dump_progsnap(course_id, zip_file):
-            print("Completed", filename)
-        print("Files completed. Writing to disk.")
-    return zip_buffer
+    # Create temporary directory
+    output_zip = output+".zip"
+    output_dir = output+"/"
+    #if os.path.exists(output_dir):
+    #    shutil.rmtree(output_dir)
+    os.makedirs(output_dir)
+    # Start filling it up
+    print("Starting")
+    for filename in dump_progsnap(course_id, output_dir):
+        print("Completed", filename)
+    print("Files completed. Writing to disk.")
+    # Compress the result into a single file
+    make_zipfile(output_zip, output_dir)
+    # Clear the temporary directory
+    #shutil.rmtree(output_dir)
 
 
 def export_peml():

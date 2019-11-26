@@ -1,4 +1,6 @@
 import csv
+import os
+import tempfile
 from datetime import datetime
 import io
 import time
@@ -13,20 +15,20 @@ from models.user import User
 PROGSNAP_CSV_WRITER_OPTIONS = {'delimiter': ',', 'quotechar': '"', 'quoting': csv.QUOTE_MINIMAL}
 
 
-def generate_readme(zip_file):
-    zip_file.writestr("Readme.txt", b"Generated from BlockPy")
-    return "Readme.txt"
+def generate_readme(output_dir):
+    with open(output_dir+"Readme.txt", 'w', newline='\n', encoding='utf-8') as out:
+        out.write("Generated from BlockPy")
+        return out.name
 
 
-def generate_metadata(zip_file):
-    metadata_file = io.StringIO()
-    writer = csv.writer(metadata_file, **PROGSNAP_CSV_WRITER_OPTIONS)
-    writer.writerow(["Property", "Value"])
-    writer.writerow(["Version", "6"])
-    writer.writerow(["IsEventOrderingConsistent", "false"])
-    writer.writerow(["CodeStateRepresentation", "Directory"])
-    zip_file.writestr("DatasetMetadata.csv", metadata_file.getvalue())
-    return "DatasetMetadata.csv"
+def generate_metadata(output_dir):
+    with open(output_dir+"DatasetMetadata.csv", 'w', newline='\n', encoding='utf-8') as metadata_file:
+        writer = csv.writer(metadata_file, **PROGSNAP_CSV_WRITER_OPTIONS)
+        writer.writerow(["Property", "Value"])
+        writer.writerow(["Version", "6"])
+        writer.writerow(["IsEventOrderingConsistent", "false"])
+        writer.writerow(["CodeStateRepresentation", "Directory"])
+        return metadata_file.name
 
 
 '''
@@ -171,117 +173,117 @@ def to_progsnap_event(log, order_id, code_states, latest_code_states, scores):
                      ]
 
 
-def generate_maintable(zip_file, course_id):
+def generate_maintable(output_dir, course_id):
     code_states, latest_code_states, scores = {}, {}, {}
     logs = Log.query.filter_by(course_id=course_id).order_by(Log.date_created.asc()).all()
-    maintable_file = io.StringIO()
-    writer = csv.writer(maintable_file, **PROGSNAP_CSV_WRITER_OPTIONS)
-    writer.writerow(HEADERS)
-    order_id = 0
-    for log in logs:
-        writer.writerow(to_progsnap_event(log, order_id, code_states, latest_code_states, scores))
-        order_id += 1
-    zip_file.writestr("MainTable.csv", maintable_file.getvalue())
-    return "MainTable.csv", code_states
+    with open(output_dir+"MainTable.csv", 'w', newline='\n', encoding='utf-8') as maintable_file:
+        writer = csv.writer(maintable_file, **PROGSNAP_CSV_WRITER_OPTIONS)
+        writer.writerow(HEADERS)
+        order_id = 0
+        for log in logs:
+            writer.writerow(to_progsnap_event(log, order_id, code_states, latest_code_states, scores))
+            order_id += 1
+        return maintable_file.name, code_states
 
 
-def generate_link_subjects(zip_file, course_id):
-    linktable_file = io.StringIO()
-    writer = csv.writer(linktable_file, **PROGSNAP_CSV_WRITER_OPTIONS)
-    writer.writerow(["SubjectID", "X-IsStaff", "X-Roles",
-                     "X-Name.Last", "X-Name.First", "X-Email"])
+def generate_link_subjects(output_dir, course_id):
+    with open(output_dir+"LinkTables/Subject.csv", 'w', newline='\n', encoding='utf-8') as linktable_file:
+        writer = csv.writer(linktable_file, **PROGSNAP_CSV_WRITER_OPTIONS)
+        writer.writerow(["SubjectID", "X-IsStaff", "X-Roles",
+                         "X-Name.Last", "X-Name.First", "X-Email"])
 
-    # Get any users explicitly in this course
-    users_with_roles = Course.by_id(course_id).get_users()
-    users, user_roles = {}, {}
-    for role, user in users_with_roles:
-        if user.id not in users:
-            users[user.id] = user
-            user_roles[user.id] = set()
-        user_roles[user.id].add(role.name)
+        # Get any users explicitly in this course
+        users_with_roles = Course.by_id(course_id).get_users()
+        users, user_roles = {}, {}
+        for role, user in users_with_roles:
+            if user.id not in users:
+                users[user.id] = user
+                user_roles[user.id] = set()
+            user_roles[user.id].add(role.name)
 
-    # Get any additional users found in the logs
-    log_users = Log.get_users_for_course(course_id)
-    for log_user in log_users:
-        if log_user.id not in users:
-            users[log_user.id] = log_user
-            user_roles[log_user.id] = {role.name for role in log_user.get_course_roles(course_id)}
+        # Get any additional users found in the logs
+        log_users = Log.get_users_for_course(course_id)
+        for log_user in log_users:
+            if log_user.id not in users:
+                users[log_user.id] = log_user
+                user_roles[log_user.id] = {role.name for role in log_user.get_course_roles(course_id)}
 
-    # Report their information
-    for user_id, user in natsorted(users.items(), lambda u: (u[1].last_name, u[1].first_name)):
-        roles = user_roles[user_id]
-        display_roles = ", ".join(sorted(roles))
-        writer.writerow([
-            user.id, # SubjectId
-            bool(User.is_lti_instructor(roles)), # X-IsStaff
-            display_roles, # X-Roles
-            user.last_name, # X-Name.Last
-            user.first_name, # X-Name.First
-            user.email, # X-Email
-        ])
-    zip_file.writestr("LinkTables/Subject.csv", linktable_file.getvalue())
-    return "LinkTables/Subject.csv"
+        # Report their information
+        for user_id, user in natsorted(users.items(), lambda u: (u[1].last_name, u[1].first_name)):
+            roles = user_roles[user_id]
+            display_roles = ", ".join(sorted(roles))
+            writer.writerow([
+                user.id, # SubjectId
+                bool(User.is_lti_instructor(roles)), # X-IsStaff
+                display_roles, # X-Roles
+                user.last_name, # X-Name.Last
+                user.first_name, # X-Name.First
+                user.email, # X-Email
+            ])
+        return linktable_file.name
 
 
-def generate_link_assignments(zip_file, course_id):
-    assignment_file = io.StringIO()
-    assignment_writer = csv.writer(assignment_file, **PROGSNAP_CSV_WRITER_OPTIONS)
-    assignment_writer.writerow(["AssignmentId", "X-Version",
-                                "X-Name", "X-URL", "X-Instructions",
-                                "X-Reviewed", "X-Hidden", "X-Settings",
-                                "X-Code.OnRun", "X-Code.OnChange", "X-Code.OnEval",
-                                "X-Code.Starting", "X-Code.ExtraInstructor", "X-Code.ExtraStarting",
+def generate_link_assignments(output_dir, course_id):
+    with open(output_dir+"LinkTables/Assignment.csv", 'w', newline='\n', encoding='utf-8') as assignment_file:
+        assignment_writer = csv.writer(assignment_file, **PROGSNAP_CSV_WRITER_OPTIONS)
+        assignment_writer.writerow(["AssignmentId", "X-Version",
+                                    "X-Name", "X-URL", "X-Instructions",
+                                    "X-Reviewed", "X-Hidden", "X-Settings",
+                                    "X-Code.OnRun", "X-Code.OnChange", "X-Code.OnEval",
+                                    "X-Code.Starting", "X-Code.ExtraInstructor", "X-Code.ExtraStarting",
+                                    "X-Forked.Id", "X-Forked.Version",
+                                    "X-Owner.Id", "X-Course.Id",
+                                    "X-AssignmentGroup.Ids"])
+
+        assignments = Log.get_assignments_for_course(course_id)
+        all_groups = set()
+        for assignment in natsorted(assignments, key=lambda a: a.name):
+            groups = AssignmentGroup.by_assignment(assignment.id)
+            assignment_writer.writerow([
+                assignment.id, assignment.version,
+                assignment.name, assignment.url, assignment.instructions,
+                assignment.reviewed, assignment.hidden, assignment.settings,
+                assignment.on_run, assignment.on_change, assignment.on_eval,
+                assignment.starting_code, assignment.extra_instructor_files, assignment.extra_starting_files,
+                assignment.forked_id, assignment.forked_version,
+                assignment.owner_id, assignment.course_id,
+                ", ".join(map(str, (g.id for g in groups)))
+            ])
+            all_groups.update(groups)
+        yield assignment_file.name
+
+    with open(output_dir+"LinkTables/AssignmentGroup.csv", 'w', newline='\n', encoding='utf-8') as group_file:
+        group_writer = csv.writer(group_file, **PROGSNAP_CSV_WRITER_OPTIONS)
+        group_writer.writerow(["AssignmentGroupId", "X-Version",
+                                "X-Name", "X-URL",
                                 "X-Forked.Id", "X-Forked.Version",
-                                "X-Owner.Id", "X-Course.Id",
-                                "X-AssignmentGroup.Ids"])
-
-    assignments = Log.get_assignments_for_course(course_id)
-    all_groups = set()
-    for assignment in natsorted(assignments, key=lambda a: a.name):
-        groups = AssignmentGroup.by_assignment(assignment.id)
-        assignment_writer.writerow([
-            assignment.id, assignment.version,
-            assignment.name, assignment.url, assignment.instructions,
-            assignment.reviewed, assignment.hidden, assignment.settings,
-            assignment.on_run, assignment.on_change, assignment.on_eval,
-            assignment.starting_code, assignment.extra_instructor_files, assignment.extra_starting_files,
-            assignment.forked_id, assignment.forked_version,
-            assignment.owner_id, assignment.course_id,
-            ", ".join(map(str, (g.id for g in groups)))
-        ])
-        all_groups.update(groups)
-    zip_file.writestr("LinkTables/Assignment.csv", assignment_file.getvalue())
-    yield "LinkTables/Assignment.csv"
-
-    group_file = io.StringIO()
-    group_writer = csv.writer(group_file, **PROGSNAP_CSV_WRITER_OPTIONS)
-    group_writer.writerow(["AssignmentGroupId", "X-Version",
-                            "X-Name", "X-URL",
-                            "X-Forked.Id", "X-Forked.Version",
-                            "X-Owner.Id", "X-Course.Id"])
-    for group in natsorted(all_groups, key=lambda g: g.name):
-        group_writer.writerow([
-            group.id, group.version,
-            group.name, group.url,
-            group.forked_id, group.forked_version,
-            group.owner_id, group.course_id,
-        ])
-    zip_file.writestr("LinkTables/AssignmentGroup.csv", group_file.getvalue())
-    yield "LinkTables/AssignmentGroup.csv"
+                                "X-Owner.Id", "X-Course.Id"])
+        for group in natsorted(all_groups, key=lambda g: g.name):
+            group_writer.writerow([
+                group.id, group.version,
+                group.name, group.url,
+                group.forked_id, group.forked_version,
+                group.owner_id, group.course_id,
+            ])
+        yield group_file.name
 
 
-def dump_progsnap(course_id, zip_file):
-    yield generate_readme(zip_file)
-    yield generate_metadata(zip_file)
-    filename, code_states = generate_maintable(zip_file, course_id)
+def dump_progsnap(course_id, output_dir):
+    yield generate_readme(output_dir)
+    yield generate_metadata(output_dir)
+    filename, code_states = generate_maintable(output_dir, course_id)
     yield filename
     for code_base, code_state_id in code_states.items():
         for filename, contents in code_base:
-            path = "CodeStates/{}/{}".format(code_state_id, filename)
-            zip_file.writestr(path, contents)
+            path = output_dir+"CodeStates/{}/".format(code_state_id)
+            os.makedirs(path, exist_ok=True)
+            path = path+filename
+            with open(path, 'w', newline='\n', encoding='utf-8') as out:
+                out.write(contents)
     yield "CodeStates/*"
-    yield generate_link_subjects(zip_file, course_id)
-    for filename in generate_link_assignments(zip_file, course_id):
+    os.makedirs(output_dir+"LinkTables/")
+    yield generate_link_subjects(output_dir, course_id)
+    for filename in generate_link_assignments(output_dir, course_id):
         yield filename
     # LinkTables/
     #   Subject.csv + Roles
