@@ -16,20 +16,20 @@ from models.user import User
 PROGSNAP_CSV_WRITER_OPTIONS = {'delimiter': ',', 'quotechar': '"', 'quoting': csv.QUOTE_MINIMAL}
 
 
-def generate_readme(output_dir):
-    with open(output_dir+"Readme.txt", 'w', newline='\n', encoding='utf-8') as out:
-        out.write("Generated from BlockPy")
-        return out.name
+def generate_readme(zip_file):
+    zip_file.writestr("Readme.txt", "Generated from BlockPy")
+    return "Readme.txt"
 
 
-def generate_metadata(output_dir):
-    with open(output_dir+"DatasetMetadata.csv", 'w', newline='\n', encoding='utf-8') as metadata_file:
+def generate_metadata(zip_file):
+    with io.StringIO() as metadata_file:
         writer = csv.writer(metadata_file, **PROGSNAP_CSV_WRITER_OPTIONS)
         writer.writerow(["Property", "Value"])
         writer.writerow(["Version", "6"])
         writer.writerow(["IsEventOrderingConsistent", "false"])
         writer.writerow(["CodeStateRepresentation", "Directory"])
-        return metadata_file.name
+        zip_file.writestr("DatasetMetadata.csv", metadata_file.getvalue())
+        return "DatasetMetadata.csv"
 
 
 '''
@@ -174,22 +174,23 @@ def to_progsnap_event(log, order_id, code_states, latest_code_states, scores):
                      ]
 
 
-def generate_maintable(output_dir, course_id):
+def generate_maintable(zip_file, course_id):
     code_states, latest_code_states, scores = {}, {}, {}
     estimated_size = Log.query.filter_by(course_id=course_id).count()
     logs = Log.query.filter_by(course_id=course_id).order_by(Log.date_created.asc()).yield_per(100)
-    with open(output_dir+"MainTable.csv", 'w', newline='\n', encoding='utf-8') as maintable_file:
+    with io.StringIO() as maintable_file:
         writer = csv.writer(maintable_file, **PROGSNAP_CSV_WRITER_OPTIONS)
         writer.writerow(HEADERS)
         order_id = 0
         for log in tqdm(logs, total=estimated_size):
             writer.writerow(to_progsnap_event(log, order_id, code_states, latest_code_states, scores))
             order_id += 1
-        return maintable_file.name, code_states
+        zip_file.writestr("MainTable.csv", maintable_file.getvalue())
+        return "MainTable.csv", code_states
 
 
-def generate_link_subjects(output_dir, course_id):
-    with open(output_dir+"LinkTables/Subject.csv", 'w', newline='\n', encoding='utf-8') as linktable_file:
+def generate_link_subjects(zip_file, course_id):
+    with io.StringIO() as linktable_file:
         writer = csv.writer(linktable_file, **PROGSNAP_CSV_WRITER_OPTIONS)
         writer.writerow(["SubjectID", "X-IsStaff", "X-Roles",
                          "X-Name.Last", "X-Name.First", "X-Email"])
@@ -222,11 +223,12 @@ def generate_link_subjects(output_dir, course_id):
                 user.first_name, # X-Name.First
                 user.email, # X-Email
             ])
-        return linktable_file.name
+        zip_file.writestr("LinkTables/Subject.csv", linktable_file.getvalue())
+        return "LinkTables/Subject.csv"
 
 
-def generate_link_assignments(output_dir, course_id):
-    with open(output_dir+"LinkTables/Assignment.csv", 'w', newline='\n', encoding='utf-8') as assignment_file:
+def generate_link_assignments(zip_file, course_id):
+    with io.StringIO() as assignment_file:
         assignment_writer = csv.writer(assignment_file, **PROGSNAP_CSV_WRITER_OPTIONS)
         assignment_writer.writerow(["AssignmentId", "X-Version",
                                     "X-Name", "X-URL", "X-Instructions",
@@ -252,9 +254,10 @@ def generate_link_assignments(output_dir, course_id):
                 ", ".join(map(str, (g.id for g in groups)))
             ])
             all_groups.update(groups)
-        yield assignment_file.name
+        zip_file.writestr("LinkTables/Assignment.csv", assignment_file.getvalue())
+        yield "LinkTables/Assignment.csv"
 
-    with open(output_dir+"LinkTables/AssignmentGroup.csv", 'w', newline='\n', encoding='utf-8') as group_file:
+    with io.StringIO() as group_file:
         group_writer = csv.writer(group_file, **PROGSNAP_CSV_WRITER_OPTIONS)
         group_writer.writerow(["AssignmentGroupId", "X-Version",
                                 "X-Name", "X-URL",
@@ -267,25 +270,22 @@ def generate_link_assignments(output_dir, course_id):
                 group.forked_id, group.forked_version,
                 group.owner_id, group.course_id,
             ])
-        yield group_file.name
+        zip_file.writestr("LinkTables/AssignmentGroup.csv", group_file.getvalue())
+        yield "LinkTables/AssignmentGroup.csv"
 
 
-def dump_progsnap(course_id, output_dir):
-    yield generate_readme(output_dir)
-    yield generate_metadata(output_dir)
-    filename, code_states = generate_maintable(output_dir, course_id)
+def dump_progsnap(zip_file, course_id):
+    yield generate_readme(zip_file)
+    yield generate_metadata(zip_file)
+    filename, code_states = generate_maintable(zip_file, course_id)
     yield filename
-    for code_base, code_state_id in code_states.items():
+    for code_base, code_state_id in tqdm(code_states.items()):
         for filename, contents in code_base:
-            path = output_dir+"CodeStates/{}/".format(code_state_id)
-            os.makedirs(path, exist_ok=True)
-            path = path+filename
-            with open(path, 'w', newline='\n', encoding='utf-8') as out:
-                out.write(contents)
+            path = "CodeStates/{}/{}".format(code_state_id, filename)
+            zip_file.writestr(path, contents)
     yield "CodeStates/*"
-    os.makedirs(output_dir+"LinkTables/")
-    yield generate_link_subjects(output_dir, course_id)
-    for filename in generate_link_assignments(output_dir, course_id):
+    yield generate_link_subjects(zip_file, course_id)
+    for filename in generate_link_assignments(zip_file, course_id):
         yield filename
     # LinkTables/
     #   Subject.csv + Roles
