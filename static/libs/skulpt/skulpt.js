@@ -26733,7 +26733,7 @@ Sk.exportSymbol("Sk.misceval.applyAsync", Sk.misceval.applyAsync);
  */
 
 Sk.misceval.chain = function (initialValue, chainedFns) {
-    // We try to minimse overhead when nothing suspends (the common case)
+    // We try to minimise overhead when nothing suspends (the common case)
     var i = 1, value = initialValue, j, fs;
 
     while (true) {
@@ -35094,7 +35094,7 @@ var Sk = {}; // jshint ignore:line
 
 Sk.build = {
     githash: "669a5bf2602c8165ee6493762e1e5aa0a8b9cd06",
-    date: "2019-11-05T04:18:58.092Z"
+    date: "2019-12-01T20:39:51.091Z"
 };
 
 /**
