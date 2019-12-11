@@ -207,7 +207,6 @@ def bulk_upload():
     </form>
     '''
 
-
 @blueprint_assignments.route('/images/<path:path>', methods=['GET', 'POST'])
 def assignments_static_images(path):
     return app.send_static_file('images/' + path)

@@ -141,3 +141,48 @@ def export():
     filename = assignment_group.get_filename()
     return Response(json.dumps(bundle, indent=2), mimetype='application/json',
                     headers={'Content-Disposition': 'attachment;filename={}'.format(filename)})
+
+
+@blueprint_assignment_group.route('/edit_settings', methods=['GET', 'POST'])
+@blueprint_assignment_group.route('/edit_settings/', methods=['GET', 'POST'])
+@require_request_parameters('assignment_group_id')
+@login_required
+def edit_settings(lti=lti):
+    # Get arguments
+    assignment_group_id = int(request.values.get('assignment_group_id'))
+    assignment_group = AssignmentGroup.by_id(assignment_group_id)
+    ip_ranges = request.values.get('ip_ranges')
+    # Verify exists
+    check_resource_exists(assignment_group, "Assignment Group", assignment_group_id)
+    # Verify permissions
+    require_course_instructor(g.user, assignment_group.course_id)
+    # Perform action
+    if request.method == 'POST':
+        if ip_ranges is not None:
+            for assignment in assignment_group.get_assignments():
+                assignment.edit(dict(ip_ranges=ip_ranges))
+        return redirect(request.url)
+    # Result
+    else:
+        existing_ip_ranges = [assignment.ip_ranges for assignment in assignment_group.get_assignments()]
+        merged_duplicates = set(existing_ip_ranges)
+        warning = ""
+        if len(merged_duplicates) == 1:
+            ip_ranges = merged_duplicates.pop()
+        elif merged_duplicates:
+            ip_ranges = existing_ip_ranges[0]
+            warning = "This assignment has multiple IP ranges: <pre>{}</pre>".format("\n".join(existing_ip_ranges))
+        return '''
+            <!doctype html>
+            <title>Edit Assignment Group Settings</title>
+            <h1>Edit Assignment Group Settings</h1>
+            <p>Assignment: {group_name}</p>
+            <p>{warning}</p>
+            <form action="" method=post>
+              <p><input type=text name=ip_ranges value="{ip_ranges}">
+                 <input type=submit value=Change>
+            </form>
+            '''.format(group_name=assignment_group.name,
+                       ip_ranges=ip_ranges if ip_ranges else "",
+                       warning=warning)
+
