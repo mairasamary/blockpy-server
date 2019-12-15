@@ -78,7 +78,7 @@ course = db.relationship("Course")
 
 
 def blockpy_timestamp_to_iso8601(timestamp):
-    '''
+    """
     Converts blockpy style timestamps into an ISO-8601 compatible timestamp.
 
     > blockpy_timestamp_to_iso8601(2018-10-31-12-02-25)
@@ -88,10 +88,10 @@ def blockpy_timestamp_to_iso8601(timestamp):
         timestamp (str): A blockpy-style timestamp
     Returns:
         str: The ISO-8601 timestamp.
-    '''
+    """
     if not timestamp:
         return ""
-    return datetime.fromtimestamp(int(timestamp)/1000).isoformat()
+    return datetime.fromtimestamp(int(timestamp) / 1000).isoformat()
 
 
 HEADERS = [
@@ -105,7 +105,6 @@ HEADERS = [
     'InterventionCategory', 'InterventionType', 'InterventionMessage',
     'ServerTimestamp', 'ServerTimezone', 'ToolInstances'
 ]
-
 
 TOOL_INSTANCE_ID = "BPY5"
 
@@ -157,7 +156,7 @@ def to_progsnap_event(log, order_id, code_states, latest_code_states, scores):
         intervention_message = ""
     # Result
     return fields + [code_state_id,
-                     "", # TODO: ParentEventId
+                     "",  # TODO: ParentEventId
                      blockpy_timestamp_to_iso8601(log.client_timestamp),
                      log.client_timezone,
                      score,
@@ -222,18 +221,38 @@ def generate_link_subjects(zip_file, course_id):
             roles = user_roles[user_id]
             display_roles = ", ".join(sorted(roles))
             writer.writerow([
-                user.id, # SubjectId
-                bool(User.is_lti_instructor(roles)), # X-IsStaff
-                display_roles, # X-Roles
-                user.last_name, # X-Name.Last
-                user.first_name, # X-Name.First
-                user.email, # X-Email
+                user.id,  # SubjectId
+                bool(User.is_lti_instructor(roles)),  # X-IsStaff
+                display_roles,  # X-Roles
+                user.last_name,  # X-Name.Last
+                user.first_name,  # X-Name.First
+                user.email,  # X-Email
             ])
         zip_file.writestr("LinkTables/Subject.csv", linktable_file.getvalue())
         return "LinkTables/Subject.csv"
 
 
-def generate_link_assignments(zip_file, course_id):
+def generate_link_assignments(zip_file, course_id, assignment_group_ids):
+    if assignment_group_ids is None:
+        assignments = Log.get_assignments_for_course(course_id)
+        all_groups = set()
+        assignment_groups = {}
+        for assignment in assignments:
+            groups = AssignmentGroup.by_assignment(assignment.id)
+            all_groups.update(groups)
+            assignment_groups[assignment.id] = groups
+    else:
+        all_groups = [AssignmentGroup.by_id(group_id) for group_id in assignment_group_ids]
+        assignment_groups = {}
+        assignments = set()
+        for group in all_groups:
+            for assignment in group.get_assignments():
+                if assignment.id not in assignment_groups:
+                    assignment_groups[assignment.id] = set()
+                assignment_groups[assignment.id].add(group)
+                assignments.add(assignment)
+
+
     with io.StringIO() as assignment_file:
         assignment_writer = csv.writer(assignment_file, **PROGSNAP_CSV_WRITER_OPTIONS)
         assignment_writer.writerow(["AssignmentId", "X-Version",
@@ -244,11 +263,7 @@ def generate_link_assignments(zip_file, course_id):
                                     "X-Forked.Id", "X-Forked.Version",
                                     "X-Owner.Id", "X-Course.Id",
                                     "X-AssignmentGroup.Ids"])
-
-        assignments = Log.get_assignments_for_course(course_id)
-        all_groups = set()
         for assignment in natsorted(assignments, key=lambda a: a.name):
-            groups = AssignmentGroup.by_assignment(assignment.id)
             assignment_writer.writerow([
                 assignment.id, assignment.version,
                 assignment.name, assignment.url, assignment.instructions,
@@ -257,18 +272,18 @@ def generate_link_assignments(zip_file, course_id):
                 assignment.starting_code, assignment.extra_instructor_files, assignment.extra_starting_files,
                 assignment.forked_id, assignment.forked_version,
                 assignment.owner_id, assignment.course_id,
-                ", ".join(map(str, (g.id for g in groups)))
+                ", ".join(map(str, (g.id for g in assignment_groups[assignment.id])))
             ])
-            all_groups.update(groups)
+
         zip_file.writestr("LinkTables/Assignment.csv", assignment_file.getvalue())
         yield "LinkTables/Assignment.csv"
 
     with io.StringIO() as group_file:
         group_writer = csv.writer(group_file, **PROGSNAP_CSV_WRITER_OPTIONS)
         group_writer.writerow(["AssignmentGroupId", "X-Version",
-                                "X-Name", "X-URL",
-                                "X-Forked.Id", "X-Forked.Version",
-                                "X-Owner.Id", "X-Course.Id"])
+                               "X-Name", "X-URL",
+                               "X-Forked.Id", "X-Forked.Version",
+                               "X-Owner.Id", "X-Course.Id"])
         for group in natsorted(all_groups, key=lambda g: g.name):
             group_writer.writerow([
                 group.id, group.version,
@@ -276,6 +291,7 @@ def generate_link_assignments(zip_file, course_id):
                 group.forked_id, group.forked_version,
                 group.owner_id, group.course_id,
             ])
+
         zip_file.writestr("LinkTables/AssignmentGroup.csv", group_file.getvalue())
         yield "LinkTables/AssignmentGroup.csv"
 
@@ -291,7 +307,7 @@ def dump_progsnap(zip_file, course_id, assignment_group_ids):
             zip_file.writestr(path, contents)
     yield "CodeStates/*"
     yield generate_link_subjects(zip_file, course_id)
-    for filename in generate_link_assignments(zip_file, course_id):
+    for filename in generate_link_assignments(zip_file, course_id, assignment_group_ids):
         yield filename
     # LinkTables/
     #   Subject.csv + Roles
