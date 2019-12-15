@@ -125,6 +125,7 @@ def to_progsnap_event(log, order_id, code_states, latest_code_states, scores):
     if log.event_type in CODE_STATE_UPDATE_EVENT_TYPES:
         current_code_base[log.file_path] = log.message
         edit_type = CODE_STATE_UPDATE_EVENT_TYPES[log.event_type]
+        latest_code_states[submission_identification] = current_code_base
     hashed_code_base = tuple(sorted(current_code_base.items()))
     if hashed_code_base in code_states:
         code_state_id = code_states[hashed_code_base]
