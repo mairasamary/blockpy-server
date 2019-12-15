@@ -117,12 +117,12 @@ def export_bundle(**kwargs):
     return dumped
 
 
-def export_progsnap2(output, course_id):
+def export_progsnap2(output, course_id, assignment_group_ids=None):
     output_zip = output+".zip"
     # Start filling it up
     with zipfile.ZipFile(output_zip, "w", zipfile.ZIP_DEFLATED) as zip_file:
         print("Starting")
-        for filename in dump_progsnap(zip_file, course_id):
+        for filename in dump_progsnap(zip_file, course_id, assignment_group_ids):
             print("Completed", filename)
         print("Files completed. Writing to disk.")
 

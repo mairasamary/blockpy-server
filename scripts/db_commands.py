@@ -247,10 +247,13 @@ class ExportProgSnap(Command):
     option_list = (
         Option('--output', '-o', dest='output', default='backups/progsnap2_{}'),
         Option('--log_for_course', '-l', dest='log_for_course', default=1),
+        Option('--groups', '-g', dest='groups', default=None),
     )
 
-    def run(self, output, log_for_course, **kwargs):
+    def run(self, output, log_for_course, groups, **kwargs):
         from models.portation import export_progsnap2
-
-        export_progsnap2(output.format(log_for_course), log_for_course)
+        if groups is not None:
+            output = output + "_{}".format(groups.replace(",", "_"))
+            groups = [int(g) for g in groups.split(",")]
+        export_progsnap2(output.format(log_for_course), log_for_course, groups)
 

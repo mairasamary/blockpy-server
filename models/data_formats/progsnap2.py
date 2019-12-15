@@ -174,10 +174,16 @@ def to_progsnap_event(log, order_id, code_states, latest_code_states, scores):
                      ]
 
 
-def generate_maintable(zip_file, course_id):
+def generate_maintable(zip_file, course_id, assignment_group_ids):
     code_states, latest_code_states, scores = {}, {}, {}
-    estimated_size = Log.query.filter_by(course_id=course_id).count()
-    logs = Log.query.filter_by(course_id=course_id).order_by(Log.date_created.asc()).yield_per(100)
+    query = Log.query.filter_by(course_id=course_id)
+    if assignment_group_ids is not None:
+        assignment_ids = [assignment.id
+                          for group_id in assignment_group_ids
+                          for assignment in AssignmentGroup.by_id(group_id).get_assignments()]
+        query = query.filter(Log.assignment_id.in_(assignment_ids))
+    estimated_size = query.count()
+    logs = query.order_by(Log.date_created.asc()).yield_per(100)
     with io.StringIO() as maintable_file:
         writer = csv.writer(maintable_file, **PROGSNAP_CSV_WRITER_OPTIONS)
         writer.writerow(HEADERS)
@@ -274,10 +280,10 @@ def generate_link_assignments(zip_file, course_id):
         yield "LinkTables/AssignmentGroup.csv"
 
 
-def dump_progsnap(zip_file, course_id):
+def dump_progsnap(zip_file, course_id, assignment_group_ids):
     yield generate_readme(zip_file)
     yield generate_metadata(zip_file)
-    filename, code_states = generate_maintable(zip_file, course_id)
+    filename, code_states = generate_maintable(zip_file, course_id, assignment_group_ids)
     yield filename
     for code_base, code_state_id in tqdm(code_states.items()):
         for filename, contents in code_base:
