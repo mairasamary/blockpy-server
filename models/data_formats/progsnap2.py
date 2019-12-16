@@ -15,6 +15,7 @@ from models.user import User
 
 PROGSNAP_CSV_WRITER_OPTIONS = {'delimiter': ',', 'quotechar': '"', 'quoting': csv.QUOTE_MINIMAL}
 
+# TODO: Investigate filenames of instructor files - shouldn't they be _instructor/*?
 
 def generate_readme(zip_file):
     zip_file.writestr("Readme.txt", "Generated from BlockPy")
