@@ -105,6 +105,7 @@ class Base(Model):
         if 'url' in data and data['url']:
             return cls.by_url(data['url'])
 
+
     @classmethod
     def by_id(cls, pk_id):
         if pk_id is None:

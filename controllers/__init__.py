@@ -53,6 +53,9 @@ app.register_blueprint(blueprint_external)
 from controllers.grading import blueprint_grading
 app.register_blueprint(blueprint_grading)
 
+from controllers.api import blueprint_api
+app.register_blueprint(blueprint_api)
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
     """ initial access page to the lti provider.  This page provides
