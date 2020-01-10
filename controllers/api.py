@@ -78,9 +78,10 @@ def export():
         return json.dumps(bundle)
     abort(400, "No assignment_id or assignment_group_id given")
 
-@blueprint_api.route('/export/', methods=['GET', 'POST'])
-@blueprint_api.route('/export', methods=['GET', 'POST'])
-def export():
+
+@blueprint_api.route('/import/', methods=['GET', 'POST'])
+@blueprint_api.route('/import', methods=['GET', 'POST'])
+def import_endpoint():
     user = load_api_user()
     course_id = request.json.get('course_id')
     if course_id is None:
