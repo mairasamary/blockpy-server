@@ -51,6 +51,7 @@ class UpdateBlockPy(Command):
             '../blockmirror/dist/block_mirror.css': 'libs/block_mirror/',
             '../skulpt/dist/skulpt.js': 'libs/skulpt/',
             '../skulpt/dist/skulpt-stdlib.js': 'libs/skulpt/',
+            '../../pedal/dist/skulpt-pedal.js': 'libs/pedal/',
             '../blockly/blockly_uncompressed.js': 'blockly/',
             '../blockly/blockly_compressed.js': 'blockly/',
             '../blockly/blocks_compressed.js': 'blockly/',

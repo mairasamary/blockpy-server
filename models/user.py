@@ -57,7 +57,8 @@ class User(Base, UserMixin):
         return (db.session.query(models.Course)
                 .filter(models.Role.user_id == self.id,
                         models.Role.course_id == models.Course.id,
-                        (models.Role.name == 'instructor') | (models.Role.name == 'admin'))
+                        (models.Role.name == 'instructor')
+                        | (models.Role.name == 'admin'))
                 .order_by(models.Course.name)
                 .distinct())
 

@@ -47,6 +47,11 @@ bundles = {
         output='gen/skulpt.js'
     ),
 
+    'pedal_js': Bundle(
+        "libs/pedal/skulpt-pedal.js" if app.config["IS_PRODUCTION"] else "../../../pedal/dist/skulpt-pedal.js",
+        output='gen/pedal.js'
+    ),
+
     'blockpy_js': Bundle(
         "libs/block_mirror/block_mirror.js",
         #"libs/blockpy/blockpy.js",
