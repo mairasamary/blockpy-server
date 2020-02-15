@@ -1,3 +1,5 @@
+HEY! You should check out the [Summer2019](https://github.com/blockpy-edu/blockpy-server/tree/Summer2019) branch. That's the best version available now. We'll merge it into master sometime next summer, once the semester ends.
+
 # Blockpy Server 
 
 Flask-based server for managing the BlockPy LTI app. This is a fork of the main Kennel application for the Think.cs.vt.edu project. Kennel has a number of other components, but this app trims it down to just BlockPy (and the Maze game). It maintains the architectural components required (e.g., user registration, LTI). 
