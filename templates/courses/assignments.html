@@ -71,7 +71,7 @@ function MainModel() {
             'select': "{{ return_url }}?url={{url_for('assignments.load', assignment_id=assignment[0].id, _external=True, embed= menu == 'embed') | urlencode}}&return_type={{ 'lti_launch_url' if menu != 'embed' else 'iframe' }}&title={{ assignment[0].title()|urlencode }}&text=BlockPy%20Exercise&width=100%25&height=600", 
             'edit': "{{ url_for('assignments.load', assignment_id=assignment[0].id, course_id=assignment[0].course_id )|safe }}",
             'modified': ko.observable('{{ assignment[0].date_modified.strftime(" %I:%M%p on %a %d, %b %Y").replace(" 0", " ") }}'),
-            'body': ko.observable("{{ assignment[0].instructions|striptags|truncate(255) }}")
+            'body': ko.observable({{ assignment[0].instructions|striptags|safe|truncate(255)|tojson }})
         }{{ "," if not loop.last }}
         {% endfor %}
     ]);
@@ -401,65 +401,64 @@ tr.hover-remove-rows button.remove-button {
 <caption>All assignments owned by course:</caption>
 <tbody>
     <tr id='new-row'>
-        <td colspan='2'>
-            <a href="#" data-toggle="modal" data-target="#assignment-create" class="btn btn-outline-secondary btn-sm"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span>Create Assignment</a>
+        <td colspan='4'>
+            <a href="#" data-toggle="modal" data-target="#assignment-create" class="btn btn-outline-secondary btn-sm"><span class="fas fa-plus" aria-hidden="true"></span>Create Assignment</a>
             &nbsp;
             <!--
-            <a href="#" data-toggle="modal" data-target="#assignment-import" class="btn btn-outline-secondary btn-sm"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span>Import Assignment</a>
+            <a href="#" data-toggle="modal" data-target="#assignment-import" class="btn btn-outline-secondary btn-sm"><span class="fas fa-plus" aria-hidden="true"></span>Import Assignment</a>
             &nbsp;-->
-            <a href="#" data-toggle="modal" data-target="#group-create" class="btn btn-outline-secondary btn-sm"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span>Create Group</a>
+            <a href="#" data-toggle="modal" data-target="#group-create" class="btn btn-outline-secondary btn-sm"><span class="fas fa-plus" aria-hidden="true"></span>Create Group</a>
         </td>
-        <td colspan='3'>
-        </td>
+        <!--<td colspan='3'>
+        </td>-->
     </tr>
     
     <!-- ko with: thisCourse() -->
     <!-- ko foreach: groups -->
     <tr class="active hover-remove-rows">
-        <td class="col-md-12 col-sm-12 col-xs-12" colspan="3">
+        <td colspan="3">
             <a href="#" data-bind="click: $root.renameGroup.bind($data, $parent)"><strong data-bind="text: name"></strong></a>
         </td>
         <td>
             <button class='remove-button btn btn-danger btn-xs' type='button' 
                     data-bind="click: $root.removeGroup.bind($data, $parent)">
-                <span class='glyphicon glyphicon-remove' aria-hidden="true"></span>
+                <span class='fas fa-trash' aria-hidden="true"></span>
             </button>
         </td>
     </tr>
     <!-- ko foreach: assignments -->
     <tr class='hover-movers-rows'>
-        <td class='col-md-3 col-sm-3 col-xs-3'>
+        <td style='width: 25%'>
             <strong data-bind="text: title"></strong><br>
             Last modified at
             <span data-bind="text: modified"></span>
         </td>
-        <td class='col-md-5 col-sm-5 col-xs-5'>
-            <span class='label label-default' data-bind="text: type"></span>
+        <td style='width: 42%'>
             <span data-bind="text: body"></span>
         </td>
-        <td class='col-md-1 col-sm-1 col-xs-1'>
+        <td style='width: 16%'>
             <div class="mover-buttons btn-group">
-              <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                 Move Group<span class="caret"></span>
               </button>
-              <ul class="dropdown-menu dropdown-menu-right" data-bind="foreach: $parents[1].groups">
-                  <li><a href="#" data-bind="click: $root.moveMembership.bind($data, $parent, $parents[1]), text: name"></a></li>
-              </ul>
+              <div class="dropdown-menu dropdown-menu-right" data-bind="foreach: $parents[1].groups">
+                  <a href="#" class="dropdown-item" data-bind="click: $root.moveMembership.bind($data, $parent, $parents[1]), text: name"></a>
+              </div>
             </div>
         </td>
-        <td class='col-md-2 col-sm-2 col-xs-2'>
+        <td style='width: 17%'>
             <div class="btn-group">
                 <!-- Select button -->
-                <a target="_blank" data-bind="attr: { href: edit }" class="btn btn-primary">Edit</a>
+                <a target="_blank" data-bind="attr: { href: edit }" class="btn btn-primary btn-sm">Edit</a>
                 <!-- Dropdown -->
-                <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <button type="button" class="btn btn-primary dropdown-toggle btn-sm" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     <span class="caret"></span>
                     <span class="sr-only">Toggle Dropdown</span>
                 </button>
                 <!-- Extended buttons -->
-                <ul class="dropdown-menu">
-                    <li><a href="#" data-bind="click: $root.removeAssignment.bind($data, $parent)">Delete</a></li>
-                </ul>
+                <div class="dropdown-menu">
+                    <a class="dropdown-item" href="#" data-bind="click: $root.removeAssignment.bind($data, $parent)">Delete</a>
+                </div>
             </div>
         </td>
     </tr>
