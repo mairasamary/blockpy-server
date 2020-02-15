@@ -2472,7 +2472,11 @@ BlockMirrorBlockEditor.prototype.TOOLBOXES = {
     name: "Iteration",
     colour: "CONTROL",
     blocks: ['for ___ in ___: pass', 'while ___: pass', 'break']
-  }, TOOLBOX_CATEGORY.SEP, TOOLBOX_CATEGORY.CALCULATIONS, TOOLBOX_CATEGORY.OUTPUT_WITH_PLOTTING, TOOLBOX_CATEGORY.INPUT, TOOLBOX_CATEGORY.SEP, TOOLBOX_CATEGORY.VALUES, TOOLBOX_CATEGORY.CONVERSIONS, {
+  }, {
+    name: "Functions",
+    colour: "FUNCTIONS",
+    blocks: ["def ___(___): pass", "def ___(___: int)->str: pass", "return ___"]
+  }, TOOLBOX_CATEGORY.SEP, TOOLBOX_CATEGORY.CALCULATIONS, TOOLBOX_CATEGORY.OUTPUT_WITH_PLOTTING, TOOLBOX_CATEGORY.INPUT, TOOLBOX_CATEGORY.TURTLES, TOOLBOX_CATEGORY.SEP, TOOLBOX_CATEGORY.VALUES, TOOLBOX_CATEGORY.CONVERSIONS, {
     name: "Lists",
     colour: "LIST",
     blocks: ["[0, 0, 0]", "[___, ___, ___]", "[]", "___.append(___)", "range(0, 10)"]
