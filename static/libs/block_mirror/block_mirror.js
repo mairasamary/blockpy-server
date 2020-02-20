@@ -2435,7 +2435,7 @@ TOOLBOX_CATEGORY.CALCULATIONS = {
 TOOLBOX_CATEGORY.OUTPUT_WITH_PLOTTING = {
   name: "Output",
   colour: "PLOTTING",
-  blocks: ["print(___)", "plt.plot(___)", "plt.scatter(___, ___)", "plt.hist(___)", "plt.show(___)", "plt.title(___)", "plt.xlabel(___)", "plt.ylabel(___)"]
+  blocks: ["print(___)", "plt.plot(___)", "plt.scatter(___, ___)", "plt.hist(___)", "plt.show()", "plt.title(___)", "plt.xlabel(___)", "plt.ylabel(___)"]
 };
 TOOLBOX_CATEGORY.TURTLES = {
   name: "Turtles",
