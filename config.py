@@ -45,6 +45,9 @@ class Config(object):
     SESSION_COOKIE_SECURE = True
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'None'
+    REMEMBER_COOKIE_HTTPONLY = True
+    REMEMBER_COOKIE_SECURE = True
+    COOKIE_SAMESITE = 'None'
 
     # secret key for flask authentication
     SECRET_KEY = secrets.get('FLASK_SECRET_KEY', 'flask-secret-key')
