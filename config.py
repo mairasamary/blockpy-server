@@ -42,6 +42,10 @@ class Config(object):
 
     MAXIMUM_CODE_SIZE = secrets.get("MAXIMUM_CODE_SIZE", 500 * 1024) # Defaults to 500kb
 
+    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
+
     # secret key for flask authentication
     SECRET_KEY = secrets.get('FLASK_SECRET_KEY', 'flask-secret-key')
 
