@@ -12263,6 +12263,7 @@ Sk.builtin.raw_input = function (prompt) {
     var lprompt = prompt ? prompt : "";
 
     return Sk.misceval.chain(Sk.importModule("sys", false, true), function (sys) {
+
         if (Sk.inputfunTakesPrompt) {
             return Sk.misceval.callsimOrSuspendArray(Sk.builtin.file.$readline, [sys["$d"]["stdin"], null, lprompt]);
         } else {
@@ -19654,6 +19655,7 @@ Sk.builtin.file.$readline = function (self, size, prompt) {
 
         lprompt = lprompt ? lprompt : "";
 
+        Sk.misceval.pauseTimer();
         x = Sk.inputfun(lprompt);
 
         if (x instanceof Promise) {
@@ -19664,6 +19666,7 @@ Sk.builtin.file.$readline = function (self, size, prompt) {
                     throw susp.data.error;
                 }
 
+                Sk.misceval.unpauseTimer();
                 return new Sk.builtin.str(susp.data.result);
             };
 
@@ -19674,6 +19677,7 @@ Sk.builtin.file.$readline = function (self, size, prompt) {
 
             return susp;
         } else {
+            Sk.execPaused = Date.now()-Sk.execPaused;
             return new Sk.builtin.str(x);
         }
     } else {
@@ -20734,7 +20738,7 @@ Sk.builtin.float_.prototype.str$ = function (base, sign) {
         if (Sk.__future__.python3) {
             tmp = work.toPrecision(16);
         } else {
-        	tmp = work.toPrecision(12);
+            tmp = work.toPrecision(12);
         }
         
 
@@ -22160,7 +22164,7 @@ Sk.importModuleInternal_ = function (name, dumpJS, modname, suppliedPyBody, rela
         }
 
         if (Sk.dateSet == null || !Sk.dateSet) {
-            finalcode = "Sk.execStart = Sk.lastYield = new Date();\n" + co.code;
+            finalcode = "Sk.execStart = Sk.lastYield = new Date();Sk.execPaused=0;\n" + co.code;
             Sk.dateSet = true;
         }
 
@@ -27039,6 +27043,16 @@ Sk.misceval.startTimer = function() {
     }
 };
 Sk.exportSymbol("Sk.misceval.startTimer", Sk.misceval.startTimer);
+
+Sk.misceval.pauseTimer = function() {
+    Sk.execPaused=Date.now();
+};
+Sk.exportSymbol("Sk.misceval.pauseTimer", Sk.misceval.pauseTimer);
+
+Sk.misceval.unpauseTimer = function() {
+    Sk.execPaused=Date.now()-Sk.execPaused;
+};
+Sk.exportSymbol("Sk.misceval.unpauseTimer", Sk.misceval.unpauseTimer);
 
 Sk.misceval.errorUL = function(mangled) {
     return new Sk.builtin.UnboundLocalError('local variable "'+mangled+ '" referenced before assignment');
@@ -35154,8 +35168,8 @@ Sk.builtin.super_.__doc__ = new Sk.builtin.str(
 var Sk = {}; // jshint ignore:line
 
 Sk.build = {
-    githash: "05d90e07fb5f53d7b6c1c996ffd89f26dd62ff4f",
-    date: "2020-01-18T19:00:20.147Z"
+    githash: "f812dc1f0d0c58855478bd8b4afbde70886a9180",
+    date: "2020-04-19T07:16:14.214Z"
 };
 
 /**
