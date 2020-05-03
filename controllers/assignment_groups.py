@@ -152,6 +152,7 @@ def edit_settings(lti=lti):
     assignment_group_id = int(request.values.get('assignment_group_id'))
     assignment_group = AssignmentGroup.by_id(assignment_group_id)
     ip_ranges = request.values.get('ip_ranges')
+    passcode = request.values.get('passcode')
     # Verify exists
     check_resource_exists(assignment_group, "Assignment Group", assignment_group_id)
     # Verify permissions
@@ -161,10 +162,13 @@ def edit_settings(lti=lti):
         if ip_ranges is not None:
             for assignment in assignment_group.get_assignments():
                 assignment.edit(dict(ip_ranges=ip_ranges))
+                assignment.update_setting("passcode", passcode)
         return redirect(request.url)
     # Result
     else:
-        existing_ip_ranges = [assignment.ip_ranges for assignment in assignment_group.get_assignments()]
+        assignments = assignment_group.get_assignments()
+        passcode = assignments[0].get_setting("passcode", "")
+        existing_ip_ranges = [assignment.ip_ranges for assignment in assignments]
         merged_duplicates = set(existing_ip_ranges)
         warning = ""
         if len(merged_duplicates) == 1:
@@ -179,10 +183,12 @@ def edit_settings(lti=lti):
             <p>Assignment: {group_name}</p>
             <p>{warning}</p>
             <form action="" method=post>
-              <p><input type=text name=ip_ranges value="{ip_ranges}">
+              <p>IP Ranges: <input type=text name=ip_ranges value="{ip_ranges}"><br>
+                 Passcode: <input type=text name=passcode value="{passcode}"><br>
                  <input type=submit value=Change>
             </form>
             '''.format(group_name=assignment_group.name,
                        ip_ranges=ip_ranges if ip_ranges else "",
+                       passcode=passcode if passcode else "",
                        warning=warning)
 

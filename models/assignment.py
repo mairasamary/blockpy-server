@@ -291,6 +291,13 @@ class Assignment(Base):
         settings = json.loads(self.settings)
         return settings.get(key, default_value)
 
+    def update_setting(self, key, value):
+        settings = json.loads(self.settings)
+        settings[key] = value
+        self.settings = json.dumps(settings)
+        self.version += 1
+        db.session.commit()
+
     def passcode_fails(self, given_passcode):
         """
         Determine if the given string matches this assignments' stored passcode, or that
