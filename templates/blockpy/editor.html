@@ -116,9 +116,13 @@
                 {% endfor %}
             });
 
+            {% if passcode_protected %}
+            editor.requestPasscode();
+            {% endif %}
+
             {% if current_assignment_id != None %}
-            editor.loadAssignment({{ current_assignment_id }});
-            altAssignmentChangingFunction = editor.loadAssignment.bind(editor);
+                editor.loadAssignment({{ current_assignment_id }});
+                altAssignmentChangingFunction = editor.loadAssignment.bind(editor);
             {% endif %}
 
             {% if current_submission_id %}

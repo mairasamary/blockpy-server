@@ -112,6 +112,9 @@ def load_assignment(lti=lti):
         # Log the event
         if user is not None:
             make_log_entry(assignment_id, assignment.version, course_id, user_id, 'Session.Start')
+    # Verify passcode, if necessary
+    if assignment.passcode_fails(request.values.get('passcode')):
+        return ajax_failure("Passcode {!r} rejected".format(request.values.get("passcode")))
     return ajax_success(editor_information)
 
 

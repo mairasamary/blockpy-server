@@ -259,11 +259,16 @@ def parse_assignment_load():
                        for assignment in assignments]
     # Determine the users' role in relation to this information
     role = user.determine_role(assignments, submissions) if user else "anonymous"
-    # Check for any IP locked assignments
     if role in ("student", "anonymous"):
+        # Check for any IP locked assignments
         for assignment in assignments:
             if not assignment.is_allowed(request.remote_addr):
                 return abort(403, "You cannot access this assignment from your current location: "+request.remote_addr)
+    # Check passcode
+    passcode_protected = False
+    for assignment in assignments:
+        if assignment.has_passcode() and not passcode_protected:
+            passcode_protected = True
     # Combine the submissions and assignments
     group = list(zip(assignments, submissions))
     # Okay we've got everything
@@ -277,7 +282,8 @@ def parse_assignment_load():
                 user_id=user_id,
                 role=role,
                 course_id=course_id,
-                embed=embed)
+                embed=embed,
+                passcode_protected=passcode_protected)
 
 
 class MLStripper(HTMLParser):

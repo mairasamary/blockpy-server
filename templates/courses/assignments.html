@@ -176,6 +176,13 @@ function MainModel() {
             }
         });
     };
+
+
+
+    self.viewGroup = function(course, group) {
+        var baseUrl = "{{  url_for('assignments.load')|safe }}?";
+        return baseUrl+"&course_id="+course.id+"&assignment_group_id="+group.id;
+    };
     
     self.renameGroup = function(course, group) {
         new_name = window.prompt("Give a new name for this group:", group.name);
@@ -306,19 +313,15 @@ $().ready(function() {
     background-color: #e9eaed;
 }
 
-tr:hover.hover-movers-rows div.mover-buttons {
+tr:hover.hover-movers-rows div.mover-buttons,
+tr:hover.hover-remove-rows button.remove-button,
+tr:hover.hover-remove-rows a.view-button {
     visibility: visible;
 }
 
-tr.hover-movers-rows div.mover-buttons {
-    visibility: hidden;
-}
-
-tr:hover.hover-remove-rows button.remove-button {
-    visibility: visible;
-}
-
-tr.hover-remove-rows button.remove-button {
+tr.hover-movers-rows div.mover-buttons,
+tr.hover-remove-rows button.remove-button,
+tr.hover-remove-rows a.view-button {
     visibility: hidden;
 }
 
@@ -424,6 +427,8 @@ tr.hover-remove-rows button.remove-button {
                     data-bind="click: $root.removeGroup.bind($data, $parent)">
                 <span class='fas fa-trash' aria-hidden="true"></span>
             </button>
+            <a target="_blank" data-bind="attr: { href: $root.viewGroup($parent, $data) }"
+               class="btn btn-primary btn-sm view-button">View</a>
         </td>
     </tr>
     <!-- ko foreach: assignments -->

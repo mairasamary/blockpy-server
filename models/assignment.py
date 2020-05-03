@@ -1,5 +1,7 @@
 from ipaddress import ip_address, ip_network
+from hmac import compare_digest
 import json
+from json import JSONDecodeError
 from typing import Optional
 
 from slugify import slugify
@@ -283,7 +285,23 @@ class Assignment(Base):
         return whitelisted or (not blacklisted and allowed)
 
     def get_setting(self, key, default_value=None):
+        # TODO: Handle corrupted settings more elegantly.
         if not self.settings:
             return default_value
         settings = json.loads(self.settings)
         return settings.get(key, default_value)
+
+    def passcode_fails(self, given_passcode):
+        """
+        Determine if the given string matches this assignments' stored passcode, or that
+        there is no stored passcode. Uses a proper constant-time string comparison to
+        avoid timing attacks.
+
+        :param given_passcode: the user provided passcode (probably via requests.values).
+        :return: Whether the passcode failed
+        """
+        actual_passcode = self.get_setting("passcode", "")
+        return actual_passcode and not compare_digest(given_passcode, actual_passcode)
+
+    def has_passcode(self):
+        return bool(self.get_setting("passcode", ""))
