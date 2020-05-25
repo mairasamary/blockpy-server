@@ -7,12 +7,14 @@ Functions for importing/exporting to various formats
 * PEML: common format for sharing human-readable/editable assignments.
 """
 import io
+import json
 import os
 import shutil
 import zipfile
 from typing import Type, Union
 
 from natsort import natsorted
+from werkzeug.utils import secure_filename
 
 from models.assignment import Assignment
 from models.assignment_group import AssignmentGroup
@@ -130,3 +132,34 @@ def export_progsnap2(output, course_id, assignment_group_ids=None):
 def export_peml():
     # TODO
     pass
+
+
+# noinspection PyTypeHints
+def export_zip(assignments=None, submissions=None, users=None):
+    dumped = {}
+    assignment_paths = {}
+    if assignments:
+        for assignment in assignments:
+            assignment_paths[assignment.id] = assignment.get_filename(extension='')
+            dumped[assignment.get_filename(extension='.md')] = json.dumps(assignment.encode_json())
+    user_paths = {}
+    user_names = []
+    if users:
+        for user in users:
+            user_paths[user.id] = secure_filename(user.name())
+            user_names.append(user.name())
+    dumped['users.txt'] = "\n".join(user_names)
+    if submissions:
+        for submission in submissions:
+            files = submission.encode_human()
+            for filename, contents in files.items():
+                path = assignment_paths[submission.assignment_id]+'/'
+                path += user_paths[submission.user_id]+'/'
+                path += filename
+                dumped[path] = contents
+    print(list(dumped.keys()))
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+        for file_name, data in dumped.items():
+            zip_file.writestr(file_name, data)
+    return zip_buffer.getvalue()

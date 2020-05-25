@@ -114,11 +114,11 @@ class Assignment(Base):
     def slug(self):
         return slugify(self.name)
 
-    def get_filename(self):
+    def get_filename(self, extension='.json'):
         if self.url:
-            return secure_filename(self.url) + ".json"
+            return secure_filename(self.url) + extension
         else:
-            return secure_filename(self.name) + ".json"
+            return secure_filename(self.name) + extension
 
     @staticmethod
     def get_available():

@@ -1,3 +1,4 @@
+import json
 import os
 import time
 
@@ -85,6 +86,31 @@ class Submission(Base):
             'date_modified': datetime_to_string(self.date_modified),
             'date_created': datetime_to_string(self.date_created)
         }
+
+    def encode_human(self):
+        try:
+            extra_files = json.loads(self.extra_files)
+            extra_files = {f['filename']: f['contents'] for f in extra_files}
+        except json.JSONDecodeError:
+            extra_files = {}
+        files = {
+            'answer.py': self.code,
+            '_grade.json': json.dumps({
+                'score': self.score,
+                'correct': self.correct,
+                'submission_status': self.submission_status,
+                'grading_status': self.grading_status,
+                'assignment_id': self.assignment_id,
+                'id': self.id,
+                'course_id': self.course_id,
+                'user_id': self.user_id,
+                'assignment_version': self.assignment_version,
+                'version': self.version,
+                'files': ['answer.py']+[f[0] for f in extra_files]
+            }),
+            **extra_files
+        }
+        return files
 
     @staticmethod
     def full_by_id(submission_id):

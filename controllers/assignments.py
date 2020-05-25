@@ -2,7 +2,7 @@ import json
 
 from werkzeug.utils import secure_filename
 
-from models.portation import export_bundle, import_bundle
+from models.portation import export_bundle, import_bundle, export_zip
 
 try:
     from urllib.parse import quote as url_quote
@@ -26,6 +26,7 @@ from models.models import (db)
 from models.course import Course
 from models.assignment import Assignment
 from models.assignment_group import AssignmentGroup
+from models.submission import Submission
 
 blueprint_assignments = Blueprint('assignments', __name__, url_prefix='/assignments')
 
@@ -210,3 +211,29 @@ def bulk_upload():
 @blueprint_assignments.route('/images/<path:path>', methods=['GET', 'POST'])
 def assignments_static_images(path):
     return app.send_static_file('images/' + path)
+
+
+@blueprint_assignments.route('/export_submissions/', methods=['GET', 'POST'])
+@blueprint_assignments.route('/export_submissions', methods=['GET', 'POST'])
+@login_required
+@require_request_parameters('assignment_id')
+def export_submissions():
+    assignment_id = int(request.values.get('assignment_id'))
+    assignment = Assignment.by_id(assignment_id)
+    course_id = get_course_id(True)
+    user, user_id = get_user()
+    # Verify exists
+    check_resource_exists(assignment, "Assignment", assignment_id)
+    # Verify permissions
+    assignment = Assignment.by_id(int(assignment_id))
+    if course_id is None or not user.is_instructor(int(course_id)):
+        return "You are not an instructor or the owner of the assignment!"
+    # Get data
+    suas = Submission.by_assignment(assignment_id, course_id)
+    submissions = [sua[0] for sua in suas]
+    users = [sua[1] for sua in suas]
+    bundle = export_zip(assignments=[assignment], submissions=submissions,
+                        users=users)
+    filename = assignment.get_filename(extension='.zip')
+    return Response(bundle, mimetype='application/zip',
+                    headers={'Content-Disposition': 'attachment;filename={}'.format(filename)})

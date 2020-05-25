@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 import os
 
@@ -123,6 +124,10 @@ class Base(Model):
                 self.version += 1
             db.session.commit()
         return modified
+
+    def encode_human(self):
+        """ Create a human-friendly version of this data """
+        return {'{id}.md'.format(id=self.id): json.dumps(self.encode_human())}
 
 
 assignment_tag_membership = Table('assignment_tag_membership', Base.metadata,

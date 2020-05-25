@@ -400,3 +400,5 @@ def fix_course_outcome_url():
     course = Course.by_id(course_id)
     course.update_endpoint(new_url)
     return ajax_success({"success": "True"})
+
+
