@@ -1,5 +1,7 @@
 "use strict";
 
+function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
 /**
  * Initialise the database of variable names.
  * @param {!Blockly.Workspace} workspace Workspace to generate code from.
@@ -107,14 +109,14 @@ Blockly.Variables.flyoutCategoryBlocks = function (workspace) {
     // New variables are added to the end of the variableModelList.
     var mostRecentVariableFieldXmlString = variableModelList[variableModelList.length - 1];
 
-    if (Blockly.Blocks['ast_Assign']) {
+    if (!Blockly.Variables._HIDE_GETTERS_SETTERS && Blockly.Blocks['ast_Assign']) {
       var gap = Blockly.Blocks['ast_AugAssign'] ? 8 : 24;
       var blockText = '<xml>' + '<block type="ast_Assign" gap="' + gap + '">' + mostRecentVariableFieldXmlString + '</block>' + '</xml>';
       var block = Blockly.Xml.textToDom(blockText).firstChild;
       xmlList.push(block);
     }
 
-    if (Blockly.Blocks['ast_AugAssign']) {
+    if (!Blockly.Variables._HIDE_GETTERS_SETTERS && Blockly.Blocks['ast_AugAssign']) {
       var gap = Blockly.Blocks['ast_Name'] ? 20 : 8;
       var blockText = '<xml>' + '<block type="ast_AugAssign" gap="' + gap + '">' + mostRecentVariableFieldXmlString + '<value name="VALUE">' + '<shadow type="ast_Num">' + '<field name="NUM">1</field>' + '</shadow>' + '</value>' + '<mutation options="false" simple="true"></mutation>' + '</block>' + '</xml>';
       var block = Blockly.Xml.textToDom(blockText).firstChild;
@@ -125,11 +127,23 @@ Blockly.Variables.flyoutCategoryBlocks = function (workspace) {
       variableModelList.sort(Blockly.VariableModel.compareByName);
 
       for (var i = 0, variable; variable = variableModelList[i]; i++) {
-        var block = Blockly.utils.xml.createElement('block');
-        block.setAttribute('type', 'ast_Name');
-        block.setAttribute('gap', 8);
-        block.appendChild(Blockly.Variables.generateVariableFieldDom(variable));
-        xmlList.push(block);
+        if (!Blockly.Variables._HIDE_GETTERS_SETTERS) {
+          var _block = Blockly.utils.xml.createElement('block');
+
+          _block.setAttribute('type', 'ast_Name');
+
+          _block.setAttribute('gap', 8);
+
+          _block.appendChild(Blockly.Variables.generateVariableFieldDom(variable));
+
+          xmlList.push(_block);
+        } else {
+          block = Blockly.utils.xml.createElement('label');
+          block.setAttribute('text', variable.name);
+          block.setAttribute('web-class', 'blockmirror-toolbox-variable'); //block.setAttribute('gap', 8);
+
+          xmlList.push(block);
+        }
       }
     }
   }
@@ -183,8 +197,6 @@ function BlockMirror(configuration) {
   this.setMode(this.configuration.viewMode);
 }
 
-;
-
 BlockMirror.prototype.validateConfiguration = function (configuration) {
   this.configuration = {}; // Container
 
@@ -225,7 +237,10 @@ BlockMirror.prototype.validateConfiguration = function (configuration) {
 
   this.isParsons = function () {
     return false;
-  };
+  }; // Convert image URLs?
+
+
+  this.configuration.imageUrls = configuration.imageUrls || true;
 };
 
 BlockMirror.prototype.initializeVariables = function () {
@@ -364,6 +379,8 @@ BlockMirror.prototype.clearHighlightedLines = function () {
 };
 
 function BlockMirrorTextEditor(blockMirror) {
+  var _this = this;
+
   this.blockMirror = blockMirror;
   this.textContainer = blockMirror.tags.textContainer;
   this.textArea = blockMirror.tags.textArea;
@@ -429,14 +446,91 @@ function BlockMirrorTextEditor(blockMirror) {
           hint: CodeMirror.pythonHint
       });
   });*/
-}
+  //https://i.imgur.com/ITZKRiq.png
+
+  this.codeMirror.on("beforeChange", function (cm, change) {
+    if (_this.blockMirror.configuration.imageUrls) {
+      if (change.origin === "paste") {
+        var newText = change.text[0];
+
+        if (_this.isImageUrl(newText)) {
+          change.update(null, null, ["\"".concat(newText, "\"")]);
+        }
+      }
+    }
+  });
+  this.codeMirror.on("change", function (cm, change) {
+    if (_this.blockMirror.configuration.imageUrls) {
+      console.log(change);
+      var lastLine;
+
+      if (change.origin === "paste" || change.origin === "setValue") {
+        //"https://game-icons.net/icons/ffffff/000000/1x1/delapouite/labrador-head.png"
+        lastLine = change.from.line + change.text.length;
+      } else {
+        lastLine = Math.max(1 + change.to.line, change.text.length);
+      }
+
+      cm.doc.eachLine(change.from.line, lastLine, function (line) {
+        var match;
+
+        var _loop = function _loop() {
+          var imageWidget = _this.makeImageWidget(match[2]);
+
+          var imageMarker = cm.markText({
+            line: cm.doc.getLineNumber(line),
+            ch: match.index
+          }, {
+            line: cm.doc.getLineNumber(line),
+            ch: match.index + match[0].length
+          }, {
+            atomic: true,
+            replacedWith: imageWidget
+          });
+
+          imageWidget.onclick = function (x) {
+            return imageMarker.clear();
+          };
+        };
+
+        while ((match = HAS_IMAGE_URL.exec(line.text)) !== null) {
+          _loop();
+        }
+      });
+    }
+  });
+} //BlockMirrorTextEditor.prototype.enableImages = function (url) {
+//BlockMirrorTextEditor.prototype.disableImage = function (url) {
+
+
+BlockMirrorTextEditor.prototype.makeImageWidget = function (url) {
+  var x = document.createElement("IMG");
+  x.setAttribute("src", url);
+  x.setAttribute("height", "40");
+  x.setAttribute("width", "40");
+  x.setAttribute("alt", url);
+
+  x.onmouseover = function (x) {
+    return console.log("Turn it off");
+  };
+
+  return x;
+}; //'https://game-icons.net/icons/ffffff/000000/1x1/delapouite/labrador-head.png'
+
+
+var FULL_IMAGE_URL = /^(?:http(s)?:\/\/)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:/?#[\]@!\$&'\(\)\*\+,;=.]+(?:png|jpg|jpeg|gif|svg)+$/;
+var HAS_IMAGE_URL = /(["'])((?:http(s)?:\/\/)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:/?#[\]@!\$&'\(\)\*\+,;=.]+(?:png|jpg|jpeg|gif|svg)+)\1/g;
+
+BlockMirrorTextEditor.prototype.isImageUrl = function (url) {
+  return url.match(FULL_IMAGE_URL);
+};
 
 BlockMirrorTextEditor.prototype.defocus = function () {
   this.codeMirror.display.input.blur();
 };
 
-BlockMirrorTextEditor.prototype.updateWidth = function () {
-  var newWidth = '0%';
+BlockMirrorTextEditor.prototype.updateWidth = function () {//var newWidth = '0%';
+
   /*if (this.blockMirror.views.includes('text')) {
       newWidth = (100 / this.blockMirror.views.length)+'%';
   }
@@ -549,15 +643,15 @@ BlockMirrorTextEditor.prototype.getCode = function () {
 };
 
 BlockMirrorTextEditor.prototype.changed = function (codeMirror, event) {
-  var _this = this;
+  var _this2 = this;
 
   if (!this.silentEvents_) {
     var handleChange = function handleChange() {
-      var newCode = _this.getCode();
+      var newCode = _this2.getCode();
 
-      _this.blockMirror.blockEditor.setCode(newCode, true);
+      _this2.blockMirror.blockEditor.setCode(newCode, true);
 
-      _this.blockMirror.setCode(newCode, true);
+      _this2.blockMirror.setCode(newCode, true);
     };
 
     if (this.blockMirror.configuration.blockDelay === false) {
@@ -579,11 +673,11 @@ BlockMirrorTextEditor.prototype.isVisible = function () {
 };
 
 BlockMirrorTextEditor.prototype.setHighlightedLines = function (lines, style) {
-  var _this2 = this;
+  var _this3 = this;
 
   var handles = lines.map(function (l) {
     return {
-      "handle": _this2.codeMirror.doc.addLineClass(l - 1, "background", style),
+      "handle": _this3.codeMirror.doc.addLineClass(l - 1, "background", style),
       "style": style
     };
   });
@@ -591,13 +685,13 @@ BlockMirrorTextEditor.prototype.setHighlightedLines = function (lines, style) {
 };
 
 BlockMirrorTextEditor.prototype.clearHighlightedLines = function () {
-  var _this3 = this;
+  var _this4 = this;
 
   if (this.highlightedHandles) {
     var removed = this.highlightedHandles.map(function (h) {
-      _this3.codeMirror.doc.removeLineClass(h.handle, "background", h.style);
+      _this4.codeMirror.doc.removeLineClass(h.handle, "background", h.style);
 
-      var info = _this3.codeMirror.doc.lineInfo(h.handle);
+      var info = _this4.codeMirror.doc.lineInfo(h.handle);
 
       if (info) {
         return info.line + 1;
@@ -607,6 +701,28 @@ BlockMirrorTextEditor.prototype.clearHighlightedLines = function () {
     });
     this.highlightedHandles = [];
     return removed;
+  }
+};
+
+document.onpaste = function (event) {
+  var items = (event.clipboardData || event.originalEvent.clipboardData).items;
+  console.log(JSON.stringify(items)); // will give you the mime types
+
+  for (index in items) {
+    var item = items[index];
+
+    if (item.kind === 'file') {
+      var blob = item.getAsFile();
+      var reader = new FileReader();
+
+      reader.onload = function (event) {
+        console.log(_typeof(event.target.result)); // data url!
+
+        $(".cm-embedded-image").css("background-image", "url(" + event.target.result + ")").css("background-size", "contain").css("background-repeat-x", "no-repeat").css("background-repeat-y", "no-repeat").css("padding-left", "30px").css("padding-bottom", "5px");
+      };
+
+      reader.readAsDataURL(blob);
+    }
   }
 };
 /**
@@ -726,8 +842,9 @@ BlockMirrorBlockEditor.prototype.resized = function (e) {
 };
 
 BlockMirrorBlockEditor.prototype.toolboxPythonToBlocks = function (toolboxPython) {
-  var _this4 = this;
+  var _this5 = this;
 
+  Blockly.Variables._HIDE_GETTERS_SETTERS = false;
   return toolboxPython.map(function (category) {
     if (typeof category === "string") {
       return category;
@@ -743,11 +860,16 @@ BlockMirrorBlockEditor.prototype.toolboxPythonToBlocks = function (toolboxPython
     }
 
     var body = (category.blocks || []).map(function (code) {
-      var result = _this4.blockMirror.textToBlocks.convertSource('toolbox.py', code);
+      var result = _this5.blockMirror.textToBlocks.convertSource('toolbox.py', code);
 
       return result.rawXml.innerHTML.toString();
     }).join("\n");
     var footer = "</category>";
+
+    if (category['hideGettersSetters']) {
+      Blockly.Variables._HIDE_GETTERS_SETTERS = true;
+    }
+
     return [header, body, footer].join("\n");
   }).join("\n");
 };
@@ -1067,6 +1189,7 @@ BlockMirrorTextToBlocks.prototype.convertSource = function (filename, python_sou
       parse = Sk.parse(filename, python_source);
       ast = Sk.astFromParse(parse.cst, filename, parse.flags);
     } catch (e) {
+      console.error(e);
       error = e;
 
       if (e.traceback && e.traceback.length && e.traceback[0].lineno && e.traceback[0].lineno < previousLine) {
@@ -1138,9 +1261,9 @@ BlockMirrorTextToBlocks.prototype.recursiveMeasure = function (node, nextBlockLi
 
   if ("body" in node) {
     for (var i = 0; i < node.body.length; i++) {
-      var next;
+      var next = void 0;
 
-      if (i + 1 == node.body.length) {
+      if (i + 1 === node.body.length) {
         next = myNext;
       } else {
         next = node.body[i + 1].lineno - 1;
@@ -1151,16 +1274,16 @@ BlockMirrorTextToBlocks.prototype.recursiveMeasure = function (node, nextBlockLi
   }
 
   if ("orelse" in node) {
-    for (var i = 0; i < node.orelse.length; i++) {
-      var next;
+    for (var _i = 0; _i < node.orelse.length; _i++) {
+      var _next = void 0;
 
-      if (i == node.orelse.length) {
-        next = nextBlockLine;
+      if (_i === node.orelse.length) {
+        _next = nextBlockLine;
       } else {
-        next = 1 + (node.orelse[i].lineno - 1);
+        _next = 1 + (node.orelse[_i].lineno - 1);
       }
 
-      this.recursiveMeasure(node.orelse[i], next);
+      this.recursiveMeasure(node.orelse[_i], _next);
     }
   }
 };
@@ -1247,7 +1370,8 @@ BlockMirrorTextToBlocks.prototype.convertBody = function (node, parent) {
   for (var i = 0; i < node.length; i++) {
     lineNumberInBody += 1;
     lineNumberInProgram = node[i].lineno;
-    distance = 0, wasFirstLine = true;
+    distance = 0;
+    wasFirstLine = true;
 
     if (previousLineInProgram != null) {
       distance = lineNumberInProgram - previousLineInProgram - 1;
@@ -1258,14 +1382,14 @@ BlockMirrorTextToBlocks.prototype.convertBody = function (node, parent) {
 
     commentCount = 0;
 
-    for (var commentLineInProgram in this.comments) {
-      if (commentLineInProgram < lineNumberInProgram) {
-        var commentChild = this.ast_Comment(this.comments[commentLineInProgram], commentLineInProgram);
+    for (var _commentLineInProgram in this.comments) {
+      if (_commentLineInProgram < lineNumberInProgram) {
+        var commentChild = this.ast_Comment(this.comments[_commentLineInProgram], _commentLineInProgram);
 
         if (previousLineInProgram == null) {
           nestChild(commentChild);
         } else {
-          var skipped_previous_line = Math.abs(previousLineInProgram - commentLineInProgram) > 1;
+          var skipped_previous_line = Math.abs(previousLineInProgram - _commentLineInProgram) > 1;
 
           if (is_top_level && skipped_previous_line) {
             addPeer(commentChild);
@@ -1274,10 +1398,10 @@ BlockMirrorTextToBlocks.prototype.convertBody = function (node, parent) {
           }
         }
 
-        previousLineInProgram = commentLineInProgram;
-        this.highestLineSeen = Math.max(this.highestLineSeen, parseInt(commentLineInProgram, 10));
+        previousLineInProgram = _commentLineInProgram;
+        this.highestLineSeen = Math.max(this.highestLineSeen, parseInt(_commentLineInProgram, 10));
         distance = lineNumberInProgram - previousLineInProgram;
-        delete this.comments[commentLineInProgram];
+        delete this.comments[_commentLineInProgram];
         commentCount += 1;
       }
     }
@@ -1406,9 +1530,9 @@ BlockMirrorTextToBlocks.prototype.getChunkHeights = function (node) {
   }
 
   if (node.hasOwnProperty("orelse")) {
-    for (var i = 0; i < node.orelse.length; i += 1) {
-      var subnode = node.orelse[i];
-      lineNumbers = lineNumbers.concat(this.getChunkHeights(subnode));
+    for (var _i2 = 0; _i2 < node.orelse.length; _i2 += 1) {
+      var _subnode = node.orelse[_i2];
+      lineNumbers = lineNumbers.concat(this.getChunkHeights(_subnode));
     }
   }
 
@@ -1490,13 +1614,13 @@ BlockMirrorTextToBlocks.create_block = function (type, lineNumber, fields, value
       if (statementValue == null) {
         continue;
       } else {
-        for (var i = 0; i < statementValue.length; i += 1) {
+        for (var _i3 = 0; _i3 < statementValue.length; _i3 += 1) {
           // In most cases, you really shouldn't ever have more than
           //  one statement in this list. I'm not sure Blockly likes
           //  that.
           var newStatement = document.createElement("statement");
           newStatement.setAttribute("name", statement);
-          newStatement.appendChild(statementValue[i]);
+          newStatement.appendChild(statementValue[_i3]);
           newBlock.appendChild(newStatement);
         }
       }
@@ -2552,12 +2676,43 @@ BlockMirrorBlockEditor.prototype.TOOLBOXES = {
     name: "Comments",
     colour: "PYTHON",
     blocks: ["# ", '"""\n"""']
-    /*,
-    {name: "Weird Stuff", colour: "PYTHON", blocks: [
-      "delete ___",
-      "global ___"
-    ]}*/
-
+  }
+  /*,
+  {name: "Weird Stuff", colour: "PYTHON", blocks: [
+    "delete ___",
+    "global ___"
+  ]}*/
+  ],
+  //******************************************************
+  'ct2': [{
+    name: 'Memory',
+    colour: 'VARIABLES',
+    custom: 'VARIABLE',
+    hideGettersSetters: true
+  }, TOOLBOX_CATEGORY.SEP, {
+    name: "Constants",
+    colour: "TEXT",
+    blocks: ['""', "0", "True", "[0, 0, 0]", "[___, ___, ___]", "[]"]
+  }, {
+    name: "Variables",
+    colour: "VARIABLES",
+    blocks: ["VARIABLE"]
+  }, TOOLBOX_CATEGORY.CALCULATIONS, TOOLBOX_CATEGORY.CONVERSIONS, {
+    name: "Conditions",
+    colour: "LOGIC",
+    blocks: ['___ == ___', '___ < ___', '___ and ___', 'not ___']
+  }, TOOLBOX_CATEGORY.INPUT, TOOLBOX_CATEGORY.SEP, {
+    name: "Assignment",
+    colour: "VARIABLES",
+    blocks: ["VARIABLE = ___", "___.append(___)"]
+  }, TOOLBOX_CATEGORY.OUTPUT_WITH_PLOTTING, TOOLBOX_CATEGORY.SEP, {
+    name: "Decision",
+    colour: "CONTROL",
+    blocks: ['if ___: pass', 'if ___: pass\nelse: pass']
+  }, {
+    name: "Iteration",
+    colour: "CONTROL",
+    blocks: ['for ___ in ___: pass']
   }]
 };
 BlockMirrorTextToBlocks.BLOCKS.push({
@@ -3514,6 +3669,18 @@ BlockMirrorTextToBlocks.BLOCKS.push({
   "extensions": ["text_quotes"]
 });
 BlockMirrorTextToBlocks.BLOCKS.push({
+  "type": "ast_StrChar",
+  "message0": "%1",
+  "args0": [{
+    "type": "field_dropdown",
+    "name": "TEXT",
+    "options": [["\\n", "\n"], ["\\t", "\t"]]
+  }],
+  "output": "String",
+  "colour": BlockMirrorTextToBlocks.COLOR.TEXT,
+  "extensions": ["text_quotes"]
+});
+BlockMirrorTextToBlocks.BLOCKS.push({
   "type": "ast_StrMultiline",
   "message0": "%1",
   "args0": [{
@@ -3539,15 +3706,79 @@ BlockMirrorTextToBlocks.BLOCKS.push({
   "nextStatement": null,
   "colour": BlockMirrorTextToBlocks.COLOR.TEXT
 });
+Blockly.Blocks['ast_StrImage'] = {
+  init: function init() {
+    this.setColour(BlockMirrorTextToBlocks.COLOR.TEXT);
+    this.src_ = "loading.png";
+    this.updateShape_();
+    this.setOutput(true);
+  },
+  mutationToDom: function mutationToDom() {
+    var container = document.createElement('mutation');
+    container.setAttribute('src', this.src_);
+    return container;
+  },
+  domToMutation: function domToMutation(xmlElement) {
+    this.src_ = xmlElement.getAttribute('src');
+    this.updateShape_();
+  },
+  updateShape_: function updateShape_() {
+    var image = this.getInput('IMAGE');
+
+    if (!image) {
+      image = this.appendDummyInput("IMAGE");
+      image.appendField(new Blockly.FieldImage(this.src_, 20, 20, {
+        alt: this.src_,
+        flipRtl: "FALSE"
+      }));
+    }
+
+    var imageField = image.fieldRow[0];
+    imageField.setValue(this.src_);
+  }
+};
+/*
+"https://game-icons.net/icons/ffffff/000000/1x1/delapouite/labrador-head.png"
+BlockMirrorTextToBlocks.BLOCKS.push({
+    "type": "ast_StrImage",
+    "message0": "%1%2",
+    "args0": [
+        {"type": "field_image", "src": "https://game-icons.net/icons/ffffff/000000/1x1/delapouite/labrador-head.png", "width": 20, "height": 20, "alt": ""},
+        //{"type": "field_label_serializable", "name": "SRC", "value": '', "visible": "false"}
+    ],
+    "output": "String",
+    "colour": BlockMirrorTextToBlocks.COLOR.TEXT,
+    //"extensions": ["text_quotes"]
+});*/
 
 Blockly.Python['ast_Str'] = function (block) {
-  // Text value.
+  // Text value
   var code = Blockly.Python.quote_(block.getFieldValue('TEXT'));
+  code = code.replace("\n", "n");
+  return [code, Blockly.Python.ORDER_ATOMIC];
+};
+
+Blockly.Python['ast_StrChar'] = function (block) {
+  // Text value
+  var value = block.getFieldValue('TEXT');
+
+  switch (value) {
+    case "\n":
+      return ["'\\n'", Blockly.Python.ORDER_ATOMIC];
+
+    case "\t":
+      return ["'\\t'", Blockly.Python.ORDER_ATOMIC];
+  }
+};
+
+Blockly.Python['ast_StrImage'] = function (block) {
+  // Text value
+  var code = Blockly.Python.quote_(block.src_);
   return [code, Blockly.Python.ORDER_ATOMIC];
 };
 
 Blockly.Python['ast_StrMultiline'] = function (block) {
-  // Text value.
+  // Text value
   var code = Blockly.Python.multiline_quote_(block.getFieldValue('TEXT'));
   return [code, Blockly.Python.ORDER_ATOMIC];
 };
@@ -3567,29 +3798,43 @@ Blockly.Python['ast_StrDocstring'] = function (block) {
   return Blockly.Python.multiline_quote_(code) + "\n";
 };
 
+BlockMirrorTextToBlocks.prototype.isSingleChar = function (text) {
+  return text === "\n" || text === "\t";
+};
+
 BlockMirrorTextToBlocks.prototype.isDocString = function (node, parent) {
   return parent._astname === 'Expr' && parent._parent && ['FunctionDef', 'ClassDef'].indexOf(parent._parent._astname) !== -1 && parent._parent.body[0] === parent;
 };
 
-BlockMirrorTextToBlocks.prototype.dedent = function (text, levels) {
+BlockMirrorTextToBlocks.prototype.isSimpleString = function (text) {
+  return text.split("\n").length <= 2 && text.length <= 40;
+};
+
+BlockMirrorTextToBlocks.prototype.dedent = function (text, levels, isDocString) {
+  if (!isDocString && text.charAt(0) === "\n") {
+    return text;
+  }
+
   var split = text.split("\n");
   var indentation = "    ".repeat(levels);
-  var recombined = [];
+  var recombined = []; // Are all lines indented?
 
   for (var i = 0; i < split.length; i++) {
-    // Are all lines indented?
+    // This was a blank line, add it unchanged unless its the first line
     if (split[i] === '') {
       if (i !== 0) {
         recombined.push("");
-      }
+      } // If it has our ideal indentation, add it without indentation
+
     } else if (split[i].startsWith(indentation)) {
       var unindentedLine = split[i].substr(indentation.length);
 
       if (unindentedLine !== '' || i !== split.length - 1) {
         recombined.push(unindentedLine);
-      }
+      } // If it's the first line, then add it unmodified
+
     } else if (i === 0) {
-      recombined.push(split[i]);
+      recombined.push(split[i]); // This whole structure cannot be uniformly dedented, better give up.
     } else {
       return text;
     }
@@ -3603,8 +3848,16 @@ BlockMirrorTextToBlocks.prototype['ast_Str'] = function (node, parent) {
   var s = node.s;
   var text = Sk.ffi.remapToJs(s);
 
-  if (this.isDocString(node, parent)) {
-    var dedented = this.dedent(text, this.levelIndex - 1);
+  if (text.startsWith("http") && text.endsWith(".png")) {
+    return BlockMirrorTextToBlocks.create_block("ast_StrImage", node.lineno, {}, {}, {}, {
+      "@src": text
+    });
+  } else if (this.isSingleChar(text)) {
+    return BlockMirrorTextToBlocks.create_block("ast_StrChar", node.lineno, {
+      "TEXT": text
+    });
+  } else if (this.isDocString(node, parent)) {
+    var dedented = this.dedent(text, this.levelIndex - 1, true);
     return [BlockMirrorTextToBlocks.create_block("ast_StrDocstring", node.lineno, {
       "TEXT": dedented
     })];
@@ -3613,7 +3866,7 @@ BlockMirrorTextToBlocks.prototype['ast_Str'] = function (node, parent) {
       "TEXT": text
     });
   } else {
-    var _dedented = this.dedent(text, this.levelIndex - 1);
+    var _dedented = this.dedent(text, this.levelIndex - 1, false);
 
     return BlockMirrorTextToBlocks.create_block("ast_StrMultiline", node.lineno, {
       "TEXT": _dedented
@@ -5042,13 +5295,13 @@ Blockly.Blocks['ast_Call'] = {
     this.quarkIds_ = paramIds; // Reconnect any child blocks.
 
     if (this.quarkIds_) {
-      for (var _i = 0; _i < this.arguments_.length; _i++) {
-        var quarkId = this.quarkIds_[_i];
+      for (var _i4 = 0; _i4 < this.arguments_.length; _i4++) {
+        var quarkId = this.quarkIds_[_i4];
 
         if (quarkId in this.quarkConnections_) {
           var _connection = this.quarkConnections_[quarkId];
 
-          if (!Blockly.Mutator.reconnect(_connection, this, 'ARG' + _i)) {
+          if (!Blockly.Mutator.reconnect(_connection, this, 'ARG' + _i4)) {
             // Block no longer exists or has been attached elsewhere.
             delete this.quarkConnections_[quarkId];
           }
@@ -5496,8 +5749,8 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
   }
 
   if (keywords !== null) {
-    for (var _i2 = 0; _i2 < keywords.length; _i2 += 1, overallI += 1) {
-      var keyword = keywords[_i2];
+    for (var _i5 = 0; _i5 < keywords.length; _i5 += 1, overallI += 1) {
+      var keyword = keywords[_i5];
       var arg = keyword.arg;
       var value = keyword.value;
 
@@ -6566,11 +6819,11 @@ Blockly.Blocks['ast_FunctionDef'] = {
     this.parametersCount_ = connections.length;
     this.updateShape_(); // Reconnect any child blocks.
 
-    for (var _i3 = 0; _i3 < this.parametersCount_; _i3++) {
-      Blockly.Mutator.reconnect(connections[_i3], this, 'PARAMETER' + _i3);
+    for (var _i6 = 0; _i6 < this.parametersCount_; _i6++) {
+      Blockly.Mutator.reconnect(connections[_i6], this, 'PARAMETER' + _i6);
 
-      if (!connections[_i3]) {
-        var createName = 'ast_Function' + blockTypes[_i3].substring('ast_FunctionMutant'.length);
+      if (!connections[_i6]) {
+        var createName = 'ast_Function' + blockTypes[_i6].substring('ast_FunctionMutant'.length);
 
         var _itemBlock3 = this.workspace.newBlock(createName);
 
@@ -6580,7 +6833,7 @@ Blockly.Blocks['ast_FunctionDef'] = {
 
         _itemBlock3.initSvg();
 
-        this.getInput('PARAMETER' + _i3).connection.connect(_itemBlock3.outputConnection);
+        this.getInput('PARAMETER' + _i6).connection.connect(_itemBlock3.outputConnection);
 
         _itemBlock3.render(); //this.get(itemBlock, 'ADD'+i)
 
@@ -6646,8 +6899,8 @@ Blockly.Python['ast_FunctionDef'] = function (block) {
 
   var parameters = new Array(block.parametersCount_);
 
-  for (var _i4 = 0; _i4 < block.parametersCount_; _i4++) {
-    parameters[_i4] = Blockly.Python.valueToCode(block, 'PARAMETER' + _i4, Blockly.Python.ORDER_NONE) || Blockly.Python.blank;
+  for (var _i7 = 0; _i7 < block.parametersCount_; _i7++) {
+    parameters[_i7] = Blockly.Python.valueToCode(block, 'PARAMETER' + _i7, Blockly.Python.ORDER_NONE) || Blockly.Python.blank;
   } // Return annotation
 
 
@@ -6715,16 +6968,16 @@ BlockMirrorTextToBlocks.prototype.parseArgs = function (args, values, lineno, no
 
 
   if (kwonlyargs !== null) {
-    for (var _i5 = 0; _i5 < kwonlyargs.length; _i5++) {
+    for (var _i8 = 0; _i8 < kwonlyargs.length; _i8++) {
       var _childValues = {};
       var _type = 'ast_FunctionParameter';
 
-      if (kw_defaults[_i5]) {
-        _childValues['DEFAULT'] = this.convert(kw_defaults[_i5], node);
+      if (kw_defaults[_i8]) {
+        _childValues['DEFAULT'] = this.convert(kw_defaults[_i8], node);
         _type += "Default";
       }
 
-      values['PARAMETER' + totalArgs] = this.parseArg(kwonlyargs[_i5], _type, lineno, _childValues, node);
+      values['PARAMETER' + totalArgs] = this.parseArg(kwonlyargs[_i8], _type, lineno, _childValues, node);
       totalArgs += 1;
     }
   } // **kwarg
@@ -7256,19 +7509,19 @@ Blockly.Blocks['ast_ClassDef'] = {
       this.moveInputBefore('DECORATOR' + i, 'BODY');
     }
 
-    for (var _i6 = 0; _i6 < this.bases_; _i6++) {
-      var _input = this.appendValueInput("BASE" + _i6).setCheck(null).setAlign(Blockly.ALIGN_RIGHT);
+    for (var _i9 = 0; _i9 < this.bases_; _i9++) {
+      var _input = this.appendValueInput("BASE" + _i9).setCheck(null).setAlign(Blockly.ALIGN_RIGHT);
 
-      if (_i6 === 0) {
+      if (_i9 === 0) {
         _input.appendField("inherits from");
       }
 
-      this.moveInputBefore('BASE' + _i6, 'BODY');
+      this.moveInputBefore('BASE' + _i9, 'BODY');
     }
 
-    for (var _i7 = 0; _i7 < this.keywords_; _i7++) {
-      this.appendValueInput("KEYWORDVALUE" + _i7).setCheck(null).setAlign(Blockly.ALIGN_RIGHT).appendField(new Blockly.FieldTextInput("metaclass"), "KEYWORDNAME" + _i7).appendField("=");
-      this.moveInputBefore('KEYWORDVALUE' + _i7, 'BODY');
+    for (var _i10 = 0; _i10 < this.keywords_; _i10++) {
+      this.appendValueInput("KEYWORDVALUE" + _i10).setCheck(null).setAlign(Blockly.ALIGN_RIGHT).appendField(new Blockly.FieldTextInput("metaclass"), "KEYWORDNAME" + _i10).appendField("=");
+      this.moveInputBefore('KEYWORDVALUE' + _i10, 'BODY');
     }
   },
 
@@ -7312,22 +7565,22 @@ Blockly.Python['ast_ClassDef'] = function (block) {
 
   var bases = new Array(block.bases_);
 
-  for (var _i8 = 0; _i8 < block.bases_; _i8++) {
-    bases[_i8] = Blockly.Python.valueToCode(block, 'BASE' + _i8, Blockly.Python.ORDER_NONE) || Blockly.Python.blank;
+  for (var _i11 = 0; _i11 < block.bases_; _i11++) {
+    bases[_i11] = Blockly.Python.valueToCode(block, 'BASE' + _i11, Blockly.Python.ORDER_NONE) || Blockly.Python.blank;
   } // Keywords
 
 
   var keywords = new Array(block.keywords_);
 
-  for (var _i9 = 0; _i9 < block.keywords_; _i9++) {
-    var _name = block.getFieldValue('KEYWORDNAME' + _i9);
+  for (var _i12 = 0; _i12 < block.keywords_; _i12++) {
+    var _name = block.getFieldValue('KEYWORDNAME' + _i12);
 
-    var value = Blockly.Python.valueToCode(block, 'KEYWORDVALUE' + _i9, Blockly.Python.ORDER_NONE) || Blockly.Python.blank;
+    var value = Blockly.Python.valueToCode(block, 'KEYWORDVALUE' + _i12, Blockly.Python.ORDER_NONE) || Blockly.Python.blank;
 
     if (_name == '**') {
-      keywords[_i9] = '**' + value;
+      keywords[_i12] = '**' + value;
     } else {
-      keywords[_i9] = _name + '=' + value;
+      keywords[_i12] = _name + '=' + value;
     }
   } // Body:
 
@@ -7357,20 +7610,20 @@ BlockMirrorTextToBlocks.prototype['ast_ClassDef'] = function (node, parent) {
   }
 
   if (bases !== null) {
-    for (var _i10 = 0; _i10 < bases.length; _i10++) {
-      values['BASE' + _i10] = this.convert(bases[_i10], node);
+    for (var _i13 = 0; _i13 < bases.length; _i13++) {
+      values['BASE' + _i13] = this.convert(bases[_i13], node);
     }
   }
 
   if (keywords !== null) {
-    for (var _i11 = 0; _i11 < keywords.length; _i11++) {
-      values['KEYWORDVALUE' + _i11] = this.convert(keywords[_i11].value, node);
-      var arg = keywords[_i11].arg;
+    for (var _i14 = 0; _i14 < keywords.length; _i14++) {
+      values['KEYWORDVALUE' + _i14] = this.convert(keywords[_i14].value, node);
+      var arg = keywords[_i14].arg;
 
       if (arg === null) {
-        fields['KEYWORDNAME' + _i11] = "**";
+        fields['KEYWORDNAME' + _i14] = "**";
       } else {
-        fields['KEYWORDNAME' + _i11] = Sk.ffi.remapToJs(arg);
+        fields['KEYWORDNAME' + _i14] = Sk.ffi.remapToJs(arg);
       }
     }
   }
