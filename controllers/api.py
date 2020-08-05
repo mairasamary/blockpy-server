@@ -44,10 +44,14 @@ def list_courses():
 @blueprint_api.route('/export', methods=['GET', 'POST'])
 def export():
     user = load_api_user()
+    assignment_url = request.json.get("assignment_url")
     assignment_id = request.json.get("assignment_id")
-    if assignment_id:
-        assignment = Assignment.by_id(assignment_id)
-        check_resource_exists(assignment, "Assignment", assignment_id)
+    if assignment_id or assignment_url:
+        if assignment_url:
+            assignment = Assignment.by_url(assignment_url)
+        else:
+            assignment = Assignment.by_id(assignment_id)
+        check_resource_exists(assignment, "Assignment", assignment_id or assignment_url)
         if not user.is_instructor(assignment.course_id):
             return abort(400, "Not an instructor in this assignments' course.")
         return json.dumps(export_bundle(assignments=[assignment]))
@@ -86,15 +90,16 @@ def import_endpoint():
     course_id = request.json.get('course_id')
     if course_id is None:
         abort(400, "You need to specify the course_id")
-    assignments = request.json.get('assignments')
+    assignments = request.json.get('assignments', [])
     for assignment in assignments:
         assignment = Assignment.by_url(assignment['url'])
         if not user.is_instructor(assignment.course_id):
             return abort(400, "Not an instructor in this assignments' course.")
-    groups = request.json.get('groups')
+    groups = request.json.get('groups', [])
     for group in groups:
         group = Assignment.by_url(group['url'])
         if not user.is_instructor(group.course_id):
             return abort(400, "Not an instructor in this assignments' course.")
     # TODO: Verify that memberships are all attached to a group owned by this user
     import_bundle(request.json, owner_id=user.id, course_id=course_id)
+    return jsonify(success=True)

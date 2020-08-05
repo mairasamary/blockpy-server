@@ -31,6 +31,7 @@ class AssignmentGroup(Base):
         return {'_schema_version': 2,
                 'name': self.name,
                 'url': self.url,
+                'version': self.version,
                 'forked_id': self.forked_id,
                 'forked_version': self.forked_version,
                 'owner_id': self.owner_id,
