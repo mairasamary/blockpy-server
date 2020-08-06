@@ -1,3 +1,5 @@
+HEY! You should check out the [Summer2019](https://github.com/blockpy-edu/blockpy-server/tree/Summer2019) branch. That's the best version available now. We'll merge it into master sometime next summer, once the semester ends.
+
 # Blockpy Server 
 
 Flask-based server for managing the BlockPy LTI app. Its main responsibilities are:
