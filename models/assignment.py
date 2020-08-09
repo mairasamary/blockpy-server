@@ -312,3 +312,15 @@ class Assignment(Base):
 
     def has_passcode(self):
         return bool(self.get_setting("passcode", ""))
+
+    @classmethod
+    def list_urls(self, partial):
+        all_assignments = (db.session.query(Assignment.url)
+                                     .filter(Assignment.url.ilike("%"+partial+"%"))
+                                     .all())
+        all_assignments = [a[0] for a in all_assignments]
+        all_assignments = sorted(all_assignments,
+                                 key=lambda a: (not a.startswith(partial),
+                                                not a.lower().startswith(partial.lower()),
+                                                a))
+        return all_assignments

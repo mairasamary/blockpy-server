@@ -627,3 +627,12 @@ def browse_history():
     return render_template('blockpy/browse_history.html', assignment=assignment,
                            student=student, course=course, history=history)
 
+
+@blueprint_blockpy.route('/list_urls/', methods=['GET', 'POST'])
+@blueprint_blockpy.route('/list_urls', methods=['GET', 'POST'])
+def list_urls():
+    partial = request.values.get('partial', "")
+    # TODO: Allow filtering by course?
+    course_id = maybe_int(request.values.get('course_id'))
+    # Do action
+    return jsonify(success=True, urls=Assignment.list_urls(partial)[:5])
