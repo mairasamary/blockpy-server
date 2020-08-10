@@ -22,7 +22,9 @@ var groupBy = function(xs, inner_key, outer_key) {
             return rv2;
         }, {});
         var new_list = Object.keys(result[value]).map(function(v, i) {
-            return {'assignments': result[value][v], 'id': v, 'name': result[value][v][0].group_name};
+            return {'assignments': result[value][v],
+                'id': v,
+                'name': result[value][v][0].group_name};
         });
         return {'groups': new_list, 'id': value, 'name': new_list[0].assignments[0].course_name};
     });
@@ -42,27 +44,32 @@ function findById(anArray, id, isFunc) {
 var sortNames = function(a, b) {
     if (a.id == -1) return 1;
     if (b.id == -1) return -1;
-    if (a.name < b.name) return -1;
+    return naturalSort(a.name, b.name);
+    /*if (a.name < b.name) return -1;
     if (a.name > b.name) return 1;
-    return 0;
+    return 0;*/
 }
 var sortTitles = function(a, b) {
-    if (a.title() < b.title()) return -1;
+    return naturalSort(a.title, b.title);
+    /*if (a.title() < b.title()) return -1;
     if (a.title() > b.title()) return 1;
-    return 0;
+    return 0;*/
 }
 
 function MainModel() {
     var self = this;
     self.createAssignmentType = ko.observable('BlockPy');
     self.createAssignmentName = ko.observable('Day 1 - #1.1');
+    self.createAssignmentUrl = ko.observable('unique_name');
     self.createAssignmentLevel = ko.observable('Level 1');
     self.createAssignmentCourse = ko.observable();
     self.createGroupName = ko.observable("Day X - ");
+    self.createGroupUrl = ko.observable("unique_group");
     self.createGroupCourse = ko.observable();
     self.assignments = ko.observableArray([
         {% for assignment in assignments %}
         {   'name': ko.observable({{ assignment[0].name|tojson }}),
+            'url': ko.observable({{ assignment[0].url|tojson }}),
             'type': ko.observable({{ assignment[0].type|tojson }}),
             'course_id': ko.observable({{ assignment[0].course_id|tojson }}),
             'group_id': ko.observable({{ assignment[1].id|tojson if assignment[1] else -1}}),
@@ -79,9 +86,12 @@ function MainModel() {
         {% for course in course_groups %}
         {   'name': ko.observable({{ course.name|tojson }}),
             'id': ko.observable({{ course.id|tojson }}),
+            'url': ko.observable({{ course.url|tojson }}),
+            'date_created': ko.observable({{ course.date_created|tojson }}),
             'groups': ko.observableArray([
             {% for group in course.groups %}
             {   'name': ko.observable({{ group.name|tojson }}),
+                'url': ko.observable({{ group.url|tojson }}),
                 'id': ko.observable({{ group.id|tojson }})
             }{{ "," if not loop.last }}
             {% endfor %}
@@ -101,18 +111,19 @@ function MainModel() {
             var course_id = v.id();
             mappedCourses[course_id] = {'id': course_id, 
                                         'name': v.name(),
+                                        'url': v.url(),
                                         'groups': v.groups().map(function(elem) {
-                                            return {'id': elem.id(), 'name': elem.name(), 'assignments': []}
+                                            return {'id': elem.id(), 'name': elem.name(), 'url': elem.url(), 'assignments': []}
                                         })};
             strayGroups[course_id] = {
                 'id': -1,
                 'name': 'Ungrouped Assignments',
+                'url': "",
                 'assignments': []
             };
             mappedCourses[course_id].groups.push(strayGroups[course_id])
             result.push(mappedCourses[course_id]);
         });
-        console.log(mappedCourses);
         self.assignments().forEach(function(v, i) {
             var course_id = v.course_id(), 
                 group_id = v.group_id();
@@ -120,6 +131,7 @@ function MainModel() {
                 var new_course = findById(self.groups(), course_id, true);
                 mappedCourses[course_id] = {'id': course_id, 
                                             'name': new_course.name(),
+                                            'url': new_course.url(),
                                             'groups': new_course.groups().map(function(elem) {
                                                 return {'id': elem.id(), 'name': elem.name(), 'assignments': []}
                                             })};
@@ -185,12 +197,14 @@ function MainModel() {
     };
     
     self.renameGroup = function(course, group) {
-        new_name = window.prompt("Give a new name for this group:", group.name);
+        let new_name = window.prompt("Give a new name for this group:", group.name);
+        let new_url = window.prompt("Give a new url for this group:", group.url);
         var course_id = course.id,
             group_id = group.id;
-        if (new_name != null) {
+        if (new_name != null || new_url != null) {
             $.post("{{ url_for('assignment_group.edit_group') }}", {
                 'new_name': new_name,
+                'new_url': new_url,
                 'assignment_group_id': group_id
             }, function(data) {
                 if (data.success) {
@@ -198,6 +212,7 @@ function MainModel() {
                     var course = findById(self.groups(), course_id, true);
                     var group = findById(course.groups(), group_id, true);
                     group.name(new_name);
+                    group.url(new_url);
                 } else {
                     console.error(data.message);
                 }
@@ -208,8 +223,10 @@ function MainModel() {
     self.addGroup = function() {
         var course_id = parseInt(mainModel.thisCourse().id); //mainModel.createGroupCourse());
         var name = mainModel.createGroupName();
+        var url = mainModel.createGroupUrl();
         $.post("{{ url_for('assignment_group.add_group') }}", {
             "course_id": course_id,
+            "url": url,
             "name": name
         }, function(data) {
             if (data.success) {
@@ -218,6 +235,7 @@ function MainModel() {
                 course.groups.push({
                     'id': ko.observable(data.id),
                     'name': ko.observable(data.name),
+                    'url': ko.observable(data.url),
                     'assignments': ko.observableArray()
                 });
             } else {
@@ -267,11 +285,13 @@ function MainModel() {
     self.addAssignment = function() {
         var course_id = mainModel.thisCourse().id; //mainModel.createAssignmentCourse();
         var name = mainModel.createAssignmentName();
+        var url = mainModel.createAssignmentUrl();
         var level = mainModel.createAssignmentLevel();
         var type = mainModel.createAssignmentType().toLowerCase();
         $.post("{{ url_for('assignments.new_assignment') }}", {
             'menu': "{{ menu }}",
             'name': name,
+            'url': url,
             "course_id": course_id,
             'level': level,
             'type': type
@@ -280,6 +300,7 @@ function MainModel() {
             if (data.success) {
                 self.assignments.unshift({
                     'id': data.id,
+                    'url': data.url,
                     'group_id': ko.observable(-1),
                     'type': ko.observable(type),
                     'course_id': ko.observable(parseInt(course_id)),
@@ -352,6 +373,12 @@ tr.hover-remove-rows a.view-button {
                    data-bind="value: createAssignmentName" placeholder="Day 1 - #1.1">
             </label>
         </div>
+        <div class="form-group" data-bind="visible: createAssignmentType() != 'Maze'">
+            <label for="assignment-url">Unique URL:
+            <input type="text" class="form-control" id="assignment-url"
+                   data-bind="value: createAssignmentUrl" placeholder="assignment_url">
+            </label>
+        </div>
         <div class="form-group" data-bind="visible: createAssignmentType() == 'Maze'">
             <label for="assignment-name">Maze Level:
             <select class="form-control" data-bind="value: createAssignmentLevel">
@@ -389,6 +416,12 @@ tr.hover-remove-rows a.view-button {
             <label for="group-name">Name:
             <input type="text" class="form-control" id="group-name"
                    data-bind="value: createGroupName" placeholder="Day X - ">
+            </label>
+        </div>
+          <div class="form-group">
+            <label for="group-url">Url:
+            <input type="text" class="form-control" id="group-url"
+                   data-bind="value: createGroupUrl" placeholder="unique_group">
             </label>
         </div>
       </div>

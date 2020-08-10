@@ -130,10 +130,11 @@ class Assignment(Base):
                 for assignment in assignments]
 
     @staticmethod
-    def new(owner_id, course_id, type="blockpy", name=None, level=None):
+    def new(owner_id, course_id, type="blockpy", name=None, level=None, url=None):
         if name is None:
             name = 'Untitled'
         assignment = Assignment(owner_id=owner_id, course_id=course_id,
+                                url=url,
                                 type=type, name=level if type == 'maze' else name)
         db.session.add(assignment)
         db.session.commit()
