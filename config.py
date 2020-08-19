@@ -42,6 +42,8 @@ class Config(object):
 
     MAXIMUM_CODE_SIZE = secrets.get("MAXIMUM_CODE_SIZE", 500 * 1024) # Defaults to 500kb
 
+    PREFERRED_LOGIN = secrets.get("PREFERRED_LOGIN", None)
+
     SESSION_COOKIE_SECURE = True
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'None'
