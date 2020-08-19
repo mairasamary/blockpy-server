@@ -48,7 +48,7 @@ bundles = {
     ),
 
     'pedal_js': Bundle(
-        "libs/pedal/skulpt-pedal.js" if app.config["IS_PRODUCTION"] else "../../pedal-edu/pedal/dist/skulpt-pedal.js",
+        "libs/pedal/skulpt-pedal.js" if app.config["IS_PRODUCTION"] else "../../pedal-edu/pedal/dist-js/skulpt-pedal.js",
         "libs/pedal/skulpt-curriculum-ctvt.js" if app.config["IS_PRODUCTION"] else "../../pedal-edu/curriculum-ctvt/dist-js/skulpt-curriculum-ctvt.js",
         "libs/pedal/skulpt-curriculum-sneks.js" if app.config["IS_PRODUCTION"] else "../../pedal-edu/curriculum-sneks/dist-js/skulpt-curriculum-sneks.js",
         output='gen/pedal.js'
