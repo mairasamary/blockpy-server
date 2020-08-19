@@ -12193,8 +12193,9 @@ Compiler.prototype.outputInterruptTest = function () { // Added by RNL
     var output = "";
     if (Sk.execLimit !== null || Sk.yieldLimit !== null && this.u.canSuspend) {
         output += "var $dateNow = Date.now();";
+        //output += "console.log($dateNow, Sk.execStart, Sk.execPaused, Sk.execPausedAmount, $dateNow-Sk.execStart-Sk.execPausedAmount, Sk.execLimit, );";
         if (Sk.execLimit !== null) {
-            output += ("if (Sk.execLimit !== null && $dateNow - Sk.execStart - Sk.execPaused > Sk.execLimit){" +
+            output += ("if (Sk.execLimit !== null && $dateNow - Sk.execStart - Sk.execPausedAmount > Sk.execLimit){" +
                 "throw new Sk.builtin.TimeoutError(Sk.timeoutMsg())}");
         }
         if (Sk.yieldLimit !== null && this.u.canSuspend) {
@@ -12537,7 +12538,7 @@ Compiler.prototype.ccall = function (e) {
         // so we should probably add self to the mangling
         // TODO: feel free to ignore the above
         out("if (typeof self === \"undefined\" || self.toString().indexOf(\"Window\") > 0) { throw new Sk.builtin.RuntimeError(\"super(): no arguments\") };");
-        positionalArgs = "[$gbl.__class__,self]";
+        positionalArgs = "[__class__,self]";
     }
     out("$ret = (", func, ".tp$call)?", func, ".tp$call(", positionalArgs, ",", keywordArgs, ") : Sk.misceval.applyOrSuspend(", func, ",undefined,undefined,", keywordArgs, ",", positionalArgs, ");");
 
@@ -13930,7 +13931,7 @@ Compiler.prototype.buildcodeobj = function (n, coname, decorator_list, args, cal
 
     // inject __class__ cell when running python3
     if (Sk.__future__.python3 && class_for_super) {
-        this.u.varDeclsCode += "$gbl.__class__=$gbl." + class_for_super.v + ";";
+        this.u.varDeclsCode += "let __class__=$gbl." + class_for_super.v + ";";
     }
 
     // finally, set up the block switch that the jump code expects
@@ -17370,6 +17371,14 @@ Sk.timeoutMsg = function () {
 };
 Sk.exportSymbol("Sk.timeoutMsg", Sk.timeoutMsg);
 
+
+/**
+ * If the timer needs to be paused, store it here.
+ * @type {number}
+ */
+Sk.execPaused = 0;
+Sk.execPausedAmount = 0;
+
 /*
  *  Hard execution timeout, throws an error. Set to null to disable
  */
@@ -18526,7 +18535,7 @@ Sk.builtin.file.$readline = function (self, size, prompt) {
 
             return susp;
         } else {
-            Sk.execPaused = Date.now() - Sk.execPaused;
+            Sk.misceval.unpauseTimer();
             return new Sk.builtin.str(x);
         }
     } else {
@@ -20509,12 +20518,20 @@ Sk.importModuleInternal_ = function (name, dumpJS, modname, suppliedPyBody, rela
         topLevelModuleToReturn = Sk.importModuleInternal_(parentModName, dumpJS, undefined, undefined, relativeToPackage, returnUndefinedOnTopLevelNotFound, canSuspend);
     }
 
+    let sysmodules = Sk.sysmodules;
+    try {
+        let sys = sysmodules.mp$subscript(new Sk.builtin.str("sys"));
+        if (sys != undefined) {
+            sysmodules = sys.tp$getattr(new Sk.builtin.str("modules"));
+        }
+    } catch (x) {}
+
     ret = Sk.misceval.chain(topLevelModuleToReturn, function (topLevelModuleToReturn_) {
         topLevelModuleToReturn = topLevelModuleToReturn_;
 
         // if leaf is already in sys.modules, early out
         try {
-            prev = Sk.sysmodules.mp$subscript(new Sk.builtin.str(modname));
+            prev = sysmodules.mp$subscript(new Sk.builtin.str(modname));
             // if we're a dotted module, return the top level, otherwise ourselves
             return topLevelModuleToReturn || prev;
         } catch (x) {
@@ -20531,7 +20548,7 @@ Sk.importModuleInternal_ = function (name, dumpJS, modname, suppliedPyBody, rela
                 if (!topLevelModuleToReturn) {
                     return undefined;
                 }
-                parentModule = Sk.sysmodules.mp$subscript(new Sk.builtin.str(absolutePackagePrefix + parentModName));
+                parentModule = sysmodules.mp$subscript(new Sk.builtin.str(absolutePackagePrefix + parentModName));
                 searchFileName = modNameSplit[modNameSplit.length - 1];
                 searchPath = parentModule.tp$getattr(Sk.builtin.str.$path);
             }
@@ -20601,7 +20618,7 @@ Sk.importModuleInternal_ = function (name, dumpJS, modname, suppliedPyBody, rela
             }
 
             // Now we know this module exists, we can add it to the cache
-            Sk.sysmodules.mp$ass_subscript(new Sk.builtin.str(modname), module);
+            sysmodules.mp$ass_subscript(new Sk.builtin.str(modname), module);
 
             module.$js = co.code; // todo; only in DEBUG?
             finalcode = co.code;
@@ -20754,6 +20771,8 @@ Sk.importMainWithBody = function (name, dumpJS, body, canSuspend, sysmodules) {
         Sk.sysmodules = sysmodules;
     }
     Sk.realsyspath = undefined;
+    Sk.execPausedAmount = 0;
+    Sk.execPaused = 0;
 
     Sk.resetCompiler();
 
@@ -24273,6 +24292,7 @@ Sk.exportSymbol("Sk.misceval.pauseTimer", Sk.misceval.pauseTimer);
 
 Sk.misceval.unpauseTimer = function () {
     Sk.execPaused = Date.now() - Sk.execPaused;
+    Sk.execPausedAmount += Sk.execPaused;
 };
 Sk.exportSymbol("Sk.misceval.unpauseTimer", Sk.misceval.unpauseTimer);
 
@@ -24307,12 +24327,19 @@ Sk.builtin.module = Sk.abstr.buildNativeClass("module", {
             return Sk.builtin.none.none$;
         },
         tp$getattr: function (pyName, canSuspend) {
+            let customGetAttr = this.$d["__getattr__"];
+            if (customGetAttr) {
+                const ret = Sk.misceval.callsimArray(customGetAttr, [pyName]);
+                if (ret !== undefined) {
+                    return ret;
+                }
+            }
             var jsMangled = pyName.$mangled;
             const ret = this.$d[jsMangled];
             if (ret !== undefined) {
                 return ret;
             }
-            // technically this is the wrong way round but its seems performance wise better 
+            // technically this is the wrong way round but its seems performance wise better
             // to just return the module elements before checking for descriptors
             const descr = this.ob$type.$typeLookup(pyName);
             if (descr !== undefined) {
@@ -34363,6 +34390,9 @@ Sk.builtin.type.$best_base = function (bases) {
     return base;
 };
 
+Sk.builtin.type.prototype.__class_getitem__ = function(self, key) {
+    return self;
+};
 
 /***/ }),
 
@@ -34377,8 +34407,8 @@ Sk.builtin.type.$best_base = function (bases) {
 var Sk = {}; // jshint ignore:line
 
 Sk.build = {
-    githash: "1a2477739a1f554ae472e9dbe16e09afdf94f903",
-    date: "2020-08-10T06:50:05.372Z"
+    githash: "6bcd514b3b0f4c508db144302ffc05590bbc6f0d",
+    date: "2020-08-19T05:54:14.434Z"
 };
 
 /**
