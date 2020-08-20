@@ -1,3 +1,5 @@
+import re
+
 from models.models import db
 from models.user import User
 from models.role import Role
@@ -6,10 +8,38 @@ from main import app
 from flask_security import SQLAlchemyUserDatastore, Security
 from flask_security.forms import ConfirmRegisterForm
 
-from wtforms import BooleanField, StringField, validators, PasswordField
+from wtforms import StringField, validators, PasswordField
+
+"""
+TODO: Convert these to a proper test suite.
+Matches:
+p@ssword
+ p@assword 
+Horse Battery Staple
+pass word
+@ctually
+really?
+Horse B@ttery Staple
+Long    Divide
+
+Not good enough:
+password
+ password 
+extraendspace 
+shouldntcatch
+ extrastartspace
+"""
+regex_one_symbol_or_not_wrapping_space = re.compile(
+    r"^(.*[!@#$%^&*(){}[\]_+\-=|\\:\";'<>?,./~`]+.*)|(\w+ +\w+)$",
+    re.M
+)
 
 password_required = validators.DataRequired(message='Must provide password')
-password_length = validators.Length(min=12, max=128, message='Password must be 12-128 characters long')
+password_length = validators.Length(min=12, max=128,
+                                    message='Password must be 12-128 characters long')
+password_chars = validators.Regexp(regex_one_symbol_or_not_wrapping_space,
+                                   message="Must use at least one symbol, or "
+                                           "a space not at the start or end.")
 
 
 class NotEqualTo(validators.EqualTo):
@@ -35,11 +65,13 @@ class NotEqualTo(validators.EqualTo):
 class ExtendedConfirmRegisterForm(ConfirmRegisterForm):
     password = PasswordField('Password', validators=[password_required,
                                                      password_length,
-                                                     NotEqualTo('email')])
+                                                     NotEqualTo('email'),
+                                                     password_chars])
     first_name = StringField('First Name', [validators.DataRequired()])
     last_name = StringField('Last Name', [validators.DataRequired()])
-    #proof = StringField('Instructor Proof (e.g., your university website)')
-    
+    # proof = StringField('Instructor Proof (e.g., your university website)')
+
+
 # User registration, etc.
 user_datastore = SQLAlchemyUserDatastore(db, User, Role)
 security = Security(app, user_datastore, confirm_register_form=ExtendedConfirmRegisterForm)
