@@ -95,7 +95,7 @@ def edit_group(lti=lti):
     # Verify permissions
     require_course_instructor(g.user, assignment_group.course_id)
     # Perform action
-    group = assignment_group.edit(name=new_name, url=new_url)
+    group = assignment_group.edit(dict(name=new_name, url=new_url))
     # Result
     return jsonify(success=True, name=group.name, url=group.url)
 
