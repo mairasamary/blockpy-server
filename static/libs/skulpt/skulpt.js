@@ -11004,7 +11004,7 @@ var extractDict = function (obj) {
         }
         kAsJs = Sk.ffi.remapToJs(k);
         // todo; assert that this is a reasonble lhs?
-        ret[kAsJs] = v;
+        ret[Sk.fixReserved(kAsJs)] = v;
     }
     return ret;
 };
@@ -34408,7 +34408,7 @@ var Sk = {}; // jshint ignore:line
 
 Sk.build = {
     githash: "6bcd514b3b0f4c508db144302ffc05590bbc6f0d",
-    date: "2020-08-24T17:55:20.305Z"
+    date: "2020-08-25T20:28:59.455Z"
 };
 
 /**
