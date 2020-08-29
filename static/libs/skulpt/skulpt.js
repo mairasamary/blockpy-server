@@ -34407,8 +34407,8 @@ Sk.builtin.type.prototype.__class_getitem__ = function(self, key) {
 var Sk = {}; // jshint ignore:line
 
 Sk.build = {
-    githash: "6bcd514b3b0f4c508db144302ffc05590bbc6f0d",
-    date: "2020-08-25T20:28:59.455Z"
+    githash: "54a5019b46c9a740ffda7b13c2e0db57939d6c51",
+    date: "2020-08-29T20:29:40.365Z"
 };
 
 /**
