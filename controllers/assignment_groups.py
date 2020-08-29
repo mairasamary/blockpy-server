@@ -95,9 +95,10 @@ def edit_group(lti=lti):
     # Verify permissions
     require_course_instructor(g.user, assignment_group.course_id)
     # Perform action
-    group = assignment_group.edit(dict(name=new_name, url=new_url))
+    changed = assignment_group.edit(dict(name=new_name, url=new_url))
     # Result
-    return jsonify(success=True, name=group.name, url=group.url)
+    return jsonify(success=True, name=assignment_group.name,
+                   url=assignment_group.url)
 
 
 @blueprint_assignment_group.route('/move_membership', methods=['GET', 'POST'])
