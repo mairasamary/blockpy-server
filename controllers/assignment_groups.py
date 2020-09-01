@@ -23,14 +23,18 @@ def add_group(lti=lti):
     # Get arguments
     course_id = int(request.values.get('course_id'))
     new_name = request.values.get('name')
+    new_url = request.values.get('url')
     is_embedded = ('embed' == request.values.get('menu', "select"))
     # Verify permissions
     require_course_instructor(g.user, course_id)
     # Perform action
-    assignment_group = AssignmentGroup.new(owner_id=g.user.id, course_id=course_id, name=new_name)
+    assignment_group = AssignmentGroup.new(owner_id=g.user.id, course_id=course_id,
+                                           name=new_name, url=new_url)
     # Result
-    select_url = get_select_menu_link(assignment_group.id, assignment_group.name, is_embedded, True)
-    return jsonify(success=True, id=assignment_group.id, name=assignment_group.name, select=select_url)
+    select_url = get_select_menu_link(assignment_group.id,
+                                      assignment_group.name, is_embedded, True)
+    return jsonify(success=True, id=assignment_group.id, url=assignment_group.url,
+                   name=assignment_group.name, select=select_url)
 
 
 @blueprint_assignment_group.route('/fork', methods=['GET', 'POST'])
@@ -85,14 +89,16 @@ def edit_group(lti=lti):
     assignment_group_id = int(request.values.get('assignment_group_id'))
     assignment_group = AssignmentGroup.by_id(assignment_group_id)
     new_name = request.values.get('new_name')
+    new_url = request.values.get('new_url')
     # Verify exists
     check_resource_exists(assignment_group, "Assignment Group", assignment_group_id)
     # Verify permissions
     require_course_instructor(g.user, assignment_group.course_id)
     # Perform action
-    group = assignment_group.edit(name=new_name)
+    changed = assignment_group.edit(dict(name=new_name, url=new_url))
     # Result
-    return jsonify(success=True, name=group.name)
+    return jsonify(success=True, name=assignment_group.name,
+                   url=assignment_group.url)
 
 
 @blueprint_assignment_group.route('/move_membership', methods=['GET', 'POST'])

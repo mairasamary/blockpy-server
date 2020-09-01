@@ -72,7 +72,7 @@ class Submission(Base):
             'extra_files': self.extra_files,
             'url': self.url,
             'endpoint': self.endpoint,
-            'score': self.score,
+            'score': self.score/100,
             'correct': self.correct,
             'assignment_id': self.assignment_id,
             'course_id': self.course_id,
@@ -99,7 +99,7 @@ class Submission(Base):
         files = {
             'answer.py': self.code,
             '_grade.json': json.dumps({
-                'score': self.score,
+                'score': self.score/100,
                 'correct': self.correct,
                 'submission_status': self.submission_status,
                 'grading_status': self.grading_status,
@@ -255,7 +255,7 @@ class Submission(Base):
 
     def update_submission(self, score, correct):
         was_changed = self.score != score or self.correct != correct
-        self.score = score
+        self.score = int(round(100*score))
         self.correct = correct
         assignment = Assignment.by_id(self.assignment_id)
         if assignment.reviewed:

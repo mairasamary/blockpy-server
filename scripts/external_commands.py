@@ -51,7 +51,9 @@ class UpdateBlockPy(Command):
             '../blockmirror/dist/block_mirror.css': 'libs/block_mirror/',
             '../skulpt/dist/skulpt.js': 'libs/skulpt/',
             '../skulpt/dist/skulpt-stdlib.js': 'libs/skulpt/',
-            '../../pedal/dist/skulpt-pedal.js': 'libs/pedal/',
+            '../../pedal-edu/pedal/dist-js/skulpt-pedal.js': 'libs/pedal/',
+            '../../pedal-edu/curriculum-ctvt/dist-js/skulpt-curriculum-ctvt.js': 'libs/pedal/',
+            '../../pedal-edu/curriculum-sneks/dist-js/skulpt-curriculum-sneks.js': 'libs/pedal/',
             '../blockly/blockly_uncompressed.js': 'blockly/',
             '../blockly/blockly_compressed.js': 'blockly/',
             '../blockly/blocks_compressed.js': 'blockly/',
@@ -59,7 +61,7 @@ class UpdateBlockPy(Command):
             '../blockly/msg/js/en.js': 'blockly/msg/js/'
         }
         static_directory = app.config['STATIC_DIRECTORY']
-        for source_file, target_directory in source_files.items():
+        for source_file, target_directory in tqdm(source_files.items()):
             final_source = os.path.join(source_directory, source_file)
             final_target = os.path.join(static_directory, target_directory)
             copy(final_source, final_target)

@@ -1,5 +1,3 @@
-HEY! You should check out the [Summer2019](https://github.com/blockpy-edu/blockpy-server/tree/Summer2019) branch. That's the best version available now. We'll merge it into master sometime next summer, once the semester ends.
-
 # Blockpy Server 
 
 Flask-based server for managing the BlockPy LTI app. Its main responsibilities are:
@@ -50,11 +48,7 @@ You can download the server from our public GitHub repo:
 > git clone https://github.com/blockpy-edu/blockpy-server.git .
 ```
 
-Using Git will allow you to pull in the inevitable bug fixes we'll be publishing. Right now, all of our latest madness is in the Summer2019 branch, but we hope to merge to master in a few days. For now, checkout out lunacy:
-
-```bash
-> git checkout summer2019
-```
+Using Git will allow you to pull in the inevitable bug fixes we'll be publishing.
 
 ## VirtualEnv
 

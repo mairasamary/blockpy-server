@@ -14,6 +14,13 @@ Login
 {% from "security/_macros.html" import render_field_with_errors, render_field %}
 {% include "security/_messages.html" %}
 
+    {% if config.PREFERRED_LOGIN %}
+        <div class="alert alert-info" role="alert">
+            If you are a student, then make sure you use
+            <a href="{{ config.PREFERRED_LOGIN }}">Canvas</a> to login.
+        </div>
+    {% endif %}
+
 <form role="form"
       action="{{ url_for_security('login') }}" method="POST" name="login" id='login-form'>
 <div class="form-row">

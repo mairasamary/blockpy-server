@@ -12,6 +12,14 @@ Register
 
 <h1>Register</h1>
 
+    {% if config.PREFERRED_LOGIN %}
+        <div class="alert alert-info" role="alert">
+            If you are a student, then make sure you use
+            <a href="{{ config.PREFERRED_LOGIN }}">Canvas</a> to access your
+            BlockPy course instead.
+        </div>
+    {% endif %}
+
 {% from "security/_macros.html" import render_field_with_errors, render_field %}
 {% include "security/_messages.html" %}
 
@@ -28,7 +36,13 @@ Register
     </div>
     <br>
     <div class="form-group col-md-6">
-        {{ render_field_with_errors(register_user_form.password, class_='form-control', autofill='new-password') }}
+        {{ render_field_with_errors(register_user_form.password,
+                                    class_='form-control',
+                                    autofill='new-password') }}
+        Be sure to pick a strong password, that is different from passwords you
+        use on any other sites. Do not use your school password.
+        You must have at least 12 characters, and they should be a mixture of
+        letters, numbers, and symbols.
     </div>
     <br>
     <div class="form-group col-md-6">

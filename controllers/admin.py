@@ -50,7 +50,7 @@ class UserView(RegularView):
 
     column_hide_backrefs = False
     column_formatters = {'roles': _list_roles}
-    form_excluded_columns = ('password',)
+    form_excluded_columns = ('password','assignments','authentications', 'roles')
     column_exclude_list = ('password', 'proof')
     column_display_pk = True
     column_searchable_list = ('first_name', 'last_name', 'email')

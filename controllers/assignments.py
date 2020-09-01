@@ -52,18 +52,20 @@ def new_assignment(lti=lti):
     # Get arguments
     course_id = int(request.values.get('course_id'))
     name = request.values.get('name', None) or None
+    url = request.values.get('url', None) or None
     level = request.values.get('level', None) or None
     is_embedded = ('embed' == request.values.get('menu', "select"))
     assignment_type = request.values.get('type', "blockpy")
     # Verify permissions
     require_course_instructor(g.user, course_id)
     # Perform action
-    assignment = Assignment.new(owner_id=g.user.id, course_id=course_id,
+    assignment = Assignment.new(owner_id=g.user.id, course_id=course_id, url=url,
                                 type=assignment_type, name=name, level=level)
     select_url = get_select_menu_link(assignment.id, assignment.title(), is_embedded, False)
     return jsonify(success=True,
                    redirect=url_for('assignments.load', assignment_id=assignment.id),
                    id=assignment.id,
+                   url=url,
                    name=assignment.name,
                    type=assignment_type,
                    instructions=strip_tags(assignment.instructions)[:255],

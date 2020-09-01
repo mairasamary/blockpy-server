@@ -130,10 +130,11 @@ class Assignment(Base):
                 for assignment in assignments]
 
     @staticmethod
-    def new(owner_id, course_id, type="blockpy", name=None, level=None):
+    def new(owner_id, course_id, type="blockpy", name=None, level=None, url=None):
         if name is None:
             name = 'Untitled'
         assignment = Assignment(owner_id=owner_id, course_id=course_id,
+                                url=url,
                                 type=type, name=level if type == 'maze' else name)
         db.session.add(assignment)
         db.session.commit()
@@ -312,3 +313,15 @@ class Assignment(Base):
 
     def has_passcode(self):
         return bool(self.get_setting("passcode", ""))
+
+    @classmethod
+    def list_urls(self, partial):
+        all_assignments = (db.session.query(Assignment.url)
+                                     .filter(Assignment.url.ilike("%"+partial+"%"))
+                                     .all())
+        all_assignments = [a[0] for a in all_assignments]
+        all_assignments = sorted(all_assignments,
+                                 key=lambda a: (not a.startswith(partial),
+                                                not a.lower().startswith(partial.lower()),
+                                                a))
+        return all_assignments

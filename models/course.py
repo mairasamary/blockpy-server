@@ -131,8 +131,11 @@ class Course(Base):
         courses = Course.query.all()
         return [{'id': course.id,
                  'name': course.name,
+                 'url': course.url,
+                 'date_created': course.date_created,
                  'groups': [{'id': group.id,
                              'name': group.name,
+                             'url': group.url,
                              'select_url': group.get_select_url(menu)}
                             for group in models.AssignmentGroup.by_course(course.id)]
                  }

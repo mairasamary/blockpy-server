@@ -46,11 +46,11 @@ class AssignmentGroup(Base):
     SCHEMA_V2_IGNORE_COLUMNS = Base.SCHEMA_V2_IGNORE_COLUMNS + ('owner_id__email',)
 
     @staticmethod
-    def new(owner_id, course_id, name="Untitled Group"):
+    def new(owner_id, course_id, name="Untitled Group", url=None):
         last = (db.session.query(func.max(AssignmentGroup.position).label("last_position"))
                 .filter_by(course_id=course_id).one()).last_position
         assignment_group = AssignmentGroup(owner_id=owner_id, course_id=course_id,
-                                           name=name,
+                                           name=name, url=url,
                                            position=last + 1 if last else 1)
         db.session.add(assignment_group)
         db.session.commit()

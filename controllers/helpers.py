@@ -118,7 +118,10 @@ def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if g.user is None:
-            return redirect(url_for('security.login', next=request.url))
+            if app.config['PREFERRED_LOGIN']:
+                return redirect(app.config['PREFERRED_LOGIN'])
+            else:
+                return redirect(url_for('security.login', next=request.url))
         return f(*args, **kwargs)
 
     return decorated_function
