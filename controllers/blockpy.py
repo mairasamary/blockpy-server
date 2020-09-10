@@ -109,9 +109,17 @@ def load_assignment(lti=lti):
         editor_information = assignment.for_read_only_editor(user_id)
     else:
         editor_information = assignment.for_editor(user_id, course_id)
+        browser_info = repr({
+            'platform': request.user_agent.platform,
+            'browser': request.user_agent.browser,
+            'version': request.user_agent.version,
+            'language': request.user_agent.language,
+            'user_agent': request.user_agent.string
+        })
         # Log the event
         if user is not None:
-            make_log_entry(assignment_id, assignment.version, course_id, user_id, 'Session.Start')
+            make_log_entry(assignment_id, assignment.version, course_id, user_id, 'Session.Start',
+                           message=browser_info)
     # Verify passcode, if necessary
     if assignment.passcode_fails(request.values.get('passcode')):
         return ajax_failure("Passcode {!r} rejected".format(request.values.get("passcode")))
