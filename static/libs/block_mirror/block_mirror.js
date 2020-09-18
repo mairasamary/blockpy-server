@@ -1309,6 +1309,10 @@ BlockMirrorTextToBlocks.prototype.convertSource = function (filename, python_sou
 
   while (ast === null) {
     if (python_source.trim() === "") {
+      if (badChunks.length) {
+        xml.appendChild(BlockMirrorTextToBlocks.raw_block(badChunks.join("\n")));
+      }
+
       return {
         "xml": BlockMirrorTextToBlocks.xmlToString(xml),
         "error": null,
