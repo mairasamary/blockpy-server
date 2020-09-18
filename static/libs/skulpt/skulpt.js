@@ -10444,7 +10444,16 @@ Sk.builtin.isinstance = function isinstance(obj, type) {
 
     // Normal case
     if (!(type instanceof Sk.builtin.tuple)) {
-        return obj.ob$type.$isSubType(type) ? Sk.builtin.bool.true$ : Sk.builtin.bool.false$;
+        // Overridden __class__
+        var objType;
+        var __class__ = obj.tp$getattr(Sk.builtin.str.$class);
+        if (__class__ !== undefined) {
+            objType = __class__;
+        } else {
+            objType = obj.ob$type;
+        }
+
+        return objType.$isSubType(type) ? Sk.builtin.bool.true$ : Sk.builtin.bool.false$;
     }
     // Handle tuple type argument
     for (let i = 0; i < type.v.length; ++i) {
@@ -34407,8 +34416,8 @@ Sk.builtin.type.prototype.__class_getitem__ = function(self, key) {
 var Sk = {}; // jshint ignore:line
 
 Sk.build = {
-    githash: "54a5019b46c9a740ffda7b13c2e0db57939d6c51",
-    date: "2020-08-29T20:29:40.365Z"
+    githash: "e115e60927a802624fe67fb26b98ca475c4633d5",
+    date: "2020-09-18T18:47:53.239Z"
 };
 
 /**
