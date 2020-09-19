@@ -123,12 +123,13 @@ class Log(Base):
 
     @staticmethod
     def get_history(course_id, assignment_id, user_id, page_offset=None, page_limit=None):
+        query_filters = {'course_id': course_id}
+        if assignment_id is not None:
+            query_filters['assignment_id'] = assignment_id
+        if user_id is not None:
+            query_filters['subject_id'] = user_id
         logs = (
-            Log.query.filter_by(
-                course_id=course_id,
-                assignment_id=assignment_id,
-                subject_id=user_id
-            ).order_by(Log.date_created.desc())
+            Log.query.filter_by(**query_filters).order_by(Log.date_created.desc())
         )
         if page_offset is not None:
             logs.offset(page_offset)

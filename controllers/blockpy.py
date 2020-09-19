@@ -187,17 +187,21 @@ def save_instructor_file(course_id, user, filename):
 
 @blueprint_blockpy.route('/load_history/', methods=['GET', 'POST'])
 @blueprint_blockpy.route('/load_history', methods=['GET', 'POST'])
-@require_request_parameters("assignment_id", "course_id", "user_id")
+@require_request_parameters("course_id")
 def load_history():
     # Get parameters
     course_id = maybe_int(request.values.get('course_id'))
     assignment_id = maybe_int(request.values.get('assignment_id'))
     student_id = maybe_int(request.values.get('user_id'))
+    page_limit = maybe_int(request.values.get('page_limit'))
+    page_offset = maybe_int(request.values.get('page_offset'))
     user, user_id = get_user()
     # Verify user can see the submission
     if user_id != student_id and not user.is_grader(course_id):
         return ajax_failure("Only graders can see logs for other people.")
-    history = list(reversed(Log.get_history(course_id, assignment_id, student_id)))
+    history = list(reversed(Log.get_history(course_id, assignment_id, student_id,
+                                            page_offset=page_offset,
+                                            page_limit=page_limit)))
     return ajax_success({"history": history})
 
 
