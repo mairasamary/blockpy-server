@@ -13024,7 +13024,7 @@ Compiler.prototype.outputLocals = function (unit) {
     for (i = 0; unit.argnames && i < unit.argnames.length; ++i) {
         have[unit.argnames[i]] = true;
     }
-    unit.localnames.sort();
+    //unit.localnames.sort();
     output = [];
     for (i = 0; i < unit.localnames.length; ++i) {
         name = unit.localnames[i];
@@ -13787,10 +13787,10 @@ Compiler.prototype.buildcodeobj = function (n, coname, decorator_list, args, cal
             funcArgs.push("$kwa");
             this.u.tempsToSave.push("$kwa");
         }
-        for (i = 0; args && i < args.args.length; ++i) {
+        for (i = 0; args && i < args.args.length; i++) {
             funcArgs.push(this.nameop(args.args[i].arg, Sk.astnodes.Param));
         }
-        for (i = 0; args && args.kwonlyargs && i < args.kwonlyargs.length; ++i) {
+        for (i = 0; args && args.kwonlyargs && i < args.kwonlyargs.length; i++) {
             funcArgs.push(this.nameop(args.kwonlyargs[i].arg, Sk.astnodes.Param));
         }
         if (vararg) {
@@ -34416,8 +34416,8 @@ Sk.builtin.type.prototype.__class_getitem__ = function(self, key) {
 var Sk = {}; // jshint ignore:line
 
 Sk.build = {
-    githash: "e115e60927a802624fe67fb26b98ca475c4633d5",
-    date: "2020-09-18T18:47:53.239Z"
+    githash: "2845f6174f37de8feb32d303893871817d2cdf11",
+    date: "2020-09-19T08:07:53.475Z"
 };
 
 /**
