@@ -2,6 +2,10 @@
     <a href="{{ url_for("assignments.export_submissions",
             assignment_id=search_key,
             course_id=course_id) }}" target="_blank">Download all submissions</a>
+{% else %}
+    <a href="{{ url_for("blockpy.load_history",
+            user_id=search_key,
+            course_id=course_id) }}" target="_blank">Download all events</a>
 {%endif %}
 <table class="table table-condensed table-hover table-striped table-bordered">
 <caption>Student's submissions for course's assignments.</caption>
