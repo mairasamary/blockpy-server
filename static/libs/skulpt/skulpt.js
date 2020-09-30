@@ -11046,32 +11046,41 @@ Sk.builtin.exec = function execf(pythonCode, new_globals) {
         Sk.globals = new_globals_copy; // Possibly copy over some "default" ones?
         var name = filename.endsWith(".py") ? filename.slice(0, -3) : filename;
         var pyName = new Sk.builtin.str(name);
-        var sysModules = Sk.sysmodules.mp$subscript(new Sk.builtin.str("sys"));//Sk.getCurrentSysModules();
-        var modname = name;
-        var caughtError = null;
-        try {
-            Sk.importModuleInternal_(name, false, modname, pythonCode, undefined, false, true);
-        } catch (e) {
-            //console.log("SYSTEMATIC ERROR");
-            caughtError = e;
+        var loadModule = function() {
+            var sysModules = Sk.sysmodules.mp$subscript(Sk.builtin.str.$sys);
+            var modname = name;
+            var caughtError = null;
+            const res = Sk.misceval.tryCatch(() => {
+                Sk.importModuleInternal_(name, false, modname, pythonCode, undefined, false, true);
+            }, (e) => {
+                console.error("SYSTEMATIC ERROR", e);
+                caughtError = e;
+            });
+            Sk.misceval.chain(res, function() {
+                Sk.globals = backupGlobals;
+                // Only try to delete if we succeeded in creating it!
+                if (Sk.sysmodules.mp$lookup(pyName)) {
+                    Sk.sysmodules.del$item(pyName);
+                }
+                for (var key in new_globals_copy) {
+                    if (new_globals_copy.hasOwnProperty(key)) {
+                        var pykey = Sk.ffi.remapToPy(Sk.unfixReserved(key));
+                        Sk.builtin.dict.prototype.mp$ass_subscript.call(new_globals, pykey, new_globals_copy[key]);
+                    }
+                }
+                Sk.retainGlobals = backupRG;
+                if (caughtError !== null) {
+                    throw caughtError;
+                }
+                resolve();
+            });
+        };
+        if (!Sk.sysmodules.sq$contains(Sk.builtin.str.$sys)) {
+            Sk.misceval.chain(Sk.importModule("sys", false, true),
+                              loadModule);
+        } else {
+            loadModule();
         }
-        Sk.globals = backupGlobals;
-        // Only try to delete if we succeeded in creating it!
-        if (Sk.sysmodules.mp$lookup(pyName)) {
-            Sk.sysmodules.del$item(pyName);
-            //Sk.sysmodules.mp$del_subscript(pyName);
-        }
-        for (var key in new_globals_copy) {
-            if (new_globals_copy.hasOwnProperty(key)) {
-                var pykey = Sk.ffi.remapToPy(Sk.unfixReserved(key));
-                Sk.builtin.dict.prototype.mp$ass_subscript.call(new_globals, pykey, new_globals_copy[key]);
-            }
-        }
-        Sk.retainGlobals = backupRG;
-        if (caughtError !== null) {
-            throw caughtError;
-        }
-        resolve();
     });
 
     return Sk.misceval.promiseToSuspension(prom);
@@ -12088,11 +12097,12 @@ Compiler.prototype.annotateSource = function (ast, shouldStep) {
 
         Sk.asserts.assert(ast.lineno !== undefined && ast.col_offset !== undefined);
         out("\n$currLineNo=Sk.currLineNo=", lineno, ";$currColNo=Sk.currColNo=", col_offset, ";");
-        out("Sk.currFilename='", this.filename, "';$currSource=", JSON.stringify(sourceLine), ";");
+        // TODO: Make filename a module-global, and update it via that quickly.
+        out("$currFilename=Sk.currFilename='", this.filename, "';$currSource=", JSON.stringify(sourceLine), ";");
         // Do not trace the standard library
         if (shouldStep && (!this.filename ||
             !this.filename.startsWith("src/lib/"))) {
-            out("Sk.afterSingleExecution && Sk.afterSingleExecution($gbl,$loc," + lineno + "," + col_offset + "," + JSON.stringify(this.filename) + ");\n");
+            out("Sk.afterSingleExecution && Sk.afterSingleExecution($gbl,$loc," + lineno + "," + col_offset + ",$currFilename);\n");
         }
     }
 };
@@ -13955,13 +13965,6 @@ Compiler.prototype.buildcodeobj = function (n, coname, decorator_list, args, cal
     this.u.switchCode += "switch($blk){";
     this.u.suffixCode = "}" + this.handleTraceback(true, coname.v);
     this.u.suffixCode += "});";
-    /*this.u.suffixCode = ("} }catch(err){ "+
-                         "if (err instanceof Sk.builtin.TimeoutError) {"+
-                         "Sk.execStart = Date.now();Sk.execPaused=0"+
-                         "} if (!(err instanceof Sk.builtin.BaseException)) {"+
-                         "err = new Sk.builtin.ExternalError(err);" +
-                         "} err.traceback.push({lineno: $currLineNo, colno: $currColNo, filename: '"+this.filename+"'});"+
-                         "if ($exc.length>0) { $err = err; $blk=$exc.pop(); continue; } else { throw err; }}");*/
 
 
     //
@@ -14509,6 +14512,7 @@ Compiler.prototype.nameop = function (name, ctx, dataToStore) {
                 case Sk.astnodes.Load:
                 case Sk.astnodes.Param:
                     // Need to check that it is bound!
+                    // out("Sk.misceval.checkUnbound("+mangled+", '"+mangled+"');");
                     out("if (", mangled, " === undefined) { throw new Sk.builtin.UnboundLocalError('local variable \\\'", mangled, "\\\' referenced before assignment'); }\n");
                     return mangled;
                 case Sk.astnodes.Store:
@@ -15793,6 +15797,7 @@ Sk.builtin.str.$setitem = new Sk.builtin.str("__setitem__");
 Sk.builtin.str.$str = new Sk.builtin.str("__str__");
 Sk.builtin.str.$trunc = new Sk.builtin.str("__trunc__");
 Sk.builtin.str.$write = new Sk.builtin.str("write");
+Sk.builtin.str.$sys = new Sk.builtin.str("sys");
 
 Sk.misceval.op2method_ = {
     "Eq": Sk.builtin.str.$eq,
@@ -20368,6 +20373,21 @@ Sk.sysmodules = new Sk.builtin.dict([]);
 Sk.realsyspath = undefined;
 
 /**
+ * Retrieves sysmodules, going through any artificial sys modules that we may have.
+ * @returns {Object}
+ */
+Sk.getSysModulesPolitely = function() {
+    let sysmodules = Sk.sysmodules;
+    try {
+        let sys = sysmodules.mp$subscript(new Sk.builtin.str("sys"));
+        if (sys != undefined) {
+            sysmodules = sys.tp$getattr(new Sk.builtin.str("modules"));
+        }
+    } catch (x) {}
+    return sysmodules;
+}
+
+/**
  * @param {string} name to look for
  * @param {string} ext extension to use (.py or .js)
  * @param {Object=} searchPath an iterable set of path strings
@@ -20527,13 +20547,7 @@ Sk.importModuleInternal_ = function (name, dumpJS, modname, suppliedPyBody, rela
         topLevelModuleToReturn = Sk.importModuleInternal_(parentModName, dumpJS, undefined, undefined, relativeToPackage, returnUndefinedOnTopLevelNotFound, canSuspend);
     }
 
-    let sysmodules = Sk.sysmodules;
-    try {
-        let sys = sysmodules.mp$subscript(new Sk.builtin.str("sys"));
-        if (sys != undefined) {
-            sysmodules = sys.tp$getattr(new Sk.builtin.str("modules"));
-        }
-    } catch (x) {}
+    let sysmodules = Sk.getSysModulesPolitely();
 
     ret = Sk.misceval.chain(topLevelModuleToReturn, function (topLevelModuleToReturn_) {
         topLevelModuleToReturn = topLevelModuleToReturn_;
@@ -20892,7 +20906,9 @@ Sk.builtin.__import__ = function (name, globals, locals, fromlist, level) {
             var leafModule;
             var importChain;
 
-            leafModule = Sk.sysmodules.mp$subscript(
+            let sysmodules = Sk.getSysModulesPolitely();
+
+            leafModule = sysmodules.mp$subscript(
                 new Sk.builtin.str((relativeToPackageName || "") +
                     ((relativeToPackageName && name) ? "." : "") +
                     name));
@@ -34417,7 +34433,7 @@ var Sk = {}; // jshint ignore:line
 
 Sk.build = {
     githash: "2845f6174f37de8feb32d303893871817d2cdf11",
-    date: "2020-09-19T08:07:53.475Z"
+    date: "2020-09-28T06:21:09.727Z"
 };
 
 /**
