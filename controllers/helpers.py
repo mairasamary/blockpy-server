@@ -229,6 +229,9 @@ def parse_assignment_load():
         assignment_group_id = AssignmentGroup.id_by_url(request.args.get('assignment_group_url'))
     # Assignment ID
     current_assignment_id = maybe_int(request.args.get('assignment_id'))
+    # Exact "url" code for assignment
+    if current_assignment_id is None:
+        current_assignment_id = Assignment.id_by_url(request.args.get('assignment_url'))
     # User
     user = g.get('user', None)
     user_id = user.id if user else None

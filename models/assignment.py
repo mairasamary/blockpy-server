@@ -170,6 +170,13 @@ class Assignment(Base):
         return Assignment.query.filter_by(url=assignment_url).first()
 
     @staticmethod
+    def id_by_url(assignment_url):
+        possible = Assignment.by_url(assignment_url)
+        if possible:
+            return possible.id
+        return None
+
+    @staticmethod
     def by_builtin(type, id, owner_id, course_id):
         assignment = Assignment.query.filter_by(course_id=course_id,
                                                 mode=type,
