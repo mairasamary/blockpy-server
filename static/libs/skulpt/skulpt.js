@@ -12089,20 +12089,16 @@ Compiler.prototype.annotateSource = function (ast, shouldStep) {
         lineno = ast.lineno;
         col_offset = ast.col_offset;
         sourceLine = this.getSourceLine(lineno);
-        /*out("\n//\n// line ", lineno, ":\n// ", sourceLine, "\n// ");
-        for (i = 0; i < col_offset; ++i) {
-            out(" ");
-        }
-        out("^\n//\n");*/
-
         Sk.asserts.assert(ast.lineno !== undefined && ast.col_offset !== undefined);
         out("\n$currLineNo=Sk.currLineNo=", lineno, ";$currColNo=Sk.currColNo=", col_offset, ";");
         // TODO: Make filename a module-global, and update it via that quickly.
         out("$currFilename=Sk.currFilename='", this.filename, "';$currSource=", JSON.stringify(sourceLine), ";");
+        let isDocstring = !!(ast.constructor === Sk.astnodes.Expr &&
+                             ast.value.constructor === Sk.astnodes.Str);
         // Do not trace the standard library
         if (shouldStep && (!this.filename ||
             !this.filename.startsWith("src/lib/"))) {
-            out("Sk.afterSingleExecution && Sk.afterSingleExecution($gbl,$loc," + lineno + "," + col_offset + ",$currFilename);\n");
+            out(`Sk.afterSingleExecution && Sk.afterSingleExecution($gbl,$loc,${lineno}, ${col_offset}, $currFilename, ${isDocstring});\n`);
         }
     }
 };
@@ -34433,7 +34429,7 @@ var Sk = {}; // jshint ignore:line
 
 Sk.build = {
     githash: "2845f6174f37de8feb32d303893871817d2cdf11",
-    date: "2020-09-28T06:21:09.727Z"
+    date: "2020-10-18T16:38:53.530Z"
 };
 
 /**
