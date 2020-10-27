@@ -11018,8 +11018,44 @@ var extractDict = function (obj) {
     return ret;
 };
 
-Sk.builtin.exec = function execf(pythonCode, new_globals) {
+var mergeDict = function(obj1, obj2) {
+    var k, v, kAsJs, iter;
+    if (obj2 === undefined) {
+        return obj1;
+    }
+    for (iter = obj2.tp$iter(), k = iter.tp$iternext(); k !== undefined; k = iter.tp$iternext()) {
+        v = obj2.mp$subscript(k);
+        if (v === undefined) {
+            v = null;
+        }
+        kAsJs = Sk.ffi.remapToJs(k);
+        // todo; assert that this is a reasonble lhs?
+        obj1[Sk.fixReserved(kAsJs)] = v;
+    }
+    return obj1;
+}
+
+Sk.builtin.exec = function execf(pythonCode, new_globals, newLocals) {
     Sk.builtin.pyCheckArgs("exec", arguments, 1, 2);
+    /*
+    var filename = "<string>";
+    if (pythonCode instanceof Sk.builtin.code) {
+        filename = pythonCode.filename;
+        pythonCode = pythonCode.source;
+    } else {
+        pythonCode = Sk.ffi.remapToJs(pythonCode);
+    }
+    let code = Sk.compile(pythonCode, filename, "exec", true, true);
+    const tmp = Sk.globals;
+    globals = new_globals || tmp;
+    return Sk.misceval.chain(
+        code,
+        (co) => eval(co.code)(globals),
+        (new_locals) => {
+            Sk.globals = tmp;
+            return new_locals;
+        }
+    );*/
 
     var prom = new Promise(function (resolve, reject) {
         var backupRG = Sk.retainGlobals;
@@ -11044,6 +11080,9 @@ Sk.builtin.exec = function execf(pythonCode, new_globals) {
         var backupGlobals = Sk.globals;
         //console.log(Sk.globals);
         Sk.globals = new_globals_copy; // Possibly copy over some "default" ones?
+        //console.log(Sk.globals, new_globals);
+        //mergeDict(Sk.globals, new_globals);
+
         var name = filename.endsWith(".py") ? filename.slice(0, -3) : filename;
         var pyName = new Sk.builtin.str(name);
         var loadModule = function() {
@@ -11052,6 +11091,7 @@ Sk.builtin.exec = function execf(pythonCode, new_globals) {
             var caughtError = null;
             const res = Sk.misceval.tryCatch(() => {
                 Sk.importModuleInternal_(name, false, modname, pythonCode, undefined, false, true);
+                //console.log(Sk.sysmodules.mp$subscript(pyName).$js);
             }, (e) => {
                 console.error("SYSTEMATIC ERROR", e);
                 caughtError = e;
@@ -11066,6 +11106,7 @@ Sk.builtin.exec = function execf(pythonCode, new_globals) {
                     if (new_globals_copy.hasOwnProperty(key)) {
                         var pykey = Sk.ffi.remapToPy(Sk.unfixReserved(key));
                         Sk.builtin.dict.prototype.mp$ass_subscript.call(new_globals, pykey, new_globals_copy[key]);
+                        //Sk.builtin.dict.prototype.mp$ass_subscript.call(Sk.globals, pykey, Sk.globals[key]);
                     }
                 }
                 Sk.retainGlobals = backupRG;
@@ -17799,7 +17840,7 @@ Sk.builtin.SyntaxError = function (...args) {
     this.lineno = arguments.length >= 3 ? Sk.ffi.remapToPy(arguments[2]) : Sk.builtin.none.none$;
     this.offset = arguments.length >= 4 ? Sk.ffi.remapToPy(arguments[3]) : Sk.builtin.none.none$;
     try {
-        this.text = Sk.parse.linecache[arguments[1]][arguments[2]-1];
+        this.text = Sk.parse.linecache[arguments[1]][arguments[2]-1] || "";
     } catch (e) {
         this.text = "";
     }
@@ -23615,13 +23656,22 @@ Sk.exportSymbol("Sk.misceval.print_", Sk.misceval.print_);
  * Sk.misceval.loadname("foo", Sk.globals);
  */
 Sk.misceval.loadname = function (name, other) {
-    var bi;
+    var builtinModuleVersion, bi;
     var v = other[name];
     if (v !== undefined) {
         if (typeof v === "function" && v.sk$object === undefined) {
             return v();
         }
         return v;
+    }
+
+    // Check if we've overridden the builtin via the builtin's module
+    if (other["__builtins__"] !== undefined) {
+        builtinModuleVersion = other["__builtins__"].mp$lookup(new Sk.builtin.str(name));
+        //console.log("Overrode __builtins__", other, name, builtinModuleVersion);
+        if (builtinModuleVersion !== undefined) {
+            return builtinModuleVersion;
+        }
     }
 
     bi = Sk.builtins[name];
@@ -24860,7 +24910,7 @@ Parser.prototype.addtoken = function (type, value, context) {
             //print("WAA");
             this.pop();
             if (this.stack.length === 0) {
-                throw new Sk.builtin.SyntaxError("too much input", this.filename);
+                throw new Sk.builtin.SyntaxError("too much input", this.filename, "", context);
             }
         } else {
             // no transition
@@ -25011,6 +25061,7 @@ Sk.parse = function parse(filename, input) {
 
     var endmarker_seen = false;
     var parser = makeParser(filename);
+    var totalLines = 0;
 
     /**
      * takes a string splits it on '\n' and returns a function that returns
@@ -25021,6 +25072,7 @@ Sk.parse = function parse(filename, input) {
         let lines = input.split("\n");
         Sk.parse.linecache[filename] = lines.slice();
         lines = lines.reverse();
+        totalLines = lines.length;
 
         return function () {
             if (lines.length === 0) {
@@ -25070,7 +25122,7 @@ Sk.parse = function parse(filename, input) {
     }, filename);
 
     if (!endmarker_seen) {
-        throw new Sk.builtin.SyntaxError("incomplete input", this.filename);
+        throw new Sk.builtin.SyntaxError("incomplete input", this.filename, "", [0, 0, totalLines]);
     }
 
     /**
@@ -34428,8 +34480,8 @@ Sk.builtin.type.prototype.__class_getitem__ = function(self, key) {
 var Sk = {}; // jshint ignore:line
 
 Sk.build = {
-    githash: "2845f6174f37de8feb32d303893871817d2cdf11",
-    date: "2020-10-18T16:38:53.530Z"
+    githash: "efcc829bed09ab88d1856d0afa36a3d5e1559d7b",
+    date: "2020-10-27T16:45:50.530Z"
 };
 
 /**
