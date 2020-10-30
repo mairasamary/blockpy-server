@@ -32,9 +32,9 @@
 <div>Submitted code:<br>
     {{ submission.code|highlight_python_code|safe }}
     {% if submission.extra_files %}
-        {% for filename, contents in submission.extra_files|json_load %}
-            <strong>{{ filename }}</strong>
-            {{ contents|highlight_python_code|safe }}
+        {% for file in submission.extra_files|json_load %}
+            <strong>{{ file.filename }}</strong>
+            {{ file.contents|highlight_python_code|safe }}
         {% endfor %}
     {% endif %}
 </div>
