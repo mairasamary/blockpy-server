@@ -10325,11 +10325,12 @@ Sk.builtin.chr = function chr(x) {
     }
     x = Sk.builtin.asnum$(x);
 
-    if (x < 0 || x > 255) {
-        throw new Sk.builtin.ValueError("chr() arg not in range(256)");
+    // Should be sys.maxunicode
+    if (x < 0) {
+        throw new Sk.builtin.ValueError("chr() arg not in range(0x110000)");
     }
 
-    return new Sk.builtin.str(String.fromCharCode(x));
+    return new Sk.builtin.str(String.fromCodePoint(x));
 };
 
 Sk.builtin.unichr = function unichr(x) {
@@ -34481,7 +34482,7 @@ var Sk = {}; // jshint ignore:line
 
 Sk.build = {
     githash: "efcc829bed09ab88d1856d0afa36a3d5e1559d7b",
-    date: "2020-10-27T16:45:50.530Z"
+    date: "2020-10-29T23:41:52.363Z"
 };
 
 /**
