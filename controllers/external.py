@@ -54,6 +54,6 @@ def dump_logs():
             } for (sub, u, assign) in suas
         ]
     }
-    filename = assignment.get_filename()+'_submissions.json'
+    filename = assignment.get_filename("")+'_submissions.json'
     return Response(json.dumps(data), mimetype='application/json',
                     headers={'Content-Disposition':'attachment;filename={}'.format(filename)})
