@@ -23,6 +23,12 @@
 -->
 <div>Edits: {{ submission.version }}</div>
 {% if is_grader or not hiding %}
+<div>Full Submission: <a href="{{ url_for('blockpy.load_assignment',
+                        assignment_id=submission.assignment_id,
+                        user_id=submission.user_id,
+                        course_id=submission.course_id,
+                        force_download=True,
+                        embed=True) }}">download</a></div>
 <div>History: <a href="{{ url_for('blockpy.browse_history', assignment_id=submission.assignment_id,
         user_id=submission.user_id, course_id=submission.course_id) }}">view</a></div>
 {% endif %}

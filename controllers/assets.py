@@ -44,6 +44,7 @@ bundles = {
     'skulpt_js': Bundle(
         "libs/skulpt/skulpt.js",
         "libs/skulpt/skulpt-stdlib.js",
+        "libs/pygame4skulpt/pygameskulpt.js",
         output='gen/skulpt.js'
     ),
 
