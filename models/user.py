@@ -1,5 +1,6 @@
 from flask_security import UserMixin
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, func
+from werkzeug.utils import secure_filename
 
 from models import models
 from models.models import Base, relationship, db
@@ -74,6 +75,9 @@ class User(Base, UserMixin):
 
     def name(self):
         return ' '.join((self.first_name, self.last_name))
+
+    def get_filename(self, extension='.json'):
+        return secure_filename(self.name().replace(' ', "_")) + extension
 
     def in_course(self, course_id):
         return bool(models.Role.query.filter_by(course_id=course_id, user_id=self.id).first())
