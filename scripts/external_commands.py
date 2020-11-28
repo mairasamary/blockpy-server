@@ -51,6 +51,7 @@ class UpdateBlockPy(Command):
             '../blockmirror/dist/block_mirror.css': 'libs/block_mirror/',
             '../skulpt/dist/skulpt.js': 'libs/skulpt/',
             '../skulpt/dist/skulpt-stdlib.js': 'libs/skulpt/',
+            '../pygame4skulpt/dist/pygameskulpt.js': 'libs/pygame4skulpt/',
             '../../pedal-edu/pedal/dist-js/skulpt-pedal.js': 'libs/pedal/',
             '../../pedal-edu/curriculum-ctvt/dist-js/skulpt-curriculum-ctvt.js': 'libs/pedal/',
             '../../pedal-edu/curriculum-sneks/dist-js/skulpt-curriculum-sneks.js': 'libs/pedal/',

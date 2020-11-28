@@ -6,7 +6,7 @@ from typing import Tuple
 from slugify import slugify
 from natsort import natsorted
 
-from flask import Blueprint, url_for, session, request, jsonify, g, render_template, redirect
+from flask import Blueprint, url_for, session, request, jsonify, g, render_template, redirect, Response
 from werkzeug.utils import secure_filename
 
 from controllers.pylti.common import LTIPostMessageException
@@ -100,16 +100,20 @@ def load_assignment(lti=lti):
     # Get arguments
     assignment_id = int(request.values.get('assignment_id'))
     assignment = Assignment.by_id(assignment_id)
+    student_id = maybe_int(request.values.get('user_id'))
     course_id = get_course_id(True)
     user, user_id = get_user()
+    force_download = maybe_bool(request.values.get('force_download', "false"))
     # Verify exists
     check_resource_exists(assignment, "Assignment", assignment_id)
     # Verify permissions
+    if user_id != student_id and not user.is_grader(course_id):
+        return ajax_failure("Only graders can see submissions for other people.")
     if course_id is None:
-        editor_information = assignment.for_read_only_editor(user_id)
+        editor_information = assignment.for_read_only_editor(student_id)
     else:
-        editor_information = assignment.for_editor(user_id, course_id)
-        browser_info = repr({
+        editor_information = assignment.for_editor(student_id, course_id)
+        browser_info = json.dumps({
             'platform': request.user_agent.platform,
             'browser': request.user_agent.browser,
             'version': request.user_agent.version,
@@ -118,12 +122,22 @@ def load_assignment(lti=lti):
         })
         # Log the event
         if user is not None:
-            make_log_entry(assignment_id, assignment.version, course_id, user_id, 'Session.Start',
-                           message=browser_info)
+            if user_id != student_id:
+                make_log_entry(assignment_id, assignment.version, course_id,
+                               user_id, 'X-Submission.Get', message=str(student_id))
+            else:
+                make_log_entry(assignment_id, assignment.version, course_id,
+                               user_id, 'Session.Start', message=browser_info)
     # Verify passcode, if necessary
     if assignment.passcode_fails(request.values.get('passcode')):
         return ajax_failure("Passcode {!r} rejected".format(request.values.get("passcode")))
-    return ajax_success(editor_information)
+    if force_download:
+        student_filename = User.by_id(student_id).get_filename("")
+        filename = assignment.get_filename("") + "_"+student_filename+'_submission.json'
+        return Response(json.dumps(editor_information), mimetype='application/json',
+                        headers={'Content-Disposition': 'attachment;filename={}'.format(filename)})
+    else:
+        return ajax_success(editor_information)
 
 
 @blueprint_blockpy.route('/save_file/', methods=['GET', 'POST'])
