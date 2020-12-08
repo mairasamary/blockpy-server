@@ -41,33 +41,38 @@ def blockpy_static(path):
 def load_submission(lti=lti):
     submission_id = int(request.args.get('submission_id'))
     embed = maybe_bool(request.values.get('embed'))
-    user = g.get('user', None)
-    user_id = user.id if user else None
-    course_id = maybe_int(request.args.get('course_id', None))
-    if course_id is None:
-        course_id = int(g.course.id) if g.course else None
-    submission = Submission.query.get(submission_id)
+    course_id = get_course_id(True)
+    user, user_id = get_user()
+    submission = Submission.by_id(submission_id)
+    read_only = maybe_bool(request.values.get('read_only', "true"))
     # Check that the resource exists
     check_resource_exists(submission, "Submission", submission_id)
     # If it is this user's submission, redirect to load the assignment
     if submission.user_id == user_id:
-        return redirect(url_for('blockpy.load', assignment_id=submission.assignment.id, ))
+        if course_id is None:
+            course_id = submission.course_id
+        return redirect(url_for('blockpy.load', assignment_id=submission.assignment.id,
+                                course_id=course_id))
     # Check that it is public or you are a grader
     elif user.is_grader(submission.course_id):
-        pass
+        role = 'grader'
     elif not submission.assignment.public:
         # TODO: Handle this more gracefully
         return ajax_failure(
             "Cannot view submission. This is not a public submission, and you do not own the submission, and you are "
             "not an instructor in its course.")
+    else:
+        role = 'anonymous'
     # Get the assignment
     assignment_data = submission.assignment.for_editor(submission.user_id, submission.course_id)
     return load_editor(lti, {
         "user": user,
         "user_id": user_id,
         "embed": embed,
+        "read_only": read_only,
+        "current_submission_id": submission_id,
         "course_id": course_id,
-        "role": 'anonymous',
+        "role": role,
         "assignment_group_id": None,
         "assignment_data": assignment_data
     })

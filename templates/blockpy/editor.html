@@ -109,6 +109,10 @@
                     "display.instructor": true,
                 {% endif %}
 
+                {% if read_only %}
+                    "display.read_only": true,
+                {% endif %}
+
                 {% for name, value in request.args.items() %}
                     {% if name.startswith('settings-') %}
                         "{{ name[9:] }}": {{ value|tojson }},
@@ -120,13 +124,13 @@
             editor.requestPasscode();
             {% endif %}
 
-            {% if current_assignment_id != None %}
+            {% if current_assignment_id is defined and current_assignment_id != None %}
                 editor.loadAssignment({{ current_assignment_id }});
                 altAssignmentChangingFunction = editor.loadAssignment.bind(editor);
             {% endif %}
 
-            {% if current_submission_id %}
-                editor.loadAssignmentData({{ assignment_data|tojson }});
+            {% if assignment_data %}
+                editor.loadAssignmentData_({{ assignment_data|tojson }});
             {% endif %}
 
             {% if not embed %}
