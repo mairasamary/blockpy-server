@@ -201,7 +201,8 @@ def add_users(course_id):
                 first_name, last_name, new_email = new_email.split('|', maxsplit=2)
             new_user = User.find_student(email=new_email)
             if new_user is None:
-                new_user = User.new_from_instructor(first_name=first_name, last_name=last_name,
+                new_user = User.new_from_instructor(first_name=first_name,
+                                                    last_name=last_name,
                                                     email=new_email)
             if not new_user.is_student():
                 new_user.add_role('learner', course_id=course_id)
