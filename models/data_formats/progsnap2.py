@@ -1,5 +1,6 @@
 import csv
 import os
+import shutil
 import tempfile
 from datetime import datetime
 import io
@@ -185,15 +186,20 @@ def generate_maintable(zip_file, course_id, assignment_group_ids):
         query = query.filter(Log.assignment_id.in_(assignment_ids))
     estimated_size = query.count()
     logs = query.order_by(Log.date_created.asc()).yield_per(100)
-    with io.StringIO() as maintable_file:
+    tempdir = tempfile.mkdtemp()
+    temppath = os.path.join(tempdir, 'MainTable.csv')
+    #with io.StringIO() as maintable_file:
+    with open(temppath, 'w') as maintable_file:
         writer = csv.writer(maintable_file, **PROGSNAP_CSV_WRITER_OPTIONS)
         writer.writerow(HEADERS)
         order_id = 0
         for log in tqdm(logs, total=estimated_size):
             writer.writerow(to_progsnap_event(log, order_id, code_states, latest_code_states, scores))
             order_id += 1
-        zip_file.writestr("MainTable.csv", maintable_file.getvalue())
-        return "MainTable.csv", code_states
+        #zip_file.writestr("MainTable.csv", maintable_file.getvalue())
+    zip_file.write(temppath, "MainTable.csv")
+    shutil.rmtree(tempdir)
+    return "MainTable.csv", code_states
 
 
 def generate_link_subjects(zip_file, course_id):
