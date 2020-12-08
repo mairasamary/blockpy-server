@@ -2,7 +2,7 @@ import logging
 from collections import OrderedDict
 import json
 
-from sqlalchemy import Column, String, Integer, ForeignKey, Text, func, JSON
+from sqlalchemy import Column, String, Integer, ForeignKey, Text, func, JSON, Index
 
 from models.assignment import Assignment
 from models.models import Base, db, datetime_to_string
@@ -28,6 +28,8 @@ class Log(Base):
     assignment = db.relationship("Assignment")
     subject = db.relationship("User")
     course = db.relationship("Course")
+
+    __table_args__ = (Index('log_index', "course_id", "assignment_id", "subject_id"),)
 
     # event_type
     # => event_id
