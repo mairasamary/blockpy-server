@@ -1,5 +1,7 @@
+from datetime import datetime
 from pprint import pprint
 from collections import defaultdict
+
 from natsort import natsorted
 
 from flask_wtf import Form
@@ -8,14 +10,12 @@ from wtforms import IntegerField, BooleanField, StringField, SubmitField, Select
 from flask import Blueprint, send_from_directory
 from flask import Flask, redirect, url_for, session, request, jsonify, g, \
     make_response, Response, render_template, flash
-from werkzeug.utils import secure_filename
-
-from sqlalchemy import Date, cast, func, desc, or_
 
 from controllers.helpers import (lti, strip_tags,
                                  get_lti_property, require_request_parameters, login_required,
                                  require_course_instructor, get_select_menu_link,
                                  check_resource_exists, get_course_id, get_user, ajax_success)
+from controllers.security import user_datastore
 
 from main import app
 from models.models import db, AssignmentGroup
@@ -201,12 +201,18 @@ def add_users(course_id):
                 first_name, last_name, new_email = new_email.split('|', maxsplit=2)
             new_user = User.find_student(email=new_email)
             if new_user is None:
-                new_user = User.new_from_instructor(first_name=first_name,
-                                                    last_name=last_name,
-                                                    email=new_email)
+                new_user = user_datastore.create_user(first_name=first_name,
+                                                      last_name=last_name,
+                                                      email=new_email,
+                                                      confirmed_at=datetime.now())
+                #new_user = User.new_from_instructor(first_name=first_name,
+                #                                    last_name=last_name,
+                #                                    email=new_email)
+
             if not new_user.is_student():
                 new_user.add_role('learner', course_id=course_id)
-            # TODO: Send an email
+            # TODO: Add an invite for the course and that user
+            # TODO: Send an email to reset their password
         flash('New students added')
         return redirect(url_for('courses.manage_users', course_id=course_id))
     return render_template('courses/add_users.html', add_form=add_form, course_id=course_id)
