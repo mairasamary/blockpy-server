@@ -69,7 +69,7 @@ def lti(request='any', *lti_args, **lti_kwargs):
                 if old_user != g.user:
                     flask_security.utils.logout_user()
                     flask_security.utils.login_user(g.user, remember=True)
-                if not old_user:
+                elif not old_user:
                     flask_security.utils.login_user(g.user, remember=True)
             except LTIException as lti_exception:
                 session['is_lti_active'] = False
