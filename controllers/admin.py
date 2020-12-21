@@ -1,8 +1,5 @@
 # Import built-ins
-import os, sys
 import json
-from subprocess import call
-import subprocess
 import csv
 import io
 import os.path as op
@@ -310,34 +307,4 @@ admin.add_view(LogView(Log, db.session, category='Tables'))
 admin.add_view(ReviewView(Review, db.session, category='Tables'))
 
 # admin.add_view(FileAdmin(app.config['BLOCKPY_LOG_DIR'], base_url='/admin/code_logs/', name='Disk Logs'))
-admin.add_view(FileAdmin(app.config['UPLOADS_DIR'], '',
-                         name='File Uploads'))
-
-
-@app.route('/admin/log_check', methods=['GET', 'POST'])
-def log_check():
-    try:
-        def generate():
-            root = os.path.join(app.config['ROOT_DIRECTORY'], 'log/student_interactions/')
-            all_paths = os.listdir(root)
-            total = 0
-            for a_file in sorted(all_paths):
-                r = subprocess.check_output("wc -l " + root + a_file,
-                                            shell=True)
-                total += int(r.split()[0])
-                yield r
-            yield "Total: {}".format(total)
-
-        return Response(generate(), mimetype='text')
-    except subprocess.CalledProcessError as cpe:
-        return str(cpe)
-
-
-@app.route('/admin/shutdown', methods=['GET', 'POST'])
-@admin_required
-def shutdown():
-    func = request.environ.get('werkzeug.server.shutdown')
-    if func is None:
-        raise RuntimeError('Not running with the Werkzeug Server')
-    func()
-    return 'Server shutting down...'
+admin.add_view(FileAdmin(app.config['UPLOADS_DIR'], '', name='File Uploads'))
