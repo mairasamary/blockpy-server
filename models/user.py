@@ -74,7 +74,7 @@ class User(Base, UserMixin):
         return '<User {} ({})>'.format(self.id, self.email)
 
     def name(self):
-        return ' '.join((self.first_name, self.last_name))
+        return ' '.join((self.first_name or "", self.last_name or ""))
 
     def get_filename(self, extension='.json'):
         return secure_filename(self.name().replace(' ', "_")) + extension
