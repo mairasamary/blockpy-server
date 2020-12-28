@@ -9,19 +9,14 @@ from slugify import slugify
 from natsort import natsorted
 
 from flask import Blueprint, url_for, session, request, jsonify, g, render_template, redirect
-from werkzeug.utils import secure_filename
 
 from controllers.blockpy import lti_post_grade
 from controllers.pylti.common import LTIPostMessageException
 from main import app
-from models.course import Course
 
-from models.models import db
-from models.log import Log
 from models.review import Review
 from models.submission import Submission, GradingStatuses
-from models.assignment import Assignment
-from models.assignment_group import AssignmentGroup
+
 
 from controllers.helpers import (lti, highlight_python_code, normalize_url,
                                  ensure_dirs, ajax_failure, parse_assignment_load, require_request_parameters,

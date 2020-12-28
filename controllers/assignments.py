@@ -1,7 +1,5 @@
 import json
 
-from werkzeug.utils import secure_filename
-
 from models.portation import export_bundle, import_bundle, export_zip
 
 try:

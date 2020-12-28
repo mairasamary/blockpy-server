@@ -1,0 +1,30 @@
+{
+    "compilerOptions": {
+        "module": "es6",
+        "moduleResolution": "node",
+        "target": "es2015",
+        "lib": ["dom", "es6", "es2015", "es2016", "es2017", "scripthost"],
+        "outDir": "../static/gen/",
+        "rootDir": "./",
+        "sourceMap": true,
+        "noEmitOnError": true,
+        "noImplicitAny": true,
+        //"noImplicitReturns": true,
+        //"noImplicitThis": true,
+        //"strictNullChecks": true,
+        // "noUnusedParameters": true,
+        // "noUnusedLocals": true,
+        // "noFallthroughCasesInSwitch": true,
+        //"experimentalDecorators": true,
+        "baseUrl": ".",
+        "paths": {
+        },
+        "types": ["node", "jquery", "bootstrap", "knockout", "jasmine"]
+    },
+    "include": [
+        "components"
+    ],
+    "exclude": [
+        "node_modules"
+    ]
+}

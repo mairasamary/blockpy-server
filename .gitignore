@@ -20,6 +20,7 @@ certs/
 settings/*.json
 settings/*.yaml
 
+frontend/node_modules/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

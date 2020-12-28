@@ -1,5 +1,9 @@
 from flask_assets import Bundle, Environment
+from webassets.filter import get_filter
+
 from main import app
+
+es2015 = get_filter('babel', presets='es2015')
 
 bundles = {
     'libs_js': Bundle(
@@ -47,6 +51,8 @@ bundles = {
         "libs/pygame4skulpt/pygameskulpt.js",
         output='gen/skulpt.js'
     ),
+
+    # TODO: Extract these filepaths out to be config settings
 
     'pedal_js': Bundle(
         "libs/pedal/skulpt-pedal.js" if app.config["IS_PRODUCTION"] else "../../pedal-edu/pedal/dist-js/skulpt-pedal.js",
@@ -98,5 +104,4 @@ bundles = {
 }
 
 assets = Environment(app)
-
 assets.register(bundles)

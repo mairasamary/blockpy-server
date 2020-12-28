@@ -133,6 +133,29 @@ def assignments(course_id):
                            course_id=course_id)
 
 
+@courses.route('/manage_assignments/<course_id>/', methods=['GET', 'POST'])
+@courses.route('/manage_assignments/<course_id>', methods=['GET', 'POST'])
+@login_required
+def manage_assignments(course_id):
+    if not g.user.in_course(course_id):
+        flash("You are not in course_id")
+        return redirect(url_for('courses.index'))
+    return render_template('courses/manage_assignments.html', course_id=course_id)
+
+@courses.route('/manage_assignments/get/', methods=['GET'])
+@courses.route('/manage_assignments/get', methods=['GET'])
+@login_required
+def get_assignments():
+    course_id = request.values.get('course_id')
+    if not g.user.in_course(course_id):
+        return redirect(url_for('courses.index'))
+    groups = [g.encode_json() for g in AssignmentGroup.query.all()]
+
+    return ajax_success(dict(
+                           groups=groups,
+                           course_id=course_id))
+
+
 @courses.route('/view_assignments/<course_id>/', methods=['GET', 'POST'])
 @courses.route('/view_assignments/<course_id>', methods=['GET', 'POST'])
 @login_required
