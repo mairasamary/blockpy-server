@@ -2560,6 +2560,12 @@ BlockMirrorTextToBlocks.prototype.MODULE_FUNCTION_SIGNATURES = {
       message: 'plot histogram',
       colour: BlockMirrorTextToBlocks.COLOR.PLOTTING
     },
+    'bar': {
+      returns: false,
+      simple: ['xs', 'ys'],
+      message: 'plot bar chart',
+      colour: BlockMirrorTextToBlocks.COLOR.PLOTTING
+    },
     'plot': {
       returns: false,
       simple: ['values'],
