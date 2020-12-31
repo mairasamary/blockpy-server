@@ -15,7 +15,8 @@ Watch Events
     $(function() {
         ko.applyBindings({
             pageCourseId: {{ course_id|tojson }},
-            userId: {{ g.user.id|tojson }}
+            userId: {{ g.user.id|tojson }},
+            assignmentIds: [{{  request.values.get('assignment_ids', "1") }}]
         });
     });
 
@@ -27,7 +28,7 @@ Watch Events
     <h1>Watch Events</h1>
     {{ navigation.navigate_course() }}
 
-    <watcher params="courseId: pageCourseId, assignmentIds: [1], userIds: [4]"></watcher>
+    <watcher params="courseId: pageCourseId, assignmentIds: assignmentIds, userIds: [4]"></watcher>
 
 
 {% endblock %}
