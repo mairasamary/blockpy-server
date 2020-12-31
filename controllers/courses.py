@@ -14,7 +14,7 @@ from flask import Flask, redirect, url_for, session, request, jsonify, g, \
 from controllers.helpers import (lti, strip_tags,
                                  get_lti_property, require_request_parameters, login_required,
                                  require_course_instructor, get_select_menu_link,
-                                 check_resource_exists, get_course_id, get_user, ajax_success)
+                                 check_resource_exists, get_course_id, get_user, ajax_success, ajax_failure)
 from controllers.security import user_datastore
 
 from main import app
@@ -132,6 +132,31 @@ def assignments(course_id):
                            course_groups=course_groups,
                            course_id=course_id)
 
+@courses.route('/users/', methods=['GET'])
+@courses.route('/users', methods=['GET'])
+@login_required
+def users():
+    user_ids = request.values.get('user_ids', "")
+    course_id = get_course_id()
+    user, user_id = get_user()
+    if course_id is None:
+        return ajax_failure("You are not in a course context.")
+    is_grader = user.is_grader(course_id)
+    if not is_grader and user_ids != str(user_id):
+        return ajax_failure("You do not have permissions to see those users.")
+    users = []
+    for user_id in user_ids.split(","):
+        if not user_id.isdigit():
+            return ajax_failure(f"Unknown User ID: {user_id!r}")
+        user_id = int(user_id)
+        # With Course Role Information
+        user = User.by_id(user_id)
+        check_resource_exists(user, "User", user_id)
+        user_data = user.encode_json()
+        user_data['roles'] = [r.encode_json() for r in user.get_course_roles(course_id)]
+        users.append(user_data)
+    return ajax_success(dict(users=users))
+
 
 @courses.route('/manage_assignments/<course_id>/', methods=['GET', 'POST'])
 @courses.route('/manage_assignments/<course_id>', methods=['GET', 'POST'])
@@ -154,6 +179,15 @@ def get_assignments():
     return ajax_success(dict(
                            groups=groups,
                            course_id=course_id))
+
+
+@courses.route('/watch_events/', methods=['GET'])
+@courses.route('/watch_events', methods=['GET'])
+@login_required
+def watch_events():
+    course_id = get_course_id(False)
+    return render_template('courses/watch_events.html', course_id=course_id)
+
 
 
 @courses.route('/view_assignments/<course_id>/', methods=['GET', 'POST'])

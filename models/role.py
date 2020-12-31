@@ -13,6 +13,14 @@ class Role(Base, RoleMixin):
 
     NAMES = ['instructor', 'admin', 'student']
 
+    def encode_json(self, use_owner=True):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'user_id': self.user_id,
+            'course_id': self.course_id
+        }
+
     def update_role(self, new_role):
         pass
 

@@ -13,7 +13,8 @@ from flask import (Blueprint, g, session, render_template, url_for, request, jso
 from controllers.helpers import (lti, strip_tags,
                                  get_lti_property, require_request_parameters, login_required,
                                  require_course_instructor, get_select_menu_link,
-                                 check_resource_exists, parse_assignment_load, get_course_id, get_user, ajax_success)
+                                 check_resource_exists, parse_assignment_load, get_course_id, get_user, ajax_success,
+                                 ajax_failure)
 
 from main import app
 
@@ -155,6 +156,26 @@ def select_embed(lti, lti_exception=None):
     """ Let's the user select from a list of assignments.
     """
     return select(menu='embed', lti=lti)
+
+
+@blueprint_assignments.route('/get_ids/', methods=['GET'])
+@blueprint_assignments.route('/get_ids', methods=['GET'])
+@login_required
+def get_assignments():
+    assignment_ids = request.values.get('assignment_ids', "")
+    course_id = get_course_id()
+    user, user_id = get_user()
+    # TODO: verify that they have the permissions to see this file
+    assignments = []
+    for assignment_id in assignment_ids.split(","):
+        if not assignment_id.isdigit():
+            return ajax_failure(f"Unknown Assignment ID: {assignment_id!r}")
+        assignment_id = int(assignment_id)
+        # With Course Role Information
+        assignment = Assignment.by_id(assignment_id)
+        check_resource_exists(assignment, "Assignment", assignment_id)
+        assignments.append(assignment.encode_json())
+    return ajax_success(dict(assignments=assignments))
 
 
 @blueprint_assignments.route('/export/', methods=['GET', 'POST'])

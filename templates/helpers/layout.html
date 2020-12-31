@@ -16,6 +16,11 @@
 
     <link rel="shortcut icon" href="{{ url_for('static', filename='images/favicon.ico') }}">
 
+    <script type=text/javascript>
+        // Use $SCRIPT_ROOT to access all URLS on the server
+        window.$URL_ROOT = {{ request.url_root|tojson|safe }};
+    </script>
+
     {% assets "libs_js" %}
         <script type="text/javascript" src="{{ ASSET_URL }}"></script>
     {% endassets %}

@@ -645,6 +645,7 @@ def browse_history():
     assignment_id = maybe_int(request.values.get('assignment_id'))
     student_id = maybe_int(request.values.get('user_id'))
     page_offset = maybe_int(request.values.get('page_offset', 0))
+    embed = maybe_bool(request.values.get('embed'))
     user, user_id = get_user()
     # Get resources
     assignment = Assignment.by_id(assignment_id)
@@ -656,7 +657,8 @@ def browse_history():
     history = Log.get_history(course_id, assignment_id, student_id,
                               page_offset, HISTORY_PAGE_LIMIT)
     return render_template('blockpy/browse_history.html', assignment=assignment,
-                           student=student, course=course, history=history)
+                           student=student, course=course, history=history,
+                           embed=embed)
 
 
 @blueprint_blockpy.route('/list_urls/', methods=['GET', 'POST'])

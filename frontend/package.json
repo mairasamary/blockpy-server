@@ -3,7 +3,9 @@
   "description": "TypeScript for the frontend of the BlockPy website",
   "version": "0.1.0",
   "main": "./index.ts",
-  "dependencies": {},
+  "dependencies": {
+    "@types/codemirror": "0.0.103"
+  },
   "typings": "./declarations/index.d.ts",
   "types": "./declarations/index.d.ts",
   "scripts": {

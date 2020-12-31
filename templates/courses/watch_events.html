@@ -1,0 +1,33 @@
+{% extends 'helpers/layout.html' %}
+{% import 'helpers/navigation.html' as navigation %}
+
+{% block title %}
+Watch Events
+{% endblock %}
+
+{% block statusbar %}
+{% endblock %}
+
+{% block extrahead %}
+
+<script type='text/javascript'>
+
+    $(function() {
+        ko.applyBindings({
+            pageCourseId: {{ course_id|tojson }},
+            userId: {{ g.user.id|tojson }}
+        });
+    });
+
+</script>
+{% endblock %}
+
+{% block body %}
+
+    <h1>Watch Events</h1>
+    {{ navigation.navigate_course() }}
+
+    <watcher params="courseId: pageCourseId, assignmentIds: [1], userIds: [4]"></watcher>
+
+
+{% endblock %}
