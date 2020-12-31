@@ -19,7 +19,7 @@ module.exports = {
     library: 'frontend',
     libraryTarget: 'var',
     filename: 'frontend.js',
-    path: path.resolve(__dirname, '../static/gen/'),
+    path: path.resolve(__dirname, '../static/libs/blockpy_server/'),
   },
   externals: {
     knockout: 'ko',
