@@ -98,7 +98,8 @@ export abstract class ModelStore<J extends ModelJson, T extends Model<J>> {
     finishDelayedLoads() {
         let payload = this.getPayload();
         let url = this.getUrl();
-        return ajax_get(this.getUrl(), this.getPayload()).then((data) => {
+        this.delayedData.length= 0;
+        return ajax_get(url, payload).then((data) => {
            if (data.success) {
                let results = data[this.GET_FIELD];
                let created = results.map( (modelJson: J) => {
