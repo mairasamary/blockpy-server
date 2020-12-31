@@ -273,7 +273,7 @@ export class Watcher {
         ajax_get("blockpy/load_history", {
             assignment_id: this.assignmentIds()[0],
             course_id: this.courseId(),
-            user_id: this.userIds()[0],
+            //user_id: this.userIds()[0],
         }).then((data) => {
             if (data.success) {
                 this.addLogs(data.history);

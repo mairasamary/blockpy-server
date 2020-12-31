@@ -134,9 +134,9 @@ class Log(Base):
             Log.query.filter_by(**query_filters).order_by(Log.date_created.desc())
         )
         if page_offset is not None:
-            logs.offset(page_offset)
+            logs = logs.offset(page_offset)
         if page_limit is not None:
-            logs.limit(page_limit)
+            logs = logs.limit(page_limit)
         return [log.encode_json() for log in logs.all()]
 
     def for_file(self):
