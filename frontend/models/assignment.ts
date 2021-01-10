@@ -1,7 +1,7 @@
 import * as ko from 'knockout';
 import {Model, ModelJson, ModelStore} from "./model";
-import {capitalize, TwoWayReadonlyMap} from "./plugins";
-import {ajax_get} from "./server";
+import {capitalize, TwoWayReadonlyMap} from "../components/plugins";
+import {ajax_get} from "../components/server";
 
 export interface AssignmentJson extends ModelJson {
     id: number;
@@ -122,6 +122,10 @@ export class AssignmentStore extends ModelStore<AssignmentJson, Assignment> {
             course_id: 0,
             version: 0
         });
+    }
+
+    getLocalStorageKey(): string {
+        return `BLOCKPY_COURSE_${this.courseId}_ASSIGNMENTS`;
     }
 }
 

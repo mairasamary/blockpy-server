@@ -78,6 +78,42 @@ def load_submission(lti=lti):
     })
 
 
+@blueprint_blockpy.route('/load_readonly/', methods=['GET', 'POST'])
+@blueprint_blockpy.route('/load_readonly', methods=['GET', 'POST'])
+def load_readonly(lti=lti):
+    embed = maybe_bool(request.values.get('embed'))
+    user, user_id = get_user()
+    assignment_data = json.loads(request.values.get("assignment_data", "{}"))
+    # Handle Passcode
+    # Handle IP Addresses
+    print(assignment_data)
+    return load_editor(lti, {
+        "user": user,
+        "user_id": user_id,
+        "embed": embed,
+        "read_only": True,
+        "current_submission_id": None,
+        "course_id": None,
+        "role": assignment_data.get('user', {}).get('role', 'instructor'),
+        "assignment_group_id": None,
+        "assignment_data": assignment_data
+    })
+
+
+def parse_form_data(fields):
+    result = {}
+    current = result
+    for key, value in fields:
+        keys = key.split(".")
+        for subkey in keys[:-1]:
+            if subkey not in current:
+                current[subkey] = {}
+            current = current[subkey]
+        current[keys[-1]] = value
+        current = result
+    return result
+
+
 @blueprint_blockpy.route('/', methods=['GET', 'POST'])
 @blueprint_blockpy.route('/index', methods=['GET', 'POST'])
 @blueprint_blockpy.route('/index/', methods=['GET', 'POST'])
@@ -210,18 +246,22 @@ def save_instructor_file(course_id, user, filename):
 def load_history():
     # Get parameters
     course_id = maybe_int(request.values.get('course_id'))
-    assignment_id = maybe_int(request.values.get('assignment_id'))
-    student_id = maybe_int(request.values.get('user_id'))
+    assignment_id = (request.values.get('assignment_id'))
+    student_id = (request.values.get('user_id'))
     page_limit = maybe_int(request.values.get('page_limit'))
     page_offset = maybe_int(request.values.get('page_offset'))
+    with_submission = maybe_bool(request.values.get('with_submission'))
     user, user_id = get_user()
     # Verify user can see the submission
-    if user_id != student_id and not user.is_grader(course_id):
+    if str(user_id) != str(student_id) and not user.is_grader(course_id):
         return ajax_failure("Only graders can see logs for other people.")
     history = list(reversed(Log.get_history(course_id, assignment_id, student_id,
                                             page_offset=page_offset,
                                             page_limit=page_limit)))
-    return ajax_success({"history": history})
+    submissions = []
+    if with_submission:
+        submissions = Submission.get_submissions(course_id, assignment_id, student_id)
+    return ajax_success({"history": history, "submissions": submissions})
 
 
 @blueprint_blockpy.route('/log_event/', methods=['GET', 'POST'])
@@ -269,7 +309,7 @@ def view_submissions(course_id, user_id, assignment_group_id):
     # Check permissions
     for submission in submissions:
         if not submission:
-            return ajax_failure("No submission for the given course, user, and group.")
+            return ajax_failure(f"No submission for the given course, user, and group.")
         elif submission.user_id != viewer_id:
             require_course_grader(viewer, submission.course_id)
     # Do action
@@ -283,6 +323,7 @@ def view_submissions(course_id, user_id, assignment_group_id):
     return render_template("reports/group.html", embed=embed,
                            points_total=points_total, points_possible=points_possible,
                            score=score, tags=tags, is_grader=is_grader,
+                           assignment_group=group,
                            group=list(zip(assignments, submissions)),
                            user_id=user_id, course_id=course_id)
 

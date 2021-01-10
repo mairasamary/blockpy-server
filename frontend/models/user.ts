@@ -1,7 +1,7 @@
 import * as ko from 'knockout';
 import {Model, ModelJson, ModelStore} from "./model";
-import {capitalize, TwoWayReadonlyMap} from "./plugins";
-import {ajax_get} from "./server";
+import {capitalize, TwoWayReadonlyMap} from "../components/plugins";
+import {ajax_get} from "../components/server";
 
 export interface RoleJson extends ModelJson {
     id: number;
@@ -104,6 +104,10 @@ export class UserStore extends ModelStore<UserJson, User> {
 
     getUrl(): string {
         return "courses/users";
+    }
+
+    getLocalStorageKey(): string {
+        return `BLOCKPY_COURSE_${this.courseId}_USERS`;
     }
 
     makeEmptyInstance(id: number): User {

@@ -29,6 +29,9 @@
     {% endassets %}
 
     <script type="text/javascript" src="{{  url_for('static', filename='libs/blockpy_server/frontend.js') }}"></script>
+    <script type="text/javascript">
+        // TODO: Handle loading server connections
+    </script>
 
     <style>
         body {
@@ -95,6 +98,74 @@
 
         form label {
             font-weight: bold;
+        }
+
+        /* Highlight JS */
+        td.hljs-ln-numbers {
+			text-align: center;
+			color: black;
+            background: lightgrey;
+			border-right: 1px solid #999;
+			vertical-align: top;
+			padding-left: 5px;
+
+			-webkit-touch-callout: none;
+			-webkit-user-select: none;
+			-khtml-user-select: none;
+			-moz-user-select: none;
+			-ms-user-select: none;
+			user-select: none;
+		}
+		td.hljs-ln-code {
+			padding-left: 10px;
+		}
+
+		pre.python-code-block code {
+			overflow: auto;
+		}
+
+        code.hljs {
+            background: white;
+            border: 1px solid lightgrey;
+            font-family: monospace;
+            font-size: 14px;
+            padding: 0px;
+        }
+
+        table.hljs-ln tr {
+            border-bottom: 1px dashed #F0F0F0;
+        }
+
+        /* Spinner */
+        .spinner-loader {
+            border: 4px solid #f3f3f3; /* Light grey */
+            border-top: 4px solid #3498db; /* Blue */
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 2s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /** Model Selector **/
+        .model-selector.badge {
+            font-size: 12px;
+        }
+
+        div.overlay {
+            height: 100%;
+            width: 100%;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            background-color: rgba(16, 16, 16, 0.5);
+            overflow-x: hidden; /* Disable horizontal scroll */
+            transition: 0.5s;
         }
 
     </style>
@@ -185,6 +256,9 @@
         {% endfor %}
     </script>
 {% endwith %}
+
+
+<div class="overlay" style="display:none"></div>
 
 <div class="container-fluid" role='main'>
     {% block body %}

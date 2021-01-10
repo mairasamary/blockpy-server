@@ -21,6 +21,10 @@ bundles = {
         'libs/knockout/knockout-3.5.0.js',
         # Highlight
         'libs/highlight/highlight.min.js',
+        'libs/highlight/highlightjs-line-numbers.min.js',
+        # Select2
+        'libs/select2/select2.min.js',
+        'libs/select2/knockout-select2.js',
         # EasyMDE
         'libs/easymde/easymde.min.js',
         # CodeMirror
@@ -77,6 +81,8 @@ bundles = {
         'libs/bootstrap/bootstrap.min.css',
         # Highlight
         'libs/highlight/default.min.css',
+        # Select2
+        'libs/select2/select2.min.css',
         # EasyMDE
         'libs/easymde/easymde.css',
         # CodeMirror

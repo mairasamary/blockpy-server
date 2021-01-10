@@ -12,12 +12,23 @@ Watch Events
 
 <script type='text/javascript'>
 
+    function getLocalStorage(key, defaultValue) {
+        let value = localStorage.getItem(key);
+        if (value === null) {
+            return defaultValue;
+        } else {
+            return value;
+        }
+    }
+
     $(function() {
+        let userIds = {{  request.values.get('user_ids')|tojson }} || getLocalStorage("BLOCKPY_SERVER_USERIDS", "");
+        let assignmentIds = {{  request.values.get('assignment_ids')|tojson }} || getLocalStorage("BLOCKPY_SERVER_ASSIGNMENTIDS", "first");
+        console.log(userIds, assignmentIds);
         ko.applyBindings({
             pageCourseId: {{ course_id|tojson }},
-            //userId: {{ g.user.id|tojson }},
-            userIds: [{{  request.values.get('user_ids', "1") }}],
-            assignmentIds: [{{  request.values.get('assignment_ids', "1") }}]
+            userIds: userIds,
+            assignmentIds: assignmentIds
         });
     });
 

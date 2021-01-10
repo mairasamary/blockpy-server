@@ -4,7 +4,11 @@
   "version": "0.1.0",
   "main": "./index.ts",
   "dependencies": {
-    "@types/codemirror": "0.0.103"
+    "@types/codemirror": "0.0.103",
+    "@types/highlightjs": "^10.1.0",
+    "@types/select2": "^4.0.53",
+    "highlightjs": "^9.16.2",
+    "highlightjs-line-numbers.js": "^2.8.0"
   },
   "typings": "./declarations/index.d.ts",
   "types": "./declarations/index.d.ts",

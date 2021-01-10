@@ -1,5 +1,5 @@
 import * as ko from 'knockout';
-import {AssignmentGroup, AssignmentGroupJson} from "./assignment_group";
+import {AssignmentGroup, AssignmentGroupJson} from "../models/assignment_group";
 import {ajax_get} from "./server";
 
 export class GroupList {

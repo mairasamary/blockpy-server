@@ -1,6 +1,6 @@
 import * as ko from 'knockout';
-import {TwoWayReadonlyMap} from "./plugins";
-import {ajax_get} from "./server";
+import {TwoWayReadonlyMap} from "../components/plugins";
+import {ajax_get} from "../components/server";
 import {User, UserJson} from "./user";
 
 export interface ModelJson {
@@ -48,17 +48,23 @@ export abstract class Model<T extends ModelJson> {
 }
 
 export abstract class ModelStore<J extends ModelJson, T extends Model<J>> {
-    private data: Record<number, T>;
+    private readonly data: Record<number, T>;
     protected courseId: number|null;
 
     private timer: number;
     private delayedData: T[];
 
-    constructor(courseId: number|null) {
+    constructor(courseId: number|null, initialIds: number[], initialData: J[]) {
         this.data = {};
         this.courseId = courseId;
         this.delayedData = [];
         this.timer = null;
+        if (initialData !== undefined) {
+            initialData.map((instance: J) => this.newInstance(instance));
+        }
+        if (initialIds !== undefined) {
+            initialIds.map((id: number) => this.getInstance(id));
+        }
     }
 
     getInstance(id: number): T {
@@ -86,11 +92,49 @@ export abstract class ModelStore<J extends ModelJson, T extends Model<J>> {
         }
     }
 
-    getInstances(ids: number[]) {
+    getInstances(ids: number[]): T[] {
         return ids.map(this.getInstance.bind(this));
     }
 
+    getAllAvailable() {
+        let payload = this.getPayload();
+        let url = this.getUrl();
+        return new Promise((resolve, reject) => {
+            ajax_get(url, payload).then((data) => {
+                if (data.success) {
+                    let results = data[this.GET_FIELD];
+                    let created = results.map( (modelJson: J) => {
+                        return this.newInstance(modelJson);
+                    });
+                    resolve(created);
+                } else {
+                    reject(data);
+                }
+            });
+        });
+    }
+
+    /**
+     * Start keeping track of the given instance
+     * @param instance
+     */
+    trackInstance(instance: T): T {
+        this.data[instance.id] = instance;
+        return instance;
+    }
+
+    /**
+     * Create a new instance from the model and track it
+     * @param modelJson
+     */
+    newInstance(modelJson: J): T {
+        this.data[modelJson.id] = this.makeEmptyInstance(modelJson.id);
+        this.data[modelJson.id].fromJson(modelJson);
+        return this.data[modelJson.id];
+    }
+
     abstract getUrl(): string;
+    abstract getLocalStorageKey(): string;
     abstract getPayload(): any;
     abstract makeEmptyInstance(id: number): T;
     abstract GET_FIELD: string;

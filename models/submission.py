@@ -220,6 +220,22 @@ class Submission(Base):
         return submission
 
     @staticmethod
+    def get_submissions(course_id, assignment_id, user_id):
+        subs = Submission.query.filter_by(course_id=course_id)
+        # JUst need to refactor this to allow lists
+        if assignment_id is not None:
+            if ',' in assignment_id:
+                subs = subs.filter(Log.assignment_id.in_([int(a) for a in assignment_id.split(",")]))
+            else:
+                subs = subs.filter_by(assignment_id=assignment_id)
+        if user_id is not None:
+            if ',' in user_id:
+                subs = subs.filter(Log.subject_id.in_([int(a) for a in user_id.split(",")]))
+            else:
+                subs = subs.filter_by(user_id=user_id)
+        return [sub.encode_json() for sub in subs.all()]
+
+    @staticmethod
     def get_submission(assignment_id, user_id, course_id):
         return Submission.query.filter_by(assignment_id=assignment_id,
                                           course_id=course_id,

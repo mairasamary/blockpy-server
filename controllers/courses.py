@@ -145,17 +145,33 @@ def users():
     if not is_grader and user_ids != str(user_id):
         return ajax_failure("You do not have permissions to see those users.")
     users = []
-    for user_id in user_ids.split(","):
-        if not user_id.isdigit():
-            return ajax_failure(f"Unknown User ID: {user_id!r}")
-        user_id = int(user_id)
-        # With Course Role Information
-        user = User.by_id(user_id)
-        check_resource_exists(user, "User", user_id)
-        user_data = user.encode_json()
-        user_data['roles'] = [r.encode_json() for r in user.get_course_roles(course_id)]
-        users.append(user_data)
-    return ajax_success(dict(users=users))
+    errors = []
+    # If blank, then get all the available users
+    if not user_ids:
+        course = Course.by_id(course_id)
+        check_resource_exists(course, "Course", course_id)
+        user_roles = course.get_users()
+        user_data = {}
+        for role, user in user_roles:
+            if user not in user_data:
+                user_data[user] = user.encode_json()
+                user_data[user]['roles'] = []
+            user_data[user]['roles'].append(role.encode_json())
+        users.extend(user_data.values())
+    # Otherwise, get the subset suggested
+    else:
+        for user_id in user_ids.split(","):
+            if not user_id.isdigit():
+                errors.append(f"Unknown User ID: {user_id!r}")
+                continue
+            user_id = int(user_id)
+            # With Course Role Information
+            user = User.by_id(user_id)
+            check_resource_exists(user, "User", user_id)
+            user_data = user.encode_json()
+            user_data['roles'] = [r.encode_json() for r in user.get_course_roles(course_id)]
+            users.append(user_data)
+    return ajax_success(dict(users=users, errors=errors))
 
 
 @courses.route('/manage_assignments/<course_id>/', methods=['GET', 'POST'])

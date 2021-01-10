@@ -1,10 +1,32 @@
 {% extends "helpers/layout.html" %}
+{% import 'helpers/navigation.html' as navigation %}
 
 {% block title %}
-    Submission Group
+    Submission Group - {{ assignment_group.name }}
+{% endblock %}
+
+{% block extrahead %}
+<script>
+    $(function() {
+        let userIds = {{  request.values.get('user_ids')|tojson }} || getLocalStorage("BLOCKPY_SERVER_USERIDS", "");
+        let assignmentIds = {{  request.values.get('assignment_ids')|tojson }} || getLocalStorage("BLOCKPY_SERVER_ASSIGNMENTIDS", "first");
+        console.log(userIds, assignmentIds);
+        ko.applyBindings({
+            pageCourseId: {{ course_id|tojson }},
+            userIds: userIds,
+            assignmentIds: assignmentIds
+        });
+    });
+</script>
 {% endblock %}
 
 {% block body %}
+
+    <h1>Submissions</h1>
+    {{ navigation.navigate_course() }}
+
+    <assignment-group params="group: group"></assignment-group>
+    <watcher params="courseId: pageCourseId, group: group, user: user, submissions: submissions"></watcher>
 
 <h1>Overview</h1>
 <div>Status: {{ points_total }}/{{ points_possible }} problems</div>
@@ -18,7 +40,6 @@
 </div>
 <div>
     {% for assignment, submission in group %}
-        {{ assignment.type }}
         {% if assignment.type.lower() == "blockpy" %}
             {% include "reports/blockpy.html" with context %}
         {% elif assignment.type.lower() == "maze" %}

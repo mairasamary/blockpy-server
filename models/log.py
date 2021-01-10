@@ -125,14 +125,19 @@ class Log(Base):
 
     @staticmethod
     def get_history(course_id, assignment_id, user_id, page_offset=None, page_limit=None):
-        query_filters = {'course_id': course_id}
+        logs = Log.query.filter_by(course_id=course_id)
+        # JUst need to refactor this to allow lists
         if assignment_id is not None:
-            query_filters['assignment_id'] = assignment_id
+            if ',' in assignment_id:
+                logs = logs.filter(Log.assignment_id.in_([int(a) for a in assignment_id.split(",")]))
+            else:
+                logs = logs.filter_by(assignment_id=assignment_id)
         if user_id is not None:
-            query_filters['subject_id'] = user_id
-        logs = (
-            Log.query.filter_by(**query_filters).order_by(Log.date_created.desc())
-        )
+            if ',' in user_id:
+                logs = logs.filter(Log.subject_id.in_([int(a) for a in user_id.split(",")]))
+            else:
+                logs = logs.filter_by(subject_id=user_id)
+        logs = logs.order_by(Log.date_created.desc())
         if page_offset is not None:
             logs = logs.offset(page_offset)
         if page_limit is not None:

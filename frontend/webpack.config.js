@@ -23,6 +23,8 @@ module.exports = {
   },
   externals: {
     knockout: 'ko',
+    select2: 'select2',
+    "highlight.js": 'hljs',
     jquery: "jQuery",
     "$URL_ROOT": "$URL_ROOT",
     codemirror: 'CodeMirror'

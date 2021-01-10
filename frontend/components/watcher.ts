@@ -5,35 +5,134 @@
  */
 
 import * as ko from 'knockout';
-import {Log, LogJson, REMAP_EVENT_TYPES} from "./log";
+import {Log, LogJson, REMAP_EVENT_TYPES} from "../models/log";
 import {ajax_get} from "./server";
-import {User, UserStore} from "./user";
-import {prettyPrintDate, prettyPrintDateTime, prettyPrintTime} from "./dates";
-import {Assignment, AssignmentStore} from "./assignment";
+import {User, UserStore} from "../models/user";
+import {formatDuration, prettyPrintDate, prettyPrintDateTime, prettyPrintTime} from "./dates";
+import {Assignment, AssignmentStore} from "../models/assignment";
+import {last, pushObservableArray} from "./plugins";
+import './model_selector';
+import {ModelSet} from "./model_selector";
+import {launchEditor} from "./editor";
+import {Submission, SubmissionJson} from "../models/submission";
 
 export enum WatchMode {
     FROZEN_LATEST, POLL, REVIEW
 }
 
+export class SubmissionState {
+    loaded: boolean;
+    friendly: string;
+    code: string;
+    lastRan: string;
+    lastEdit: string;
+    lastOpened: string;
+    completed: boolean;
+    score: number;
+    mode: string;
+    fullscreen: boolean;
+    log: Log;
+
+    constructor(current: SubmissionState, log: Log) {
+        this.makeNextState(current, log);
+    }
+
+    getPrettyTime(): string {
+        return prettyPrintDateTime(this.log.clientTimestamp());
+    }
+
+    getPrettyLastEdit(watchMode?: WatchMode): string {
+        let current = watchMode === WatchMode.REVIEW ? this.log.clientTimestamp() : null;
+        return formatDuration(this.lastEdit, current);
+    }
+
+    getPrettyLastRan(watchMode?: WatchMode): string {
+        let current = watchMode === WatchMode.REVIEW ? this.log.clientTimestamp() : null;
+        return formatDuration(this.lastRan, current);
+    }
+
+    getPrettyLastOpened(watchMode?: WatchMode): string {
+        let current = watchMode === WatchMode.REVIEW ? this.log.clientTimestamp() : null;
+        return formatDuration(this.lastOpened, current);
+    }
+
+    copyState(other: SubmissionState) {
+        if (other === null) {
+            this.code = "";
+            this.friendly = "Not Loaded";
+            this.lastRan = null;
+            this.lastEdit = null;
+            this.lastOpened = null;
+            this.completed = false;
+            this.score = 0;
+            this.mode = "unknown";
+            this.fullscreen = false;
+            this.log = null;
+        } else {
+            this.code = other.code;
+            this.lastRan = other.lastRan;
+            this.lastEdit = other.lastEdit;
+            this.lastOpened = other.lastOpened;
+            this.completed = other.completed;
+            this.score = other.score;
+            this.mode = other.mode;
+            this.fullscreen = other.fullscreen;
+            this.log = null;
+        }
+    }
+
+    makeNextState(current: SubmissionState, log: Log) {
+        this.copyState(current);
+        this.log = log;
+        this.friendly = REMAP_EVENT_TYPES[log.eventType()];
+        switch (log.eventType()) {
+            case "File.Create":
+                this.code = log.message();
+                this.lastEdit = log.clientTimestamp();
+                break;
+            case "File.Edit":
+                this.code = log.message();
+                this.lastEdit = log.clientTimestamp();
+                break;
+            case "Session.Start":
+                this.lastOpened = log.clientTimestamp();
+                break;
+            case "Run.Program":
+                this.lastRan = log.clientTimestamp();
+                break;
+            case "Intervention":
+                this.completed = log.category() === "Complete";
+                break;
+            case "X-View.Change":
+                this.mode = log.message();
+                break;
+            case "X-Submission.LMS":
+                this.score = parseInt(log.message(), 10);
+                break;
+        }
+    }
+}
+
 export class SubmissionHistory {
-    // Canonical list of logs
-    logs: KnockoutObservableArray<Log>;
+    // Past history of all submission states, timed on logs
+    states: KnockoutObservableArray<SubmissionState>;
     // Identity information
     user: User;
     assignment: Assignment;
+    submission: Submission;
 
-    // Current values
-    code: KnockoutObservable<string>;
-    lastRan: KnockoutObservable<number>;
-
-
+    // Current viewing state
     watchMode: KnockoutObservable<WatchMode>;
+    currentStateIndex: KnockoutObservable<string|number>;
+
+    // Cosmetic functions
+    private currentState: KnockoutReadonlyComputed<SubmissionState>;
     private isVcrActive: KnockoutReadonlyComputed<boolean>;
     private getWatchModeClass: KnockoutReadonlyComputed<string>;
 
     constructor(initialLog: Log, user: User, assignment: Assignment) {
-        this.code = ko.observable("");
-        this.logs = ko.observableArray([]);
+        this.states = ko.observableArray<SubmissionState>([]);
+        this.currentStateIndex = ko.observable(0);
         this.user = user;
         this.assignment = assignment;
         this.watchMode = ko.observable(WatchMode.FROZEN_LATEST);
@@ -50,48 +149,58 @@ export class SubmissionHistory {
                     return "fa-history";
             }
         }, this);
+        this.currentState = ko.pureComputed(() => {
+            if (this.states().length > 0) {
+                if (this.watchMode() === WatchMode.REVIEW) {
+                    return this.states()[this.getCurrentStateIndex()];
+                } else {
+                    return last(this.states());
+                }
+            } else {
+                console.error("No states are currently loaded!");
+            }
+        }, this);
     }
 
-    addLog(log: Log) {
-        this.logs.push(log);
-        if (log.eventType() === "File.Create" || log.eventType() === "File.Edit") {
-            this.code(log.message())
+    private getCurrentStateIndex(): number {
+        return parseInt(<string>this.currentStateIndex(), 10);
+    }
+
+    addLogs(logs: Log[]) {
+        let states: SubmissionState[] = [];
+        let latestState: SubmissionState = this.states().length ? last(this.states()) : null;
+        for (let i=0; i< logs.length; i+=1) {
+            let nextState = new SubmissionState(latestState, logs[i]);
+            states.push(nextState);
+            latestState = nextState;
         }
+        pushObservableArray(this.states, states);
+        //console.log(states);
     }
 
     // Map CodeStates to event IDs so we can quickly get code? Or playback history to status at each step...
 
     loadHistorySelector(event: Event) {
         let selector = this.getSelector(event);
-        let editId = 0;
+        selector.empty();
+        let i;
         let optGroup: JQuery<JQuery.Node> = null;
-        this.logs()
-            .forEach((entry, index) => {
-                let formattedDate = prettyPrintDate(entry.clientTimestamp());
-                if (optGroup === null || optGroup.attr("label") != formattedDate) {
-                    optGroup = $("<optgroup></optgroup>");
-                    optGroup.attr("label", formattedDate);
-                    selector.append(optGroup);
-                }
-                let eventType = REMAP_EVENT_TYPES[entry.eventType()] || entry.eventType();
-                let displayed = prettyPrintTime(entry.clientTimestamp()) +" - "+eventType;
-                let option = $("<option></option>", {text: displayed});
-                option.attr("value", editId);
-                editId += 1;
-                optGroup.append(option);
-            });
-        selector.val(Math.max(0, editId-1));
-        selector.on("change", (event: Event) => {
-            this.viewLog(event);
-        });
-    }
-
-    viewLog(event: Event) {
-        let currentId = parseInt(<string>this.getSelector(event).val(), 10);
-        let log = this.logs()[currentId];
-        if (log.isEditEvent()) {
-            this.code(log.message());
+        for (i=0; i <this.states().length; i+= 1) {
+            let entry: Log = this.states()[i].log;
+            let formattedDate = prettyPrintDate(entry.clientTimestamp());
+            if (optGroup === null || optGroup.attr("label") != formattedDate) {
+                optGroup = $("<optgroup></optgroup>");
+                optGroup.attr("label", formattedDate);
+                selector.append(optGroup);
+            }
+            let eventType = REMAP_EVENT_TYPES[entry.eventType()] || entry.eventType();
+            let displayed = prettyPrintTime(entry.clientTimestamp()) +" - "+eventType;
+            let option = $("<option></option>", {text: displayed});
+            option.attr("value", i);
+            optGroup.append(option);
         }
+        this.currentStateIndex(i-1);
+        //selector.val(Math.max(0, i-1));
     }
 
     switchWatchMode(data: any, event: Event) {
@@ -114,62 +223,60 @@ export class SubmissionHistory {
     }
 
     moveToMostRecent(data: any, event: Event) {
-        this.getSelector(event).val(this.logs().length-1);
-        this.viewLog(event);
+        this.currentStateIndex(this.states().length-1);
     }
 
     moveToBack(data: any, event: Event) {
-        let currentId = parseInt(<string>this.getSelector(event).val(), 10);
-        this.getSelector(event).val(Math.max(0, currentId-1));
-        this.viewLog(event);
+        this.currentStateIndex(Math.max(0, this.getCurrentStateIndex()-1));
     }
 
     seekToBack(data: any, event: Event) {
-        let currentId = parseInt(<string>this.getSelector(event).val(), 10);
-        let log;
+        let currentId = this.getCurrentStateIndex();
+        let currentState: SubmissionState;
         do {
             currentId -= 1;
-            log = this.logs()[currentId];
-        } while (currentId>0 && !log.isEditEvent());
-        this.getSelector(event).val(Math.max(0, currentId));
-        this.viewLog(event);
+            currentState = this.states()[currentId];
+        } while (currentId>0 && !currentState.log.isEditEvent());
+        this.currentStateIndex(currentId);
     }
 
     moveToNext(data: any, event: Event) {
-        let currentId = parseInt(<string>this.getSelector(event).val(), 10);
-        this.getSelector(event).val(Math.min(this.logs().length-1, currentId+1));
-        this.viewLog(event);
+        this.currentStateIndex(Math.min(this.states().length-1, this.getCurrentStateIndex()+1));
     }
 
     seekToNext(data: any, event: Event) {
-        let currentId = parseInt(<string>this.getSelector(event).val(), 10);
-        let log;
+        let currentId = this.getCurrentStateIndex();
+        let currentState: SubmissionState;
         do {
             currentId += 1;
-            log = this.logs()[currentId];
-        } while (currentId<this.logs().length-1 && !log.isEditEvent());
-        this.getSelector(event).val(Math.min(this.logs().length-1, currentId));
-        this.viewLog(event);
+            currentState = this.states()[currentId];
+        } while (currentId<this.states().length-1 && !currentState.log.isEditEvent());
+        this.currentStateIndex(currentId);
     }
 
     moveToStart(data: any, event: Event) {
-        this.getSelector(event).val(0);
-        this.viewLog(event);
+        /*this.getSelector(event).val(0);
+        this.viewLog(event);*/
+        this.currentStateIndex(0);
+    }
+
+    launchEditor() {
+        launchEditor(this.assignment, this.submission);
     }
 }
 
 export const SubmissionHistoryCard = `
-<div class="card">
-    <span>Started, Edited, Ran, Completed</span>
-    <span data-bind="component: {name: 'user-short', params: user}"></span>
-    <span data-bind="component: {name: 'assignment-short', params: assignment}"></span>
-    <div data-bind="codemirror: {
-        mode: 'python',
-        value: code,
-        lineNumbers: true,
-        readOnly: true
-    }"></div>
+<div class="">
+    <div data-bind="component: {name: 'user-short', params: user}"></div>
+    <div data-bind="component: {name: 'assignment-short', params: assignment}"></div>
+    <div>Logged Time: <span data-bind="text: currentState().getPrettyTime()"></span></div>
+    <div>Last Edited: <span data-bind="text: currentState().getPrettyLastEdit(watchMode())"></span></div>
+    <div>Last Ran: <span data-bind="text: currentState().getPrettyLastRan(watchMode())"></span></div>
+    <div>Last Opened: <span data-bind="text: currentState().getPrettyLastOpened(watchMode())"></span></div>
+    <div>Score: <span data-bind="text: currentState().completed ? 'Correct' : 'Incomplete'"></span> (<span data-bind="text: currentState().score"></span>)</div>
 </div>
+    <div>Open in <a href="#" data-bind="click: $parent.launchEditor.bind($parent)">Readonly Editor</a></div>
+    <pre class="python-code-block"><code data-bind="highlightedCode: currentState().code" class="python" style="height: 200px"></code></pre>
 `;
 
 ko.components.register("submission-history-card", {
@@ -191,7 +298,9 @@ export const SubmissionHistoryVCR = `
             data-bind="click: $parent.moveToBack.bind($parent)">
             <span class='fas fa-backward'></span> Back
         </button>
-        <select class="history-select form-control custom-select mr-2 custom-select-sm" aria-title="History Selector">
+        <select class="history-select form-control custom-select mr-2 custom-select-sm"
+            data-bind="value: $parent.currentStateIndex"
+            aria-title="History Selector">
         </select>
         <button class="btn btn-outline-secondary mr-2 btn-sm" type="button"
             data-bind="click: $parent.moveToNext.bind($parent)">
@@ -221,15 +330,16 @@ export enum WatchGroupingMode {
 export class Watcher {
     // Search options
     courseId: KnockoutObservable<number>;
-    assignmentIds: KnockoutObservableArray<number>;
-    userIds: KnockoutObservableArray<number>;
+    assignmentIds: string;
+    userIds: string;
+    userSet: KnockoutObservable<ModelSet>;
+    assignmentSet: KnockoutObservable<ModelSet>;
 
     // Stores
     userStore: UserStore;
     assignmentStore: AssignmentStore;
 
     // Actual data
-    logs: KnockoutObservableArray<Log>;
     submissions: KnockoutObservableArray<SubmissionHistory>;
     cauToSubmission: { [cau: string]: SubmissionHistory};
 
@@ -238,45 +348,62 @@ export class Watcher {
 
 
     constructor(data: any) {
+        // TODO: Handle userIds to default load some students in a new set
         this.courseId = ko.observable<number>(data.courseId);
-        this.assignmentIds = ko.observableArray<number>(data.assignmentIds);
-        this.userIds = ko.observableArray<number>(data.userIds);
+        this.userIds = data.userIds;
+        this.assignmentIds = data.assignmentIds;
+        this.userSet = ko.observable<ModelSet>(null);
+        this.assignmentSet = ko.observable<ModelSet>(null);
         this.grouping = ko.observable<WatchGroupingMode>(WatchGroupingMode.NONE);
-        this.logs = ko.observableArray<Log>([]);
         this.submissions = ko.observableArray<SubmissionHistory>([]);
         this.cauToSubmission = {};
-        this.userStore = new UserStore(data.courseId[0]);
-        this.assignmentStore = new AssignmentStore(data.courseId[0]);
-        $(this.getLatest.bind(this));
+        this.userStore = new UserStore(data.courseId, [], []);
+        this.assignmentStore = new AssignmentStore(data.courseId, [], []);
+        //$(this.getLatest.bind(this));
     }
 
-    addLog(log: Log) {
-        this.logs.push(log);
-        let submissionId = log.getAsSubmissionKey();
-        let submission = this.cauToSubmission[submissionId];
-        if (submission === undefined) {
-            let user = this.userStore.getInstance(log.subjectId());
-            let assignment = this.assignmentStore.getInstance(log.assignmentId());
-            submission = this.cauToSubmission[submissionId] = new SubmissionHistory(log, user, assignment);
-            this.submissions.push(submission);
+    addLogs(logJsons: LogJson[]) {
+        let sortedLogs: Record<string, Log[]> = {};
+        for (let i=0; i<logJsons.length; i+=1) {
+            let log: Log = new Log(logJsons[i]);
+            let submissionId = log.getAsSubmissionKey();
+            if (!(submissionId in this.cauToSubmission)) {
+                let user = this.userStore.getInstance(log.subjectId());
+                let assignment = this.assignmentStore.getInstance(log.assignmentId());
+                this.cauToSubmission[submissionId] = new SubmissionHistory(log, user, assignment);
+                this.submissions.push(this.cauToSubmission[submissionId]);
+            }
+            if (!(submissionId in sortedLogs)) {
+                sortedLogs[submissionId] = [];
+            }
+            sortedLogs[submissionId].push(log);
         }
-        submission.addLog(log);
-   }
+        for (let submissionId in sortedLogs) {
+            this.cauToSubmission[submissionId].addLogs(sortedLogs[submissionId]);
+        }
+    }
 
-    addLogs(logs: LogJson[]) {
-        let userIds = [... new Set(logs.map((log: LogJson) => log.subject_id))];
-        this.userStore.getInstances(userIds);
-        logs.forEach((log: LogJson) => this.addLog(new Log(log)));
+    addSubmissions(submissionJsons: SubmissionJson[]) {
+        for (let i=0; i<submissionJsons.length; i+=1) {
+            let submission: Submission = new Submission(submissionJsons[i]);
+            let submissionId = submission.getAsSubmissionKey();
+            console.log(this.cauToSubmission[submissionId]);
+            this.cauToSubmission[submissionId].submission = submission;
+        }
     }
 
     getLatest() {
+        localStorage.setItem("BLOCKPY_SERVER_USERIDS", this.userSet().getStored());
+        localStorage.setItem("BLOCKPY_SERVER_ASSIGNMENTIDS", this.assignmentSet().getStored());
         ajax_get("blockpy/load_history", {
-            assignment_id: this.assignmentIds()[0],
+            assignment_id: this.assignmentSet().getIds(),
             course_id: this.courseId(),
-            //user_id: this.userIds()[0],
+            user_id: this.userSet().getIds(),
+            with_submission: true
         }).then((data) => {
             if (data.success) {
                 this.addLogs(data.history);
+                this.addSubmissions(data.submissions);
             } else {
                 console.error(data);
             }
@@ -286,16 +413,30 @@ export class Watcher {
 
 export const WatcherTemplate = `
     <div>
-        <div data-bind="foreach: submissions">
-            <button class="btn btn-outline-secondary mr-2 btn-sm" type="button"
-                data-bind="click: switchWatchMode">
-                <span class='fas' data-bind="class: getWatchModeClass"></span>
-            </button>
-            <submission-history-vcr></submission-history-vcr>
-            <submission-history-card params="code: code, user: user, assignment: assignment"></submission-history-card>
-        </div>
-        <div data-bind="foreach: logs">
-            <span style='border: 1px solid black;' data-bind="text: eventType"></span>
+    User(s):
+        <user-set-selector params="store: userStore, modelSet: userSet, default: userIds"></user-set-selector>
+    </div>
+    <div class="mt-4 mb-4">
+    Assignment(s):
+        <assignment-set-selector params="store: assignmentStore, modelSet: assignmentSet, default: assignmentIds"></assignment-set-selector>
+    </div>
+    <div class="mb-4 mt-4">
+        <button class="btn btn-primary" data-bind="click: getLatest">Load Events</button>
+    </div>
+    <div>
+        <div data-bind="foreach: submissions" class="row">
+            <div class="col-sm-6 mb-4">
+            <div class="">
+                <button class="btn btn-outline-secondary mr-2 btn-sm" type="button"
+                    data-bind="click: switchWatchMode">
+                    <span class='fas' data-bind="class: getWatchModeClass"></span>
+                </button>
+                <!-- ko if: states().length>0 -->
+                    <submission-history-vcr></submission-history-vcr>
+                    <submission-history-card params="currentState: currentState, watchMode: watchMode, user: user, assignment: assignment"></submission-history-card>
+                <!-- /ko -->
+            </div>
+            </div>
         </div>
     </div>
 `;

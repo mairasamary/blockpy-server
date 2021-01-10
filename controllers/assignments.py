@@ -1,5 +1,7 @@
 import json
 
+from natsort import natsorted
+
 from models.portation import export_bundle, import_bundle, export_zip
 
 try:
@@ -165,17 +167,25 @@ def get_assignments():
     assignment_ids = request.values.get('assignment_ids', "")
     course_id = get_course_id()
     user, user_id = get_user()
-    # TODO: verify that they have the permissions to see this file
+    # TODO: verify that they have the permissions to see these assignments
     assignments = []
-    for assignment_id in assignment_ids.split(","):
-        if not assignment_id.isdigit():
-            return ajax_failure(f"Unknown Assignment ID: {assignment_id!r}")
-        assignment_id = int(assignment_id)
-        # With Course Role Information
-        assignment = Assignment.by_id(assignment_id)
-        check_resource_exists(assignment, "Assignment", assignment_id)
-        assignments.append(assignment.encode_json())
-    return ajax_success(dict(assignments=assignments))
+    errors = []
+    if not assignment_ids:
+        course: Course = Course.by_id(course_id)
+        check_resource_exists(course, "Course", course_id)
+        assignments = natsorted(course.get_submitted_assignments(),
+                                key=lambda r: r.name)
+        assignments = [a.encode_json() for a in assignments]
+    else:
+        for assignment_id in assignment_ids.split(","):
+            if not assignment_id.isdigit():
+                errors.append(f"Unknown Assignment ID: {assignment_id!r}")
+            assignment_id = int(assignment_id)
+            # With Course Role Information
+            assignment = Assignment.by_id(assignment_id)
+            check_resource_exists(assignment, "Assignment", assignment_id)
+            assignments.append(assignment.encode_json())
+    return ajax_success(dict(assignments=assignments, errors=errors))
 
 
 @blueprint_assignments.route('/export/', methods=['GET', 'POST'])

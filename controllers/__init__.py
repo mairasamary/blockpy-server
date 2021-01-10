@@ -9,9 +9,6 @@ from main import app
 from models import models
 from controllers.helpers import (admin_required, lti, highlight_python_code)
 
-app.jinja_env.filters['highlight_python_code'] = highlight_python_code
-
-
 @app.before_request
 def load_user():
     if current_user.is_authenticated:
@@ -20,7 +17,6 @@ def load_user():
             g.course = models.Course.by_id(session['lti_course'])
     else:
         g.user = None
-
 
 from controllers.admin import admin
 
@@ -56,6 +52,7 @@ app.register_blueprint(blueprint_grading)
 from controllers.api import blueprint_api
 app.register_blueprint(blueprint_api)
 
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
     """ initial access page to the lti provider.  This page provides
@@ -65,6 +62,7 @@ def index():
     :return: index page for lti provider
     """
     return render_template('index.html')
+
 
 @app.route('/about/', methods=['GET', 'POST'])
 @app.route('/about', methods=['GET', 'POST'])
@@ -89,7 +87,6 @@ def favicon():
 def site_map():
     output = []
     for rule in app.url_map.iter_rules():
-
         options = {}
         for arg in rule.arguments:
             options[arg] = "[{0}]".format(arg)
