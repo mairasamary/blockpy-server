@@ -62,6 +62,7 @@ class Submission(Base):
     course = relationship("Course")
     user = relationship("User")
 
+    # TODO: Shouldn't this be course_id THEN assignment_id ???
     __table_args__ = (Index('submission_index', "assignment_id",
                             "course_id", "user_id"),)
 

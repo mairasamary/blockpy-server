@@ -106,9 +106,11 @@ class Course(Base):
                 .all())
 
     def get_submitted_assignments(self):
+        assignments = (models.Submission.query.with_entities(models.Submission.assignment_id)
+                                        .filter_by(course_id=self.id)
+                                        .distinct().subquery())
         return (db.session.query(models.Assignment)
-                .join(models.Submission, models.Submission.assignment_id == models.Assignment.id)
-                .filter(models.Submission.course_id == self.id)
+                .filter(models.Assignment.id.in_(assignments))
                 .distinct())
 
     def get_submissions(self):
