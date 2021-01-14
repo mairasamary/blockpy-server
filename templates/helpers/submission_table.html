@@ -1,3 +1,4 @@
+{% if is_instructor %}
 {% if criteria=="assignment" %}
     <a href="{{ url_for("assignments.export_submissions",
             assignment_id=search_key,
@@ -9,7 +10,8 @@
     <a href="{{ url_for("blockpy.load_history",
             user_id=search_key,
             course_id=course_id) }}" target="_blank">Download all events</a>
-{%endif %}
+{% endif %}
+{% endif %}
 <table class="table table-condensed table-hover table-striped table-bordered">
 <caption>Student's submissions for course's assignments.</caption>
 <tbody>
@@ -23,7 +25,7 @@
     <th>Touches</th>
 </tr>
 {% for submission in submissions %}
-<tr class='{% if submission[0].correct%}table-success{% endif %}'>
+<tr class='{% if submission[0].correct or (submission[0].score is defined and submission[0].score|round(1) >= 1) %}table-success{% endif %}'>
     {% if criteria=="student" %}<td>
         <a href="{{  url_for("assignments.load",
                         assignment_id=submission[2].id, course_id=course_id) }}"
@@ -49,7 +51,8 @@
     </td>
     <td>{% if submission[0] != None -%}
     <a href="{{ url_for('blockpy.view_submission', submission_id=submission[0].id, embed=True) }}"
-        target="_blank">View</a>,
+        target="_blank">View</a>
+    {% if is_instructor %},
     <a href="{{ url_for('blockpy.load_assignment',
                         assignment_id=submission[2].id,
                         user_id=submission[1].id,
@@ -57,6 +60,7 @@
                         force_download=True,
                         embed=True) }}"
         target="_blank">Download</a>
+    {%- endif %}
     {%- endif %}</td>
     <td>{{ submission[0].version or "0"}}</td>
 </tr>

@@ -9,6 +9,7 @@ from main import app
 from models import models
 from controllers.helpers import (admin_required, lti, highlight_python_code)
 
+
 @app.before_request
 def load_user():
     if current_user.is_authenticated:

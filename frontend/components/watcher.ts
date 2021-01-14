@@ -6,9 +6,15 @@
 
 import * as ko from 'knockout';
 import {Log, LogJson, REMAP_EVENT_TYPES} from "../models/log";
-import {ajax_get} from "./server";
+import {ajax_get} from "./ajax";
 import {User, UserStore} from "../models/user";
-import {formatDuration, prettyPrintDate, prettyPrintDateTime, prettyPrintTime} from "./dates";
+import {
+    formatDuration,
+    prettyPrintDate,
+    prettyPrintDateTime,
+    prettyPrintDateTimeString,
+    prettyPrintTime
+} from "./dates";
 import {Assignment, AssignmentStore} from "../models/assignment";
 import {last, pushObservableArray} from "./plugins";
 import './model_selector';
@@ -38,7 +44,7 @@ export class SubmissionState {
     }
 
     getPrettyTime(): string {
-        return prettyPrintDateTime(this.log.clientTimestamp());
+        return prettyPrintDateTimeString(this.log.clientTimestamp());
     }
 
     getPrettyLastEdit(watchMode?: WatchMode): string {

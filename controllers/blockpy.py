@@ -131,7 +131,7 @@ def load_editor(lti, editor_information):
     :param editor_information:
     :return:
     '''
-    return render_template('blockpy/editor.html', ip=request.remote_addr, **editor_information)
+    return render_template('blockpy/editor.html', lti=lti, ip=request.remote_addr, **editor_information)
 
 
 @blueprint_blockpy.route('/load_assignment/', methods=['GET', 'POST'])

@@ -19,8 +19,9 @@ Courses: Index
 
 <form method=post action="{{ url_for('courses.add') }}">
   <dl>
-      <label for="name">{{ render_field(add_form.name) }}</label>
-      <label for="visibility">{{ render_field(add_form.visibility) }}</label>
+      <label for="name">{{ render_field(add_form.name) }}</label><br>
+      <label for="visibility">{{ render_field(add_form.visibility) }}</label><br>
+      <label for="term">{{ render_field(add_form.term) }}</label><br>
   </dl>
   <p><input type=submit value=Register>
 </form>

@@ -1,7 +1,7 @@
 {% extends 'helpers/layout.html' %}
 
 {% block title %}
-Courses: {{ course.name }}
+Course: {{ course.name }}
 {% endblock %}
 
 {% block statusbar %}
@@ -11,50 +11,42 @@ Courses: {{ course.name }}
 <script type='text/javascript'>
 
 function renameCourse() {
-    new_name = window.prompt("Give a new name for this course:", {{ course.name|tojson }});
-    if (new_name != null) {
-        window.location.href = {{ url_for('courses.rename_course', course_id=course.id)|tojson }}+"&name="+new_name;
+    let newName = window.prompt("Give a new name for this course:", {{ course.name|tojson }});
+    if (newName != null) {
+        window.location.href = {{ url_for('courses.rename_course', course_id=course.id)|tojson }}+"&name="+newName;
     }
 }
-
-$().ready(function() {
-    var mainModel = {
-        'courses': ko.observableArray([])
-    };
-});
 
 </script>
 {% endblock %}
 
 {% block body %}
 
-<h1>Courses: {{ course.name }}</h1>
+<h1>Course: {{ course.name }}</h1>
 
-<a href="{{ url_for('courses.index') }}">Back to all courses</a>
+<a href="{{ url_for('courses.index') }}">Back to all courses</a><br><br>
 
 {% if is_instructor %}
-<h3>Manage Assignments</h3>
-<a href="{{ url_for('courses.assignments', course_id=course.id) }}" class='btn btn-outline-secondary'>Manage Assignments</a><br><br>
-<a href="{{ url_for('assignments.bulk_upload', course_id=course.id) }}" class='btn btn-outline-secondary'>Import Assignments</a><br><br>
+<a href="{{ url_for('courses.assignments', course_id=course.id) }}" class='btn btn-outline-secondary'>Manage Assignments</a> Create, edit, reorganize, and remove assignments.<br><br>
+<a href="{{ url_for('assignments.bulk_upload', course_id=course.id) }}" class='btn btn-outline-secondary'>Import Assignments</a> Load assignments exported from another course.<br><br>
+<a href="{{ url_for('courses.manage_users', course_id=course.id) }}" class='btn btn-outline-secondary'>Manage Students</a> Add, edit, and remove the students who are in your course.<br><br>
+<button onclick="renameCourse()" class='btn btn-outline-secondary'>Rename Course</button> Rename this course.<br><br>
 {% else %}
-<h3>View Assignments</h3>
+<a href="{{ url_for('courses.view_assignments', course_id=course.id) }}" class='btn btn-outline-secondary'>View Assignments</a> View all the available assignments for this course.<br><br>
 {% endif %}
 
-<a href="{{ url_for('courses.view_assignments', course_id=course.id) }}" class='btn btn-outline-secondary'>View Assignments</a><br><br>
 
 {% if is_grader %}
+<a href="{{ url_for('courses.submissions_user', course_id=course.id, owner_id=g.user.id) }}" class='btn btn-outline-secondary'>View Assignments as Student</a> View assignments as if you were a student<br><br>
+<a href="{{ url_for('courses.submissions_filter', course_id=course.id) }}" class='btn btn-outline-secondary'>View Submissions</a> Old-style review and grade all student submissions<br><br>
+    <a href="{{ url_for('courses.watch_events', course_id=course.id) }}" class='btn btn-outline-secondary'>Watch Submissions</a> New-style review and grade all student submissions<br><br>
+{%  endif %}
 
-<a href="{{ url_for('courses.manage_users', course_id=course.id) }}" class='btn btn-outline-secondary'>Manage Students</a>
+{% if is_instructor %}
 
-<h3>Submissions</h3>
-
-<a href="{{ url_for('courses.submissions_filter', course_id=course.id) }}" class='btn btn-outline-secondary'>View Submissions</a><br><br>
-
-<h3>Edit Course</h3>        
+<h3>Special Commands</h3>
 
 <a href="{{ url_for('courses.remove_course', course_id=course.id) }}" onclick="return confirm('Are you sure?')" class='btn btn-danger'>Delete Course</a><br><br>
-<button onclick="renameCourse()" class='btn btn-outline-secondary'>Rename Course</button><br>
 
 {% endif %}
-
 {% endblock %}

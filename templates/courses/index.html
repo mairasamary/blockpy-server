@@ -10,39 +10,37 @@ Courses: Index
 {% block extrahead %}
 <script type='text/javascript'>
 
-$().ready(function() {
-    mainModel = {
-        'my_courses': ko.observableArray([]),
-        'public_courses': ko.observableArray([]),
-    };
-    {% for course, role in my_courses %}
-    mainModel.my_courses.push({
-        'id': ko.observable({{ course.id|tojson}}),
-        'name': ko.observable({{ course.name|tojson}}),
-        'service': ko.observable({{ course.service|tojson}}),
-        'role': ko.observable({{ role.name|title|tojson }}),
-        'url': ko.observable({{ url_for('courses.course', course_id=course.id)|tojson}}),
-        'created': ko.observable({{ course.date_created|tojson }}),
-        'sort_date': ko.observable({{ (course.date_created.strftime('%Y/%m'))|tojson }}),
-        'display_date': ko.observable({{ (course.date_created.strftime('%b %Y'))|tojson }})
-    })
+let mainModel;
+let server;
+$(function() {
+
+    let loggedInUser = {{ user.encode_json()|tojson }};
+    loggedInUser.roles = [];
+    let myCourses = [], publicCourses = [];
+    {% for course, role in my_courses -%}
+        loggedInUser.roles.push({{  role.encode_json()|tojson }});
+        myCourses.push({{ course.encode_json()|tojson }});
+    {% endfor -%}
+    {% for course in public_courses -%}
+        publicCourses.push({{ course.encode_json()|tojson }});
     {% endfor %}
-    
-    mainModel.my_courses.sort(function(left, right) {
-        return left.sort_date() === right.sort_date() ? 0
-             : left.sort_date() < right.sort_date() ? -1
-             : 1;
+    server = new frontend.Server(null, {}, {
+        users: [loggedInUser],
+        courses: myCourses.concat(publicCourses)
     });
-    
-    {% for course in public_courses %}
-    mainModel.public_courses.push({
-        'id': ko.observable({{ course.id|tojson}}),
-        'name': ko.observable({{ course.name|tojson}}),
-        'service': ko.observable({{ course.service|tojson}}),
-        'url': ko.observable({{ url_for('courses.course', course_id=course.id)|tojson}})
-    })
-    {% endfor %}
-    
+    myCourses = myCourses.map((course) => server.courseStore.getInstance(course.id));
+    publicCourses = publicCourses.map((course) => server.courseStore.getInstance(course.id));
+
+    mainModel = {
+        server: server,
+        myCourses: [...new Set(myCourses)],
+        publicCourses: [...new Set(publicCourses)],
+        user: server.userStore.getInstance(loggedInUser.id)
+    };
+
+    mainModel.myCourses.sort(frontend.dateCreatedSorter);
+    mainModel.publicCourses.sort(frontend.dateCreatedSorter);
+
     ko.applyBindings(mainModel);
 });
 
@@ -53,36 +51,28 @@ $().ready(function() {
 
 <h1>Courses</h1>
 
-<h3>Create</h3>
+    <!-- ko if: myCourses.length -->
 
-<a href="{{ url_for('courses.add') }}" class='btn btn-outline-secondary'>Create new course</a><br>
-<a href="{{ url_for('courses.add_canvas') }}" class='btn btn-outline-secondary'>Create new Canvas course</a>
-<br><br>
-Want to make <strong><a href="{{ url_for('courses.making_problems') }}">new BlockPy assignments?</a></strong>
+    You are enrolled in the following courses:
 
-<h3>My Courses</h3>
+    <course-list params="server: server, courses: myCourses, user: user"></course-list>
 
-You are enrolled in the following courses:
+    <!-- /ko -->
 
-<ul data-bind="foreach: my_courses">
-    <li>
-        <a data-bind="attr: {href: url}">
-            <strong data-bind="text: name()"></strong>:</a>
-        <span data-bind="text: role"></span>
-        (<span data-bind="text: display_date"></span>)
-    </li>
-</ul>
+    <!-- ko ifnot: myCourses.length -->
+    You are not enrolled in any courses.
+    <!-- /ko -->
+
 
 <h3> Public Courses</h3>
 
-The following courses are available to everyone:
+    The following courses are available to everyone:
 
-<ul data-bind="foreach: public_courses">
-    <li>
-        <a data-bind="attr: {href: url}">
-            <b data-bind="text: name()"></b>
-        </a>
-    </li>
-</ul>
+    <course-list params="server: server, courses: publicCourses, user: user"></course-list>
+
+<h3>Create</h3>
+
+<a href="{{ url_for('courses.add') }}" class='btn btn-success'>Create new course</a><br><br>
+Or get instructions to <a href="{{ url_for('courses.add_canvas') }}">create new Canvas/LMS course</a>
 
 {% endblock %}

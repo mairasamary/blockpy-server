@@ -1,4 +1,6 @@
 import './components/plugins';
+import "./models/model";
+export {dateCreatedSorter} from "./models/model";
 export {AssignmentGroup} from "./models/assignment_group";
 export {GroupList} from "./components/group_list";
 export {User} from "./models/user";
@@ -6,3 +8,4 @@ export {Assignment} from "./models/assignment";
 export {Watcher} from "./components/watcher";
 export {launchEditor} from "./components/editor";
 export {Server} from "./components/server";
+import "./components/course_list";

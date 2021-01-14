@@ -1,7 +1,7 @@
 import * as ko from 'knockout';
 import {Model, ModelJson, ModelStore} from "./model";
 import {capitalize, TwoWayReadonlyMap} from "../components/plugins";
-import {ajax_get} from "../components/server";
+import {ajax_get} from "../components/ajax";
 
 export interface AssignmentGroupJson extends ModelJson {
     id: number;
@@ -36,7 +36,9 @@ export class AssignmentGroup extends Model<AssignmentGroupJson> {
         "forked_version": "forkedVersion",
         "owner_id": "ownerId",
         "course_id": "courseId",
-        "version": "version"
+        "version": "version",
+        "date_modified": "dateModified",
+        "date_created": "dateCreated"
     });
 
     constructor(data: AssignmentGroupJson) {

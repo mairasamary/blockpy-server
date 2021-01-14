@@ -36,7 +36,7 @@ bundles = {
         'libs/codemirror/shell.js',
         'libs/codemirror/yaml-frontmatter.js',
         # D3
-        'libs/d3/d3.min.js',
+        'libs/d3/d3.6.3.1.min.js',
         # Output
         output='gen/libs.js'
     ),

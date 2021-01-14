@@ -1,7 +1,7 @@
 import * as ko from 'knockout';
 import {Model, ModelJson, ModelStore} from "./model";
 import {capitalize, TwoWayReadonlyMap} from "../components/plugins";
-import {ajax_get} from "../components/server";
+import {ajax_get} from "../components/ajax";
 
 export interface RoleJson extends ModelJson {
     id: number;
@@ -18,7 +18,9 @@ export class Role extends Model<RoleJson> {
     FIELDS: TwoWayReadonlyMap = new TwoWayReadonlyMap({
         "user_id": "userId",
         "course_id": "courseId",
-        "name": "name"
+        "name": "name",
+        "date_modified": "dateModified",
+        "date_created": "dateCreated"
     });
 
     constructor(data: RoleJson) {

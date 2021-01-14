@@ -5,21 +5,6 @@ import {CourseJson, CourseStore} from "../models/course";
 import {ReviewJson, ReviewStore} from "../models/review";
 import {SubmissionJson, SubmissionStore} from "../models/submission";
 
-declare global {
-    var $URL_ROOT: string;
-}
-
-export function ajax_get(url: string, data: any) {
-    return $.get(window["$URL_ROOT"]+url, data);
-}
-
-export function hideOverlay() {
-    $('.overlay').hide();
-}
-export function showOverlay() {
-    $('.overlay').show();
-}
-
 export interface ServerIds {
     userIds?: number[];
     courseIds?: number[];
@@ -35,7 +20,7 @@ export interface ServerData {
     assignments?: AssignmentJson[];
     assignmentGroups?: AssignmentGroupJson[];
     reviews?: ReviewJson[];
-    submissions: SubmissionJson[];
+    submissions?: SubmissionJson[];
 }
 
 /**
@@ -52,7 +37,7 @@ export class Server {
     reviewStore: ReviewStore;
     submissionStore: SubmissionStore;
 
-    constructor(courseId: number, initialIds: ServerIds, initialData: ServerData) {
+    constructor(courseId: number, initialIds?: ServerIds, initialData?: ServerData) {
         this.courseId = courseId;
         this.userStore = new UserStore(courseId, initialIds.userIds, initialData.users);
         this.courseStore = new CourseStore(courseId, initialIds.courseIds, initialData.courses);
@@ -61,6 +46,5 @@ export class Server {
         this.reviewStore = new ReviewStore(courseId, initialIds.reviewIds, initialData.reviews);
         this.submissionStore = new SubmissionStore(courseId, initialIds.submissionIds, initialData.submissions);
     }
-
 
 }

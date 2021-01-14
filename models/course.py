@@ -150,12 +150,12 @@ class Course(Base):
         return course
 
     @staticmethod
-    def new(name, owner_id, visibility):
+    def new(name, owner_id, visibility, term):
         if visibility == 'public':
             visibility = 'public'
         else:
             visibility = 'private'
-        new_course = Course(name=name, owner_id=owner_id, visibility=visibility)
+        new_course = Course(name=name, owner_id=owner_id, visibility=visibility, term=term)
         db.session.add(new_course)
         db.session.flush()
         new_role = models.Role(name='instructor', user_id=owner_id, course_id=new_course.id)

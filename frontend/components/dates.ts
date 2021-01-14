@@ -22,7 +22,7 @@ export function isSameDay(first: Date, second: Date) {
  * @param {String} timeString - the string representation of time ("YYYYMMDD HHMMSS")
  * @returns {String} - A human-readable time string.
  */
-export function prettyPrintDateTime(timeString: string): string {
+export function prettyPrintDateTime(timeString: string|number): string {
     /*let year = timeString.slice(0, 4),
         month = parseInt(timeString.slice(4, 6), 10)-1,
         day = timeString.slice(6, 8),
@@ -34,7 +34,7 @@ export function prettyPrintDateTime(timeString: string): string {
         return "Undefined Time";
     }
     let now = new Date();
-    let past = new Date(parseInt(timeString, 10));
+    let past = new Date(timeString);
     if (isSameDay(now, past)) {
         return "Today at "+past.toLocaleTimeString();
     } else {
@@ -47,6 +47,17 @@ export function prettyPrintDateTime(timeString: string): string {
             return date + ", "+past.getFullYear() + " at "+past.toLocaleTimeString();
         }
     }
+}
+
+export function prettyPrintDateTimeString(timeString: string): string {
+    /*let year = timeString.slice(0, 4),
+        month = parseInt(timeString.slice(4, 6), 10)-1,
+        day = timeString.slice(6, 8),
+        hour = timeString.slice(9, 11),
+        minutes = timeString.slice(11, 13),
+        seconds = timeString.slice(13, 15);*/
+    // TODO: Handle timezones correctly
+    return prettyPrintDateTime(parseInt(timeString, 10));
 }
 
 export function prettyPrintDate(timeString: string): string {

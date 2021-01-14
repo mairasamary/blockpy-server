@@ -1,18 +1,22 @@
 import * as ko from 'knockout';
 import {TwoWayReadonlyMap} from "../components/plugins";
-import {ajax_get} from "../components/server";
-import {User, UserJson} from "./user";
+import {ajax_get} from "../components/ajax";
+import {prettyPrintDateTime} from "../components/dates";
 
 export interface ModelJson {
     id: number;
-    date_modified: Date;
-    date_created: Date;
+    date_modified: string;
+    date_created: string;
 }
+
 
 export abstract class Model<T extends ModelJson> {
     id: number;
-    dateModified: ko.Observable<Date>;
-    dateCreated: ko.Observable<Date>;
+    dateCreated: ko.Observable<string>;
+    dateModified: ko.Observable<string>;
+    private readonly prettyDateCreated: KnockoutReadonlyComputed<string>;
+    private readonly prettyDateModified: KnockoutReadonlyComputed<string>;
+
     FIELDS: TwoWayReadonlyMap = new TwoWayReadonlyMap({
         "date_modified": "dateModified",
         "date_created": "dateCreated"
@@ -22,6 +26,8 @@ export abstract class Model<T extends ModelJson> {
         this.id = data.id;
         this.dateModified = ko.observable(data.date_modified);
         this.dateCreated = ko.observable(data.date_created);
+        this.prettyDateCreated = ko.pureComputed(() => prettyPrintDateTime(this.dateCreated()));
+        this.prettyDateModified = ko.pureComputed(() => prettyPrintDateTime(this.dateModified()));
     }
 
     fromJson(data: T) {
@@ -46,6 +52,14 @@ export abstract class Model<T extends ModelJson> {
     }
 
 }
+
+
+export function dateCreatedSorter<J extends ModelJson, L extends Model<J>>(left: L, right: L): number {
+    return left.dateCreated() === right.dateCreated() ? 0
+         : left.dateCreated() < right.dateCreated() ? -1
+         : 1;
+}
+
 
 export abstract class ModelStore<J extends ModelJson, T extends Model<J>> {
     private readonly data: Record<number, T>;
@@ -94,6 +108,11 @@ export abstract class ModelStore<J extends ModelJson, T extends Model<J>> {
 
     getInstances(ids: number[]): T[] {
         return ids.map(this.getInstance.bind(this));
+    }
+
+    getLoaded(): T[] {
+        // @ts-ignore
+        return Object.keys(this.data).map((key: number) => this.data[key]);
     }
 
     getAllAvailable() {

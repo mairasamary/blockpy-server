@@ -14,7 +14,7 @@ from flask import Flask, redirect, url_for, session, request, jsonify, g, \
 from controllers.helpers import (lti, strip_tags,
                                  get_lti_property, require_request_parameters, login_required,
                                  require_course_instructor, get_select_menu_link,
-                                 check_resource_exists, get_course_id, get_user, ajax_success, ajax_failure)
+                                 check_resource_exists, get_course_id, get_user, ajax_success, ajax_failure, maybe_int)
 from controllers.security import user_datastore
 
 from main import app
@@ -31,6 +31,7 @@ courses = Blueprint('courses', __name__, url_prefix='/courses')
 class AddCourseForm(Form):
     name = StringField("Name")
     visibility = SelectField('Visibility', choices=[('private', 'Private'), ('public', 'Public')])
+    term = StringField("Term")
     submit = SubmitField("Add new course")
 
 
@@ -44,7 +45,8 @@ def add():
     if request.method == 'POST':
         Course.new(name=add_form.name.data,
                    owner_id=g.user.id,
-                   visibility=add_form.visibility.data)
+                   visibility=add_form.visibility.data,
+                   term=add_form.term.data)
         flash('New course added')
         return redirect(url_for('courses.index'))
     return render_template('courses/add.html', add_form=add_form)
@@ -54,7 +56,7 @@ def add():
 @courses.route('/remove', methods=['GET', 'POST'])
 @require_request_parameters('course_id')
 @login_required
-def remove_course(course_id):
+def remove_course():
     course_id = int(request.values.get('course_id'))
     course = Course.by_id(course_id)
     # Verify exists
@@ -96,28 +98,34 @@ def add_canvas():
 
 @courses.route('/<course_id>/', methods=['GET', 'POST'])
 @courses.route('/<course_id>', methods=['GET', 'POST'])
-@login_required
 def course(course_id):
-    course_id = int(course_id)
-    if not g.user.in_course(course_id):
-        flash("You are not a user in this course.")
+    user, user_id = get_user()
+    if course_id.isdigit():
+        course_id = int(course_id)
+        course: Course = Course.by_id(course_id)
+    else:
+        course: Course = Course.by_url(course_id)
+    check_resource_exists(course, "Course", course_id)
+    if not user.in_course(course_id) and course.visibility != "public":
+        flash("You are not a user in this course and/or it is not public.")
         return redirect(url_for('courses.index'))
-    course = Course.query.filter_by(id=course_id).first()
-    if course is None:
-        flash("Course does not exist.")
-        return redirect(url_for('courses.index'))
-    is_instructor = g.user.is_instructor(course_id)
-    is_grader = g.user.is_grader(course_id)
-    return render_template('courses/course.html',
-                           course=course,
-                           is_grader=is_grader,
-                           is_instructor=is_instructor)
+    is_instructor = user.is_instructor(course_id)
+    is_grader = user.is_grader(course_id)
+    if is_grader:
+        return render_template('courses/course.html',
+                               course=course,
+                               course_id=course_id,
+                               is_grader=is_grader,
+                               is_instructor=is_instructor)
+    return view_assignments(course_id)
 
 
 @courses.route('/assignments/<course_id>/', methods=['GET', 'POST'])
 @courses.route('/assignments/<course_id>', methods=['GET', 'POST'])
 @login_required
 def assignments(course_id):
+    user, user_id = get_user()
+    # TODO: Check if public course
     if not g.user.in_course(course_id):
         return redirect(url_for('courses.index'))
     assignments = Assignment.get_available()
@@ -222,18 +230,21 @@ def view_assignments(course_id):
 
 
 @courses.route('/', methods=['GET', 'POST'])
-@login_required
 def index():
     """
     List all of the courses associated with the user.
     """
-
-    user_id = g.user.id
-
-    my_courses = g.user.get_courses()
+    user, user_id = get_user()
+    # Get this user's course with their roles
+    my_courses = []
+    if user:
+        my_courses = user.get_courses()
+    # Get all public courses
     public_courses = Course.get_public()
 
-    return render_template('courses/index.html', my_courses=my_courses,
+    return render_template('courses/index.html',
+                           user=user,
+                           my_courses=my_courses,
                            public_courses=public_courses)
 
 
@@ -363,6 +374,36 @@ def config():
     # return Response(render_template('courses/config.xml',
     #                                version=app.config['SITE_VERSION']),
     #                mimetype='text/xml')
+
+@courses.route('/submissions_user/<course_id>/<owner_id>/', methods=['GET', 'POST'])
+@courses.route('/submissions_user/<course_id>/<owner_id>', methods=['GET', 'POST'])
+@login_required
+def submissions_user(course_id, owner_id):
+    ''' List all the users in the course '''
+    course_id = int(course_id)
+    course = Course.by_id(course_id)
+    check_resource_exists(course, "Course", course_id)
+    user, user_id = get_user()
+    if course_id is not None:
+        is_grader = user.is_grader(course_id)
+    else:
+        is_grader = False
+    is_owner = user_id == maybe_int(owner_id)
+    if not is_grader and not is_owner:
+        return "You are not an instructor or the owner of the assignment!"
+    owner = User.by_id(maybe_int(owner_id))
+    assignments = natsorted(course.get_submitted_assignments(),
+                            key=lambda r: r.name)
+    all_subs = Submission.by_student(owner_id, course_id)
+    all_subs = {s[0].assignment_id: s for s in all_subs}
+    submissions = [all_subs.get(assignment.id, (None, None, assignment))
+                   for assignment in assignments]
+    return render_template('courses/submissions_user.html',
+                           course_id=course_id,
+                           assignments=assignments,
+                           submissions=submissions,
+                           owner=owner,
+                           is_instructor=is_grader)
 
 
 @courses.route('/submissions_filter/<course_id>/', methods=['GET', 'POST'])

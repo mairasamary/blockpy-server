@@ -1,7 +1,7 @@
 import * as ko from 'knockout';
 import {Model, ModelJson, ModelStore} from "./model";
 import {capitalize, TwoWayReadonlyMap} from "../components/plugins";
-import {ajax_get} from "../components/server";
+import {ajax_get} from "../components/ajax";
 
 export enum ServiceType {
     NATIVE= "native",
@@ -47,7 +47,9 @@ export class Course extends Model<CourseJson> {
         "endpoint": "endpoint",
         "visibility": "visibility",
         "term": "term",
-        "settings": "settings"
+        "settings": "settings",
+        "date_modified": "dateModified",
+        "date_created": "dateCreated"
     });
 
     constructor(data: CourseJson) {

@@ -55,6 +55,22 @@
 
     <span class='delete-on-load'>Loading! Please wait.</span>
 
+    {% if lti %}
+    <script>
+    function checkCookies() {
+        let cookieEnabled = navigator.cookieEnabled;
+        if (!cookieEnabled){
+            document.cookie = "testcookie";
+            cookieEnabled = document.cookie.indexOf("testcookie")!==-1;
+        }
+        return cookieEnabled;
+    }
+    if (!checkCookies()) {
+        alert("Cookies appear to be disabled. You might need to disable an ad-blocker, adjust your security settings, or use a different browser (we recommend Chrome).");
+    }
+    </script>
+    {% endif %}
+
     {% if group and group|length > 1 %}
         {{ assignment_group_header(group, current_assignment_id, embed, 'blockpy.load') }}
         <script>

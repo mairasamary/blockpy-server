@@ -1,0 +1,30 @@
+{% extends 'helpers/layout.html' %}
+
+{% block title %}
+User Submissions
+{% endblock %}
+
+{% block statusbar %}
+{% endblock %}
+
+{% block extrahead %}
+
+<script type='text/javascript'>
+
+</script>
+{% endblock %}
+
+{% block body %}
+
+<h1>Submission Filter</h1>
+
+<p>Back to <a href="{{ url_for('courses.course', course_id=course_id) }}">Course</a></p>
+
+<label>Student: {{ owner.name() }}
+</label>
+<br><br>
+
+{% include "helpers/submission_table.html" %}
+
+
+{% endblock %}

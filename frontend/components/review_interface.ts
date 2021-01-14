@@ -3,7 +3,7 @@ import {Review} from "../models/review";
 import {User} from "../models/user";
 import {Assignment} from "../models/assignment";
 import * as ko from 'knockout';
-import {hideOverlay, showOverlay} from "./server";
+import {hideOverlay, showOverlay} from "./ajax";
 
 
 export function explainGradingStatus(status: GradingStatus) {
@@ -373,8 +373,8 @@ export class SubmissionReviewInterface {
             assignment_version: this.assignment.version(),
             author_id: this.author.id,
             comment: "New Comment",
-            date_created: new Date(),
-            date_modified: new Date(),
+            date_created: ""+new Date(),
+            date_modified: ""+new Date(),
             forked_id: null,
             forked_version: null,
             generic: false,

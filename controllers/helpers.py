@@ -347,6 +347,12 @@ class UnknownUser:
     def is_instructor(self, *args):
         return False
 
+    def in_course(self, course_id):
+        return False
+
+    def encode_json(self):
+        return {"id": None}
+
 
 UNKNOWN_USER = UnknownUser()
 

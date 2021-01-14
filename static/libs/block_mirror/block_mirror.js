@@ -2562,7 +2562,7 @@ BlockMirrorTextToBlocks.prototype.MODULE_FUNCTION_SIGNATURES = {
     },
     'bar': {
       returns: false,
-      simple: ['xs', 'ys'],
+      simple: ['xs', 'heights', '*tick_label'],
       message: 'plot bar chart',
       colour: BlockMirrorTextToBlocks.COLOR.PLOTTING
     },
@@ -2570,6 +2570,24 @@ BlockMirrorTextToBlocks.prototype.MODULE_FUNCTION_SIGNATURES = {
       returns: false,
       simple: ['values'],
       message: 'plot line',
+      colour: BlockMirrorTextToBlocks.COLOR.PLOTTING
+    },
+    'boxplot': {
+      returns: false,
+      simple: ['values'],
+      message: 'plot boxplot',
+      colour: BlockMirrorTextToBlocks.COLOR.PLOTTING
+    },
+    'hlines': {
+      returns: false,
+      simple: ['y', 'xmin', 'xmax'],
+      message: 'plot horizontal line',
+      colour: BlockMirrorTextToBlocks.COLOR.PLOTTING
+    },
+    'vlines': {
+      returns: false,
+      simple: ['x', 'ymin', 'ymax'],
+      message: 'plot vertical line',
       colour: BlockMirrorTextToBlocks.COLOR.PLOTTING
     },
     'scatter': {
@@ -2594,6 +2612,18 @@ BlockMirrorTextToBlocks.prototype.MODULE_FUNCTION_SIGNATURES = {
       returns: false,
       simple: ['label'],
       message: "make plot's y-axis label",
+      colour: BlockMirrorTextToBlocks.COLOR.PLOTTING
+    },
+    'xticks': {
+      returns: false,
+      simple: ['xs', 'labels', '*rotation'],
+      message: "make x ticks",
+      colour: BlockMirrorTextToBlocks.COLOR.PLOTTING
+    },
+    'yticks': {
+      returns: false,
+      simple: ['ys', 'labels', '*rotation'],
+      message: "make y ticks",
       colour: BlockMirrorTextToBlocks.COLOR.PLOTTING
     }
   }
@@ -2722,7 +2752,7 @@ TOOLBOX_CATEGORY.CALCULATIONS = {
 TOOLBOX_CATEGORY.OUTPUT_WITH_PLOTTING = {
   name: "Output",
   colour: "PLOTTING",
-  blocks: ["print(___)", "plt.plot(___)", "plt.scatter(___, ___)", "plt.hist(___)", "plt.bar(___, ___)", "plt.show()", "plt.title(___)", "plt.xlabel(___)", "plt.ylabel(___)"]
+  blocks: ["print(___)", "plt.plot(___)", "plt.scatter(___, ___)", "plt.hist(___)", "plt.bar(___, ___, tick_label=___)", "plt.boxplot(___)", "plt.show()", "plt.title(___)", "plt.xlabel(___)", "plt.ylabel(___)", "plt.hlines(___, ___, ___)", "plt.vlines(___, ___, ___)"]
 };
 TOOLBOX_CATEGORY.TURTLES = {
   name: "Turtles",
