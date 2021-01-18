@@ -74,4 +74,5 @@ class ExtendedConfirmRegisterForm(ConfirmRegisterForm):
 
 # User registration, etc.
 user_datastore = SQLAlchemyUserDatastore(db, User, Role)
-security = Security(app, user_datastore, confirm_register_form=ExtendedConfirmRegisterForm)
+security = Security(app, user_datastore, confirm_register_form=ExtendedConfirmRegisterForm,
+                    register_form=ExtendedConfirmRegisterForm)
