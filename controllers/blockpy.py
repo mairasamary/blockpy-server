@@ -246,7 +246,6 @@ def save_instructor_file(course_id, user, filename):
 @require_request_parameters("course_id")
 def load_history():
     # Get parameters
-    start = time.time()
     course_id = maybe_int(request.values.get('course_id'))
     assignment_id = (request.values.get('assignment_id'))
     student_id = (request.values.get('user_id'))
@@ -257,18 +256,13 @@ def load_history():
     # Verify user can see the submission
     if str(user_id) != str(student_id) and not user.is_grader(course_id):
         return ajax_failure("Only graders can see logs for other people.")
-    print("Beginning", time.time() - start)
     history = Log.get_history(course_id, assignment_id, student_id,
                                             page_offset=page_offset,
                                             page_limit=page_limit)
-    print("Got history", time.time() - start)
     history = list(reversed(history))
-    print("Flipped history", time.time() - start)
     submissions = []
     if with_submission:
         submissions = Submission.get_submissions(course_id, assignment_id, student_id)
-    print("Got submissions", time.time() - start)
-    print("How much data?", len(history))
     return ajax_success({"history": history, "submissions": submissions})
 
 
