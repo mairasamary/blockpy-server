@@ -1,5 +1,6 @@
 import logging
 from collections import OrderedDict
+import time
 import json
 
 from sqlalchemy import Column, String, Integer, ForeignKey, Text, func, JSON, Index
@@ -125,6 +126,7 @@ class Log(Base):
 
     @staticmethod
     def get_history(course_id, assignment_id, user_id, page_offset=None, page_limit=None):
+        start = time.time()
         logs = Log.query.filter_by(course_id=course_id)
         # JUst need to refactor this to allow lists
         if assignment_id is not None:
@@ -142,7 +144,10 @@ class Log(Base):
             logs = logs.offset(page_offset)
         if page_limit is not None:
             logs = logs.limit(page_limit)
-        return [log.encode_json() for log in logs.all()]
+        print("About to query history", time.time() - start)
+        logs = logs.all()
+        print("About to encode history", time.time() - start)
+        return [log.encode_json() for log in logs]
 
     def for_file(self):
         return ", ".join((
