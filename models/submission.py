@@ -222,6 +222,7 @@ class Submission(Base):
 
     @staticmethod
     def get_submissions(course_id, assignment_id, user_id):
+        start = time.time()
         subs = Submission.query.filter_by(course_id=course_id)
         # JUst need to refactor this to allow lists
         if assignment_id is not None:
@@ -234,7 +235,10 @@ class Submission(Base):
                 subs = subs.filter(Log.subject_id.in_([int(a) for a in user_id.split(",")]))
             else:
                 subs = subs.filter_by(user_id=user_id)
-        return [sub.encode_json() for sub in subs.all()]
+        print("About to query subs", time.time() - start)
+        subs = subs.all()
+        print("About to encode subs", time.time() - start)
+        return [sub.encode_json() for sub in subs]
 
     @staticmethod
     def get_submission(assignment_id, user_id, course_id):
