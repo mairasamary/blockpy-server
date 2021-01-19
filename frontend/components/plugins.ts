@@ -193,3 +193,11 @@ export function areArraysEqualSets(a1: number[], a2: number[]) {
 
     return true;
 }
+
+/** Simple binding for handling optgroups **/
+ko.bindingHandlers.option = {
+    update: function(element, valueAccessor) {
+       let value = ko.utils.unwrapObservable(valueAccessor());
+       ko.selectExtensions.writeValue(element, value);
+    }
+};

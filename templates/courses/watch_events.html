@@ -22,14 +22,20 @@ Watch Events
     }
 
     $(function() {
+        let loggedInUser = {{ user.encode_json()|tojson }};
         let userIds = {{  request.values.get('user_ids')|tojson }} || getLocalStorage("BLOCKPY_SERVER_USERIDS", "");
         let assignmentIds = {{  request.values.get('assignment_ids')|tojson }} || getLocalStorage("BLOCKPY_SERVER_ASSIGNMENTIDS", "first");
-        console.log(userIds, assignmentIds);
-        ko.applyBindings({
+        server = new frontend.Server({{ course_id|tojson }}, {
+        }, {
+            users: [loggedInUser]
+        });
+        mainModel = {
             pageCourseId: {{ course_id|tojson }},
             userIds: userIds,
-            assignmentIds: assignmentIds
-        });
+            assignmentIds: assignmentIds,
+            server: server
+        }
+        ko.applyBindings(mainModel);
     });
 
 </script>
@@ -40,7 +46,7 @@ Watch Events
     <h1>Watch Events</h1>
     {{ navigation.navigate_course() }}
 
-    <watcher params="courseId: pageCourseId, assignmentIds: assignmentIds, userIds: userIds"></watcher>
+    <watcher params="server: server, courseId: pageCourseId, assignmentIds: assignmentIds, userIds: userIds"></watcher>
 
 
 {% endblock %}

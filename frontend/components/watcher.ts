@@ -21,15 +21,19 @@ import './model_selector';
 import {ModelSet} from "./model_selector";
 import {launchEditor} from "./editor";
 import {Submission, SubmissionJson} from "../models/submission";
+import {Server} from "./server";
 
+// TODO: Global Watch Mode buttons (tied to state of their respective set of buttons)
 export enum WatchMode {
-    FROZEN_LATEST, POLL, REVIEW
+    SUMMARY, FULL, SUMMARY_CODE
 }
 
+// TODO: Feedback | Last compile error | Hide
 export class SubmissionState {
     loaded: boolean;
     friendly: string;
     code: string;
+    feedback: string;
     lastRan: string;
     lastEdit: string;
     lastOpened: string;
@@ -48,17 +52,17 @@ export class SubmissionState {
     }
 
     getPrettyLastEdit(watchMode?: WatchMode): string {
-        let current = watchMode === WatchMode.REVIEW ? this.log.clientTimestamp() : null;
+        let current = watchMode !== WatchMode.SUMMARY ? this.log.clientTimestamp() : null;
         return formatDuration(this.lastEdit, current);
     }
 
     getPrettyLastRan(watchMode?: WatchMode): string {
-        let current = watchMode === WatchMode.REVIEW ? this.log.clientTimestamp() : null;
+        let current = watchMode !== WatchMode.SUMMARY ? this.log.clientTimestamp() : null;
         return formatDuration(this.lastRan, current);
     }
 
     getPrettyLastOpened(watchMode?: WatchMode): string {
-        let current = watchMode === WatchMode.REVIEW ? this.log.clientTimestamp() : null;
+        let current = watchMode !== WatchMode.SUMMARY ? this.log.clientTimestamp() : null;
         return formatDuration(this.lastOpened, current);
     }
 
@@ -66,6 +70,7 @@ export class SubmissionState {
         if (other === null) {
             this.code = "";
             this.friendly = "Not Loaded";
+            this.feedback = "Not yet executed";
             this.lastRan = null;
             this.lastEdit = null;
             this.lastOpened = null;
@@ -76,6 +81,7 @@ export class SubmissionState {
             this.log = null;
         } else {
             this.code = other.code;
+            this.feedback = other.feedback;
             this.lastRan = other.lastRan;
             this.lastEdit = other.lastEdit;
             this.lastOpened = other.lastOpened;
@@ -107,7 +113,8 @@ export class SubmissionState {
                 this.lastRan = log.clientTimestamp();
                 break;
             case "Intervention":
-                this.completed = log.category() === "Complete";
+                this.completed = this.completed || log.category() === "Complete";
+                this.feedback = `<strong>${log.label()}</strong><div>${log.message()}</div>`;
                 break;
             case "X-View.Change":
                 this.mode = log.message();
@@ -135,29 +142,33 @@ export class SubmissionHistory {
     private currentState: KnockoutReadonlyComputed<SubmissionState>;
     private isVcrActive: KnockoutReadonlyComputed<boolean>;
     private getWatchModeClass: KnockoutReadonlyComputed<string>;
+    // Visuals
+    private isSummary: KnockoutReadonlyComputed<boolean>;
+    private isFull: KnockoutReadonlyComputed<boolean>;
+    private hideFeedback: KnockoutReadonlyComputed<boolean>;
 
-    constructor(initialLog: Log, user: User, assignment: Assignment) {
+    constructor(user: User, assignment: Assignment) {
         this.states = ko.observableArray<SubmissionState>([]);
         this.currentStateIndex = ko.observable(0);
         this.user = user;
         this.assignment = assignment;
-        this.watchMode = ko.observable(WatchMode.FROZEN_LATEST);
+        this.watchMode = ko.observable(WatchMode.SUMMARY);
         this.isVcrActive = ko.pureComputed(() => {
-            return this.watchMode() === WatchMode.REVIEW;
+            return this.watchMode() !== WatchMode.SUMMARY;
         }, this);
         this.getWatchModeClass = ko.pureComputed(() => {
             switch (this.watchMode()) {
-                case WatchMode.FROZEN_LATEST:
-                    return "fa-pause-circle";
-                case WatchMode.POLL:
+                case WatchMode.SUMMARY:
                     return "fa-eye";
-                case WatchMode.REVIEW:
-                    return "fa-history";
+                case WatchMode.FULL:
+                    return "fa-arrows-alt-h";
+                case WatchMode.SUMMARY_CODE:
+                    return "fa-eye-slash";
             }
         }, this);
         this.currentState = ko.pureComputed(() => {
             if (this.states().length > 0) {
-                if (this.watchMode() === WatchMode.REVIEW) {
+                if (this.watchMode() !== WatchMode.SUMMARY) {
                     return this.states()[this.getCurrentStateIndex()];
                 } else {
                     return last(this.states());
@@ -165,6 +176,15 @@ export class SubmissionHistory {
             } else {
                 console.error("No states are currently loaded!");
             }
+        }, this);
+        this.isSummary = ko.pureComputed(() => {
+            return this.watchMode() === WatchMode.SUMMARY;
+        }, this);
+        this.isFull = ko.pureComputed(() => {
+            return this.watchMode() === WatchMode.FULL;
+        }, this);
+        this.hideFeedback = ko.pureComputed(() => {
+            return this.watchMode() === WatchMode.SUMMARY_CODE;
         }, this);
     }
 
@@ -182,6 +202,24 @@ export class SubmissionHistory {
         }
         pushObservableArray(this.states, states);
         //console.log(states);
+    }
+
+    reload() {
+        ajax_get("blockpy/load_history", {
+            assignment_id: this.submission.assignmentId(),
+            course_id: this.submission.courseId(),
+            user_id: this.submission.userId(),
+            with_submission: true
+        }).then((data) => {
+            if (data.success) {
+                let latestLogId = this.states.length>0 ? this.states()[this.states.length-1].log.id : -1;
+                this.addLogs(data.history.filter((log: LogJson) => latestLogId < log.id).map((log: LogJson) => new Log(log)));
+                this.submission.fromJson(data.submissions[0]);
+            } else {
+                console.error(data);
+            }
+        });
+        console.log("Need to update myself!");
     }
 
     // Map CodeStates to event IDs so we can quickly get code? Or playback history to status at each step...
@@ -211,15 +249,15 @@ export class SubmissionHistory {
 
     switchWatchMode(data: any, event: Event) {
         switch (this.watchMode()) {
-            case WatchMode.FROZEN_LATEST:
-                this.watchMode(WatchMode.POLL);
+            case WatchMode.FULL:
+                this.watchMode(WatchMode.SUMMARY_CODE);
                 break;
-            case WatchMode.POLL:
+            case WatchMode.SUMMARY_CODE:
+                this.watchMode(WatchMode.SUMMARY);
+                break;
+            case WatchMode.SUMMARY:
                 this.loadHistorySelector(event);
-                this.watchMode(WatchMode.REVIEW);
-                break;
-            case WatchMode.REVIEW:
-                this.watchMode(WatchMode.FROZEN_LATEST);
+                this.watchMode(WatchMode.FULL);
                 break;
         }
     }
@@ -271,18 +309,48 @@ export class SubmissionHistory {
     }
 }
 
+// TODO: Open all of students' submissions
+// TODO: Open all of assignment's submissions
+// TODO: "Last Logged Event" -> "This log event: "
 export const SubmissionHistoryCard = `
-<div class="">
-    <div data-bind="component: {name: 'user-short', params: user}"></div>
-    <div data-bind="component: {name: 'assignment-short', params: assignment}"></div>
-    <div>Logged Time: <span data-bind="text: currentState().getPrettyTime()"></span></div>
-    <div>Last Edited: <span data-bind="text: currentState().getPrettyLastEdit(watchMode())"></span></div>
-    <div>Last Ran: <span data-bind="text: currentState().getPrettyLastRan(watchMode())"></span></div>
-    <div>Last Opened: <span data-bind="text: currentState().getPrettyLastOpened(watchMode())"></span></div>
-    <div>Score: <span data-bind="text: currentState().completed ? 'Correct' : 'Incomplete'"></span> (<span data-bind="text: currentState().score"></span>)</div>
+<div class="col-md-12 mb-4 rounded bg-light">
+    <!-- ko if: submissionHistory.states().length>0 -->
+    <div class="row">
+        <div class="col-md-6">
+            <div data-bind="component: {name: 'user-short', params: user}"></div>
+            <div data-bind="component: {name: 'assignment-short', params: assignment}"></div>
+            <div>Score: <span data-bind="text: currentState().completed ? 'Correct' : 'Incomplete'"></span> (<span data-bind="text: currentState().score"></span>)</div>
+            <div>Open submission in <a href="#" data-bind="click: $parent.launchEditor.bind($parent)">Readonly Editor</a></div>
+            <div>View code/history</div>
+        </div>
+        <div class="col-md-6">
+            <div>Last Logged Event: <span data-bind="text: currentState().getPrettyTime()"></span></div>
+            <div>Last Edited: <span data-bind="text: currentState().getPrettyLastEdit(watchMode())"></span></div>
+            <div>Last Ran: <span data-bind="text: currentState().getPrettyLastRan(watchMode())"></span></div>
+            <div>Last Opened: <span data-bind="text: currentState().getPrettyLastOpened(watchMode())"></span></div>    
+        </div>
+        <div class="col-md-12">
+            <submission-history-vcr params="submissionHistory: submissionHistory"></submission-history-vcr>
+        </div>
+        <div class="mt-2" data-bind="css: { 'col-md-6': submissionHistory.isFull(), 'col-md-12': submissionHistory.hideFeedback() },
+                                     ifnot: submissionHistory.isSummary()">
+            <pre class="python-code-block"><code data-bind="highlightedCode: currentState().code" class="python" style="height: 200px"></code></pre>
+        </div>
+        <div class="col-md-6 mt-2" data-bind="if: submissionHistory.isFull()">
+            <div data-bind="html: currentState().feedback"></div>
+        </div>
+    </div>
+    <!-- /ko -->
+    <!-- ko ifnot: submissionHistory.states().length>0 -->
+    <div class="row">
+        <div class="col-md-6">
+            <div data-bind="component: {name: 'user-short', params: user}"></div>
+            <div data-bind="component: {name: 'assignment-short', params: assignment}"></div>
+            <div>Not yet started!</div>
+        </div>
+    </div>
+    <!-- /ko -->
 </div>
-    <div>Open in <a href="#" data-bind="click: $parent.launchEditor.bind($parent)">Readonly Editor</a></div>
-    <pre class="python-code-block"><code data-bind="highlightedCode: currentState().code" class="python" style="height: 200px"></code></pre>
 `;
 
 ko.components.register("submission-history-card", {
@@ -290,38 +358,46 @@ ko.components.register("submission-history-card", {
 });
 
 export const SubmissionHistoryVCR = `
-<div class="col-md-12" data-bind="visible: $parent.isVcrActive()">
     <form class="form-inline">
         <button class="btn btn-outline-secondary mr-2 btn-sm" type="button"
-            data-bind="click: $parent.moveToStart.bind($parent)">
-            <span class='fas fa-step-backward'></span> Start
+            data-bind="click: submissionHistory.switchWatchMode.bind(submissionHistory)">
+            <span class='fas' data-bind="class: submissionHistory.getWatchModeClass()"></span>
         </button>
-        <button class="btn btn-outline-secondary mr-2 btn-sm" type="button"
-            data-bind="click: $parent.seekToBack.bind($parent)">
-            <span class='fas fa-fast-backward'></span>
+        <button class="btn btn-outline-secondary mr-2 btn-sm"
+                data-bind="click: submissionHistory.reload.bind(submissionHistory)">
+                <span class="fas fa-sync"></span> Sync
         </button>
-        <button class="btn btn-outline-secondary mr-2 btn-sm" type="button"
-            data-bind="click: $parent.moveToBack.bind($parent)">
-            <span class='fas fa-backward'></span> Back
-        </button>
-        <select class="history-select form-control custom-select mr-2 custom-select-sm"
-            data-bind="value: $parent.currentStateIndex"
-            aria-title="History Selector">
-        </select>
-        <button class="btn btn-outline-secondary mr-2 btn-sm" type="button"
-            data-bind="click: $parent.moveToNext.bind($parent)">
-            <span class='fas fa-forward'></span> Next
-        </button>
-        <button class="btn btn-outline-secondary mr-2 btn-sm" type="button"
-            data-bind="click: $parent.seekToNext.bind($parent)">
-            <span class='fas fa-fast-forward'></span>
-        </button>
-        <button class="btn btn-outline-secondary btn-sm" type="button"
-            data-bind="click: $parent.moveToMostRecent.bind($parent)">
-            <span class='fas fa-step-forward'></span> Most Recent
-        </button>
+        <div data-bind="visible: submissionHistory.isVcrActive()">
+            <button class="btn btn-outline-secondary mr-2 btn-sm" type="button"
+                data-bind="click: submissionHistory.moveToStart.bind(submissionHistory)">
+                <span class='fas fa-step-backward'></span> Start
+            </button>
+            <button class="btn btn-outline-secondary mr-2 btn-sm" type="button"
+                data-bind="click: submissionHistory.seekToBack.bind(submissionHistory)">
+                <span class='fas fa-fast-backward'></span>
+            </button>
+            <button class="btn btn-outline-secondary mr-2 btn-sm" type="button"
+                data-bind="click: submissionHistory.moveToBack.bind(submissionHistory)">
+                <span class='fas fa-backward'></span> Back
+            </button>
+            <select class="history-select form-control custom-select mr-2 custom-select-sm"
+                data-bind="value: submissionHistory.currentStateIndex"
+                aria-title="History Selector">
+            </select>
+            <button class="btn btn-outline-secondary mr-2 btn-sm" type="button"
+                data-bind="click: submissionHistory.moveToNext.bind(submissionHistory)">
+                <span class='fas fa-forward'></span> Next
+            </button>
+            <button class="btn btn-outline-secondary mr-2 btn-sm" type="button"
+                data-bind="click: submissionHistory.seekToNext.bind(submissionHistory)">
+                <span class='fas fa-fast-forward'></span>
+            </button>
+            <button class="btn btn-outline-secondary mr-2 btn-sm" type="button"
+                data-bind="click: submissionHistory.moveToMostRecent.bind(submissionHistory)">
+                <span class='fas fa-step-forward'></span> Most Recent
+            </button>
+        </div>
     </form>
-</div>
 `;
 
 ko.components.register("submission-history-vcr", {
@@ -342,8 +418,7 @@ export class Watcher {
     assignmentSet: KnockoutObservable<ModelSet>;
 
     // Stores
-    userStore: UserStore;
-    assignmentStore: AssignmentStore;
+    server: Server;
 
     // Actual data
     submissions: KnockoutObservableArray<SubmissionHistory>;
@@ -363,8 +438,7 @@ export class Watcher {
         this.grouping = ko.observable<WatchGroupingMode>(WatchGroupingMode.NONE);
         this.submissions = ko.observableArray<SubmissionHistory>([]);
         this.cauToSubmission = {};
-        this.userStore = new UserStore(data.courseId, [], []);
-        this.assignmentStore = new AssignmentStore(data.courseId, [], []);
+        this.server = data.server;
         //$(this.getLatest.bind(this));
     }
 
@@ -374,9 +448,9 @@ export class Watcher {
             let log: Log = new Log(logJsons[i]);
             let submissionId = log.getAsSubmissionKey();
             if (!(submissionId in this.cauToSubmission)) {
-                let user = this.userStore.getInstance(log.subjectId());
-                let assignment = this.assignmentStore.getInstance(log.assignmentId());
-                this.cauToSubmission[submissionId] = new SubmissionHistory(log, user, assignment);
+                let user = this.server.userStore.getInstance(log.subjectId());
+                let assignment = this.server.assignmentStore.getInstance(log.assignmentId());
+                this.cauToSubmission[submissionId] = new SubmissionHistory(user, assignment);
                 this.submissions.push(this.cauToSubmission[submissionId]);
             }
             if (!(submissionId in sortedLogs)) {
@@ -393,11 +467,22 @@ export class Watcher {
         for (let i=0; i<submissionJsons.length; i+=1) {
             let submission: Submission = new Submission(submissionJsons[i]);
             let submissionId = submission.getAsSubmissionKey();
-            console.log(this.cauToSubmission[submissionId]);
+            if (!(submissionId in this.cauToSubmission)) {
+                let user = this.server.userStore.getInstance(submission.userId());
+                let assignment = this.server.assignmentStore.getInstance(submission.assignmentId());
+                this.cauToSubmission[submissionId] = new SubmissionHistory(user, assignment);
+                this.submissions.push(this.cauToSubmission[submissionId]);
+            }
             this.cauToSubmission[submissionId].submission = submission;
         }
     }
 
+    clearData() {
+        this.cauToSubmission = {};
+        this.submissions.removeAll();
+    }
+
+    // TODO: Get latest for just a single submission
     getLatest() {
         localStorage.setItem("BLOCKPY_SERVER_USERIDS", this.userSet().getStored());
         localStorage.setItem("BLOCKPY_SERVER_ASSIGNMENTIDS", this.assignmentSet().getStored());
@@ -408,6 +493,7 @@ export class Watcher {
             with_submission: true
         }).then((data) => {
             if (data.success) {
+                this.clearData();
                 this.addLogs(data.history);
                 this.addSubmissions(data.submissions);
             } else {
@@ -420,29 +506,19 @@ export class Watcher {
 export const WatcherTemplate = `
     <div>
     User(s):
-        <user-set-selector params="store: userStore, modelSet: userSet, default: userIds"></user-set-selector>
+        <user-set-selector params="store: server.userStore, modelSet: userSet, default: userIds"></user-set-selector>
     </div>
     <div class="mt-4 mb-4">
     Assignment(s):
-        <assignment-set-selector params="store: assignmentStore, modelSet: assignmentSet, default: assignmentIds"></assignment-set-selector>
+        <assignment-set-selector params="store: server.assignmentStore, modelSet: assignmentSet, default: assignmentIds"></assignment-set-selector>
     </div>
     <div class="mb-4 mt-4">
         <button class="btn btn-primary" data-bind="click: getLatest">Load Events</button>
     </div>
     <div>
         <div data-bind="foreach: submissions" class="row">
-            <div class="col-sm-6 mb-4">
-            <div class="">
-                <button class="btn btn-outline-secondary mr-2 btn-sm" type="button"
-                    data-bind="click: switchWatchMode">
-                    <span class='fas' data-bind="class: getWatchModeClass"></span>
-                </button>
-                <!-- ko if: states().length>0 -->
-                    <submission-history-vcr></submission-history-vcr>
-                    <submission-history-card params="currentState: currentState, watchMode: watchMode, user: user, assignment: assignment"></submission-history-card>
-                <!-- /ko -->
-            </div>
-            </div>
+            <submission-history-card params="submissionHistory: $data, currentState: currentState, watchMode: watchMode,
+                                             user: user, assignment: assignment"></submission-history-card>    
         </div>
     </div>
 `;

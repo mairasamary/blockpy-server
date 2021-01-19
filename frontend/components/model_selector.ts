@@ -4,6 +4,9 @@ import {User, UserJson} from "../models/user";
 import {areArraysEqualSets, pushObservableArray} from "./plugins";
 import {Assignment, AssignmentJson} from "../models/assignment";
 
+// TODO: "Add all" and "Remove all" buttons for Set menu
+// TODO: If only one available, then collapse everything to just the one
+
 interface ModelSetJson {
     name: string;
     ids: number[];
@@ -64,6 +67,8 @@ export class ModelSetSelector<J extends ModelJson, T extends Model<J>> {
     private readonly selectedOptions: KnockoutObservableArray<number>;
     private readonly singleSet: KnockoutObservable<ModelSet>;
     private readonly singleOption: KnockoutObservable<number>;
+    private readonly showAll: KnockoutObservable<boolean>;
+    private readonly showAllThreshold: number = 7;
     private bulkEditor: KnockoutObservable<string>;
     protected prettyResult: KnockoutReadonlyComputed<T[]>;
     private readonly isLoading: KnockoutObservable<boolean>;
@@ -97,6 +102,8 @@ export class ModelSetSelector<J extends ModelJson, T extends Model<J>> {
         this.selectedOptions = ko.observableArray<number>([]);
         // Bulk add emails/IDs
         this.bulkEditor = ko.observable<string>("");
+        // Default to not show all names
+        this.showAll = ko.observable(false);
 
         this.currentSet.subscribe(() => {
             if (this.editorVisible()) {
@@ -130,7 +137,11 @@ export class ModelSetSelector<J extends ModelJson, T extends Model<J>> {
         }, this, "arrayChange");
 
         this.prettyResult = ko.pureComputed<T[]>( () => {
-            return this.currentSet().ids().map((id: number) => this.store.getInstance(id));
+            let ids = this.currentSet().ids();
+            if (!this.showAll()) {
+                ids = ids.slice(0, this.showAllThreshold);
+            }
+            return ids.map((id: number) => this.store.getInstance(id));
         }, this);
     }
 
@@ -288,7 +299,7 @@ export const MODEL_SET_SELECTOR_HTML = (setName: string) => `
                     <span class="fas fa-edit"></span>
                     Edit this ${setName} set</button>
             <button type="button" class="btn btn-sm btn-outline-secondary ml-2"
-                    data-bind="click: startAdding, visible: !editorVisible()">
+                    data-bind="click: () => startAdding(), visible: !editorVisible()">
                     <span class="fas fa-plus"></span>
                     Add new ${setName} set</button>
                                              
@@ -330,6 +341,16 @@ export const MODEL_SET_SELECTOR_HTML = (setName: string) => `
                 <span data-bind="foreach: prettyResult">
                     <span data-bind="text: name"></span>, 
                 </span>
+                <!-- ko if: currentSet().ids().length > showAllThreshold -->
+                <button type="button" class="btn btn-primary btn-sm" data-bind="click: () => showAll(!showAll())">
+                    <span data-bind="if: showAll">
+                        Hide all
+                    </span>
+                    <span data-bind="ifnot: showAll">
+                        Show more <span class="badge badge-light" data-bind="text: currentSet().ids().length - showAllThreshold"></span>
+                    </span>
+                </button>
+                <!-- /ko -->
             </div>
         </div>
     </div>`
@@ -360,6 +381,14 @@ export class AssignmentSetSelector extends ModelSetSelector<AssignmentJson, Assi
 
     getNewGroupSetName(): string {
         return "New assignment set";
+    }
+
+    getItemGroups() {
+
+    }
+
+    getItemGroup(item: Assignment) {
+
     }
 }
 
