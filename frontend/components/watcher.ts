@@ -23,6 +23,9 @@ import {launchEditor} from "./editor";
 import {Submission, SubmissionJson} from "../models/submission";
 import {Server} from "./server";
 
+// TODO: Load events on page load, mode or setting
+// TODO: Prevent both All from being loaded if SxA is too big?
+
 // TODO: Global Watch Mode buttons (tied to state of their respective set of buttons)
 export enum WatchMode {
     SUMMARY, FULL, SUMMARY_CODE
