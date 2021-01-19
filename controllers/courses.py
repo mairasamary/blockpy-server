@@ -210,7 +210,8 @@ def get_assignments():
 @login_required
 def watch_events():
     course_id = get_course_id(False)
-    return render_template('courses/watch_events.html', course_id=course_id)
+    user, user_id = get_user()
+    return render_template('courses/watch_events.html', course_id=course_id, user=user)
 
 
 
