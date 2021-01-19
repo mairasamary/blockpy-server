@@ -113,6 +113,9 @@ class AssignmentGroup(Base):
                 .filter(models.AssignmentGroupMembership.assignment_id == None)
                 .all())
 
+    # TODO
+    # SELECT assignment, grp  FROM assignment JOIN assignment_group_membership as members ON members.assignment_id = assignment.id JOIN assignment_group as grp ON grp.id = members.assignment_group_id WHERE assignment.id IN (SELECT DISTINCT submission.assignment_id FROM submission WHERE submission.course_id=11) AND (grp.course_id=11 OR assignment.course_id = grp.course_id)
+
     def get_assignments(self) -> 'List[models.Assignment]':
         assignments = (models.Assignment.query
                 .join(models.AssignmentGroupMembership,
