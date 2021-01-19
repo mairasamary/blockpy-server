@@ -13866,11 +13866,13 @@ Compiler.prototype.buildcodeobj = function (n, coname, decorator_list, args, cal
         this.u.tempsToSave.push("$free");
     }
 
+    let argString;
     if (fastCall) {
-        this.u.prefixCode += "$posargs,$kwargs";
+        argString = "$posargs,$kwargs";
     } else {
-        this.u.prefixCode += funcArgs.join(",");
+        argString = funcArgs.join(",");
     }
+    this.u.prefixCode += argString;
 
     this.u.prefixCode += "){";
 
@@ -14012,6 +14014,10 @@ Compiler.prototype.buildcodeobj = function (n, coname, decorator_list, args, cal
     this.u.suffixCode = "}" + this.handleTraceback(true, coname.v);
     this.u.suffixCode += "});";
 
+    // Track that we are about to call the function
+    if (this.filename && !this.filename.startsWith("src/lib/")) {
+        out("Sk.beforeCall && Sk.beforeCall('"+coname.$jsstr()+"',"+argString+");");
+    }
 
     //
     // jump back to the handler so it can do the main actual work of the
@@ -14133,6 +14139,7 @@ Compiler.prototype.buildcodeobj = function (n, coname, decorator_list, args, cal
 
 Compiler.prototype.cfunction = function (s, class_for_super) {
     var funcorgen;
+    //let filename = this.filename;
     Sk.asserts.assert(s instanceof Sk.astnodes.FunctionDef);
     funcorgen = this.buildcodeobj(s, s.name, s.decorator_list, s.args, function (scopename) {
         this.vseqstmt(s.body);
@@ -34550,7 +34557,7 @@ var Sk = {}; // jshint ignore:line
 
 Sk.build = {
     githash: "0a351000a90b3364eb10b81f0f28101889e6a69c",
-    date: "2021-01-13T19:15:13.181Z"
+    date: "2021-01-16T19:06:05.298Z"
 };
 
 /**
