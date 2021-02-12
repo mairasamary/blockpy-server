@@ -14,7 +14,8 @@ from flask import Flask, redirect, url_for, session, request, jsonify, g, \
 from controllers.helpers import (lti, strip_tags,
                                  get_lti_property, require_request_parameters, login_required,
                                  require_course_instructor, get_select_menu_link,
-                                 check_resource_exists, get_course_id, get_user, ajax_success, ajax_failure, maybe_int)
+                                 check_resource_exists, get_course_id, get_user, ajax_success, ajax_failure, maybe_int,
+                                 maybe_bool)
 from controllers.security import user_datastore
 
 from main import app
@@ -338,10 +339,11 @@ def grader_dashboard(user, course_id):
 @courses.route('dashboard/', methods=['GET', 'POST'])
 @courses.route('dashboard', methods=['GET', 'POST'])
 @lti(request='initial')
-def dashboard(lti=lti):
+def dashboard(lti=lti, lti_exception=None):
     """
     :type lti: controllers.pylti.flask.lTI
     """
+    force_default_assignment = maybe_bool(request.values.get('force_default_assignment', "false"))
     if 'user' not in g and not g.user:
         return "You are not logged in."
     course_id = get_course_id()
@@ -349,19 +351,26 @@ def dashboard(lti=lti):
     if course_id is None:
         return "You are not in a course context."
     is_grader = user.is_grader(course_id)
-    if is_grader:
+    if is_grader and not force_default_assignment:
         return grader_dashboard(user, course_id)
 
     course = Course.by_id(course_id)
-    assignments = natsorted(course.get_submitted_assignments(),
-                            key=lambda r: r.name)
-    all_subs = Submission.by_student(user_id, course_id)
-    all_subs = {s[0].assignment_id: s for s in all_subs}
-    submissions = [all_subs.get(assignment.id, (None, None, assignment))
-                   for assignment in assignments]
-    return render_template('courses/dashboard.html', embed=True,
-                           course_id=course_id, user=user, is_grader=is_grader,
-                           submissions=submissions, criteria='student')
+    assignment = course.get_default_assignment()
+    if assignment is not None:
+        return redirect(url_for("blockpy.load", assignment_id=assignment.id,
+                                course_id=course_id, user_id=user_id, force_download=False,
+                                embed=True))
+    else:
+        # No default assignment!
+        assignments = natsorted(course.get_submitted_assignments(),
+                                key=lambda r: r.name)
+        all_subs = Submission.by_student(user_id, course_id)
+        all_subs = {s[0].assignment_id: s for s in all_subs}
+        submissions = [all_subs.get(assignment.id, (None, None, assignment))
+                       for assignment in assignments]
+        return render_template('courses/dashboard.html', embed=True,
+                               course_id=course_id, user=user, is_grader=is_grader,
+                               submissions=submissions, criteria='student')
 
 
 @courses.route('/config/', methods=['GET', 'POST'])

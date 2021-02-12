@@ -4,6 +4,8 @@ from datetime import datetime
 from natsort import natsorted
 
 from controllers import highlight_python_code
+from flask import request
+from werkzeug.urls import url_encode
 
 
 def attempt_json_load(data):
@@ -37,6 +39,15 @@ def from_friendly_date(date):
     return datetime.strptime(date, FRIENDLY_DATE_FORMAT)
 
 
+def modify_query(new_values):
+    args = request.args.copy()
+
+    for key, value in new_values.items():
+        args[key] = value
+
+    return '{}?{}'.format(request.path, url_encode(args))
+
+
 def setup_jinja_filters(app):
     app.jinja_env.filters['zip'] = zip
     app.jinja_env.filters['json_load'] = attempt_json_load
@@ -46,3 +57,4 @@ def setup_jinja_filters(app):
     app.jinja_env.filters['highlight_python_code'] = highlight_python_code
     app.jinja_env.filters['to_friendly_date'] = to_friendly_date
     app.jinja_env.filters['from_friendly_date'] = from_friendly_date
+    app.jinja_env.filters['modify_query'] = modify_query

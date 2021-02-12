@@ -211,3 +211,12 @@ class Course(Base):
         assignments = []
         submissions = []
         return assignments, submissions
+
+    def get_default_assignment(self):
+        """
+        For now, the default assignment URL is just the course URL appended with "_default"
+
+        :return:
+        """
+        default_assignment_url = self.url+"_default"
+        return models.Assignment.by_url(default_assignment_url)
