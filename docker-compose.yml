@@ -1,0 +1,41 @@
+version: '3.7'
+
+services:
+  web:
+    build: ./
+    command: gunicorn --bind 0.0.0.0:8888 manage:app
+    volumes:
+      - ./:/usr/src/app
+      - static_volume:/usr/src/app/static
+      - certs_volume:/usr/src/app/certs
+      - logs_volume:/user/src/apps/logs
+      - backups_volume:/user/src/apps/backups
+    expose:
+      - 8888
+    depends_on:
+      - "db"
+    env_file:
+      - ./conf/.env.dev
+  db:
+    image: postgres:12-alpine
+    restart: always
+    env_file:
+      - ./conf/.env.dev.db
+      # Where our data will be persisted
+    volumes:
+      - blockpy_db:/var/lib/postgresql/data/
+  nginx:
+    build: ./conf/nginx
+    volumes:
+      - static_volume:/usr/src/app/static
+    ports:
+      - 8888:80
+    depends_on:
+      - web
+# Names our volume
+volumes:
+  blockpy_db:
+  static_volume:
+  certs_volume:
+  logs_volume:
+  backups_volume:
