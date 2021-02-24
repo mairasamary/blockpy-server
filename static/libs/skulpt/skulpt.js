@@ -17640,6 +17640,7 @@ Sk.builtin.BaseException = Sk.abstr.buildNativeClass("BaseException", {
         this.traceback = [];
         // TODO: Hack, this exception isn't guaranteed to be thrown!
         this.err = Sk.err;
+        this.feedback = Sk.builtin.none.none$;
         this.__cause__ = Sk.builtin.none.none$;
         this.__context__ = Sk.builtin.none.none$;
         this.__suppress_context__ = Sk.builtin.none.none$;
@@ -17699,6 +17700,10 @@ Sk.builtin.BaseException = Sk.abstr.buildNativeClass("BaseException", {
         __cause__: {
             $get: function () { return this.__cause__; },
             $set: function(v) { this.__cause__ = v; }
+        },
+        feedback: {
+            $get: function () { return this.feedback; },
+            $set: function(v) { this.feedback = v; }
         },
         __context__: {
             $get: function () { return this.__context__; },
@@ -34556,8 +34561,8 @@ Sk.builtin.type.prototype.__class_getitem__ = function(self, key) {
 var Sk = {}; // jshint ignore:line
 
 Sk.build = {
-    githash: "0a351000a90b3364eb10b81f0f28101889e6a69c",
-    date: "2021-01-16T19:06:05.298Z"
+    githash: "dc70288aedcd7670605ef28f8525546440b39f93",
+    date: "2021-02-24T17:14:18.436Z"
 };
 
 /**
