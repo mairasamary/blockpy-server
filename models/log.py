@@ -129,12 +129,12 @@ class Log(Base):
         logs = Log.query.filter_by(course_id=course_id)
         # JUst need to refactor this to allow lists
         if assignment_id is not None:
-            if ',' in assignment_id:
+            if isinstance(assignment_id, str) and ',' in assignment_id:
                 logs = logs.filter(Log.assignment_id.in_([int(a) for a in assignment_id.split(",")]))
             else:
                 logs = logs.filter_by(assignment_id=assignment_id)
         if user_id is not None:
-            if ',' in user_id:
+            if isinstance(user_id, str) and ',' in user_id:
                 logs = logs.filter(Log.subject_id.in_([int(a) for a in user_id.split(",")]))
             else:
                 logs = logs.filter_by(subject_id=user_id)
