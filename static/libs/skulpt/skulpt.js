@@ -12135,8 +12135,9 @@ Compiler.prototype.annotateSource = function (ast, shouldStep) {
         let isDocstring = !!(ast.constructor === Sk.astnodes.Expr &&
                              ast.value.constructor === Sk.astnodes.Str);
         // Do not trace the standard library
-        if (shouldStep && (!this.filename ||
-            !this.filename.startsWith("src/lib/"))) {
+        if (shouldStep && (!this.filename
+          //  || !this.filename.startsWith("src/lib/")
+        )) {
             out("\n$currLineNo=", lineno, ";$currColNo=", col_offset, ";");
             // TODO: Make filename a module-global, and update it via that quickly.
             // JSON.stringify(sourceLine)
@@ -34562,7 +34563,7 @@ var Sk = {}; // jshint ignore:line
 
 Sk.build = {
     githash: "dc70288aedcd7670605ef28f8525546440b39f93",
-    date: "2021-02-24T17:14:18.436Z"
+    date: "2021-03-10T19:48:25.280Z"
 };
 
 /**
