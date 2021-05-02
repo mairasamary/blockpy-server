@@ -30,6 +30,7 @@ class SubmissionStatuses:
 
     VALID_CHOICES = (STARTED, IN_PROGRESS, SUBMITTED, COMPLETED)
 
+
 class GradingStatuses:
     FULLY_GRADED = 'FullyGraded'
     PENDING = 'Pending'
@@ -38,6 +39,7 @@ class GradingStatuses:
     NOT_READY = 'NotReady'
 
     VALID_CHOICES = (FULLY_GRADED, PENDING, PENDING_MANUAL, FAILED, NOT_READY)
+
 
 class Submission(Base):
     code = Column(Text(), default="")
@@ -92,7 +94,7 @@ class Submission(Base):
         try:
             extra_files = json.loads(self.extra_files)
             if isinstance(extra_files, dict):
-                extra_files = {k:v for k,v in extra_files.items()}
+                extra_files = {k: v for k, v in extra_files.items()}
             else:
                 extra_files = {f['filename']: f['contents'] for f in extra_files}
         except json.JSONDecodeError:

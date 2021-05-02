@@ -76,7 +76,7 @@ class Review(Base):
     EDITABLE_SETTINGS = ('comment', 'location', 'score', 'generic',
                          'tag_id', 'forked_id', 'forked_version')
 
-    def edit(self, data):
+    def edit(self, data, update_version=True):
         changes = False
         for key in self.EDITABLE_SETTINGS:
             if key in data:
@@ -85,6 +85,8 @@ class Review(Base):
                 setattr(self, key, new)
                 changes = changes or (old != new)
         if changes:
+            if update_version:
+                self.version += 1
             self.version += 1
         db.session.commit()
         return self
@@ -112,3 +114,4 @@ class Review(Base):
                 return 0
             else:
                 return forked.get_actual_score()
+

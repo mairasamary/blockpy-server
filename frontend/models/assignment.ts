@@ -15,6 +15,7 @@ export interface AssignmentJson extends ModelJson {
     hidden: boolean;
     public: boolean;
     ip_ranges: string;
+    points: number;
     settings: string;
 
     on_run: string;
@@ -42,6 +43,7 @@ export class Assignment extends Model<AssignmentJson> {
     public: KnockoutObservable<boolean>;
     ipRanges: KnockoutObservable<string>;
     settings: KnockoutObservable<string>;
+    points: KnockoutObservable<number>;
     onRun: KnockoutObservable<string>;
     onChange: KnockoutObservable<string>;
     onEval: KnockoutObservable<string>;
@@ -66,6 +68,7 @@ export class Assignment extends Model<AssignmentJson> {
         "hidden": "hidden",
         "public": "public",
         "ip_ranges": "ipRanges",
+        "points": "points",
         "settings": "settings",
         "on_run": "onRun",
         "on_change": "onChange",
@@ -123,6 +126,7 @@ export class AssignmentStore extends ModelStore<AssignmentJson, Assignment> {
             hidden: false,
             public: false,
             ip_ranges: "",
+            points: 1,
             settings: "",
             on_run: "",
             on_change: "",

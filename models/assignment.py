@@ -17,17 +17,20 @@ class Assignment(Base):
     url = Column(String(255), default=None, nullable=True)
 
     # Settings
-    TYPES = ['blockpy', 'maze']
+    TYPES = ['blockpy', 'maze', 'reading', 'quiz', 'typescript']
     type = Column(String(10), default="blockpy")
     instructions = Column(Text(), default="")
     # Should we suggest this assignment's submissions be reviewed manually?
     reviewed = Column(Boolean(), default=False)
     # Should we hide the current Complete status for submissions?
     hidden = Column(Boolean(), default=False)
-    # Should we allow users to see other user's submissions?
+    # Should we allow ANYONE to see this submission?
     public = Column(Boolean(), default=False)
     # Whitelist or blacklist IP address and address ranges
     ip_ranges = Column(Text(), default="")
+    # How many points is this assignment worth?
+    points = Column(Integer(), default=1)
+    # Completely open-ended settings, stored as JSON
     settings = Column(Text())
 
     # Code columns
@@ -45,6 +48,7 @@ class Assignment(Base):
     course_id = Column(Integer(), ForeignKey('course.id'))
     version = Column(Integer(), default=0)
 
+    # Relationships
     forked = db.relationship("Assignment")
     owner = db.relationship("User")
     course = db.relationship("Course")
@@ -65,6 +69,7 @@ class Assignment(Base):
             'reviewed': self.reviewed,
             'hidden': self.hidden,
             'public': self.public,
+            'points': self.points,
             'settings': self.settings,
             'ip_ranges': self.ip_ranges,
 
