@@ -50,6 +50,9 @@ app.register_blueprint(blueprint_external)
 from controllers.grading import blueprint_grading
 app.register_blueprint(blueprint_grading)
 
+from controllers.quizzes import blueprint_quizzes
+app.register_blueprint(blueprint_quizzes)
+
 from controllers.api import blueprint_api
 app.register_blueprint(blueprint_api)
 
