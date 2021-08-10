@@ -63,24 +63,24 @@
                     altAssignmentChangingFunction(id);
                 }
             }
-            $("#assignment-selector").change(function () {
+            $("#assignment-selector").off().change(function () {
                 loadNewAssignment();
             });
-            $("#assignment-selector-first").click(function () {
+            $("#assignment-selector-first").off().click(function () {
                 var original = $("#assignment-selector").val();
                 if (original != {{ sorted_group[0][0].id }}) {
                     $("#assignment-selector").val({{ sorted_group[0][0].id }});
                     loadNewAssignment();
                 }
             });
-            $("#assignment-selector-last").click(function () {
+            $("#assignment-selector-last").off().click(function () {
                 var original = $("#assignment-selector").val();
                 if (original != {{ sorted_group[-1][0].id }}) {
                     $("#assignment-selector").val({{ sorted_group[-1][0].id }});
                     loadNewAssignment();
                 }
             });
-            $("#assignment-selector-next").click(function () {
+            $("#assignment-selector-next").off().click(function () {
                 var current = $("#assignment-selector > option:selected");
                 var next = current.next('option');
                 if (next.length) {
@@ -89,7 +89,7 @@
                     loadNewAssignment();
                 }
             });
-            $("#assignment-selector-back").click(function () {
+            $("#assignment-selector-back").off().click(function () {
                 var current = $("#assignment-selector > option:selected");
                 var prev = current.prev('option');
                 if (prev.length) {

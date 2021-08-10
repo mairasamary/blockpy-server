@@ -64,7 +64,8 @@ class AssignmentGroupMembership(Base):
                 .all())
 
     @staticmethod
-    def move_assignment(assignment_id, new_group_id):
+    def move_assignment(assignment_id, new_group_id, position=0):
+        """ -1 for a new_group_id means delete """
         membership = (AssignmentGroupMembership.query
                       .filter_by(assignment_id=assignment_id)
                       .first())
@@ -72,11 +73,12 @@ class AssignmentGroupMembership(Base):
             # -1 means delete
             membership = AssignmentGroupMembership(assignment_group_id=new_group_id,
                                                    assignment_id=assignment_id,
-                                                   position=0)
+                                                   position=position)
             db.session.add(membership)
         elif new_group_id == -1:
             db.session.delete(membership)
         else:
             membership.assignment_group_id = new_group_id
+            membership.position = position
         db.session.commit()
         return membership

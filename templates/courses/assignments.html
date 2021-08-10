@@ -365,6 +365,9 @@ tr.hover-remove-rows a.view-button {
             <label for="assignment-name">Type:
             <select class="form-control" data-bind="value: createAssignmentType">
                 <option>BlockPy</option>
+                <option>Reading</option>
+                <option value="quiz">Quiz Question</option>
+                <option>TypeScript</option>
             </select></label>
         </div>
         <div class="form-group" data-bind="visible: createAssignmentType() != 'Maze'">

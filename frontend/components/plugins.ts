@@ -3,6 +3,8 @@ import * as CodeMirror from 'codemirror';
 import * as hljs from 'highlight.js';
 import * as select2 from 'select2';
 //import 'select2';
+import 'knockout-switch-case';
+import * as MarkdownIt from 'markdown-it';
 
 // Knockout codemirror binding handler
 ko.bindingHandlers.codemirror = {
@@ -46,6 +48,34 @@ ko.bindingHandlers.highlightedCode = {
         }
     }
 };
+
+export let md = new MarkdownIt({
+    html: true,
+    highlight: function (str, lang) {
+    if (lang && hljs.getLanguage(lang)) {
+      try {
+          // @ts-ignore
+          return hljs.highlight(str, { language: lang }).value;
+      } catch (__) {}
+    }
+
+    return ''; // use external default escaping
+  }
+});
+
+ko.bindingHandlers.markdowned = {
+    update: function (element, valueAccessor) {
+        let code = ko.unwrap(valueAccessor());
+        element.innerHTML = md.render(code);
+        let codeBlocks = element.querySelectorAll("pre code");
+        codeBlocks.forEach((block: HTMLElement) => hljs.highlightBlock(block));
+        //hljs.highlightBlock(element.querySelector("pre code"));
+        /*if (code.trim()) {
+            hljs.lineNumbersBlock(element.querySelector("pre code"));
+        }*/
+    }
+};
+
 
 /**
  * https://github.com/knockout/knockout/issues/416#issuecomment-4877853

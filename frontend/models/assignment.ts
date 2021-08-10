@@ -57,6 +57,7 @@ export class Assignment extends Model<AssignmentJson> {
     version: KnockoutObservable<number>;
 
     title: KnockoutReadonlyComputed<string>;
+    editUrl: KnockoutReadonlyComputed<string>;
     group: KnockoutObservable<AssignmentGroup|null>;
 
     FIELDS: TwoWayReadonlyMap = new TwoWayReadonlyMap({
@@ -95,6 +96,11 @@ export class Assignment extends Model<AssignmentJson> {
             } else {
                 return this.name();
             }
+        }, this);
+        this.editUrl = ko.pureComputed<string>(() => {
+            return window["$URL_ROOT"]+"/assignments/load/?" + (
+                this.url() ? `?assignment_url=${this.url()}`
+                    : `?assignment_id=${this.id}`);
         }, this);
     }
 }
@@ -147,8 +153,8 @@ export class AssignmentStore extends ModelStore<AssignmentJson, Assignment> {
     }
 
 
-    getAllAvailable() {
-        let payload = this.getPayload();
+    getAllAvailable(payload?: any) {
+        payload = payload || this.getPayload();
         let url = this.getUrl();
         return new Promise((resolve, reject) => {
             ajax_get(url, payload).then((data) => {

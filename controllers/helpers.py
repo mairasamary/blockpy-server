@@ -5,9 +5,6 @@ import os
 from urllib.parse import quote as url_quote, urlencode
 from functools import wraps
 
-from models.log import Log
-from models.submission import Submission
-
 from html.parser import HTMLParser
 
 from urllib.parse import unquote_plus, urlparse, parse_qsl, quote_plus, urlunparse, urlencode
@@ -30,6 +27,7 @@ from models.user import User
 from models.course import Course
 from models.assignment import Assignment
 from models.assignment_group import AssignmentGroup
+from models.log import Log
 
 
 def lti(request='any', *lti_args, **lti_kwargs):
@@ -135,10 +133,15 @@ def require_course_instructor(user, course_id):
     return True
 
 
-def require_course_grader(user, course_id):
+def require_course_grader(user, course_id, allow_fork=False):
     if not user.is_grader(course_id):
+        if allow_fork and user.is_grader(allow_fork):
+            message = ('You are not a grader (course ID {}), but you can fork this question for your own course'
+                       ' (course ID {}).').format(course_id, allow_fork)
+            abort(make_response(jsonify(success=False, message=message, forkable=True), 200))
+            return False
         message = 'You are not a grader (course ID {}).'.format(course_id)
-        abort(make_response(jsonify(success=False, message=message), 200))
+        abort(make_response(jsonify(success=False, message=message, forkable=False), 200))
         return False
     return True
 
@@ -269,7 +272,8 @@ def parse_assignment_load():
         # Check for any IP locked assignments
         for assignment in assignments:
             if not assignment.is_allowed(request.remote_addr):
-                return abort(403, "You cannot access this assignment from your current location: "+request.remote_addr)
+                return abort(403,
+                             "You cannot access this assignment from your current location: " + request.remote_addr)
     # Check passcode
     passcode_protected = False
     for assignment in assignments:
@@ -446,3 +450,4 @@ def make_log_entry(assignment_id, assignment_version, course_id, user_id,
     timezone = request.values.get('timezone') if timezone is None else timezone
     return Log.new(assignment_id, assignment_version, course_id, user_id,
                    event_type, file_path, category, label, message, timestamp, timezone)
+

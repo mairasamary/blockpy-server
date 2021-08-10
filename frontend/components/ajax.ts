@@ -1,6 +1,7 @@
 
 declare global {
     var $URL_ROOT: string;
+    var $MAIN_BLOCKPY_EDITOR: any;
 }
 
 export function ajax_get(url: string, data: any) {

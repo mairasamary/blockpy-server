@@ -38,11 +38,13 @@ blueprint_assignments = Blueprint('assignments', __name__, url_prefix='/assignme
 @lti(request='initial')
 def load(lti, lti_exception=None):
     editor_information = parse_assignment_load()
+
     # Use the proper template
-    if editor_information['assignments'] and editor_information['assignments'][0].type == 'maze':
-        return maze.load_editor(lti, editor_information)
-    else:
-        return blockpy.load_editor(lti, editor_information)
+    if editor_information['assignments']:
+        if editor_information['assignments'][0].type == 'maze':
+            return maze.load_editor(lti, editor_information)
+
+    return blockpy.load_editor(lti, editor_information)
 
 
 @blueprint_assignments.route('/new/', methods=['GET', 'POST'])
@@ -179,8 +181,9 @@ def get_assignments():
         groups = [a.AssignmentGroup.encode_json() if a.AssignmentGroup is not None else None for a in grouped_assignments]
     else:
         for assignment_id in assignment_ids.split(","):
-            if not assignment_id.isdigit():
+            if not assignment_id or not assignment_id.isdigit():
                 errors.append(f"Unknown Assignment ID: {assignment_id!r}")
+                continue
             assignment_id = int(assignment_id)
             # With Course Role Information
             assignment = Assignment.by_id(assignment_id)

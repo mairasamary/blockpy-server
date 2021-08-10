@@ -93,7 +93,8 @@ def import_endpoint():
     assignments = request.json.get('assignments', [])
     for assignment in assignments:
         assignment = Assignment.by_url(assignment['url'])
-        if not user.is_instructor(assignment.course_id):
+        if ((assignment and not user.is_instructor(assignment.course_id))
+                or (not assignment and not user.is_instructor(course_id))):
             return abort(400, "Not an instructor in this assignments' course.")
     groups = request.json.get('groups', [])
     for group in groups:

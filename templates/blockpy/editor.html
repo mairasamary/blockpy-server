@@ -47,6 +47,16 @@
         .secret-submission {
             background-color: #dde;
         }
+
+        reader h4 {
+            padding-top: 10px;
+            padding-bottom: 10px;
+        }
+
+        reader blockquote {
+            padding-right: 20px;
+            font-style: italic;
+        }
     </style>
 
 {% endblock %}
@@ -88,9 +98,48 @@
 
     <!-- Main BlockPy canvas -->
     <div id="blockpy-div" style='height:100%'></div>
+    <div id="extras-div" style="height: 100%">
+        <!-- ko if: assignmentType() == 'quiz' -->
+        <quizzer params="server: server,
+                         courseId: courseId,
+                         currentAssignmentId: currentQuizAssignmentId,
+                         assignmentGroupId: assignmentGroupId,
+                         user: user"></quizzer>
+        <!-- /ko -->
+        <!-- ko if: assignmentType() == 'reading' -->
+        <reader params="server: server,
+                        courseId: courseId,
+                        currentAssignmentId: currentReadingAssignmentId,
+                        assignmentGroupId: assignmentGroupId,
+                        user: user"></reader>
+        <!-- /ko -->
+    </div>
 
     <script>
+        const QUIZZES = {{ quiz_questions|tojson }};
+        const READINGS = {{ readings|tojson }};
+
         $(document).ready(function () {
+
+            // Load in Quiz interface
+            let loggedInUser = {{ user.encode_json()|tojson }};
+            server = new frontend.Server({{ course_id }}, {
+            }, {
+                users: [loggedInUser],
+                courses: []
+            });
+            mainModel = {
+                courseId: {{  course_id }},
+                server: server,
+                user: loggedInUser,
+                currentQuizAssignmentId: ko.observable(null),
+                currentReadingAssignmentId: ko.observable(null),
+                assignmentType: ko.observable(null),
+                assignmentGroupId: {{ (assignment_group_id or None)|tojson }},
+            }
+            ko.applyBindings(mainModel, $("#extras-div")[0]);
+
+            // Load in BlockPy interface
             editor = new blockpy.BlockPy({
                 // Configuration constants
                 'blockly.path': {{ url_for('static', filename='blockly/media/')|tojson }},
@@ -98,6 +147,8 @@
                 "urls": {
                     "importDatasets": {{ config['CORGIS_URL']|tojson }},
                     'loadAssignment': {{ url_for('blockpy.load_assignment')|tojson }},
+                    'instructionsAssignmentSetup': {{ url_for('courses.making_problems')|tojson }},
+                    'forkAssignment': {{ url_for('blockpy.fork_assignment')|tojson }},
                     {% if submissions %}
                         'saveAssignment': {{ url_for('blockpy.save_assignment')|tojson }},
                         'loadHistory': {{ url_for('blockpy.load_history')|tojson }},
@@ -136,19 +187,52 @@
                 {% endfor %}
             });
 
+            $MAIN_BLOCKPY_EDITOR = editor;
+
+            /* Passcode locking */
             {% if passcode_protected %}
             editor.requestPasscode();
             {% endif %}
 
+            // System for switching assignments
+            function loadAssignmentWrapper(id) {
+                id = parseInt(id, 10);
+                if (QUIZZES.includes(id) || READINGS.includes(id)) {
+                    editor.hide();
+                    //$("quizzer").show();
+                    //console.log(mainModel.currentAssignmentId(), mainModel.assignmentType());
+                    mainModel.assignmentType(QUIZZES.includes(id) ? 'quiz' : 'reading');
+                    if (QUIZZES.includes(id)) {
+                        mainModel.currentQuizAssignmentId(id);
+                        mainModel.currentReadingAssignmentId(null);
+                    } else {
+                        mainModel.currentReadingAssignmentId(id);
+                        mainModel.currentQuizAssignmentId(null);
+                    }
+                } else {
+                    //$("quizzer").hide();
+                    editor.show();
+                    editor.loadAssignment(id);
+                    mainModel.currentQuizAssignmentId(null);
+                    mainModel.currentReadingAssignmentId(null);
+                    mainModel.assignmentType(null);
+                }
+            }
+
+
+            // Load initial assignment
             {% if current_assignment_id is defined and current_assignment_id != None %}
-                editor.loadAssignment({{ current_assignment_id }});
-                altAssignmentChangingFunction = editor.loadAssignment.bind(editor);
+                loadAssignmentWrapper({{ current_assignment_id }});
+                //editor.loadAssignment({{ current_assignment_id }});
+                altAssignmentChangingFunction = loadAssignmentWrapper; //editor.loadAssignment.bind(editor);
             {% endif %}
 
+            // And/Or load assignment data explicitly passed in
             {% if assignment_data %}
                 editor.loadAssignmentData_({{ assignment_data|tojson }});
             {% endif %}
 
+            // Snippet that handles intelligent resizing
             {% if not embed %}
                 function fixCanvasSize() {
                     window.parent.postMessage(JSON.stringify({
@@ -180,7 +264,10 @@
                 }
             {% endif %}
 
+            // Remove the loading screen
             $('.delete-on-load').remove();
+
+
         });
     </script>
 

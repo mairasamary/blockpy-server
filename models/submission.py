@@ -11,6 +11,7 @@ from sqlalchemy.orm import relationship
 from main import app
 from models import models
 from models.assignment import Assignment
+from models.data_formats.quizzes import process_quiz_str
 from models.log import Log
 from models.models import Base, db, ensure_dirs, optional_encoded_field, datetime_to_string
 from models.review import Review
@@ -186,6 +187,8 @@ class Submission(Base):
                 return "Pending review"
             else:
                 return self.submission_status
+        elif self.score >= 100:
+            return f"Full Points ({self.score}%)"
         elif self.score:
             return "Incomplete ({}%)".format(self.score)
         else:
@@ -195,7 +198,8 @@ class Submission(Base):
         if self.assignment.reviewed:
             review_score = self.get_reviewed_scores()
             return (self.score + review_score) / 100.0
-        return float(self.correct) or self.score / 100.0
+        possible = self.assignment.get_points()
+        return (float(self.correct) or self.score / 100.0) * possible
 
 
     def get_reviewed_scores(self):
@@ -388,3 +392,47 @@ class Submission(Base):
     def get_meta_reviews():
         return [review.encode_json() for review in
                 Review.query.filter_by(generic=True).all()]
+
+    def regrade_if_quiz(self):
+        if self.assignment.type == "quiz":
+            # Try parsing both as JSON - report errors
+            return process_quiz_str(self.assignment.instructions, self.assignment.on_run, self.code)
+            """
+            try:
+                body = json.loads(self.assignment.instructions)
+                checks = json.loads(self.assignment.on_run)
+                student_answers = json.loads(self.code)
+            except json.JSONDecodeError as e:
+                return 0, 0, ["No JSON could be parsed: "+str(e)]
+            # Extract the requisite data within the objects
+            student_answers = student_answers.get('studentAnswers', {})
+            checks = checks.get('questions', {})
+            questions = body.get('questions', {})
+            # For each question in the on_run, run the evaluation criteria
+            total_score, total_points = 0, 0
+            total_correct = True
+            feedbacks = []
+            for question_id, question in questions.items():
+                student = student_answers.get(question_id, {})
+                check = checks.get(question_id, {})
+                points = question.get('points', 1)
+                score, correct, feedback = Submission.check_quiz_question(question, check, student)
+                total_score += score
+                total_points += points
+                total_correct = total_correct and correct
+                feedbacks.append(feedback)
+            # Report back the final score and feedback objects
+            return total_score/total_points, total_correct, feedbacks
+            """
+        return False
+
+    @staticmethod
+    def check_quiz_question(question, check, student) -> (float, bool, list):
+        if question.get('type') == 'matching_question':
+            print(student, check.get('correct', []))
+            corrects = [student_part == correct_part
+                        for student_part, correct_part in zip(student, check.get('correct', []))]
+            feedbacks = [feedback.get(student_part)
+                         for student_part, feedback in zip(student, check.get('feedback', []))]
+            return sum(corrects)/len(corrects), all(corrects), feedbacks
+        return 0, True, ["Unknown Type: "+question.get('type')]

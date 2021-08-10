@@ -37,6 +37,8 @@ export class Server {
     reviewStore: ReviewStore;
     submissionStore: SubmissionStore;
 
+    isLoading: ko.PureComputed<boolean>;
+
     constructor(courseId: number, initialIds?: ServerIds, initialData?: ServerData) {
         this.courseId = courseId;
         this.userStore = new UserStore(this, courseId, initialIds.userIds, initialData.users);
@@ -45,6 +47,23 @@ export class Server {
         this.assignmentGroupStore = new AssignmentGroupStore(this, courseId, initialIds.assignmentGroupIds, initialData.assignmentGroups);
         this.reviewStore = new ReviewStore(this, courseId, initialIds.reviewIds, initialData.reviews);
         this.submissionStore = new SubmissionStore(this, courseId, initialIds.submissionIds, initialData.submissions);
+
+        this.isLoading = ko.pureComputed<boolean>(() => {
+            let a = this.assignmentStore.isLoading();
+            let u = this.userStore.isLoading();
+            let c = this.courseStore.isLoading();
+            let g = this.assignmentGroupStore.isLoading();
+            let r = this.reviewStore.isLoading();
+            let s = this.submissionStore.isLoading();
+            return a || u || c || g || r || s;
+        }, this);
+    }
+
+    makeBlockPyRequest(payload: any) {
+        let now = new Date();
+        payload['timestamp'] = now.getTime();
+        payload['timezone'] = now.getTimezoneOffset();
+        return payload;
     }
 
 }

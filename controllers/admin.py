@@ -40,19 +40,26 @@ class RegularView(ModelView):
 
 class UserView(RegularView):
     def _list_roles(view, context, model, name):
-        return Markup('<br>\n'.join(('{} in {}'.format(role.name,
-                                              Course.query.get(role.course_id).name
-                                              if role.course_id is not None else 'all courses')
-                            for role in model.roles.all())))
+        display_roles = []
+        for role in model.roles.all():
+            if role.course_id is None:
+                display_roles.append(f"{role.name} in all courses")
+                continue
+            course = Course.query.get(role.course_id)
+            if course is None:
+                display_roles.append(f"{role.name} in Course ID {role.course_id} (Missing course?)")
+                continue
+            display_roles.append(f"{role.name} in {course.name}")
+        return Markup('<br>\n'.join(display_roles))
 
     column_hide_backrefs = False
     column_formatters = {'roles': _list_roles}
-    form_excluded_columns = ('password','assignments','authentications', 'roles')
+    form_excluded_columns = ('password', 'assignments', 'authentications', 'roles')
     column_exclude_list = ('password', 'proof')
     column_display_pk = True
     column_searchable_list = ('first_name', 'last_name', 'email')
     column_list = ('id', 'first_name', 'last_name', 'email', 'active', 'roles')
-    column_filters = ('first_name', 'last_name', 'email')
+    column_filters = ('id', 'first_name', 'last_name', 'email')
 
 
 class ModelIdView(RegularView):
@@ -98,6 +105,7 @@ def _render_settings(view, context, model, name):
     body += "</pre>"
     return Markup(body)
 
+
 SHRUNK_STYLE = "style='max-height:10em;overflow:auto'"
 
 
@@ -114,9 +122,9 @@ def _render_assignment_settings(view, context, model, name):
     instructions = "<div {}>".format(SHRUNK_STYLE) + model.instructions + "</div>"
     on_run = "<pre {}>".format(SHRUNK_STYLE) + model.on_run + "</pre>"
     starting_code = "<pre {}>".format(SHRUNK_STYLE) + model.starting_code + "</pre>"
-    return Markup( (instructions if model.instructions else "" )+
-                   (on_run if model.on_run else "") +
-                   (starting_code if model.starting_code else ""))
+    return Markup((instructions if model.instructions else "") +
+                  (on_run if model.on_run else "") +
+                  (starting_code if model.starting_code else ""))
 
 
 def _render_assignment_type(view, context, model, name):
@@ -128,9 +136,10 @@ def _render_version(view, context, model, name):
     body += "<p>A: {}</p>".format(model.assignment_version)
     return Markup(body)
 
+
 def _render_assignment_name(view, context, model, name):
-    return Markup((model.name if model.name else "")+
-                  "<br><br>"+
+    return Markup((model.name if model.name else "") +
+                  "<br><br>" +
                   (model.url if model.url else ""))
 
 
@@ -146,13 +155,14 @@ class RoleView(RegularView):
     column_sortable_list = ('id', 'date_created', 'name', 'user_id', 'course_id')
     column_formatters = {'user_id': _id(User),
                          'course_id': _id(Course)}
-    #form_columns = ('name', 'user_id', 'course_id')
+    column_filters = ('id', 'date_created', 'name', 'user_id', 'course_id')
+    # form_columns = ('name', 'user_id', 'course_id')
 
 
 def _render_course_service(view, context, model, name):
-    return Markup(model.service+"<br>"+
-                  (model.external_id+"<br>" if model.external_id else "")+
-                  (model.endpoint+"<br>" if model.endpoint else ""))
+    return Markup(model.service + "<br>" +
+                  (model.external_id + "<br>" if model.external_id else "") +
+                  (model.endpoint + "<br>" if model.endpoint else ""))
 
 
 class CourseView(RegularView):
@@ -170,8 +180,8 @@ class CourseView(RegularView):
     settings = Column(Text(), default="")'''
     column_list = ('id', 'date_modified', 'name', 'url', 'owner_id',
                    'service', 'visibility', 'term', 'settings')
-    column_searchable_list = ('name', 'url')
-    column_filters = ('name', 'date_modified', 'url', 'term', 'owner_id', 'service')
+    column_searchable_list = ('id', 'name', 'url')
+    column_filters = ('id', 'name', 'date_modified', 'url', 'term', 'owner_id', 'service')
     column_formatters = {'service': _render_course_service}
 
 
@@ -179,20 +189,20 @@ class AssignmentView(RegularView):
     can_export = True
     column_list = ('id', 'date_modified',
                    'owner_id', 'course_id',
-                   'name',  #"url", # 'type', #'body',
+                   'name',  # "url", # 'type', #'body',
                    'on_run',  # 'starting_code',
                    'reviewed', 'hidden',
                    # 'visibility', 'disabled',
                    # 'mode',
                    'version'
                    )
-    column_searchable_list = ('name', 'instructions')
+    column_searchable_list = ('name', 'url', 'instructions')
     form_widget_args = {
         'description': {
             'style': 'width: 25%'
         }
     }
-    column_filters = ('name', 'on_run', 'course_id', 'url', 'instructions', 'reviewed', 'hidden', 'public')
+    column_filters = ('id', 'name', 'on_run', 'course_id', 'url', 'instructions', 'reviewed', 'hidden', 'public')
     column_formatters = {'name': _render_assignment_name,
                          # 'type': _render_assignment_type,
                          'on_run': _render_assignment_settings  # _render_code,
@@ -202,12 +212,14 @@ class AssignmentView(RegularView):
 
 class AssignmentGroupView(RegularView):
     can_export = True
+
     def _list_assignments(view, context, model, name):
         assignments = model.get_assignments()
         if assignments and assignments[0].type == 'maze':
-            return Markup("Levels: "+(', '.join((assignment.name for assignment in assignments))))
+            return Markup("Levels: " + (', '.join((assignment.name for assignment in assignments))))
         return Markup("<ol>{}</ol>".format(
             '\n'.join(("<li>{}</li>".format(assignment.name) for assignment in assignments))))
+
     column_list = ('id', 'date_modified',
                    'owner_id', 'course_id',
                    'name', 'url', 'assignments'
@@ -217,14 +229,15 @@ class AssignmentGroupView(RegularView):
 
 
 class LogView(RegularView):
-    can_export=True
+    can_export = True
     column_list = ('id', 'date_modified',
                    'course_id', 'assignment_id', 'subject_id',
                    'event_type', 'category',
                    'label', 'message'
                    )
     column_formatters = {'message': _render_code}
-    column_filters = ('course_id', 'assignment_id', 'subject_id', 'event_type', 'category', 'label', 'message')
+    column_filters = ('id', 'date_modified',
+                      'course_id', 'assignment_id', 'subject_id', 'event_type', 'category', 'label', 'message')
 
 
 class AssignmentGroupMembershipView(RegularView):
@@ -233,8 +246,8 @@ class AssignmentGroupMembershipView(RegularView):
                    'assignment_group_id', 'assignment_id',
                    'position'
                    )
-    #form_columns = ('assignment_group_id', 'assignment_id', 'position')
-    column_filters = ('assignment_id', 'assignment_group_id')
+    # form_columns = ('assignment_group_id', 'assignment_id', 'position')
+    column_filters = ('id', 'date_modified', 'assignment_id', 'assignment_group_id')
     column_formatters = {'user_id': _editable(User, 'id'),
                          'course_id': _editable(Course, 'id')}
 
@@ -285,7 +298,7 @@ class SubmissionView(RegularView):
                    "submission_status", "grading_status",
                    'version', 'url'
                    )
-    column_filters = ('user_id', 'assignment_id', 'course_id',
+    column_filters = ('id', 'user_id', 'assignment_id', 'course_id',
                       'date_modified', 'correct', 'submission_status', 'grading_status')
     column_formatters = {'code': _render_code, 'endpoint': _smaller,
                          'version': _render_version}

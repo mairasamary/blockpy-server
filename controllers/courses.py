@@ -187,10 +187,17 @@ def users():
 @courses.route('/manage_assignments/<course_id>', methods=['GET', 'POST'])
 @login_required
 def manage_assignments(course_id):
-    if not g.user.in_course(course_id):
+    user, user_id = get_user()
+    if not user.in_course(course_id):
         flash("You are not in course_id")
         return redirect(url_for('courses.index'))
-    return render_template('courses/manage_assignments.html', course_id=course_id)
+    course = Course.by_id(course_id)
+    if user.is_instructor(course_id):
+        flash(f"You are not an instructor in course: {course_id}")
+        return redirect(url_for("courses.index"))
+    return render_template('courses/manage_assignments.html',
+                           course_id=course_id, user=user, course=course)
+
 
 @courses.route('/manage_assignments/get/', methods=['GET'])
 @courses.route('/manage_assignments/get', methods=['GET'])

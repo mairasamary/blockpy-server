@@ -67,7 +67,8 @@ export abstract class ModelStore<J extends ModelJson, T extends Model<J>> {
     protected courseId: number|null;
 
     private timer: number;
-    private delayedData: T[];
+    private readonly delayedData: ko.ObservableArray<T>;
+    isLoading: ko.PureComputed<boolean>;
 
     protected readonly server: Server;
 
@@ -75,7 +76,7 @@ export abstract class ModelStore<J extends ModelJson, T extends Model<J>> {
         this.data = {};
         this.server = server;
         this.courseId = courseId;
-        this.delayedData = [];
+        this.delayedData = ko.observableArray([]);
         this.timer = null;
         if (initialData !== undefined) {
             initialData.map((instance: J) => this.newInstance(instance));
@@ -83,6 +84,10 @@ export abstract class ModelStore<J extends ModelJson, T extends Model<J>> {
         if (initialIds !== undefined) {
             initialIds.map((id: number) => this.getInstance(id));
         }
+
+        this.isLoading = ko.pureComputed(() => {
+            return this.delayedData().length > 0;
+        }, this);
     }
 
     getInstance(id: number): T {
@@ -103,9 +108,9 @@ export abstract class ModelStore<J extends ModelJson, T extends Model<J>> {
     }
 
     queueFinishDelay() {
-        if (this.delayedData.length > 25) {
+        if (this.delayedData().length > 25) {
             this.finishDelayedLoads();
-        } else if (this.delayedData.length > 0) {
+        } else if (this.delayedData().length > 0) {
             this.timer = window.setTimeout(this.finishDelayedLoads.bind(this), 1000);
         }
     }
@@ -119,8 +124,10 @@ export abstract class ModelStore<J extends ModelJson, T extends Model<J>> {
         return Object.keys(this.data).map((key: number) => this.data[key]);
     }
 
-    getAllAvailable() {
-        let payload = this.getPayload();
+    getAllAvailable(payload?: object) {
+        if (payload === undefined) {
+            payload = this.getPayload();
+        }
         let url = this.getUrl();
         return new Promise((resolve, reject) => {
             ajax_get(url, payload).then((data) => {
@@ -173,7 +180,7 @@ export abstract class ModelStore<J extends ModelJson, T extends Model<J>> {
     finishDelayedLoads() {
         let payload = this.getPayload();
         let url = this.getUrl();
-        this.delayedData.length= 0;
+        //this.delayedData().length= 0;
         return ajax_get(url, payload).then((data) => {
            if (data.success) {
                let results = data[this.GET_FIELD];
@@ -189,11 +196,11 @@ export abstract class ModelStore<J extends ModelJson, T extends Model<J>> {
     }
 
     protected getDelayedIds(): number[] {
-        return this.delayedData.map((instance: T) => instance.id);
+        return this.delayedData().map((instance: T) => instance.id);
     }
 
     removeDelayedInstances(ids: number[]) {
-        this.delayedData = this.delayedData.filter((delayedInstance: T) => !ids.includes(delayedInstance.id));
+        this.delayedData(this.delayedData().filter((delayedInstance: T) => !ids.includes(delayedInstance.id)));
         this.queueFinishDelay();
     }
 }

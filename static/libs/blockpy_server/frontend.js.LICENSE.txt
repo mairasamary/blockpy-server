@@ -1,0 +1,6 @@
+/**
+ * @license SWITCH/CASE binding for Knockout http://knockoutjs.com/
+ * (c) Michael Best
+ * License: MIT (http://www.opensource.org/licenses/mit-license.php)
+ * Version 2.1.0
+ */

@@ -13,7 +13,19 @@ Courses: Assignments
 <script type='text/javascript'>
 
     $().ready(function() {
-        ko.applyBindings();
+        let loggedInUser = {{ user.encode_json()|tojson }};
+        let course = {{ course.encode_json()|tojson }};
+        server = new frontend.Server([], {
+        }, {
+            users: [loggedInUser],
+            courses: [course]
+        });
+        mainModel = {
+            course: server.courseStore.getInstance(course.id),
+            server: server,
+            user: server.userStore.getInstance(loggedInUser.id)
+        }
+        ko.applyBindings(mainModel);
     });
 
 </script>
@@ -24,6 +36,9 @@ Courses: Assignments
     <h1>Manage Assignments</h1>
     {{ navigation.navigate_course() }}
 
-    <div data-bind="component: 'group-list'"></div>
+    <assignment-manager params="server: server,
+                                course: course,
+                                user: user"></assignment-manager>
+
 
 {% endblock %}

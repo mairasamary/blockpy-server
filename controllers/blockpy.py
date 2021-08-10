@@ -132,7 +132,15 @@ def load_editor(lti, editor_information):
     :param editor_information:
     :return:
     '''
-    return render_template('blockpy/editor.html', lti=lti, ip=request.remote_addr, **editor_information)
+    quiz_questions, readings = [], []
+    for assignment in editor_information['assignments']:
+        if assignment.type == 'quiz':
+            quiz_questions.append(assignment.id)
+        elif assignment.type == 'reading':
+            readings.append(assignment.id)
+    return render_template('blockpy/editor.html', lti=lti, ip=request.remote_addr,
+                           quiz_questions=quiz_questions, readings=readings,
+                           **editor_information)
 
 
 @blueprint_blockpy.route('/load_assignment/', methods=['GET', 'POST'])
@@ -146,15 +154,17 @@ def load_assignment(lti=lti):
     course_id = get_course_id(True)
     user, user_id = get_user()
     force_download = maybe_bool(request.values.get('force_download', "false"))
+    force_quiz = maybe_bool(request.values.get("force_quiz", "false"))
     # Verify exists
     check_resource_exists(assignment, "Assignment", assignment_id)
     # Verify permissions
     if user_id != student_id and not user.is_grader(course_id):
         return ajax_failure("Only graders can see submissions for other people.")
+    is_quiz = force_quiz or (assignment.type == 'quiz' and not user.is_grader(course_id))
     if course_id is None:
-        editor_information = assignment.for_read_only_editor(student_id)
+        editor_information = assignment.for_read_only_editor(student_id, is_quiz)
     else:
-        editor_information = assignment.for_editor(student_id, course_id)
+        editor_information = assignment.for_editor(student_id, course_id, is_quiz)
         browser_info = json.dumps({
             'platform': request.user_agent.platform,
             'browser': request.user_agent.browser,
@@ -173,6 +183,7 @@ def load_assignment(lti=lti):
     # Verify passcode, if necessary
     if assignment.passcode_fails(request.values.get('passcode')):
         return ajax_failure("Passcode {!r} rejected".format(request.values.get("passcode")))
+
     if force_download:
         student_filename = User.by_id(student_id).get_filename("")
         filename = assignment.get_filename("") + "_"+student_filename+'_submission.json'
@@ -233,7 +244,7 @@ def save_instructor_file(course_id, user, filename):
     check_resource_exists(assignment, "Assignment", assignment_id)
     # Verify permissions
     if assignment.owner_id != user.id:
-        require_course_grader(user, assignment.course_id)
+        require_course_grader(user, assignment.course_id, allow_fork=course_id)
     # Perform update
     assignment.save_file(filename, code)
     make_log_entry(assignment_id, assignment.version, course_id, user.id,
@@ -296,7 +307,7 @@ def get_groups_submissions(group_id, user_id, course_id):
 
 def calculate_submissions_score(assignments, submissions):
     total_score = sum(submission.full_score() for submission in submissions)
-    total_possible = len(assignments)
+    total_possible = sum(assignment.get_points() for assignment in assignments)
     return total_score, total_possible
 
 
@@ -405,6 +416,12 @@ def update_submission(lti, lti_exception=None):
     # Verify permissions
     if submission.user_id != user_id and not user.is_grader(submission.course_id):
         return ajax_failure("This is not your submission and you are not a grader in its course.")
+    # If quiz, then update the settings
+    quiz = submission.regrade_if_quiz()
+    if quiz:
+        score, correct, feedbacks, corrects = quiz
+    else:
+        feedbacks, corrects = {}, {}
     # Do action
     was_changed = submission.update_submission(score, correct)
     if assignment_group_id is None:
@@ -427,8 +444,10 @@ def update_submission(lti, lti_exception=None):
             submission.update_grading_status(GradingStatuses.FAILED)
             make_log_entry(submission.assignment_id, submission.assignment_version,
                            course_id, user_id, "X-Submission.LMS.Failure", "answer.py", message=error)
-            return ajax_failure({"submitted": False, "changed": was_changed, "message": error})
-    return ajax_success({"submitted": was_changed or force_update, "changed": was_changed})
+            return ajax_failure({"submitted": False, "changed": was_changed,
+                                 "message": error, "feedbacks": feedbacks, "corrects": corrects})
+    return ajax_success({"submitted": was_changed or force_update, "changed": was_changed,
+                         "feedbacks": feedbacks, "corrects": corrects})
 
 
 @blueprint_blockpy.route('/update_submission_status/', methods=['GET', 'POST'])
@@ -525,7 +544,18 @@ def save_assignment(lti=lti):
     check_resource_exists(assignment, "Assignment", assignment_id)
     # Verify permissions
     if assignment.owner_id != user.id:
-        require_course_grader(user, assignment.course_id)
+        # TODO: New workflow for "Forking" the assignment
+        """It looks like you want to edit this assignment, but you are not an instructor
+        or designer in the course that owns it ("Course Name"). Would you like to fork
+        this assignment (or its entire group) so that you can save your modifications?
+        
+        You will need to update the Launch URL in the assignments' settings on Canvas!
+        ([How do I do that?])
+        
+        [Fork just this assignment]
+        [Fork entire assignment group]
+        [Cancel]"""
+        require_course_grader(user, assignment.course_id, allow_fork=course_id)
     # Parse new settings
     updates = {}
     if "hidden" in request.values:
@@ -712,3 +742,47 @@ def list_urls():
     course_id = maybe_int(request.values.get('course_id'))
     # Do action
     return jsonify(success=True, urls=Assignment.list_urls(partial)[:5])
+
+
+@blueprint_blockpy.route('/fork_assignment/', methods=['GET', 'POST'])
+@blueprint_blockpy.route('/fork_assignment', methods=['GET', 'POST'])
+@login_required
+def fork_assignment(lti=lti):
+    assignment_id = request.values.get('assignment_id')
+    assignment_group_id = request.values.get('assignment_group_id')
+    if assignment_id is None and assignment_group_id is None:
+        return ajax_failure("No Assignment or Assignment Group ID given!")
+    user, user_id = get_user()
+    course_id = get_course_id()
+    updated_settings = request.values.get('updated_settings', '')
+    transfer_submissions = maybe_bool(request.values.get('transfer_submissions', False))
+    # Verify permissions: They only need to be an instructor in this course
+    require_course_instructor(user, course_id)
+    # Load and verify resources
+    if assignment_group_id:
+        group = AssignmentGroup.query.get(assignment_group_id)
+        check_resource_exists(group, "AssignmentGroup", assignment_group_id)
+        # Create forked group, assignment, memberships
+        new_group, new_assignments = group.fork()
+    else:
+        assignment = Assignment.query.get(assignment_id)
+        check_resource_exists(assignment, "Assignment", assignment_id)
+        # Create forked assignment, set it as target
+        new_assignments = [assignment.fork(user_id, course_id)]
+    # Transfer all submissions, if desired
+    if transfer_submissions:
+        for new_assignment in new_assignments:
+            # TODO: Need old assignment IDs
+            submission = Submission.by_assignment(new_assignment.id, course_id)
+            submission.edit({'assignment_id': new_assignment.id})
+            # TODO: Also need to grab this for Log, Review
+    # TODO: Parse updated settings for the assignment_id, if it's not None
+
+    # TODO: Perform update
+    modified = assignment.edit(updates)
+    # TODO: Log
+    make_log_entry(assignment.id, assignment.version,
+                   course_id or assignment.course_id,
+                   user.id, "X-Instructor.Settings.Edit", "assignment_settings.blockpy",
+                   message=json.dumps(updates))
+    return ajax_success({"modified": modified})

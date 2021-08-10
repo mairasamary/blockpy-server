@@ -1,6 +1,7 @@
 import json
 from datetime import datetime
 import os
+import re
 
 from main import app
 
@@ -17,6 +18,15 @@ relationship = db.relationship
 backref = db.backref
 
 migrate = Migrate(app, db)
+
+
+def make_copy(url):
+    ending = re.search(r"(.*)_copy(\d+)$", url)
+    if not ending:
+        return url+"_copy1"
+    else:
+        original, iteration = ending.group(1), int(ending.group(2))
+        return f"{original}_copy{iteration+1}"
 
 
 def datetime_to_string(a_datetime):

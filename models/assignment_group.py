@@ -4,7 +4,7 @@ from natsort import natsorted
 from werkzeug.utils import secure_filename
 
 from models import models
-from models.models import Base, datetime_to_string, string_to_datetime, db
+from models.models import Base, datetime_to_string, string_to_datetime, db, make_copy
 from typing import List
 
 
@@ -69,6 +69,25 @@ class AssignmentGroup(Base):
         AssignmentGroup.query.filter_by(id=assignment_group_id).delete()
         models.AssignmentGroupMembership.query.filter_by(assignment_group_id=assignment_group_id).delete()
         db.session.commit()
+
+    def fork(self, new_owner_id: int, new_course_id: int):
+        group = AssignmentGroup(name=self.name,
+                                url=make_copy(self.url),
+                                forked_id=self.id,
+                                forked_version=self.version,
+                                owner_id=new_owner_id,
+                                course_id=new_course_id,
+                                position=self.position,
+                                version=0)
+        # TODO: Copy tags, sample_submissions, submissions
+        db.session.add(group)
+        db.session.commit()
+        assignments = []
+        for assignment in self.get_assignments():
+            new_assignment = assignment.fork(new_owner_id, new_course_id)
+            models.AssignmentGroupMembership.move_assignment(new_assignment.id, group.id)
+            assignments.append(new_assignment)
+        return group, assignments
 
     @staticmethod
     def is_in_course(assignment_group_id, course_id):

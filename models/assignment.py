@@ -9,7 +9,7 @@ from sqlalchemy import Column, String, Text, DateTime, Integer, ForeignKey, JSON
 from werkzeug.utils import secure_filename
 
 from models import models
-from models.models import Base, datetime_to_string, string_to_datetime, db, optional_encoded_field
+from models.models import Base, datetime_to_string, string_to_datetime, db, optional_encoded_field, make_copy
 
 
 class Assignment(Base):
@@ -102,6 +102,15 @@ class Assignment(Base):
     BUILTIN_MODULES = 'Properties,Decisions,Iteration,Calculation,Output,Values,Lists,Dictionaries,Separator,Input,Conversion'.split(
         ',')
 
+    def encode_quiz_json(self):
+        assignment = self.encode_json()
+        assignment['on_run'] = ""
+        assignment['on_change'] = ""
+        assignment['on_eval'] = ""
+        assignment['extra_instructor_files'] = ""
+        assignment['extra_starting_files'] = ""
+        return assignment
+
     def to_dict(self):
         return {
             'name': self.name,
@@ -124,6 +133,11 @@ class Assignment(Base):
             return secure_filename(self.url) + extension
         else:
             return secure_filename(self.name) + extension
+
+    def get_points(self):
+        if self.points is None:
+            return 1
+        return self.points
 
     @staticmethod
     def get_available():
@@ -215,18 +229,18 @@ class Assignment(Base):
     def load(self, user_id, course_id):
         return models.Submission.get_submission(self.id, user_id, course_id)
 
-    def for_read_only_editor(self, user_id):
+    def for_read_only_editor(self, user_id, is_quiz):
         return {
-            'assignment': self.encode_json(),
+            'assignment': self.encode_json() if not is_quiz else self.encode_quiz_json(),
             'submission': None
         }
 
-    def for_editor(self, user_id, course_id):
+    def for_editor(self, user_id, course_id, is_quiz):
         # Trust the user for now that they belong here, and give them a submission
         submission = (None if user_id is None else
                       self.load_or_new_submission(user_id, course_id).encode_json())
         return {
-            'assignment': self.encode_json(),
+            'assignment': self.encode_json() if not is_quiz else self.encode_quiz_json(),
             'submission': submission,
         }
 
@@ -253,6 +267,33 @@ class Assignment(Base):
             self.extra_starting_files = code
         self.version += 1
         db.session.commit()
+
+    def fork(self, new_owner_id: int, new_course_id: int):
+        assignment = Assignment(name=self.name,
+                                url=make_copy(self.url),
+                                type=self.type,
+                                instructions=self.instructions,
+                                reviewed=self.reviewed,
+                                hidden=self.hidden,
+                                public=self.public,
+                                ip_ranges=self.ip_ranges,
+                                points=self.points,
+                                settings=self.settings,
+                                on_run=self.on_run,
+                                on_change=self.on_change,
+                                on_eval=self.on_eval,
+                                starting_code=self.starting_code,
+                                extra_starting_files=self.extra_starting_files,
+                                extra_instructor_files=self.extra_instructor_files,
+                                forked_id=self.id,
+                                forked_version=self.version,
+                                owner_id=new_owner_id,
+                                course_id=new_course_id,
+                                version=0)
+        # TODO: Copy tags, sample_submissions, submissions
+        db.session.add(assignment)
+        db.session.commit()
+        return assignment
 
     def is_allowed(self, ip):
         """
