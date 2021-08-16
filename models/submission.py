@@ -400,9 +400,9 @@ class Submission(Base):
             # If we graded successfully, attach the feedback to the submission body
             if feedback.get("*", {}).get('status') != 'error':
                 student['feedback'] = feedback
-            self.code = json.dumps(student)
-            self.version += 1
-            db.session.commit()
+                self.code = json.dumps(student)
+                self.version += 1
+                db.session.commit()
             # And return the information
             return score, correct, feedback
         return False
