@@ -419,9 +419,9 @@ def update_submission(lti, lti_exception=None):
     # If quiz, then update the settings
     quiz = submission.regrade_if_quiz()
     if quiz:
-        score, correct, feedbacks, corrects = quiz
+        score, correct, feedbacks = quiz
     else:
-        feedbacks, corrects = {}, {}
+        feedbacks = {}
     # Do action
     was_changed = submission.update_submission(score, correct)
     if assignment_group_id is None:
@@ -433,7 +433,7 @@ def update_submission(lti, lti_exception=None):
         error = "Generic LTI Failure - perhaps not logged into LTI session?"
         try:
             success, score = lti_post_grade(lti, submission, lis_result_sourcedid, assignment_group_id,
-                                     submission.user_id, submission.course_id)
+                                            submission.user_id, submission.course_id)
         except LTIPostMessageException as e:
             success = False
             error = str(e)
@@ -445,9 +445,9 @@ def update_submission(lti, lti_exception=None):
             make_log_entry(submission.assignment_id, submission.assignment_version,
                            course_id, user_id, "X-Submission.LMS.Failure", "answer.py", message=error)
             return ajax_failure({"submitted": False, "changed": was_changed,
-                                 "message": error, "feedbacks": feedbacks, "corrects": corrects})
+                                 "message": error, "feedbacks": feedbacks, 'submission_status': submission.submission_status})
     return ajax_success({"submitted": was_changed or force_update, "changed": was_changed,
-                         "feedbacks": feedbacks, "corrects": corrects})
+                         "feedbacks": feedbacks, 'submission_status': submission.submission_status})
 
 
 @blueprint_blockpy.route('/update_submission_status/', methods=['GET', 'POST'])

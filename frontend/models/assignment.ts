@@ -98,9 +98,14 @@ export class Assignment extends Model<AssignmentJson> {
             }
         }, this);
         this.editUrl = ko.pureComputed<string>(() => {
-            return window["$URL_ROOT"]+"/assignments/load/?" + (
-                this.url() ? `?assignment_url=${this.url()}`
-                    : `?assignment_id=${this.id}`);
+            if (this.type() === "reading") {
+                return window["$URL_ROOT"]+"/assignments/reading/" + (
+                    this.url() ? this.url() : this.id) + "?";
+            } else {
+                return window["$URL_ROOT"]+"/assignments/load/" + (
+                    this.url() ? `?assignment_url=${this.url()}`
+                        : `?assignment_id=${this.id}`);
+            }
         }, this);
     }
 }

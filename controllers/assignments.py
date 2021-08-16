@@ -47,6 +47,21 @@ def load(lti, lti_exception=None):
     return blockpy.load_editor(lti, editor_information)
 
 
+@blueprint_assignments.route('/reading/<path>/', methods=['GET', 'POST'])
+@blueprint_assignments.route('/reading/<path>', methods=['GET', 'POST'])
+def load_reading(path):
+    editor_information = parse_assignment_load(path)
+
+    if 'embed' not in request.values:
+        editor_information['embed'] = True
+
+    # Use the proper template
+    if len(editor_information['assignments']) == 1:
+        if editor_information['assignments'][0].type == 'reading':
+            return blockpy.load_editor(lti, editor_information)
+
+    return jsonify(success=False, message="There is no reading with that information")
+
 @blueprint_assignments.route('/new/', methods=['GET', 'POST'])
 @blueprint_assignments.route('/new', methods=['GET', 'POST'])
 @require_request_parameters('course_id')

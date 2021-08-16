@@ -1,0 +1,24 @@
+<div xml:lang="en">
+    <h2 id='{{ assignment.slug() }}'>Quiz {{ assignment.name }}</h2>
+    <strong>Status:</strong><span> {{ submission.full_status() }}</span>
+
+
+    {% set hiding = assignment.hidden or assignment.get_setting('hide_submission', False) %}
+
+    {% set code = submission.code|json_load %}
+    {% set questions = assignment.instructions|json_load %}
+    {% set questions = questions.get('questions', {}) %}
+
+    {% if 'feedback' in code %}
+        <ul>
+        {% for question_id, student in code['feedback'].items() %}
+            <li>Quiz Question {{ loop.index }}:
+            <span>{%  if student.get('correct', False) %}
+                Correct!{% else %} Incorrect ({{ student.get('status') }} with {{ student.get('score', 0)|float }} points) {% endif %}</span>
+            </li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <div>No feedback given yet.</div>
+    {% endif %}
+</div>

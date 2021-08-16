@@ -13,14 +13,22 @@ class Result:
     feedbacks: {str: str}
 
 
+class Feedback:
+    message: str
+    correct: bool
+    score: float
+    status: str
+
+
 def process_quiz_str(body: str, checks: str, student_answers: str):
     try:
         body = json.loads(body)
         checks = json.loads(checks)
         student_answers = json.loads(student_answers)
     except json.JSONDecodeError as e:
-        return 0, 0, ["No JSON could be parsed: " + str(e)], []
-    return process_quiz(body, checks, student_answers)
+        error_feedback = {"message": "No JSON could be parsed: " + str(e), "correct": None, "score": 0, 'status': 'error'}
+        return 0, 0, {"*": error_feedback}, student_answers
+    return process_quiz(body, checks, student_answers), student_answers
 
 
 def process_quiz(body, checks, student_answers):
@@ -31,19 +39,24 @@ def process_quiz(body, checks, student_answers):
     # For each question in the on_run, run the evaluation criteria
     total_score, total_points = 0, 0
     total_correct = True
-    feedbacks, corrects = {}, {}
+    feedbacks = {}
     for question_id, question in questions.items():
         student = student_answers.get(question_id, {})
         check = checks.get(question_id, {})
         points = question.get('points', 1)
-        score, correct, feedback = check_quiz_question(question, check, student)
-        total_score += score
         total_points += points
-        total_correct = total_correct and correct
-        feedbacks[question_id] = feedback
-        corrects[question_id] = correct
+        checked_question = check_quiz_question(question, check, student)
+        if checked_question is None:
+            feedbacks[question_id] = {"message": "Unknown Type: " + question.get('type'),
+                                      "correct": None, "score": 0, "status": "error"}
+        else:
+            score, correct, feedback = checked_question
+            total_score += score
+            total_correct = total_correct and correct
+            message = str(feedback)
+            feedbacks[question_id] = { 'message': message, 'correct': correct, 'score': score, 'status': 'graded' }
     # Report back the final score and feedback objects
-    return total_score / total_points, total_correct, feedbacks, corrects
+    return total_score / total_points, total_correct, feedbacks
 
 
 def check_quiz_question(question, check, student) -> (float, bool, list):
@@ -53,9 +66,10 @@ def check_quiz_question(question, check, student) -> (float, bool, list):
     elif question.get('type') == 'matching_question':
         corrects = [student_part == correct_part
                     for student_part, correct_part in zip(student, check.get('correct', []))]
-        feedbacks = [feedback.get(student_part, "Correct")
+        feedbacks = [feedback.get(student_part)
                      for student_part, feedback in zip(student, check.get('feedback', []))]
-        return sum(corrects)/len(corrects) if corrects else 0, all(corrects), feedbacks if any(feedbacks) else "Correct" if all(corrects) else 'Incorrect'
+        message = feedbacks if any(feedbacks) else ("Correct" if all(corrects) else 'Incorrect')
+        return sum(corrects)/len(corrects) if corrects else 0, all(corrects), message
     elif question.get('type') == 'multiple_choice_question':
         correct = student == check.get('correct')
         return correct, correct, check.get('feedback', {}).get(student) if not correct else "Correct"
@@ -90,8 +104,8 @@ def check_quiz_question(question, check, student) -> (float, bool, list):
                         for blank_id, answer in check.get('correct_exact', {}).items()]
         else:
             return 0, False, "Unknown Fill In Multiple Blanks Question Check: "+ str(check)
-        return sum(corrects) / len(corrects) if corrects else 0, all(corrects), check.get('wrong_any', '') if not all(corrects) else 'Correct'
-    return 0, True, ["Unknown Type: "+question.get('type')]
+        return sum(corrects) / len(corrects) if corrects else 0, all(corrects), check.get('wrong_any', 'Incorrect') if not all(corrects) else 'Correct'
+    return None
 
 
 def convert_quiz_question(question) -> (dict, dict):
@@ -162,6 +176,7 @@ def convert_quiz_question(question) -> (dict, dict):
                 check['correct'][blank_id] = []
             check['correct'][blank_id].append(answer['text'])
     return body, check
+
 
 def clean_name(filename):
     return secure_filename(filename).replace(" ", "_").replace("-", "_").replace("__", "_")

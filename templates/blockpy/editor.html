@@ -59,6 +59,8 @@
         }
     </style>
 
+
+
 {% endblock %}
 
 {% block body %}
@@ -120,6 +122,7 @@
         const READINGS = {{ readings|tojson }};
 
         $(document).ready(function () {
+
 
             // Load in Quiz interface
             let loggedInUser = {{ user.encode_json()|tojson }};
@@ -270,5 +273,6 @@
 
         });
     </script>
+    <script src="https://www.youtube.com/iframe_api"></script>
 
 {% endblock %}

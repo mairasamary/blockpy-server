@@ -221,7 +221,7 @@ def maybe_bool(value):
     return False
 
 
-def parse_assignment_load():
+def parse_assignment_load(assignment_id_or_url=None):
     # Lookup Code
     assignment_group_id = parse_lookup_code()
     # Assignment Group ID
@@ -231,10 +231,10 @@ def parse_assignment_load():
     if assignment_group_id is None:
         assignment_group_id = AssignmentGroup.id_by_url(request.args.get('assignment_group_url'))
     # Assignment ID
-    current_assignment_id = maybe_int(request.args.get('assignment_id'))
+    current_assignment_id = maybe_int(request.args.get('assignment_id', assignment_id_or_url))
     # Exact "url" code for assignment
     if current_assignment_id is None:
-        current_assignment_id = Assignment.id_by_url(request.args.get('assignment_url'))
+        current_assignment_id = Assignment.id_by_url(request.args.get('assignment_url', assignment_id_or_url))
     # User
     user = g.get('user', None)
     user_id = user.id if user else None

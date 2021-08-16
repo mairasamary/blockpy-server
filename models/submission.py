@@ -396,43 +396,13 @@ class Submission(Base):
     def regrade_if_quiz(self):
         if self.assignment.type == "quiz":
             # Try parsing both as JSON - report errors
-            return process_quiz_str(self.assignment.instructions, self.assignment.on_run, self.code)
-            """
-            try:
-                body = json.loads(self.assignment.instructions)
-                checks = json.loads(self.assignment.on_run)
-                student_answers = json.loads(self.code)
-            except json.JSONDecodeError as e:
-                return 0, 0, ["No JSON could be parsed: "+str(e)]
-            # Extract the requisite data within the objects
-            student_answers = student_answers.get('studentAnswers', {})
-            checks = checks.get('questions', {})
-            questions = body.get('questions', {})
-            # For each question in the on_run, run the evaluation criteria
-            total_score, total_points = 0, 0
-            total_correct = True
-            feedbacks = []
-            for question_id, question in questions.items():
-                student = student_answers.get(question_id, {})
-                check = checks.get(question_id, {})
-                points = question.get('points', 1)
-                score, correct, feedback = Submission.check_quiz_question(question, check, student)
-                total_score += score
-                total_points += points
-                total_correct = total_correct and correct
-                feedbacks.append(feedback)
-            # Report back the final score and feedback objects
-            return total_score/total_points, total_correct, feedbacks
-            """
+            (score, correct, feedback), student = process_quiz_str(self.assignment.instructions, self.assignment.on_run, self.code)
+            # If we graded successfully, attach the feedback to the submission body
+            if feedback.get("*", {}).get('status') != 'error':
+                student['feedback'] = feedback
+            self.code = json.dumps(student)
+            self.version += 1
+            db.session.commit()
+            # And return the information
+            return score, correct, feedback
         return False
-
-    @staticmethod
-    def check_quiz_question(question, check, student) -> (float, bool, list):
-        if question.get('type') == 'matching_question':
-            print(student, check.get('correct', []))
-            corrects = [student_part == correct_part
-                        for student_part, correct_part in zip(student, check.get('correct', []))]
-            feedbacks = [feedback.get(student_part)
-                         for student_part, feedback in zip(student, check.get('feedback', []))]
-            return sum(corrects)/len(corrects), all(corrects), feedbacks
-        return 0, True, ["Unknown Type: "+question.get('type')]
