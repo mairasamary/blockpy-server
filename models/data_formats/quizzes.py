@@ -24,7 +24,7 @@ def process_quiz_str(body: str, checks: str, student_answers: str):
     try:
         body = json.loads(body)
         checks = json.loads(checks)
-        answers = json.loads(student_answers or "{}")
+        student_answers = json.loads(student_answers or "{}")
     except json.JSONDecodeError as e:
         error_feedback = {"message": "No JSON could be parsed: " + str(e), "correct": None, "score": 0, 'status': 'error'}
         # TODO: Try to parse these all separately, see if it's recoverable.
