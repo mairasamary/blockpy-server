@@ -337,7 +337,7 @@ export class Quizzer extends AssignmentInterface {
                         console.error(response);
                         this.errorMessage(response.message.message);
                     }
-                    this.submission().submissionStatus(response.message.submission_status);
+                    this.submission().submissionStatus(response.submission_status);
                },
                (e: any, textStatus: string, errorThrown: any) => {
                     console.error("Failed to load (HTTP LEVEL)", e, textStatus, errorThrown);

@@ -7,6 +7,7 @@ import {AssignmentInterface, AssignmentInterfaceJson} from "./assignment_interfa
 
 // TODO: Prevent popout button in exams, allow easy to close button there too?
 // TODO: Render youtube video, header, and download button
+// TODO: Fix IP Change logEvent?
 
 export const LOG_TIME_RATE = 5000;
 
