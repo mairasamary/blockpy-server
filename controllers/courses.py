@@ -19,6 +19,8 @@ from controllers.helpers import (lti, strip_tags,
 from controllers.security import user_datastore
 
 from main import app
+from models.data_formats.report import make_report
+from models.log import Log
 from models.models import db, AssignmentGroup
 from models.user import User
 from models.course import Course
@@ -540,3 +542,26 @@ def fix_course_outcome_url():
     return ajax_success({"success": "True"})
 
 
+@courses.route('/student_report/', methods=['GET', 'POST'])
+@courses.route('/student_report', methods=['GET', 'POST'])
+@login_required
+def student_report():
+    ''' List all the users in the course '''
+    course_id = get_course_id()
+    user, user_id = get_user()
+    student_id = maybe_int(request.values.get('user_id'))
+
+    if course_id is not None:
+        is_instructor = user.is_grader(int(course_id))
+    else:
+        is_instructor = False
+    is_owner = user_id == student_id
+    if not is_instructor and not is_owner:
+        return "You are not an instructor or this specific student!"
+    logs = Log.get_history(course_id, None, student_id, None, None)
+    return "<br>\n".join(make_report(logs))
+    #return render_template('courses/student_report.html',
+    #                       submission=submission,
+    #                       assignment=assignment,
+    #                       user=user,
+    #                       course_id=course_id)

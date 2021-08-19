@@ -419,7 +419,15 @@ def update_submission(lti, lti_exception=None):
     # If quiz, then update the settings
     quiz = submission.regrade_if_quiz()
     if quiz:
-        score, correct, feedbacks = quiz
+        if quiz.graded_successfully:
+            score, correct, feedbacks = quiz.score, quiz.correct, quiz.feedbacks
+        else:
+            submission.update_grading_status(GradingStatuses.FAILED)
+            make_log_entry(submission.assignment_id, submission.assignment_version,
+                           course_id, user_id, "X-Quiz.Grade.Failure", "answer.py", message=quiz.error)
+            return ajax_failure({"submitted": False, "changed": False,
+                                 "message": quiz.error, "feedbacks": quiz.feedbacks,
+                                 'submission_status': submission.submission_status})
     else:
         feedbacks = {}
     # Do action

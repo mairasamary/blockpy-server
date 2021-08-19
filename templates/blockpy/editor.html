@@ -106,6 +106,7 @@
                          courseId: courseId,
                          currentAssignmentId: currentQuizAssignmentId,
                          assignmentGroupId: assignmentGroupId,
+                         isInstructor: isInstructor,
                          user: user"></quizzer>
         <!-- /ko -->
         <!-- ko if: assignmentType() == 'reading' -->
@@ -113,6 +114,7 @@
                         courseId: courseId,
                         currentAssignmentId: currentReadingAssignmentId,
                         assignmentGroupId: assignmentGroupId,
+                        isInstructor: isInstructor,
                         user: user"></reader>
         <!-- /ko -->
     </div>
@@ -122,8 +124,6 @@
         const READINGS = {{ readings|tojson }};
 
         $(document).ready(function () {
-
-
             // Load in Quiz interface
             let loggedInUser = {{ user.encode_json()|tojson }};
             server = new frontend.Server({{ course_id }}, {
@@ -135,6 +135,7 @@
                 courseId: {{  course_id }},
                 server: server,
                 user: loggedInUser,
+                isInstructor: {{  (role in ("owner", "grader")) | tojson }},
                 currentQuizAssignmentId: ko.observable(null),
                 currentReadingAssignmentId: ko.observable(null),
                 assignmentType: ko.observable(null),

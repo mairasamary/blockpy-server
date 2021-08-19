@@ -15,10 +15,16 @@ export class Reader extends AssignmentInterface {
     logTimer: NodeJS.Timeout
     logCount: number
     ytPlayer: any
+    youtube: ko.Observable<string>;
+    header: ko.Observable<string>;
+    slides: ko.Observable<string>;
 
     constructor(params: AssignmentInterfaceJson) {
         super(params);
         this.logCount = 0;
+        this.youtube = ko.observable<string>("");
+        this.header = ko.observable<string>("");
+        this.slides = ko.observable<string>("");
 
         this.currentAssignmentId.subscribe((newId) => {
             this.loadReading(newId);
@@ -43,6 +49,7 @@ export class Reader extends AssignmentInterface {
                         this.logCount = 1;
                         this.logTimer = setTimeout(this.logReading.bind(this), 1000);
                         this.assignment().instructions.subscribe(this.registerWatcher.bind(this));
+                        this.parseAdditionalSettings();
                         this.registerWatcher();
                     } else {
                         console.error("Failed to load", response);
@@ -56,6 +63,14 @@ export class Reader extends AssignmentInterface {
         } else {
             this.assignment(null);
         }
+    }
+
+    parseAdditionalSettings() {
+        let settingsRaw = this.assignment().settings();
+        let settings = JSON.parse(settingsRaw || "{}");
+        this.youtube(settings.youtube || "");
+        this.header(settings.header || "");
+        this.slides(settings.slides || "");
     }
 
     logWatching(event: any) {
@@ -122,12 +137,25 @@ export const READER_HTML = `
         Popout
     </a>
     <!-- Body -->
-    <div data-bind="markdowned: assignment().instructions()" style="background: #FBFAF7"
-        class="p-4"></div>
-    <hr>
-    <h6>Instructions</h6>
-    <button data-bind="click: saveAssignment">Save Assignment</button><br>
-    <textarea data-bind="value: assignment().instructions" style="width: 100%; height: 300px"></textarea><br>
+    <div  style="background: #FBFAF7" class="pt-4">
+        <h3 data-bind="text: header(), hidden: !header().length"></h3>
+        <iframe style="width: 640px; height: 480px;"
+            width="300" height="150" allowfullscreen="allowfullscreen"
+            webkitallowfullscreen="webkitallowfullscreen"
+            mozallowfullscreen="mozallowfullscreen"
+            data-bind="attr: {title: assignment().name(),
+                              src: 'https://www.youtube.com/embed/'+youtube()+'?feature=oembed&rel=0&enablejsapi=1'},
+                       hidden: !youtube().length">
+        </iframe>
+        <div data-bind="markdowned: assignment().instructions()"
+            class="p-4"></div>
+        <hr>
+    </div>
+    <div data-bind="if: isInstructor()">
+        <h6>Instructions</h6>
+        <button data-bind="click: saveAssignment">Save Assignment</button><br>
+        <textarea data-bind="value: assignment().instructions" style="width: 100%; height: 300px"></textarea><br>
+    </div>
 </div>
 `
 

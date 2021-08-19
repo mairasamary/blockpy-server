@@ -3,6 +3,7 @@ import os
 import time
 
 import base64
+from typing import Union
 
 from flask import url_for
 from sqlalchemy import Column, Text, Integer, Boolean, ForeignKey, Index, func, String, or_
@@ -11,7 +12,7 @@ from sqlalchemy.orm import relationship
 from main import app
 from models import models
 from models.assignment import Assignment
-from models.data_formats.quizzes import process_quiz_str
+from models.data_formats.quizzes import process_quiz_str, QuizResult
 from models.log import Log
 from models.models import Base, db, ensure_dirs, optional_encoded_field, datetime_to_string
 from models.review import Review
@@ -393,16 +394,18 @@ class Submission(Base):
         return [review.encode_json() for review in
                 Review.query.filter_by(generic=True).all()]
 
-    def regrade_if_quiz(self):
+    def regrade_if_quiz(self) -> Union[QuizResult, bool]:
         if self.assignment.type == "quiz":
             # Try parsing both as JSON - report errors
-            (score, correct, feedback), student = process_quiz_str(self.assignment.instructions, self.assignment.on_run, self.code)
-            # If we graded successfully, attach the feedback to the submission body
-            if feedback.get("*", {}).get('status') != 'error':
-                student['feedback'] = feedback
-                self.code = json.dumps(student)
+            quiz_result = process_quiz_str(self.assignment.instructions, self.assignment.on_run, self.code)
+            if quiz_result.graded_successfully:
+                # If we graded successfully, attach the feedback to the submission body
+                quiz_result.submission_body['feedback'] = quiz_result.feedbacks
+                if 'attempt' in quiz_result.submission_body:
+                    quiz_result.submission_body['attempt']['attempting'] = False
+                self.code = json.dumps(quiz_result.submission_body, indent=2)
                 self.version += 1
                 db.session.commit()
             # And return the information
-            return score, correct, feedback
+            return quiz_result
         return False

@@ -250,7 +250,7 @@ class LTI(object):
             # Set logged in session key
             session[LTI_SESSION_KEY] = True
             return True
-        except LTIException:
+        except LTIException as e:
             for prop in LTI_PROPERTY_LIST:
                 if session.get(prop, None):
                     del session[prop]

@@ -7,11 +7,23 @@ import json
 from werkzeug.utils import secure_filename
 
 
-class Result:
+class QuizResult:
     score: float
+    correct: bool
     points_possible: int
     feedbacks: {str: str}
+    graded_successfully: bool
+    submission_body: dict
+    error: str
 
+    def __init__(self, s, c, p, f, g, b, e):
+        self.score = s
+        self.correct = c
+        self.points_possible = p
+        self.feedbacks = f
+        self.graded_successfully = g
+        self.submission_body = b
+        self.error = e
 
 class Feedback:
     message: str
@@ -20,25 +32,34 @@ class Feedback:
     status: str
 
 
-def process_quiz_str(body: str, checks: str, student_answers: str):
+def try_parse_file(contents: str, filename: str):
     try:
-        body = json.loads(body)
-        checks = json.loads(checks)
-        student_answers = json.loads(student_answers or "{}")
+        return True, json.loads(contents)
     except json.JSONDecodeError as e:
-        error_feedback = {"message": "No JSON could be parsed: " + str(e), "correct": None, "score": 0, 'status': 'error'}
-        # TODO: Try to parse these all separately, see if it's recoverable.
-        return (0, 0, {"*": error_feedback}), student_answers
-    return process_quiz(body, checks, student_answers), student_answers
+        return False, f"No JSON could be parsed from {filename}.\n{str(e)}"
 
 
-def process_quiz(body, checks, student_answers):
+def process_quiz_str(body: str, checks: str, submission_body: str) -> QuizResult:
+    """ (status, correct, score, points, feedbacks, submission_body)"""
+    body_ready, body = try_parse_file(body, "Quiz Body")
+    checks_ready, checks = try_parse_file(checks, "Quiz Checks")
+    student_ready, student = try_parse_file(submission_body or "{}", "Student Submission")
+    if not body_ready:
+        return QuizResult(0, 0, 0, {}, False, None, body)
+    if not checks_ready:
+        return QuizResult(0, 0, 0, {}, False, None, checks)
+    if not student_ready:
+        return QuizResult(0, 0, 0, {}, False, None, student)
+    return process_quiz(body, checks, student)
+
+
+def process_quiz(body: dict, checks: dict, submission_body: dict) -> QuizResult:
     # Extract the requisite data within the objects
-    student_answers = student_answers.get('studentAnswers', {})
+    student_answers = submission_body.get('studentAnswers', {})
     checks = checks.get('questions', {})
     questions = body.get('questions', {})
     # For each question in the on_run, run the evaluation criteria
-    total_score, total_points = 0, 0
+    total_score, total_points = 0., 0.
     total_correct = True
     feedbacks = {}
     for question_id, question in questions.items():
@@ -52,17 +73,19 @@ def process_quiz(body, checks, student_answers):
                                       "correct": None, "score": 0, "status": "error"}
         else:
             score, correct, feedback = checked_question
-            total_score += score
+            print(question_id, score)
+            total_score += score*points
             total_correct = total_correct and correct
             message = str(feedback)
             feedbacks[question_id] = { 'message': message, 'correct': correct, 'score': score, 'status': 'graded' }
     # Report back the final score and feedback objects
-    return total_score / total_points, total_correct, feedbacks
+    print(total_score, total_points)
+    return QuizResult(total_score / total_points, total_correct, total_points, feedbacks, True, submission_body, None)
 
 
 def check_quiz_question(question, check, student) -> (float, bool, list):
     if question.get('type') == 'true_false_question':
-        correct = (student.lower() == "true") == check.get('correct')
+        correct = student.lower() == str(check.get('correct')).lower()
         return correct, correct, check.get('wrong') if not correct else "Correct"
     elif question.get('type') == 'matching_question':
         corrects = [student_part == correct_part
@@ -84,16 +107,17 @@ def check_quiz_question(question, check, student) -> (float, bool, list):
                      for blank_id, answer in student.items()]
         return sum(corrects) / len(corrects) if corrects else 0, all(corrects), feedbacks if any(feedbacks) else "Correct"
     elif question.get('type') in ('short_answer_question', 'numerical_question'):
+        wrong_any = check.get('wrong_any', "Incorrect")
         if 'correct_exact' in check:
             correct = student in check['correct_exact']
-            feedback = check.get('feedback', {}).get(student, "Correct")
+            feedback = check.get('feedback', {}).get(student, wrong_any)
         elif 'correct_regex' in check:
             correct = any(re.match(reg, student) for reg in check['correct_regex'])
             feedback = [check.get('feedback', {}).get(reg) for reg in check['correct_regex'] if re.match(reg, student)]
-            feedback = feedback[0] if feedback else 'Correct'
+            feedback = feedback[0] if feedback else wrong_any
         else:
             return 0, False, "Unknown Short Answer Question Check: "+ str(check)
-        return correct, correct, feedback
+        return correct, correct, feedback if not correct else "Correct"
     #elif question.get('type') == 'numerical_question':
     #    pass
     elif question.get('type') == 'fill_in_multiple_blanks_question':
@@ -105,7 +129,8 @@ def check_quiz_question(question, check, student) -> (float, bool, list):
                         for blank_id, answer in check.get('correct_exact', {}).items()]
         else:
             return 0, False, "Unknown Fill In Multiple Blanks Question Check: "+ str(check)
-        return sum(corrects) / len(corrects) if corrects else 0, all(corrects), check.get('wrong_any', 'Incorrect') if not all(corrects) else 'Correct'
+        feedback = check.get('wrong_any', 'Incorrect') if not all(corrects) else 'Correct'
+        return sum(corrects) / len(corrects) if corrects else 0, all(corrects), feedback
     return None
 
 
@@ -131,14 +156,14 @@ def convert_quiz_question(question) -> (dict, dict):
             if answer.get('comments'):
                 check['wrong'] = answer.get('comments')
     elif question['question_type'] == 'matching_question':
-        answers = [answer['text'] for answer in question['matches']]
+        answers = [statement['left'] for statement in question['answers']]
         answers.extend([text for text in
                         (question.get('matching_answer_incorrect_matches') or '').split('\n')
                        if text])
         body['answers'] = answers
-        body['statements'] = [statement['left'] for statement in question['answers']]
-        check['correct'] = [statement['right'] for statement in question['answers']]
-        check['wrong'] = [statement.get('comments', '') for statement in question['answers']]
+        body['statements'] = [answer['text'] for answer in question['matches']]
+        check['correct'] = {statement['right']: statement['left'] for statement in question['answers']}
+        check['wrong'] = {statement.get('comments', '') for statement in question['answers']}
     elif question['question_type'] == 'multiple_choice_question':
         body['answers'] = [answer['text'] for answer in question['answers']]
         check['correct'] = [statement['text'] for statement in question['answers']
@@ -208,7 +233,7 @@ waltz:
   title: {folder_name}
   display title: '{quiz['title']}'
   resource: problem
-  type: blockpy
+  type: quiz
   visibility:
     hide status:
     publicly indexed: false
@@ -218,8 +243,8 @@ waltz:
     owner email: acbart@udel.edu
     course id: 4
     version downloaded: 1
-    created: August 9 2021, 1300 PM
-    modified: August 9 2021, 1300 PM
+    created: August 9 2021, 1300
+    modified: August 9 2021, 1300
   files:
     path: {folder_name}
     hidden but accessible files: []
@@ -229,7 +254,7 @@ waltz:
 ---
 """)
             json.dump(body, index_file, indent=2)
-        with open(rf'sneks_quizzes/{folder_name}/on_run.md', 'w') as on_run_file:
+        with open(rf'sneks_quizzes/{folder_name}/on_run.py', 'w') as on_run_file:
             json.dump(checks, on_run_file, indent=2)
         for touchee in ['on_eval.py', 'starting_code.py']:
             with open(rf'sneks_quizzes/{folder_name}/{touchee}', 'w') as touched:
