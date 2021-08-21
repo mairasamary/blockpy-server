@@ -175,6 +175,13 @@ class Submission(Base):
                           models.User.first_name.asc())
                 .all())
 
+
+    @staticmethod
+    def remove_by_assignment(assignment_id):
+        return (db.session.query(Submission)
+                .filter(Submission.assignment_id == assignment_id)
+                .delete())
+
     def __str__(self):
         return '<Submission {} for {}>'.format(self.id, self.user_id)
 

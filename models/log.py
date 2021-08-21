@@ -125,6 +125,12 @@ class Log(Base):
                 .all())
 
     @staticmethod
+    def remove_by_assignment(assignment_id):
+        (db.session.query(Log)
+                .filter(Log.assignment_id == assignment_id)
+                .delete())
+
+    @staticmethod
     def get_history(course_id, assignment_id, user_id, page_offset=None, page_limit=None):
         logs = Log.query.filter_by(course_id=course_id)
         # JUst need to refactor this to allow lists

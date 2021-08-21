@@ -167,6 +167,8 @@ class Assignment(Base):
     @staticmethod
     def remove(assignment_id):
         models.AssignmentGroupMembership.query.filter_by(assignment_id=assignment_id).delete()
+        models.Submission.remove_by_assignment(assignment_id)
+        models.Log.remove_by_assignment(assignment_id)
         Assignment.query.filter_by(id=assignment_id).delete()
         db.session.commit()
 
