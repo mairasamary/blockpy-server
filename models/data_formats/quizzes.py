@@ -92,20 +92,21 @@ def check_quiz_question(question, check, student) -> (float, bool, list):
                     for student_part, correct_part in zip(student, check.get('correct', []))]
         feedbacks = [feedback.get(student_part)
                      for student_part, feedback in zip(student, check.get('feedback', []))]
-        message = feedbacks if any(feedbacks) else ("Correct" if all(corrects) else 'Incorrect')
+        message = "\n<br>".join(map(str, feedbacks)) if any(map(bool, feedbacks)) else ("Correct" if all(corrects) else 'Incorrect')
         return sum(corrects)/len(corrects) if corrects else 0, all(corrects), message
     elif question.get('type') == 'multiple_choice_question':
         correct = student == check.get('correct')
         return correct, correct, check.get('feedback', {}).get(student) if not correct else "Correct"
     elif question.get('type') == 'multiple_answers_question':
         correct = set(student) == set(check.get('correct', []))
-        return correct, correct, check.get('wrong_any', '') if not correct else 'Correct'
+        return correct, correct, check.get('wrong_any', 'Incorrect') if not correct else 'Correct'
     elif question.get('type') == 'multiple_dropdowns_question':
         corrects = [student.get(blank_id) == answer
                     for blank_id, answer in check.get('correct', {}).items()]
-        feedbacks = [check.get('wrong', {}).get(blank_id, {}).get(answer, 'Correct')
-                     for blank_id, answer in student.items()]
-        return sum(corrects) / len(corrects) if corrects else 0, all(corrects), feedbacks if any(feedbacks) else "Correct"
+        feedbacks = "<br>\n".join(check.get('wrong', {}).get(blank_id, {}).get(answer, 'Correct')
+                     for blank_id, answer in student.items())
+        feedback = check.get('wrong_any', 'Incorrect') if any(feedbacks) else "Correct"
+        return sum(corrects) / len(corrects) if corrects else 0, all(corrects), feedback
     elif question.get('type') in ('short_answer_question', 'numerical_question'):
         wrong_any = check.get('wrong_any', "Incorrect")
         if 'correct_exact' in check:

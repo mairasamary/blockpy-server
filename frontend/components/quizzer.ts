@@ -9,10 +9,11 @@ import {AssignmentInterface, AssignmentInterfaceJson} from "./assignment_interfa
     // Add a question mark button that let's them flag this to return to later
 // TODO: Event logging
 // TODO: Question Pool
-// TODO: Limited attempts
+// TODO: Attempt cooldowns
 // TODO: One question at a time
 // TODO: Allow bulk regrading of students' feedbacks/scoring
 // TODO: Check for orphaned feedbacks and answers
+// TODO: Fix feedback for multiple answers
 
 export interface QuizzerJson {
     server: Server;
@@ -138,6 +139,83 @@ export interface Question {
     feedback: ko.Observable<Feedback>
 }
 
+export enum QuizFeedbackType {
+    // TODO: Support other kinds besides immediate
+    IMMEDIATE = "IMMEDIATE", NONE = "NONE", SUMMARY = "SUMMARY"
+}
+
+export interface QuizInstructionsSettings {
+    /** How many times you can attempt a quiz; -1 is infinite attempts */
+    attemptLimit?: number
+    /** How many minutes you must wait between attempts; -1 is no minutes */
+    coolDown?: number
+    feedbackType?: QuizFeedbackType
+    /** How many questions to show on each "page"; -1 is all questions on one page */
+    questionsPerPage?: number
+}
+
+export interface QuizInstructions {
+    questions?: Record<string, Question>
+    settings?: QuizInstructionsSettings
+}
+
+export interface QuizSubmissionAttempt {
+    attempting?: boolean
+    count?: number
+    /** Number of times the instructor has given extra attempts **/
+    mulligans?: number
+}
+
+export interface QuizSubmission {
+    studentAnswers?: {[questionId: string]: Question}
+    attempt?: QuizSubmissionAttempt
+    feedback?: {[questionId: string]: Feedback}
+}
+
+export const EMPTY_QUIZ_SUBMISSION_STRING = JSON.stringify({
+    attempt: {attempting: false, count: 0},
+    studentAnswers: {},
+    feedback: {}
+});
+
+export const EMPTY_QUIZ_INSTRUCTIONS_STRING = JSON.stringify({
+    questions: {},
+    settings: {
+        attemptLimit: -1,
+        coolDown: -1,
+        feedbackType: QuizFeedbackType.IMMEDIATE,
+        questionsPerPage: -1
+    }
+});
+
+export function fillInMissingQuizSubmissionFields(quizSubmission: QuizSubmission) {
+    if (!("studentAnswers" in quizSubmission)) {
+        quizSubmission.studentAnswers = {};
+    }
+    if (!("feedback" in quizSubmission)) {
+        quizSubmission.feedback = {};
+    }
+    if (!("attempt" in quizSubmission)) {
+        quizSubmission.attempt = {};
+    }
+    quizSubmission.attempt.attempting ??= false;
+    quizSubmission.attempt.count ??= 0;
+    quizSubmission.attempt.mulligans ??= 0;
+}
+
+export function fillInMissingQuizInstructionFields(quizInstructions: QuizInstructions) {
+    if (!("questions" in quizInstructions)) {
+        quizInstructions.questions = {};
+    }
+    if (!("settings" in quizInstructions)) {
+        quizInstructions.settings = {};
+    }
+    quizInstructions.settings.attemptLimit ??= -1;
+    quizInstructions.settings.coolDown ??= -1;
+    quizInstructions.settings.feedbackType ??= QuizFeedbackType.IMMEDIATE;
+    quizInstructions.settings.questionsPerPage ??= -1;
+}
+
 export const matchKeyInBrackets = (key: string) => new RegExp(`(?<!\\\))(\\[${key}\\])(?!\\()`);
 export const SQUARE_BRACKETS = /(?<!\\)(\[.*?\]\]?)(?!\()/
 
@@ -148,37 +226,48 @@ export class Quiz {
     attemptCount: ko.Observable<number>;
     attempting: ko.Observable<boolean>;
     attemptStatus: ko.PureComputed<QuizMode>;
+    attemptMulligans: ko.Observable<number>;
 
-    // TODO: Status
+    attemptLimit: ko.Observable<number>;
+    attemptsLeft: ko.PureComputed<string>;
+    canAttempt: ko.PureComputed<boolean>;
 
     constructor(assignment: Assignment, submission: Submission) {
         this.questions = ko.observableArray([]);
         this.questionMap = {};
         this.attempting = ko.observable(false);
         this.attemptCount = ko.observable(0);
+        this.attemptMulligans = ko.observable(0);
+        this.attemptLimit = ko.observable<number>(-1);
+
         this.loadAssignment(assignment, submission);
 
         this.attemptStatus = ko.pureComputed<QuizMode>( () => {
             return this.attempting() ? QuizMode.ATTEMPTING :
                 this.attemptCount() > 0 ? QuizMode.COMPLETED : QuizMode.READY;
         }, this);
+
+        this.attemptsLeft = ko.pureComputed<string>( () => {
+            const attempts = (this.attemptLimit() + this.attemptMulligans() - this.attemptCount());
+            return this.attemptLimit() === -1 ? 'infinite attempts left.' :
+                attempts < 0 ? 'no attempts left!' :
+                attempts === 1 ? 'only one attempt left.' : `${attempts} attempts left.`;
+        }, this);
+
+        this.canAttempt = ko.pureComputed<boolean>( () => {
+            const attempts = (this.attemptLimit() + this.attemptMulligans() - this.attemptCount());
+            return this.attemptLimit() === -1 || attempts > 0;
+        }, this);
     }
 
     loadAssignment(assignment: Assignment, submission: Submission) {
         this.questions.removeAll();
         this.questionMap = {};
-        let currentAnswer = JSON.parse(submission.code() || "{}");
-        if (!("studentAnswers" in currentAnswer)) {
-            currentAnswer.studentAnswers = {};
-        }
-        if (!("feedback" in currentAnswer)) {
-            currentAnswer.feedback = {};
-        }
-        if (!("attempt" in currentAnswer)) {
-            currentAnswer.attempt = {attempting: false, count: 0};
-        }
+        let currentAnswer: QuizSubmission = JSON.parse(submission.code() || EMPTY_QUIZ_SUBMISSION_STRING) as QuizSubmission;
+        fillInMissingQuizSubmissionFields(currentAnswer);
         //console.log("Loading Answer:", currentAnswer);
-        let instructions = JSON.parse(assignment.instructions());
+        let instructions: QuizInstructions = JSON.parse(assignment.instructions() || EMPTY_QUIZ_INSTRUCTIONS_STRING) as QuizInstructions;
+        fillInMissingQuizInstructionFields(instructions);
         // TODO: For random ones, choose an alternate question based on pool
         // User ID + Assignment ID + Course ID, modulo the quantity of questions available
         // If instructions[questionId] is an array, then pool from it "randomly"
@@ -192,6 +281,7 @@ export class Quiz {
         }
         this.attempting(currentAnswer.attempt.attempting);
         this.attemptCount(currentAnswer.attempt.count);
+        this.attemptLimit(instructions.settings.attemptLimit)
         this.includeFeedbacks(currentAnswer.feedback);
     }
 
@@ -214,13 +304,14 @@ export class Quiz {
         for (const questionId in this.questionMap) {
             clearValue(this.questionMap[questionId]);
         }
+        this.attemptCount(0);
     }
 
     submissionAsJson(): string {
         // Build up the fields that need to be edited to save the submission
-        let result = {studentAnswers: {}, feedback: {}, attempt: {
+        let result: QuizSubmission = {studentAnswers: {}, feedback: {}, attempt: {
             attempting: this.attempting(), count: this.attemptCount()
-            }};
+            }} as QuizSubmission;
         this.questions().forEach((question: Question) => {
             // @ts-ignore
             result.studentAnswers[question.id] = getValue(question);
@@ -359,6 +450,11 @@ export class Quizzer extends AssignmentInterface {
         this.saveFile("answer.py", this.submission().code(), true);
     }
 
+    clearSubmission() {
+        this.saveFile("answer.py", "", true);
+        this.submission().code("");
+    }
+
     startQuiz() {
         this.errorMessage("");
         this.quiz().attemptCount(this.quiz().attemptCount()+1);
@@ -406,66 +502,85 @@ export class Quizzer extends AssignmentInterface {
                },
                (e: any, textStatus: string, errorThrown: any) => {
                     console.error("Failed to load (HTTP LEVEL)", e, textStatus, errorThrown);
+                    this.errorMessage("HTTP ERROR (try reloading the page; if still an error, report to instructor!): "+ textStatus+"\n"+errorThrown);
                 });
     }
 }
 
-export const INSTRUCTIONS_BAR_HTML = `
+export const INSTRUCTIONS_BAR_HTML = (position: string) => `
 <p>
     <div data-bind="switch: quiz()?.attemptStatus()">
         <!-- ko case: 'READY' -->
-            To Begin, click "Start Quiz" below. You have multiple attempts.<br>
-            <button data-bind="click: startQuiz" class="btn btn-success">Start Quiz</button>
+            To begin the quiz, click "Start Quiz".<br>
+            You have <span data-bind="text: quiz()?.attemptsLeft()"></span><br>
+            <div class="text-center" data-bind="visible: quiz()?.canAttempt()">
+                <button data-bind="click: startQuiz" class="btn btn-success">Start Quiz</button>
+            </div>
         <!-- /ko -->
         <!-- ko case: 'ATTEMPTING' -->
             <span>Quiz In Progress!</span><br>
             <!--<button data-bind="click: saveSubmission">SAVE</button><br>-->
-            <button data-bind="click: submit" class="btn btn-success">Submit answer</button><br>
+            <div class="text-center">
+                <button data-bind="click: submit" class="btn btn-success">Submit answer</button><br>
+            </div>
         <!-- /ko -->
         <!-- ko case: 'COMPLETED' -->
-            <button data-bind="click: startQuiz" class="btn btn-success">Try Quiz Again</button>
+            You have completed the quiz. You can see the feedback for each question ${position}.<br>
+            To try again, click "Start Quiz".<br>
+            You have <span data-bind="text: quiz()?.attemptsLeft()"></span><br>
+            <div class="text-center" data-bind="visible: quiz()?.canAttempt()">
+                <button data-bind="click: startQuiz" class="btn btn-success">Try Quiz Again</button>
+            </div>
         <!-- /ko -->
     </div>
 </p>
 `
 
+
 export const QUIZZER_HTML = `
 <div data-bind="if: assignment">
     <div>
         <!-- Errors -->
-        <div class="bg-danger" data-bind="text: errorMessage, hidden: errorMessage.length"></div>
+        <div class="bg-danger text-white p-3 border rounded" data-bind="text: errorMessage, visible: errorMessage().length"></div>
     
         <!-- Instructor Editor Mode Selector -->
         <div data-bind="if: isInstructor()">
             <!-- Instructor Editor Mode Selector -->
             <div class="form-check">
-                <input data-bind="checked: editorMode"
+                <label class="form-check-label">
+                    <input data-bind="checked: editorMode"
                        id="editor-mode-radio" name="editor-mode-radio"
                        class="form-check-input" type="radio" value="RAW">
-                <label class="form-check-label">Raw Editor</label>
+                    Raw Editor
+                </label>
             </div>
             <div class="form-check">
-                <input data-bind="checked: editorMode"
-                       id="editor-mode-radio" name="editor-mode-radio"
-                       class="form-check-input" type="radio" value="FORM">
-                <label class="form-check-label">Form Editor</label>
+                <label class="form-check-label">
+                    <input data-bind="checked: editorMode"
+                           id="editor-mode-radio" name="editor-mode-radio"
+                           class="form-check-input" type="radio" value="FORM">
+                    Form Editor
+                </label>
             </div>
             <div class="form-check">
-                <input data-bind="checked: editorMode"
+                <label class="form-check-label">
+                    <input data-bind="checked: editorMode"
                        id="editor-mode-radio" name="editor-mode-radio"
                        class="form-check-input" type="radio" value="SUBMISSION">
-                <label class="form-check-label">Actual Submission</label>
+                    Actual Submission
+                </label>
             </div>
             
             <!-- Raw Instructor Editor -->
             <div data-bind="if: editorMode() === 'RAW'">
                 <button data-bind="click: saveAssignment">Save Assignment</button><br>
                 <h6>Instructions</h6>
-                <textarea data-bind="textInput: assignment().instructions" style="width: 100%; height: 300px"></textarea><br>
+                <div data-bind="jsoneditor: {value: assignment().instructions}" style="width: 100%; height: 300px"></div><br>
                 <h6>On Run</h6>
                 <textarea data-bind="textInput: assignment().onRun" style="width: 100%; height: 300px"></textarea><br>
                 <h6>Submission</h6>
                 <!-- ko if: submission -->
+                    <button data-bind="click: clearSubmission">Clear Submission</button><br>
                     <textarea data-bind="textInput: submission().code" style="width: 100%; height: 300px"></textarea><br>
                     <button data-bind="click: saveSubmissionRaw">Save code changes</button>
                 <!-- /ko -->
@@ -478,7 +593,7 @@ export const QUIZZER_HTML = `
         </div>
         
         <!-- Main Instructions -->
-        ${INSTRUCTIONS_BAR_HTML}
+        ${INSTRUCTIONS_BAR_HTML('below')}
         
         <!-- Quick Jump -->
         <div>
@@ -498,111 +613,115 @@ export const QUIZZER_HTML = `
                 <h5 class="card-title">Question <span data-bind="text: 1+$index()"></span></h5>
                 <h6 class="card-subtitle mb-2 text-muted"
                     data-bind="text: id, visible: $component.isInstructor()"></h6>
-                <div data-bind="markdowned: $parent.quiz().makeBody($data, $index())"></div>
-                <!-- Actual Question Code -->
-                <div data-bind="switch: type">
-                    <!-- True/False Question -->
-                    <div data-bind="case: 'true_false_question'">
-                        <div class="form-check">
-                          <input data-bind="checked: student,
-                                        disable: $component.isReadOnly(),
-                                        attr: {name: 'question-tf-'+$index(),
-                                               id: 'question-tf-'+$index()+'-t'}"
-                            class="form-check-input" type="radio" value="true">
-                          <label class="form-check-label" data-bind="attr: {for: 'question-mcq-'+$index()+'t'}">
-                            True
-                          </label>
-                        </div>
-                        <div class="form-check">
-                          <input data-bind="checked: student,
-                                        disable: $component.isReadOnly(),
-                                        attr: {name: 'question-tf-'+$index(),
-                                               id: 'question-tf-'+$index()+'-f'}"
-                            class="form-check-input" type="radio" value="false">
-                          <label class="form-check-label" data-bind="attr: {for: 'question-mcq-'+$index()+'f'}">
-                            False
-                          </label>
-                        </div>
-                    </div>
-                    <!-- Multiple Choice -->
-                    <div data-bind="case: 'multiple_choice_question'">
-                        <!-- ko foreach: answers -->
-                        <div class="form-check">
-                          <input data-bind="checked: $parent.student,
-                                            value: $data,
+                <div data-bind="visible: $parent.quiz().attemptCount() > 0">
+                    <div data-bind="markdowned: $parent.quiz().makeBody($data, $index())"></div>
+                    <!-- Actual Question Code -->
+                    <div data-bind="switch: type">
+                        <!-- True/False Question -->
+                        <div data-bind="case: 'true_false_question'">
+                            <div class="form-check">
+                                <label class="form-check-label" data-bind="attr: {for: 'question-mcq-'+$index()+'t'}">
+                                  <input data-bind="checked: student,
+                                                disable: $component.isReadOnly(),
+                                                attr: {name: 'question-tf-'+$index(),
+                                                       id: 'question-tf-'+$index()+'-t'}"
+                                    class="form-check-input" type="radio" value="true">
+                                    True
+                              </label>
+                            </div>
+                            <div class="form-check">
+                              <label class="form-check-label" data-bind="attr: {for: 'question-mcq-'+$index()+'f'}">
+                                <input data-bind="checked: student,
                                             disable: $component.isReadOnly(),
-                                            attr: {name: 'question-mcq-'+$parentContext.$index(),
-                                                   id: 'question-mcq-'+$index()}"
-                            class="form-check-input" type="radio">
-                          <label data-bind="html: $data, attr: {for: 'question-mcq-'+$index()}" class="form-check-label">
-                          </label>
-                        </div>
-                        <!-- /ko -->
-                    </div>
-                    <!-- Multiple Answers Question -->
-                    <div data-bind="case: 'multiple_answers_question'">
-                        <!-- ko foreach: answers -->
-                        <div class="form-check">
-                          <input data-bind="checked: $parent.student,
-                                            checkedValue: $data,
-                                            disable: $component.isReadOnly(),
-                                            attr: {id: 'question-maq-'+$parentContext.$index()+'-'+$index(),
-                                                   name: 'question-maq-'+$parentContext.$index()+'-'+$index()}"
-                            class="form-check-input" type="checkbox">
-                          <label data-bind="html: $data, attr: {for: 'question-maq-'+$parentContext.$index()+'-'+$index()}" class="form-check-label">
-                          </label>
-                        </div>
-                        <!-- /ko -->
-                    </div>
-                    <!-- Text Only Question -->
-                    <div data-bind="case: 'text_only_question'"></div>
-                    <!-- Matching Question -->
-                    <div data-bind="case: 'matching_question'" class="container">
-                        <!-- ko foreach: statements -->
-                        <div class="row justify-content-between mb-3">
-                            <div class="col" data-bind="html: $data"></div>
-                            <div class="col">
-                                <select class="custom-select"
-                                    data-bind="options: $parent.answers.sort(() => Math.random() - 0.5),
-                                               disable: $component.isReadOnly(),
-                                               optionsCaption: '',
-                                               value: $parent.student[$index()],
-                                               attr: {id: 'question-mat-'+$parentContext.$index()+'-'+$index()}"></select>
+                                            attr: {name: 'question-tf-'+$index(),
+                                                   id: 'question-tf-'+$index()+'-f'}"
+                                class="form-check-input" type="radio" value="false">
+                                False
+                              </label>
                             </div>
                         </div>
-                        <!-- /ko -->
-                    </div>
-                    <!-- Multiple Dropdown Question -->
-                    <div data-bind="case: 'multiple_dropdowns_question'">
-                    </div>
-                    <!-- Short Answer -->
-                    <div data-bind="case: 'short_answer_question'">
-                        <div class="form-group">
-                            <input type="text" class="form-control"
-                                data-bind="value: student, 
-                                           disable: $component.isReadOnly(), attr: {id: 'question-sa-'+$index()}">
+                        <!-- Multiple Choice -->
+                        <div data-bind="case: 'multiple_choice_question'">
+                            <!-- ko foreach: answers -->
+                            <div class="form-check">
+                              <label data-bind="attr: {for: 'question-mcq-'+$index()}" class="form-check-label">
+                                  <input data-bind="checked: $parent.student,
+                                                    value: $data,
+                                                    disable: $component.isReadOnly(),
+                                                    attr: {name: 'question-mcq-'+$parentContext.$index(),
+                                                           id: 'question-mcq-'+$index()}"
+                                    class="form-check-input" type="radio">
+                                    <span data-bind="html: $data"></span>
+                              </label>
+                            </div>
+                            <!-- /ko -->
                         </div>
-                    </div>
-                    <!-- Numerical Input -->
-                    <div data-bind="case: 'numerical_question'">
-                        <div class="form-group">
-                            <input type="number" class="form-control"
-                                data-bind="value: student, 
-                                           disable: $component.isReadOnly(), attr: {id: 'question-num-'+$index()}">
+                        <!-- Multiple Answers Question -->
+                        <div data-bind="case: 'multiple_answers_question'">
+                            <!-- ko foreach: answers -->
+                            <div class="form-check">
+                              <label data-bind="attr: {for: 'question-maq-'+$parentContext.$index()+'-'+$index()}" class="form-check-label">
+                              <input data-bind="checked: $parent.student,
+                                                checkedValue: $data,
+                                                disable: $component.isReadOnly(),
+                                                attr: {id: 'question-maq-'+$parentContext.$index()+'-'+$index(),
+                                                       name: 'question-maq-'+$parentContext.$index()+'-'+$index()}"
+                                class="form-check-input" type="checkbox">
+                                <span data-bind="html: $data"></span>
+                              </label>
+                            </div>
+                            <!-- /ko -->
                         </div>
-                    </div>
-                    <!-- Multiple Fill in the Blank Question -->
-                    <div data-bind="case: 'fill_in_multiple_blanks_question'">
-                    </div>
-                    <!-- Else -->
-                    <div data-bind="case: $default">
-                        I have no idea what this is!
+                        <!-- Text Only Question -->
+                        <div data-bind="case: 'text_only_question'"></div>
+                        <!-- Matching Question -->
+                        <div data-bind="case: 'matching_question'" class="container">
+                            <!-- ko foreach: statements -->
+                            <div class="row justify-content-between mb-3">
+                                <div class="col" data-bind="html: $data"></div>
+                                <div class="col">
+                                    <select class="custom-select"
+                                        data-bind="options: $parent.answers.sort(() => Math.random() - 0.5),
+                                                   disable: $component.isReadOnly(),
+                                                   optionsCaption: '',
+                                                   value: $parent.student[$index()],
+                                                   attr: {id: 'question-mat-'+$parentContext.$index()+'-'+$index()}"></select>
+                                </div>
+                            </div>
+                            <!-- /ko -->
+                        </div>
+                        <!-- Multiple Dropdown Question -->
+                        <div data-bind="case: 'multiple_dropdowns_question'">
+                        </div>
+                        <!-- Short Answer -->
+                        <div data-bind="case: 'short_answer_question'">
+                            <div class="form-group">
+                                <input type="text" class="form-control"
+                                    data-bind="value: student, 
+                                               disable: $component.isReadOnly(), attr: {id: 'question-sa-'+$index()}">
+                            </div>
+                        </div>
+                        <!-- Numerical Input -->
+                        <div data-bind="case: 'numerical_question'">
+                            <div class="form-group">
+                                <input type="number" class="form-control"
+                                    data-bind="value: student, 
+                                               disable: $component.isReadOnly(), attr: {id: 'question-num-'+$index()}">
+                            </div>
+                        </div>
+                        <!-- Multiple Fill in the Blank Question -->
+                        <div data-bind="case: 'fill_in_multiple_blanks_question'">
+                        </div>
+                        <!-- Else -->
+                        <div data-bind="case: $default">
+                            I have no idea what this is!
+                        </div>
                     </div>
                 </div>
                 <!-- ko if: feedback() -->
                 <div class="border rounded m-2 p-2" data-bind="class: feedback().status == 'error' ? 'bg-dark' :
                                                                       feedback().correct ? 'bg-success' : 'bg-danger'">
-                    <span data-bind="text: feedback().message" class="text-white"></span>
+                    <span data-bind="html: feedback().message" class="text-white"></span>
                 </div>
                 <!-- /ko -->
             </div>
@@ -610,7 +729,8 @@ export const QUIZZER_HTML = `
     </div>
     <!-- /ko -->
     
-    ${INSTRUCTIONS_BAR_HTML}
+    ${INSTRUCTIONS_BAR_HTML('above')}<!-- Errors -->
+    <div class="bg-danger text-white p-3 border rounded" data-bind="text: errorMessage, visible: errorMessage().length"></div>
 </div>
 <div data-bind="if: server.isLoading()">
     Loading!

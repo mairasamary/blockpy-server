@@ -120,7 +120,7 @@ def get_assignment(lti=lti):
 
 @blueprint_assignments.route('/remove', methods=['GET', 'POST'])
 @blueprint_assignments.route('/remove/', methods=['GET', 'POST'])
-@require_request_parameters('course_id')
+@require_request_parameters('assignment_id')
 @login_required
 def remove_assignment(lti=None):
     assignment_id = int(request.values.get('assignment_id'))

@@ -9,8 +9,10 @@
     "@types/select2": "^4.0.53",
     "highlightjs": "^9.16.2",
     "highlightjs-line-numbers.js": "^2.8.0",
+    "jsoneditor": "^9.5.3",
     "knockout-switch-case": "^2.1.0",
-    "markdown-it": "^12.0.6"
+    "markdown-it": "^12.0.6",
+    "style-loader": "^3.2.1"
   },
   "typings": "./declarations/index.d.ts",
   "types": "./declarations/index.d.ts",
@@ -42,8 +44,10 @@
     "@types/bootstrap": "^5.0.1",
     "@types/jasmine": "^3.6.2",
     "@types/jquery": "^3.5.5",
+    "@types/jsoneditor": "^8.6.1",
     "@types/knockout": "^3.4.69",
     "@types/markdown-it": "^12.0.1",
+    "css-loader": "^6.2.0",
     "extract-text-webpack-plugin": "^3.0.2",
     "knockout": "^3.5.1",
     "text-loader": "0.0.1",

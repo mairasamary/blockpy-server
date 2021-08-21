@@ -5,6 +5,10 @@ import * as select2 from 'select2';
 //import 'select2';
 import 'knockout-switch-case';
 import * as MarkdownIt from 'markdown-it';
+import JSONEditor, {JSONEditorMode} from 'jsoneditor';
+import 'jsoneditor/dist/jsoneditor.css';
+
+
 
 // Knockout codemirror binding handler
 ko.bindingHandlers.codemirror = {
@@ -29,6 +33,32 @@ ko.bindingHandlers.codemirror = {
             element.editor.setValue(value);
             element.editor.setCursor(cur);
             element.editor.refresh();
+        }
+    }
+};
+
+// Knockout jsoneditor binding handler
+ko.bindingHandlers.jsoneditor = {
+    init: function (element, valueAccessor) {
+        let initialValue = ko.unwrap(valueAccessor());
+        let options =  { onChangeJSON:  function (newValue: any) {
+            element.flag = true;
+            initialValue.value(JSON.stringify(newValue));
+        }, mode: 'tree' as JSONEditorMode};
+        console.log(initialValue.value(), JSON.parse(initialValue.value()))
+        element.editor = new JSONEditor(element, options, JSON.parse(initialValue.value()));
+
+        ko.utils.domNodeDisposal.addDisposeCallback(element, function () {
+            element.editor.destroy();
+        });
+    },
+    update: function (element, valueAccessor) {
+        console.log("OH FIRED?");
+        let value = ko.toJS(valueAccessor()).value;
+        if (element.flag) {
+            element.flag = false;
+        } else {
+            element.editor.set(JSON.parse(value));
         }
     }
 };

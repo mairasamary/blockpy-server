@@ -271,7 +271,7 @@ function MainModel() {
         var youSureHuh = confirm("Are you really sure you want to delete this assignment?");
         if (youSureHuh != null) {
             $.post("{{ url_for('assignments.remove_assignment') }}", {
-                'assignment_id': assignment_id
+                'assignment_id': assignment_id,
             }, function(data) {
                 if (data.success) {
                     self.assignments.remove(function(item) { return item.id == assignment_id });
