@@ -580,6 +580,8 @@ def save_assignment(lti=lti):
         updates["name"] = request.values.get("name")
     if "settings" in request.values:
         updates["settings"] = request.values.get("settings")
+    if "points" in request.values:
+        updates['points'] = maybe_int(request.values.get('points'))
     # Perform update
     modified = assignment.edit(updates)
     make_log_entry(assignment.id, assignment.version,

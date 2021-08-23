@@ -3,7 +3,7 @@ import {User} from "../models/user";
 import * as ko from 'knockout';
 import {Assignment} from "../models/assignment";
 import {Submission, SubmissionStatus} from "../models/submission";
-import {AssignmentInterface, AssignmentInterfaceJson} from "./assignment_interface";
+import {AssignmentInterface, AssignmentInterfaceJson, EditorMode} from "./assignment_interface";
 
 // Maybe TODO: Add bookmarking
     // Add a question mark button that let's them flag this to return to later
@@ -333,7 +333,7 @@ export class Quiz {
             }
         } else if (question.type === 'fill_in_multiple_blanks_question') {
             body = body.split(SQUARE_BRACKETS).map((part: string) => {
-                console.log(part);
+                //console.log(part);
                 if (part.startsWith('[[') && part.endsWith(']]')) {
                     return part.slice(1, -1);
                 } else if (part.startsWith('[') && part.endsWith(']')) {
@@ -355,22 +355,10 @@ export enum QuizMode {
     READY = "READY"
 }
 
-export enum EditorMode {
-    SUBMISSION = "SUBMISSION",
-    RAW = "RAW",
-    FORM = "FORM"
-}
+
 
 export class Quizzer extends AssignmentInterface {
-    server: Server;
-    courseId: number;
-    user: User;
-    assignmentGroupId: number;
-
-    currentAssignmentId: ko.Observable<number>;
-    assignment: ko.Observable<Assignment>;
     quiz: ko.Observable<Quiz>;
-    submission: ko.Observable<Submission>;
 
     forceQuiz: ko.Observable<boolean>;
     currentQuestion: ko.Observable<Question>;
@@ -469,6 +457,12 @@ export class Quizzer extends AssignmentInterface {
         this.quiz().loadAssignment(this.assignment(), this.submission());
         this.saveFile("!instructions.md", this.assignment().instructions(), true);
         this.saveFile("!on_run.py", this.assignment().onRun(), true);
+        this.saveAssignmentSettings({
+            settings: this.assignment().settings(),
+            points: this.assignment().points(),
+            url: this.assignment().url(),
+            name: this.assignment().name()
+        });
     }
 
     submit() {
@@ -575,7 +569,7 @@ export const QUIZZER_HTML = `
             <div data-bind="if: editorMode() === 'RAW'">
                 <button data-bind="click: saveAssignment">Save Assignment</button><br>
                 <h6>Instructions</h6>
-                <div data-bind="jsoneditor: {value: assignment().instructions}" style="width: 100%; height: 300px"></div><br>
+                <textarea data-bind="textInput: assignment().instructions" style="width: 100%; height: 300px"></textarea><br>
                 <h6>On Run</h6>
                 <textarea data-bind="textInput: assignment().onRun" style="width: 100%; height: 300px"></textarea><br>
                 <h6>Submission</h6>
@@ -588,7 +582,43 @@ export const QUIZZER_HTML = `
         
             <!-- Form Instructor Editor -->
             <div data-bind="if: editorMode() === 'FORM'">
-                FORMS!
+                <button data-bind="click: saveAssignment">Save Assignment</button><br>
+                <h6>Instructions</h6>
+                <div data-bind="jsoneditor: {value: assignment().instructions}" style="width: 100%; height: 300px"></div><br>
+                <h6>On Run</h6>
+                <div data-bind="jsoneditor: {value: assignment().onRun}" style="width: 100%; height: 300px"></div><br>
+                
+                <!-- Other settings -->
+                <div class="form-group">
+                    <label for="reader-points-editor">
+                        Points:
+                        <input type="number" id="reader-points-editor" name="reader-points-editor"
+                            class="form-control" data-bind="value: assignment().points">
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label for="reader-name-editor">
+                        Name:
+                        <input type="text" id="reader-name-editor" name="reader-name-editor"
+                            class="form-control" data-bind="value: assignment().name">
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label for="reader-url-editor">
+                        URL:
+                        <input type="text" id="reader-url-editor" name="reader-url-editor"
+                            class="form-control" data-bind="value: assignment().url">
+                    </label>
+                </div>
+                <h6>Additional Settings</h6>
+                <div data-bind="jsoneditor: {value: assignment().settings}" style="width: 100%; height: 300px"></div><br>
+                
+                <!-- ko if: submission -->
+                    <h6>Submission</h6>
+                    <div data-bind="jsoneditor: {value: submission().code}" style="width: 100%; height: 300px"></div><br>
+                    <button data-bind="click: saveSubmissionRaw">Save code changes</button>
+                    <button data-bind="click: clearSubmission">Clear Submission</button><br>
+                <!-- /ko -->
             </div>
         </div>
         

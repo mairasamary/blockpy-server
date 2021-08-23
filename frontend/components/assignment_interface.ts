@@ -35,6 +35,9 @@ export class AssignmentInterface {
         this.isInstructor = ko.observable(params.isInstructor);
         this.assignment = ko.observable(null);
         this.submission = ko.observable(null);
+
+        let BlockPyServer = window['$MAIN_BLOCKPY_EDITOR'].components.server;
+        BlockPyServer.altLogEntry = this.logEvent.bind(this);
     }
 
     logEvent(eventType: string, category: string, label: string, message: string, file_path: string, callback: any) {
@@ -84,6 +87,46 @@ export class AssignmentInterface {
         } else {
             BlockPyServer._postLatestRetry(data, filename, "saveFile", 300, onError);
         }
-
     }
+
+    saveAssignmentSettings(settings: Record<string, any>) {
+        let BlockPyServer = window['$MAIN_BLOCKPY_EDITOR'].components.server;
+        let now = new Date();
+        let data = {
+            assignment_id: this.assignment().id,
+            assignment_group_id: this.assignmentGroupId,
+            course_id: this.courseId,
+            submission_id: this.submission().id,
+            user_id: this.user.id,
+            version: this.assignment().version,
+            timestamp: now.getTime(),
+            timezone: now.getTimezoneOffset(),
+            passcode: window['$MAIN_BLOCKPY_EDITOR'].model.display.passcode(),
+            ...settings
+        };
+        /*
+            // New Stuff
+            hidden: this.assignment().hidden(),
+            reviewed: this.assignment().reviewed(),
+            'public': this.assignment().public(),
+            url: this.assignment().url(),
+            points: this.assignment().points(),
+            ip_ranges: this.assignment().ipRanges(),
+            'name': this.assignment().name(),
+            settings: this.assignment().settings()
+        };*/
+
+        const onError = (e: any, textStatus: string, errorThrown: any) => {
+            window['$MAIN_BLOCKPY_EDITOR'].components.dialog.ERROR_SAVING_ASSIGNMNENT();
+            console.error("Failed to load (HTTP LEVEL)", e, textStatus, errorThrown);
+        };
+        const onSuccess = (response: any) => response.success && console.log(response);
+        BlockPyServer._postBlocking("saveAssignment", data, 3, () => 0, onSuccess, onError);
+    }
+}
+
+export enum EditorMode {
+    SUBMISSION = "SUBMISSION",
+    RAW = "RAW",
+    FORM = "FORM"
 }
