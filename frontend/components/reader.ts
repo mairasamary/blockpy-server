@@ -226,6 +226,7 @@ export const EDITOR_HTML = `
 
 export const READER_HTML = `
 <div data-bind="if: assignment">
+    ${EDITOR_HTML}
     <!-- Popout button -->
     <a href="" class="btn btn-sm btn-outline-secondary float-right m-3" target="_blank"
         data-bind="attr: {href: assignment().editUrl()+'&embed=true'}">
@@ -238,7 +239,6 @@ export const READER_HTML = `
         <span class="fas fa-download" aria-hidden="true"></span>
         Download
     </a>
-    ${EDITOR_HTML}
     <!-- Body -->
     <div  style="background: #FBFAF7" class="pt-4">
         <h3 data-bind="text: header(), hidden: !header().length"></h3>
