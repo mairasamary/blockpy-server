@@ -641,8 +641,13 @@ export const QUIZZER_HTML = `
             <div class="quizzer-question card-body">
                 <quizzer-question-status params="indexId: 1+$index(), status: student, question: $data, isAnchor: true" class="float-right"></quizzer-question-status>
                 <h5 class="card-title">Question <span data-bind="text: 1+$index()"></span></h5>
-                <h6 class="card-subtitle mb-2 text-muted"
-                    data-bind="text: id, visible: $component.isInstructor()"></h6>
+                <h6 class="card-subtitle mb-2 text-muted">
+                    <!-- ko if: feedback() -->
+                    <span data-bind="text: Math.round(((feedback().score * points) + Number.EPSILON) * 100) / 100 + ' /'"></span>
+                    <!-- /ko -->
+                    <span data-bind="text: points"></span> points
+                    <span data-bind="text: ' ('+id+')', visible: $component.isInstructor()"></span>
+                </h6>
                 <div data-bind="visible: $parent.quiz().attemptCount() > 0">
                     <div data-bind="markdowned: $parent.quiz().makeBody($data, $index())"></div>
                     <!-- Actual Question Code -->
