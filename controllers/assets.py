@@ -88,6 +88,8 @@ bundles = {
         # CodeMirror
         'libs/codemirror/fullscreen.css',
         'libs/codemirror/codemirror.css',
+        # jsoneditor
+        'libs/jsoneditor/jsoneditor.css',
         # Output
         output='gen/libs.css'
     ),
