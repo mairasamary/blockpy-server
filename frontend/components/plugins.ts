@@ -6,7 +6,8 @@ import * as select2 from 'select2';
 import 'knockout-switch-case';
 import * as MarkdownIt from 'markdown-it';
 import JSONEditor, {JSONEditorMode} from 'jsoneditor';
-import 'jsoneditor/dist/jsoneditor.css';
+// The CSS for jsoneditor is loaded via assets.py
+//import 'jsoneditor/dist/jsoneditor.css';
 
 
 
@@ -41,24 +42,65 @@ ko.bindingHandlers.codemirror = {
 ko.bindingHandlers.jsoneditor = {
     init: function (element, valueAccessor) {
         let initialValue = ko.unwrap(valueAccessor());
-        let options =  { onChangeJSON:  function (newValue: any) {
-            element.flag = true;
-            initialValue.value(JSON.stringify(newValue));
-        }, mode: 'tree' as JSONEditorMode};
-        console.log(initialValue.value(), JSON.parse(initialValue.value()))
-        element.editor = new JSONEditor(element, options, JSON.parse(initialValue.value()));
+        let options =  {
+            onChangeText:  function (newValue: any) {
+                element.flag = true;
+                initialValue.value(newValue);
+            },
+            modes: ['tree', 'code', 'text'] as JSONEditorMode[],
+            mode: 'tree' as JSONEditorMode
+        };
+        element.editor = new JSONEditor(element, options, JSON.parse(initialValue.value() || "{}"));
 
         ko.utils.domNodeDisposal.addDisposeCallback(element, function () {
             element.editor.destroy();
         });
     },
     update: function (element, valueAccessor) {
-        console.log("OH FIRED?");
         let value = ko.toJS(valueAccessor()).value;
         if (element.flag) {
             element.flag = false;
         } else {
-            element.editor.set(JSON.parse(value));
+            element.editor.set(JSON.parse(value || "{}"));
+        }
+    }
+};
+
+// Knockout jsoneditor binding handler
+ko.bindingHandlers.markdowneditor = {
+    init: function (element, valueAccessor) {
+        let initialValue = ko.unwrap(valueAccessor());
+        // @ts-ignore
+        element.editor = new EasyMDE({
+            element: element,
+            autoDownloadFontAwesome: false,
+            forceSync: true,
+            minHeight: "500px",
+            // TODO: imageUploadFunction
+            renderingConfig: {
+                codeSyntaxHighlighting: true,
+            },
+            indentWithTabs: false,
+            tabSize: 4,
+        });
+        element.editor.codemirror.on("change", (newValue: any) => {
+            element.flag = true;
+            initialValue.value(element.editor.value());
+        })
+        element.editor.value(initialValue.value());
+        element.flag = false;
+
+        ko.utils.domNodeDisposal.addDisposeCallback(element, function () {
+            //element.editor.cleanup();
+            element.editor = null;
+        });
+    },
+    update: function (element, valueAccessor) {
+        let value = ko.toJS(valueAccessor()).value;
+        if (element.flag) {
+            element.flag = false;
+        } else {
+            element.editor.value(value);
         }
     }
 };
