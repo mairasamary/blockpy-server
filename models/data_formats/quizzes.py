@@ -103,9 +103,9 @@ def check_quiz_question(question, check, student) -> (float, bool, list):
     elif question.get('type') == 'multiple_dropdowns_question':
         corrects = [student.get(blank_id) == answer
                     for blank_id, answer in check.get('correct', {}).items()]
-        feedbacks = "<br>\n".join(check.get('wrong', {}).get(blank_id, {}).get(answer, 'Correct')
-                     for blank_id, answer in student.items())
-        feedback = check.get('wrong_any', 'Incorrect') if any(feedbacks) else "Correct"
+        #feedbacks = "<br>\n".join(check.get('wrong', {}).get(blank_id, {}).get(answer, 'Correct')
+        #             for blank_id, answer in student.items())
+        feedback = check.get('wrong_any', 'Incorrect') if not all(corrects) else "Correct"
         return sum(corrects) / len(corrects) if corrects else 0, all(corrects), feedback
     elif question.get('type') in ('short_answer_question', 'numerical_question'):
         wrong_any = check.get('wrong_any', "Incorrect")
