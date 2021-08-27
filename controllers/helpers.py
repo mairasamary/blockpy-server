@@ -125,9 +125,9 @@ def login_required(f):
     return decorated_function
 
 
-def require_course_instructor(user, course_id):
+def require_course_instructor(user, course_id, addendum=""):
     if not user.is_instructor(course_id):
-        message = 'You are not an instructor (course ID {}).'.format(course_id)
+        message = f'You are not an instructor (course ID {course_id}). {addendum}'
         abort(make_response(jsonify(success=False, message=message), 200))
         return False
     return True

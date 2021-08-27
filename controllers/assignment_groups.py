@@ -149,11 +149,11 @@ def export():
                     headers={'Content-Disposition': 'attachment;filename={}'.format(filename)})
 
 
-@blueprint_assignment_group.route('/edit_settings', methods=['GET', 'POST'])
-@blueprint_assignment_group.route('/edit_settings/', methods=['GET', 'POST'])
+@blueprint_assignment_group.route('/edit_security_settings', methods=['GET', 'POST'])
+@blueprint_assignment_group.route('/edit_security_settings/', methods=['GET', 'POST'])
 @require_request_parameters('assignment_group_id')
 @login_required
-def edit_settings(lti=lti):
+def edit_security_settings(lti=lti):
     # Get arguments
     assignment_group_id = int(request.values.get('assignment_group_id'))
     assignment_group = AssignmentGroup.by_id(assignment_group_id)

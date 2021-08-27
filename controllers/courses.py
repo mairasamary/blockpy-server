@@ -565,3 +565,52 @@ def student_report():
     #                       assignment=assignment,
     #                       user=user,
     #                       course_id=course_id)
+
+@courses.route('/edit_points', methods=['GET', 'POST'])
+@courses.route('/edit_points/', methods=['GET', 'POST'])
+@login_required
+def edit_points():
+    course_id = get_course_id()
+    user, user_id = get_user()
+    # Load Resources
+    course: Course = Course.by_id(course_id)
+    # Check Resource Exists
+    check_resource_exists(course, "Course", course_id)
+    grouped_assignments = natsorted(course.get_assignments_grouped(),
+                                    key=lambda r: (r.AssignmentGroup.name if r.AssignmentGroup is not None else None,
+                                                   r.Assignment.name))
+    #assignments = [a.Assignment for a in grouped_assignments]
+    groups = {}
+    for a in grouped_assignments:
+        if a.AssignmentGroup not in groups:
+            groups[a.AssignmentGroup] = []
+        groups[a.AssignmentGroup].append(a.Assignment)
+    # Verify permissions
+    for group, assignments in groups.items():
+        if group:
+            require_course_instructor(g.user, group.course_id, f"This course has assignment group {group.id}")
+        for assignment in assignments:
+            require_course_instructor(g.user, assignment.course_id, f"This course has assignment {assignment.id}")
+    # Perform action
+    if request.method == 'POST':
+        modified = []
+        for group, assignments in groups.items():
+            for assignment in assignments:
+                target_field = f'assignment-points-{assignment.id}'
+                points = maybe_int(request.values.get(target_field))
+                if points is not None and assignment.points != points:
+                    assignment.edit(dict(points=points))
+                    modified.append(assignment.name or "(Missing Name)")
+        flash("Modified: "+", ".join(modified))
+        #if ip_ranges is not None:
+        #    for assignment in assignment_group.get_assignments():
+        #        assignment.edit(dict(ip_ranges=ip_ranges))
+        #        assignment.update_setting("passcode", passcode)
+        return redirect(request.url)
+    # Result
+    else:
+        warning = ""
+        return render_template('courses/edit_points.html',
+                               course_id=course_id,
+                               course=course,
+                               groups=groups)

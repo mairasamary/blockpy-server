@@ -195,6 +195,11 @@ function MainModel() {
         var baseUrl = "{{  url_for('assignments.load')|safe }}?";
         return baseUrl+"&course_id="+course.id+"&assignment_group_id="+group.id;
     };
+
+    self.editSecurity = function(course, group) {
+        var baseUrl = "{{  url_for('assignment_group.edit_security_settings')|safe }}?";
+        return baseUrl+"&course_id="+course.id+"&assignment_group_id="+group.id;
+    }
     
     self.renameGroup = function(course, group) {
         let new_name = window.prompt("Give a new name for this group:", group.name);
@@ -335,12 +340,14 @@ $().ready(function() {
 }
 
 tr:hover.hover-movers-rows div.mover-buttons,
+tr:hover.hover-remove-rows div.hide-buttons,
 tr:hover.hover-remove-rows button.remove-button,
 tr:hover.hover-remove-rows a.view-button {
     visibility: visible;
 }
 
 tr.hover-movers-rows div.mover-buttons,
+tr.hover-remove-rows div.hide-buttons,
 tr.hover-remove-rows button.remove-button,
 tr.hover-remove-rows a.view-button {
     visibility: hidden;
@@ -459,12 +466,29 @@ tr.hover-remove-rows a.view-button {
             <a href="#" data-bind="click: $root.renameGroup.bind($data, $parent)"><strong data-bind="text: name"></strong></a>
         </td>
         <td>
-            <button class='remove-button btn btn-danger btn-xs' type='button' 
+            <!--<button class='remove-button btn btn-danger btn-xs' type='button'
                     data-bind="click: $root.removeGroup.bind($data, $parent)">
                 <span class='fas fa-trash' aria-hidden="true"></span>
             </button>
             <a target="_blank" data-bind="attr: { href: $root.viewGroup($parent, $data) }"
-               class="btn btn-primary btn-sm view-button">View</a>
+               class="btn btn-primary btn-sm view-button">View</a>-->
+
+            <div class="btn-group hide-buttons">
+                <!-- Select button -->
+                <a target="_blank" data-bind="attr: { href: $root.viewGroup($parent, $data) }" class="btn btn-primary btn-sm">View</a>
+                <!-- Dropdown -->
+                <button type="button" class="btn btn-primary dropdown-toggle btn-sm" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <span class="caret"></span>
+                    <span class="sr-only">Toggle Dropdown</span>
+                </button>
+                <!-- Extended buttons -->
+                <div class="dropdown-menu">
+                    <a target="_blank" class="dropdown-item" data-bind="attr: { href: $root.editSecurity($parent, $data)}">Edit Security</a>
+                    <a class="dropdown-item" href="#" data-bind="click: $root.removeGroup.bind($data, $parent)">Delete</a>
+                </div>
+            </div>
+
+
         </td>
     </tr>
     <!-- ko foreach: assignments -->
