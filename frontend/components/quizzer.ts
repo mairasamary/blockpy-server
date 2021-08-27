@@ -493,6 +493,9 @@ export class Quizzer extends AssignmentInterface {
                     }
                     this.submission().submissionStatus(response.submission_status);
                     this.quiz().attempting(false);
+                    if (response.correct) {
+                        this.markCorrect(this.assignment().id);
+                    }
                },
                (e: any, textStatus: string, errorThrown: any) => {
                     console.error("Failed to load (HTTP LEVEL)", e, textStatus, errorThrown);

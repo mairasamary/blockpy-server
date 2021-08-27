@@ -6,8 +6,8 @@ import {Submission} from "../models/submission";
 import {AssignmentInterface, AssignmentInterfaceJson, EditorMode} from "./assignment_interface";
 
 // TODO: Prevent popout button in exams, allow easy to close button there too?
-// TODO: Render youtube video, header, and download button
 // TODO: Fix IP Change logEvent?
+// TODO: Mark as success on load
 
 export const LOG_TIME_RATE = 30000;
 
@@ -57,6 +57,7 @@ export class Reader extends AssignmentInterface {
                         this.logTimer = setTimeout(this.logReading.bind(this), 1000);
                         this.assignment().instructions.subscribe(this.registerWatcher.bind(this));
                         this.parseAdditionalSettings();
+                        this.markRead();
                         this.registerWatcher();
                     } else {
                         console.error("Failed to load", response);
@@ -142,6 +143,43 @@ export class Reader extends AssignmentInterface {
             url: this.assignment().url(),
             name: this.assignment().name()
         });
+    }
+
+    markRead() {
+        let BlockPyServer = window['$MAIN_BLOCKPY_EDITOR'].components.server;
+        let now = new Date();
+        let data = {
+            assignment_id: this.assignment().id,
+            assignment_group_id: this.assignmentGroupId,
+            course_id: this.courseId,
+            submission_id: this.submission().id,
+            user_id: this.user.id,
+            status: 1,
+            correct: true,
+            timestamp: now.getTime(),
+            timezone: now.getTimezoneOffset(),
+            passcode: window['$MAIN_BLOCKPY_EDITOR'].model.display.passcode(),
+        };
+        BlockPyServer._postBlocking("updateSubmission", data, 3,
+               (response: any) => {
+                    //console.log(response.message.feedbacks);
+                    if (response.success || response.message.message === "Generic LTI Failure - perhaps not logged into LTI session?") {
+                        console.log(response);
+                    }
+                    if (!response.success) {
+                        console.error(response);
+                        this.errorMessage(response.message.message);
+                    }
+                    this.submission().submissionStatus(response.submission_status);
+                    this.submission().correct(response.correct);
+                    if (response.correct) {
+                        this.markCorrect(this.assignment().id);
+                    }
+               },
+               (e: any, textStatus: string, errorThrown: any) => {
+                    console.error("Failed to load (HTTP LEVEL)", e, textStatus, errorThrown);
+                    this.errorMessage("HTTP ERROR (try reloading the page; if still an error, report to instructor!): "+ textStatus+"\n"+errorThrown);
+                });
     }
 }
 

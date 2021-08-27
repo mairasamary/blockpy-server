@@ -12,6 +12,7 @@ export interface AssignmentInterfaceJson {
     currentAssignmentId: ko.Observable<number>;
     assignmentGroupId: number;
     isInstructor: boolean;
+    markCorrect: (id: number) => void;
 }
 
 
@@ -25,6 +26,7 @@ export class AssignmentInterface {
     currentAssignmentId: ko.Observable<number>;
     assignment: ko.Observable<Assignment>;
     submission: ko.Observable<Submission>;
+    markCorrect: (id: number) => void;
 
     constructor(params: AssignmentInterfaceJson) {
         this.server = params.server;
@@ -35,6 +37,7 @@ export class AssignmentInterface {
         this.isInstructor = ko.observable(params.isInstructor);
         this.assignment = ko.observable(null);
         this.submission = ko.observable(null);
+        this.markCorrect = params.markCorrect;
 
         let BlockPyServer = window['$MAIN_BLOCKPY_EDITOR'].components.server;
         BlockPyServer.altLogEntry = this.logEvent.bind(this);

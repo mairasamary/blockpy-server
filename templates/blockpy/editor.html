@@ -107,6 +107,7 @@
                          currentAssignmentId: currentQuizAssignmentId,
                          assignmentGroupId: assignmentGroupId,
                          isInstructor: isInstructor,
+                         markCorrect: markCorrect,
                          user: user"></quizzer>
         <!-- /ko -->
         <!-- ko if: assignmentType() == 'reading' -->
@@ -115,6 +116,7 @@
                         currentAssignmentId: currentReadingAssignmentId,
                         assignmentGroupId: assignmentGroupId,
                         isInstructor: isInstructor,
+                        markCorrect: markCorrect,
                         user: user"></reader>
         <!-- /ko -->
     </div>
@@ -140,6 +142,7 @@
                 currentReadingAssignmentId: ko.observable(null),
                 assignmentType: ko.observable(null),
                 assignmentGroupId: {{ (assignment_group_id or None)|tojson }},
+                markCorrect: markCorrect
             }
             ko.applyBindings(mainModel, $("#extras-div")[0]);
 

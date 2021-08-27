@@ -285,13 +285,15 @@ def log_event(lti=lti):
     course_id = get_course_id()
     user, user_id = get_user()
     assignment_id = request.values.get('assignment_id')
-    assignment_version = request.values.get('assignment_version')
+    assignment_version = request.values.get('assignment_version') or 0
     event_type = request.values.get("event_type")
     file_path = request.values.get("file_path", "")
     category = request.values.get('category', "")
     label = request.values.get('label', "")
     message = request.values.get('message', "")
     # Make the entry
+    if None in (assignment_id, course_id, user_id):
+        return ajax_failure(f"Missing either course_id ({course_id}, user ({user_id}), or assignment_id ({assignment_id}.")
     new_log = make_log_entry(assignment_id, assignment_version, course_id, user_id,
                              event_type, file_path, category, label, message)
     return ajax_success({"log_id": new_log.id})
@@ -425,7 +427,7 @@ def update_submission(lti, lti_exception=None):
             submission.update_grading_status(GradingStatuses.FAILED)
             make_log_entry(submission.assignment_id, submission.assignment_version,
                            course_id, user_id, "X-Quiz.Grade.Failure", "answer.py", message=quiz.error)
-            return ajax_failure({"submitted": False, "changed": False,
+            return ajax_failure({"submitted": False, "changed": False, "correct": submission.correct,
                                  "message": quiz.error, "feedbacks": quiz.feedbacks,
                                  'submission_status': submission.submission_status})
     else:
@@ -452,9 +454,9 @@ def update_submission(lti, lti_exception=None):
             submission.update_grading_status(GradingStatuses.FAILED)
             make_log_entry(submission.assignment_id, submission.assignment_version,
                            course_id, user_id, "X-Submission.LMS.Failure", "answer.py", message=error)
-            return ajax_failure({"submitted": False, "changed": was_changed,
+            return ajax_failure({"submitted": False, "changed": was_changed, "correct": correct,
                                  "message": error, "feedbacks": feedbacks, 'submission_status': submission.submission_status})
-    return ajax_success({"submitted": was_changed or force_update, "changed": was_changed,
+    return ajax_success({"submitted": was_changed or force_update, "changed": was_changed, "correct": correct,
                          "feedbacks": feedbacks, 'submission_status': submission.submission_status})
 
 
