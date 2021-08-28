@@ -23,8 +23,13 @@ export class Reader extends AssignmentInterface {
     errorMessage: ko.Observable<string>;
     editorMode: ko.Observable<EditorMode>;
 
+    subscriptions: {
+        currentAssignmentId: ko.Subscription
+    }
+
     constructor(params: AssignmentInterfaceJson) {
         super(params);
+        this.subscriptions = {currentAssignmentId: null};
         this.logCount = 0;
         this.youtube = ko.observable<string>("");
         this.header = ko.observable<string>("");
@@ -34,11 +39,10 @@ export class Reader extends AssignmentInterface {
         this.editorMode = ko.observable(EditorMode.SUBMISSION);
         this.errorMessage = ko.observable("");
 
-        this.currentAssignmentId.subscribe((newId) => {
+        this.subscriptions.currentAssignmentId = this.currentAssignmentId.subscribe((newId) => {
             this.loadReading(newId);
         }, this);
         this.loadReading(this.currentAssignmentId());
-
     }
 
     loadReading(assignmentId: number) {
@@ -93,6 +97,7 @@ export class Reader extends AssignmentInterface {
     }
 
     dispose() {
+        this.subscriptions.currentAssignmentId.dispose();
         if (this.ytPlayer) {
             //this.ytPlayer.stopVideo();
             this.ytPlayer.destroy();

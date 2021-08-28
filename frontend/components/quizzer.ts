@@ -369,8 +369,15 @@ export class Quizzer extends AssignmentInterface {
 
     errorMessage: ko.Observable<string>;
 
+    subscriptions: {
+        quiz: ko.Subscription
+        currentAssignmentId: ko.Subscription
+        questions: ko.Subscription[]
+    }
+
     constructor(params: AssignmentInterfaceJson) {
         super(params);
+        this.subscriptions = {quiz: null, currentAssignmentId: null, questions: null};
 
         this.quiz = ko.observable(null);
 
@@ -379,16 +386,20 @@ export class Quizzer extends AssignmentInterface {
         this.editorMode = ko.observable(EditorMode.SUBMISSION);
         this.errorMessage = ko.observable("");
 
-        this.currentAssignmentId.subscribe((newId) => {
+        this.subscriptions.currentAssignmentId = this.currentAssignmentId.subscribe((newId) => {
+            console.log("I AM STILL SUBSCRIBED");
             this.loadQuiz(newId);
         }, this);
         this.loadQuiz(this.currentAssignmentId());
-        this.quiz.subscribe((quiz) => {
+
+        this.subscriptions.questions = [] as ko.Subscription[];
+        this.subscriptions.quiz = this.quiz.subscribe((quiz) => {
             this.quiz().questions().map((question: Question) => {
                 subscribeToStudent(question).map((subscribable) => {
-                    subscribable.subscribe((value: any) => {
+                    let subscription = subscribable.subscribe((value: any) => {
                         this.onChange();
-                    })
+                    });
+                    this.subscriptions.questions.push(subscription);
                 })
             });
         });
@@ -396,6 +407,12 @@ export class Quizzer extends AssignmentInterface {
         this.isReadOnly = ko.pureComputed<boolean>(() => {
             return !this.quiz().attempting();
         }, this);
+    }
+
+    dispose() {
+        this.subscriptions.currentAssignmentId.dispose();
+        this.subscriptions.quiz.dispose();
+        this.subscriptions.questions.map((question: ko.Subscription) => question.dispose());
     }
 
     loadQuiz(assignmentId: number) {
