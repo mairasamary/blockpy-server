@@ -24,12 +24,13 @@ export class Reader extends AssignmentInterface {
     editorMode: ko.Observable<EditorMode>;
 
     subscriptions: {
-        currentAssignmentId: ko.Subscription
+        currentAssignmentId: ko.Subscription,
+        windowPositioning: (event: Event) => void
     }
 
     constructor(params: AssignmentInterfaceJson) {
         super(params);
-        this.subscriptions = {currentAssignmentId: null};
+        this.subscriptions = {currentAssignmentId: null, windowPositioning: null};
         this.logCount = 0;
         this.youtube = ko.observable<string>("");
         this.header = ko.observable<string>("");
@@ -43,6 +44,9 @@ export class Reader extends AssignmentInterface {
             this.loadReading(newId);
         }, this);
         this.loadReading(this.currentAssignmentId());
+
+        this.subscriptions.windowPositioning = this.getWindowPositioning.bind(this)
+        window.addEventListener('message', this.subscriptions.windowPositioning);
     }
 
     loadReading(assignmentId: number) {
@@ -58,7 +62,7 @@ export class Reader extends AssignmentInterface {
                         this.assignment(assignment);
                         this.submission(submission);
                         this.logCount = 1;
-                        this.logTimer = setTimeout(this.logReading.bind(this), 1000);
+                        this.logTimer = setTimeout(this.logReadingStart.bind(this), 1000);
                         this.assignment().instructions.subscribe(this.registerWatcher.bind(this));
                         this.parseAdditionalSettings();
                         this.markRead();
@@ -98,6 +102,7 @@ export class Reader extends AssignmentInterface {
 
     dispose() {
         this.subscriptions.currentAssignmentId.dispose();
+        window.removeEventListener('message', this.subscriptions.windowPositioning);
         if (this.ytPlayer) {
             //this.ytPlayer.stopVideo();
             this.ytPlayer.destroy();
@@ -120,20 +125,31 @@ export class Reader extends AssignmentInterface {
         })
     }
 
-    logReading() {
+    getWindowPositioning(event: any) {
+        let data = JSON.parse(event.data);
+        if (data.subject === "lti.fetchWindowSize") {
+            this.logReading(data);
+        }
+    }
+
+    logReadingStart(assignmentId: number) {
+        console.log("FIREIGI");
+        window.parent.postMessage(JSON.stringify({subject: "lti.fetchWindowSize"}), "*");
+    }
+
+    logReading(positionData: any) {
         this.logCount += 1;
         let delay = this.logCount * LOG_TIME_RATE;
-        let position = $(window).scrollTop();
-        let height = ($(document).height() - $(window).height());
+        let position = positionData.scrollY;
+        let height = $(document).height() + positionData.offset.top;
         let progress = 100* position / height;
-        //console.log(this.logCount, delay, this.assignment());
         if (this.assignment()) {
             this.logEvent("Resource.View", "reading", "read",
                 JSON.stringify({
                     "count": this.logCount,
                     delay, position, height, progress
                 }), this.assignment().url(), () => {
-                    this.logTimer = setTimeout(this.logReading.bind(this), delay);
+                    this.logTimer = setTimeout(this.logReadingStart.bind(this), delay);
                 })
         } else {
             console.log("Skipping log event");

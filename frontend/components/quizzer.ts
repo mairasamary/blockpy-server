@@ -13,7 +13,7 @@ import {AssignmentInterface, AssignmentInterfaceJson, EditorMode} from "./assign
 // TODO: One question at a time
 // TODO: Allow bulk regrading of students' feedbacks/scoring
 // TODO: Check for orphaned feedbacks and answers
-// TODO: Fix feedback for multiple answers
+// TODO: Allow instructors to see currently failed to grade assignemnts
 
 export interface QuizzerJson {
     server: Server;
@@ -675,20 +675,20 @@ export const QUIZZER_HTML = `
                         <!-- True/False Question -->
                         <div data-bind="case: 'true_false_question'">
                             <div class="form-check">
-                                <label class="form-check-label" data-bind="attr: {for: 'question-mcq-'+$index()+'t'}">
+                                <label class="form-check-label" data-bind="attr: {for: 'question-tf-'+$index()+'-t'}">
                                   <input data-bind="checked: student,
                                                 disable: $component.isReadOnly(),
-                                                attr: {name: 'question-tf-'+$index(),
+                                                attr: {name: 'question-tf-'+$index()+'-t',
                                                        id: 'question-tf-'+$index()+'-t'}"
                                     class="form-check-input" type="radio" value="true">
                                     True
                               </label>
                             </div>
                             <div class="form-check">
-                              <label class="form-check-label" data-bind="attr: {for: 'question-mcq-'+$index()+'f'}">
+                              <label class="form-check-label" data-bind="attr: {for: 'question-tf-'+$index()+'-f'}">
                                 <input data-bind="checked: student,
                                             disable: $component.isReadOnly(),
-                                            attr: {name: 'question-tf-'+$index(),
+                                            attr: {name: 'question-tf-'+$index()+'-f',
                                                    id: 'question-tf-'+$index()+'-f'}"
                                 class="form-check-input" type="radio" value="false">
                                 False

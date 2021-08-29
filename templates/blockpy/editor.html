@@ -274,7 +274,8 @@
             // Remove the loading screen
             $('.delete-on-load').remove();
 
-
+            // window.parent.postMessage(JSON.stringify({subject: "lti.fetchWindowSize"}), "*")
+            // window.addEventListener('message', function(event) { console.log(JSON.parse(event.data)); })
         });
     </script>
     <script src="https://www.youtube.com/iframe_api"></script>
