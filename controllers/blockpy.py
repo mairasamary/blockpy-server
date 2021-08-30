@@ -292,7 +292,7 @@ def log_event(lti=lti):
     label = request.values.get('label', "")
     message = request.values.get('message', "")
     # Make the entry
-    if None in (assignment_id, course_id, user_id):
+    if None in (assignment_id, course_id, user_id) or '' in (assignment_id, course_id, user_id):
         return ajax_failure(f"Missing either course_id ({course_id}, user ({user_id}), or assignment_id ({assignment_id}.")
     new_log = make_log_entry(assignment_id, assignment_version, course_id, user_id,
                              event_type, file_path, category, label, message)
