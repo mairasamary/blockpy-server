@@ -14,6 +14,9 @@ import {AssignmentInterface, AssignmentInterfaceJson, EditorMode} from "./assign
 // TODO: Allow bulk regrading of students' feedbacks/scoring
 // TODO: Check for orphaned feedbacks and answers
 // TODO: Allow instructors to see currently failed to grade assignemnts
+// TODO: Update on blur - perhaps just have an icon to indicate readiness? ("unsaved changes")
+// TODO: Make it more obvious that the "next" button is at the top
+// TODO: Hide Generic LTI error message better
 
 export interface QuizzerJson {
     server: Server;

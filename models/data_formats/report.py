@@ -91,7 +91,8 @@ REMAP_EVENT_TYPES = {
 def get_when(log):
     client_timestamp = int(log['client_timestamp'] or 0)
     client_timestamp = datetime.datetime.fromtimestamp(client_timestamp/1000)
-    server_time = datetime.datetime.strptime(log['date_created'], "%Y-%m-%dT%H:%M:%SZ")
+    format_str = "%Y-%m-%dT%H:%M:%S.%f" if '.' in log['date_created'] else "%Y-%m-%dT%H:%M:%SZ"
+    server_time = datetime.datetime.strptime(log['date_created'], format_str)
     return client_timestamp or server_time
 
 def make_report(logs):
@@ -113,11 +114,12 @@ def make_report(logs):
             a = Assignment.by_id(assignment)
             result.append(f"New Assignment: {a.name}")
             code = ""
-        if log['event_type'] in ('File.Edit', 'File.Create'):
+        elif log['event_type'] in ('File.Edit', 'File.Create'):
             new_code = log['message']
-            change = (difflib.SequenceMatcher(None, code, new_code)).ratio()
             code = new_code
-            result.append(f"Size: {change}")
+            result.append(f"File Edit: {len(new_code)}")
+        else:
+            result.append(repr(log))
         next_when = get_when(log)
         diff = (next_when - when).total_seconds()
         #result.append(f"{when} - {diff} - {log['event_type']} - {log['category']}")
