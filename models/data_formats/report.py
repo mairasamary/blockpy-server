@@ -91,8 +91,8 @@ REMAP_EVENT_TYPES = {
 def get_when(log):
     client_timestamp = int(log['client_timestamp'] or 0)
     client_timestamp = datetime.datetime.fromtimestamp(client_timestamp/1000)
-    format_str = "%Y-%m-%dT%H:%M:%S.%f" if '.' in log['date_created'] else "%Y-%m-%dT%H:%M:%SZ"
-    server_time = datetime.datetime.strptime(log['date_created'], format_str)
+    format_str = "%Y-%m-%dT%H:%M:%S.%f" if '.' in log['date_created'] else "%Y-%m-%dT%H:%M:%S"
+    server_time = datetime.datetime.strptime(log['date_created'].replace("Z", ""), format_str)
     return client_timestamp or server_time
 
 def make_report(logs):

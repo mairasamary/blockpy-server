@@ -65,7 +65,7 @@
 
 {% block body %}
 
-    <span class='delete-on-load'>Loading! Please wait.</span>
+    <span class='delete-on-load'>Loading! Please wait. If this doesn't load, and you are using Safari, then please stop using Safari!</span>
 
     {% if lti %}
     <script>
@@ -120,6 +120,10 @@
                         user: user"></reader>
         <!-- /ko -->
     </div>
+
+    {% if group and group|length > 1 %}
+        {{ assignment_group_header(group, current_assignment_id, embed, 'blockpy.load') }}
+    {% endif %}
 
     <script>
         const QUIZZES = {{ quiz_questions|tojson }};
