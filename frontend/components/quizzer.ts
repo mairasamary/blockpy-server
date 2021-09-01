@@ -558,7 +558,7 @@ export const QUIZZER_HTML = `
 <div data-bind="if: assignment">
     <div>
         <!-- Errors -->
-        <div class="bg-danger text-white p-3 border rounded" data-bind="text: errorMessage, visible: errorMessage().length"></div>
+        <div class="alert alert-warning p-1 border rounded float-right" data-bind="text: errorMessage, visible: errorMessage().length"></div>
     
         <!-- Instructor Editor Mode Selector -->
         <div data-bind="if: isInstructor()">
@@ -787,8 +787,9 @@ export const QUIZZER_HTML = `
     </div>
     <!-- /ko -->
     
-    ${INSTRUCTIONS_BAR_HTML('above')}<!-- Errors -->
-    <div class="bg-danger text-white p-3 border rounded" data-bind="text: errorMessage, visible: errorMessage().length"></div>
+    ${INSTRUCTIONS_BAR_HTML('above')}
+    <!-- Errors -->
+    <div class="alert alert-warning p-1 border rounded" data-bind="text: errorMessage, visible: errorMessage().length"></div>
 </div>
 <div data-bind="if: server.isLoading()">
     Loading!

@@ -209,7 +209,7 @@ export class Reader extends AssignmentInterface {
 
 export const EDITOR_HTML = `
 <!-- Errors -->
-<div class="bg-danger text-white p-3 border rounded" data-bind="text: errorMessage, visible: errorMessage().length"></div>
+<div class="alert alert-warning p-1 border rounded float-right" data-bind="text: errorMessage, visible: errorMessage().length"></div>
 
 <!-- Instructor Editor Mode Selector -->
 <div data-bind="if: isInstructor()">
