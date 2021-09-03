@@ -4,6 +4,7 @@ import * as ko from 'knockout';
 import {Assignment} from "../models/assignment";
 import {Submission, SubmissionStatus} from "../models/submission";
 import {AssignmentInterface, AssignmentInterfaceJson, EditorMode} from "./assignment_interface";
+import {subsetRandomly} from "../utilities/random"
 
 // Maybe TODO: Add bookmarking
     // Add a question mark button that let's them flag this to return to later
@@ -140,6 +141,12 @@ export interface Question {
     statements?: string[]
 
     feedback: ko.Observable<Feedback>
+    visible: ko.Observable<boolean>
+}
+
+export interface QuestionPool {
+    questions: string[]
+    amount: number
 }
 
 export enum QuizFeedbackType {
@@ -160,6 +167,7 @@ export interface QuizInstructionsSettings {
 export interface QuizInstructions {
     questions?: Record<string, Question>
     settings?: QuizInstructionsSettings
+    pools: QuestionPool[]
 }
 
 export interface QuizSubmissionAttempt {
@@ -226,6 +234,8 @@ export class Quiz {
     questionMap: Record<string, Question>;
     questions: ko.ObservableArray<Question>;
 
+    seed: ko.Observable<number>;
+
     attemptCount: ko.Observable<number>;
     attempting: ko.Observable<boolean>;
     attemptStatus: ko.PureComputed<QuizMode>;
@@ -235,6 +245,8 @@ export class Quiz {
     attemptsLeft: ko.PureComputed<string>;
     canAttempt: ko.PureComputed<boolean>;
 
+    pools: ko.Observable<QuestionPool[]>
+
     constructor(assignment: Assignment, submission: Submission) {
         this.questions = ko.observableArray([]);
         this.questionMap = {};
@@ -243,7 +255,10 @@ export class Quiz {
         this.attemptMulligans = ko.observable(0);
         this.attemptLimit = ko.observable<number>(-1);
 
+        this.pools = ko.observable<QuestionPool[]>([]);
+
         this.loadAssignment(assignment, submission);
+        this.seed = ko.observable<number>(submission.id);
 
         this.attemptStatus = ko.pureComputed<QuizMode>( () => {
             return this.attempting() ? QuizMode.ATTEMPTING :
@@ -277,7 +292,8 @@ export class Quiz {
         for (const questionId in instructions.questions) {
             let answer = currentAnswer.studentAnswers[questionId];
             let question = {...instructions.questions[questionId], id: questionId,
-                            feedback: ko.observable(null)} as Question;
+                            feedback: ko.observable(null),
+                            visible: ko.observable(true)} as Question;
             question.student = getDefaultValue(question, answer);
             this.questionMap[questionId] = question;
             this.questions.push(question);
@@ -286,6 +302,7 @@ export class Quiz {
         this.attemptCount(currentAnswer.attempt.count);
         this.attemptLimit(instructions.settings.attemptLimit)
         this.includeFeedbacks(currentAnswer.feedback);
+        this.pools(instructions.pools);
     }
 
     includeFeedbacks(feedbacks: {[key: string]: Feedback}) {
@@ -308,6 +325,20 @@ export class Quiz {
             clearValue(this.questionMap[questionId]);
         }
         this.attemptCount(0);
+    }
+
+    hidePools() {
+        this.questions().forEach((question: Question) => {
+            question.visible(true);
+        })
+        this.pools().forEach((pool: QuestionPool) => {
+            const allQuestions = pool.questions;
+            const seed = this.seed() + this.attemptCount();
+            const chosenQuestions = subsetRandomly(allQuestions, pool.amount, seed);
+            allQuestions.forEach((questionId: string) => {
+                this.questionMap[questionId].visible(chosenQuestions.includes(questionId));
+            })
+        })
     }
 
     submissionAsJson(): string {
@@ -431,6 +462,7 @@ export class Quizzer extends AssignmentInterface {
                         this.assignment(assignment);
                         this.submission(submission);
                         this.quiz(new Quiz(assignment, submission));
+                        console.log(this.quiz())
                     } else {
                         console.error("Failed to load", response);
                         this.assignment(null);
@@ -468,6 +500,7 @@ export class Quizzer extends AssignmentInterface {
         this.quiz().attemptCount(this.quiz().attemptCount()+1);
         this.quiz().attempting(true);
         this.quiz().clearFeedback();
+        this.quiz().hidePools();
         //this.quiz().clearAnswers();
         this.saveSubmission();
         this.submission().code(this.quiz().submissionAsJson());
@@ -649,9 +682,9 @@ export const QUIZZER_HTML = `
         ${INSTRUCTIONS_BAR_HTML('below')}
         
         <!-- Quick Jump -->
-        <div>
+        <div data-bind="visible: quiz()?.attemptCount() > 0">
             <span>Overview: </span>
-            <span data-bind="foreach: quiz()?.questions()">
+            <span data-bind="foreach: quiz()?.questions().filter(question => question.visible())">
                 <quizzer-question-status params="indexId: 1+$index(), status: student, question: $data, isAnchor: false"></quizzer-question-status>
             </span>
         </div>
@@ -659,7 +692,7 @@ export const QUIZZER_HTML = `
     </div>
     
     <!-- ko if: editorMode() === 'SUBMISSION' -->
-    <div data-bind="foreach: quiz()?.questions()">
+    <div data-bind="foreach: quiz()?.questions().filter(question => question.visible())">
         <div class="card m-4">
             <div class="quizzer-question card-body">
                 <quizzer-question-status params="indexId: 1+$index(), status: student, question: $data, isAnchor: true" class="float-right"></quizzer-question-status>

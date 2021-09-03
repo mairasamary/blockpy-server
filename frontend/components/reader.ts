@@ -133,15 +133,20 @@ export class Reader extends AssignmentInterface {
     }
 
     logReadingStart(assignmentId: number) {
-        console.log("FIREIGI");
         window.parent.postMessage(JSON.stringify({subject: "lti.fetchWindowSize"}), "*");
     }
 
     logReading(positionData: any) {
         this.logCount += 1;
         let delay = this.logCount * LOG_TIME_RATE;
-        let position = positionData.scrollY;
-        let height = $(document).height() + positionData.offset.top;
+        let position, height;
+        if (positionData != null && 'offset' in positionData) {
+            position = positionData.scrollY;
+            height = $(document).height() + positionData.offset.top;
+        } else {
+            position = $(document).scrollTop();
+            height = $(document).height();
+        }
         let progress = 100* position / height;
         if (this.assignment()) {
             this.logEvent("Resource.View", "reading", "read",

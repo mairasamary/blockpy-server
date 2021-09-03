@@ -303,3 +303,4 @@ ko.bindingHandlers.option = {
        ko.selectExtensions.writeValue(element, value);
     }
 };
+
