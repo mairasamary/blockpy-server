@@ -302,7 +302,7 @@ export class Quiz {
         this.attemptCount(currentAnswer.attempt.count);
         this.attemptLimit(instructions.settings.attemptLimit)
         this.includeFeedbacks(currentAnswer.feedback);
-        this.pools(instructions.pools);
+        this.pools(instructions.pools || []);
     }
 
     includeFeedbacks(feedbacks: {[key: string]: Feedback}) {
