@@ -63,7 +63,10 @@ def process_quiz(body: dict, checks: dict, submission_body: dict) -> QuizResult:
     total_correct = True
     feedbacks = {}
     for question_id, question in questions.items():
-        student = student_answers.get(question_id, {})
+        student = student_answers.get(question_id)
+        if not student:
+            # Hack - for now we just skip missing student submissions
+            continue
         check = checks.get(question_id, {})
         points = question.get('points', 1)
         total_points += points
