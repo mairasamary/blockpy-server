@@ -149,11 +149,14 @@ class Course(Base):
                 .all())
 
     def get_grading_failures(self):
-        return (db.session.query(models.Submission, models.User, models.Assignment)
+        return (db.session.query(models.Submission, models.User, models.Assignment, models.Role)
                 .filter(models.Submission.course_id == self.id)
                 .filter(models.Submission.grading_status == GradingStatuses.FAILED)
                 .filter(models.Submission.user_id == models.User.id)
                 .filter(models.Submission.assignment_id == models.Assignment.id)
+                .filter(models.Role.course_id == self.id)
+                .filter(models.Role.user_id == models.User.id)
+                .filter(models.Role.name.ilike("%learner%"))
                 .all())
 
     def get_assignment_groups(self):
