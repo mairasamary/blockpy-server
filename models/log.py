@@ -8,6 +8,7 @@ from sqlalchemy import Column, String, Integer, ForeignKey, Text, func, JSON, In
 from models.assignment import Assignment
 from models.models import Base, db, datetime_to_string
 from models.user import User
+from models import models
 
 
 class Log(Base):
@@ -104,6 +105,14 @@ class Log(Base):
                 .group_by(Log.subject_id)
                 .all())
 
+
+    @staticmethod
+    def get_logs_for_user_course(course_id, user_id):
+        return (db.session.query(Log)
+                .filter(Log.course_id == course_id)
+                .filter(Log.subject_id == user_id)
+                .all())
+
     @staticmethod
     def get_logs_for_course(course_id):
         return Log.query.filter_by(course_id=course_id).all()
@@ -131,7 +140,7 @@ class Log(Base):
                 .delete())
 
     @staticmethod
-    def get_history(course_id, assignment_id, user_id, page_offset=None, page_limit=None, with_assignment=False):
+    def get_history(course_id, assignment_id, user_id, page_offset=None, page_limit=None):
         logs = Log.query.filter_by(course_id=course_id)
         # JUst need to refactor this to allow lists
         if assignment_id is not None:

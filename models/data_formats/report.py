@@ -88,6 +88,7 @@ REMAP_EVENT_TYPES = {
     "X-Submission.LMS": "Updated grade"
 }
 
+
 def get_when(log):
     client_timestamp = int(log['client_timestamp'] or 0)
     client_timestamp = datetime.datetime.fromtimestamp(client_timestamp/1000)
@@ -95,7 +96,8 @@ def get_when(log):
     server_time = datetime.datetime.strptime(log['date_created'].replace("Z", ""), format_str)
     return client_timestamp or server_time
 
-def make_report(logs):
+
+def make_report(logs, assignments, groups):
     # IP Address changes
     # Bulk group by day
     # Long work sessions
@@ -111,8 +113,8 @@ def make_report(logs):
     for log in reversed(logs):
         if log['assignment_id'] != assignment:
             assignment = log['assignment_id']
-            a = Assignment.by_id(assignment)
-            result.append(f"New Assignment: {a.name}")
+            a = assignments[assignment]
+            result.append(f"New Assignment: {a['name']}")
             code = ""
         elif log['event_type'] in ('File.Edit', 'File.Create'):
             new_code = log['message']

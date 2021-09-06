@@ -542,6 +542,12 @@ def fix_course_outcome_url():
     return ajax_success({"success": "True"})
 
 
+def unpack(value):
+    if isinstance(value, list):
+        return value[0]
+    return value
+
+
 @courses.route('/student_report/', methods=['GET', 'POST'])
 @courses.route('/student_report', methods=['GET', 'POST'])
 @login_required
@@ -558,8 +564,20 @@ def student_report():
     is_owner = user_id == student_id
     if not is_instructor and not is_owner:
         return "You are not an instructor or this specific student!"
-    logs = Log.get_history(course_id, None, student_id, None, None)
-    return "<br>\n".join(make_report(logs))
+    logs = Log.get_logs_for_user_course(course_id, student_id)
+    assignment_ids = set(log.assignment_id for log in logs)
+    assignments = {aid: Assignment.by_id(aid).encode_json() for aid in assignment_ids}
+    groups = {}
+    for aid in assignment_ids:
+        group = AssignmentGroup.by_assignment(aid)
+        if group:
+            groups[aid] = group[0].encode_json()
+    return ajax_success({
+        assignments: assignments,
+        groups: groups,
+        logs: [l.encode_json() for l in logs]
+    })
+    return "<br>\n".join(make_report([l.encode_json() for l in logs], assignments, groups))
     #return render_template('courses/student_report.html',
     #                       submission=submission,
     #                       assignment=assignment,
