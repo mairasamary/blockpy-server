@@ -131,7 +131,7 @@ class Log(Base):
                 .delete())
 
     @staticmethod
-    def get_history(course_id, assignment_id, user_id, page_offset=None, page_limit=None):
+    def get_history(course_id, assignment_id, user_id, page_offset=None, page_limit=None, with_assignment=False):
         logs = Log.query.filter_by(course_id=course_id)
         # JUst need to refactor this to allow lists
         if assignment_id is not None:

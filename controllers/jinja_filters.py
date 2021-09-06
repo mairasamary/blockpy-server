@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from natsort import natsorted
 
@@ -28,8 +28,14 @@ def get_setting(assignment, *keys):
     return settings
 
 
-FRIENDLY_DATE_FORMAT = "%B %d %Y, %I%M %p"
+def date_description(date):
+    if not date:
+        return "Never"
+    if date > datetime.now()-timedelta(days=1):
+        return "Today, " +date.strftime("%I:%M") + date.strftime("%p").lower()
+    return date.strftime("%B %d %Y, %I:%M") + date.strftime("%p").lower()
 
+FRIENDLY_DATE_FORMAT = "%B %d %Y, %I%M %p"
 
 def to_friendly_date(date):
     return date.strftime(FRIENDLY_DATE_FORMAT)
@@ -58,3 +64,4 @@ def setup_jinja_filters(app):
     app.jinja_env.filters['to_friendly_date'] = to_friendly_date
     app.jinja_env.filters['from_friendly_date'] = from_friendly_date
     app.jinja_env.filters['modify_query'] = modify_query
+    app.jinja_env.filters['date_description'] = date_description

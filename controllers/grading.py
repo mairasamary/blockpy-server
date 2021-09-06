@@ -39,7 +39,7 @@ def update_grading_status(lti, lti_exception=None):
     submission_id = maybe_int(request.values.get("submission_id"))
     # TODO: Pretty sure multiple assignments are broken for grading
     assignment_group_id = maybe_int(request.values.get('assignment_group_id'))
-    new_grading_status = request.values.get("new_grading_status")
+    new_grading_status = request.values.get("new_grading_status", GradingStatuses.FULLY_GRADED)
     user, user_id = get_user()
     submission = Submission.by_id(submission_id)
     # Check resource exists
