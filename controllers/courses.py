@@ -573,9 +573,9 @@ def student_report():
         if group:
             groups[aid] = group[0].encode_json()
     return ajax_success({
-        assignments: assignments,
-        groups: groups,
-        logs: [l.encode_json() for l in logs]
+        'assignments': assignments,
+        'groups': groups,
+        'logs': [l.encode_json() for l in logs]
     })
     return "<br>\n".join(make_report([l.encode_json() for l in logs], assignments, groups))
     #return render_template('courses/student_report.html',
