@@ -2,6 +2,7 @@ from sqlalchemy import Column, String, Integer, ForeignKey, Text, or_
 
 from models import models
 from models.models import Base, datetime_to_string, string_to_datetime, db
+from models.statuses import GradingStatuses
 
 
 class Course(Base):
@@ -145,6 +146,14 @@ class Course(Base):
     def get_submissions(self):
         return (db.session.query(models.Submission)
                 .filter(models.Submission.course_id == self.id)
+                .all())
+
+    def get_grading_failures(self):
+        return (db.session.query(models.Submission, models.User, models.Assignment)
+                .filter(models.Submission.course_id == self.id)
+                .filter(models.Submission.grading_status == GradingStatuses.FAILED)
+                .filter(models.Submission.user_id == models.User.id)
+                .filter(models.Submission.assignment_id == models.Assignment.id)
                 .all())
 
     def get_assignment_groups(self):

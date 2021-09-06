@@ -13,7 +13,7 @@ from flask import Flask, redirect, url_for, session, request, jsonify, g, \
 
 from controllers.helpers import (lti, strip_tags,
                                  get_lti_property, require_request_parameters, login_required,
-                                 require_course_instructor, get_select_menu_link,
+                                 require_course_instructor, require_course_grader, get_select_menu_link,
                                  check_resource_exists, get_course_id, get_user, ajax_success, ajax_failure, maybe_int,
                                  maybe_bool)
 from controllers.security import user_datastore
@@ -565,6 +565,31 @@ def student_report():
     #                       assignment=assignment,
     #                       user=user,
     #                       course_id=course_id)
+
+
+@courses.route("/list_grading_failures/", methods=["GET", "POST"])
+@courses.route("/list_grading_failures", methods=["GET", "POST"])
+@login_required
+def list_grading_failures():
+    course_id = get_course_id()
+    user, user_id = get_user()
+    # Load Resources
+    course: Course = Course.by_id(course_id)
+    # Check Resource Exists
+    check_resource_exists(course, "Course", course_id)
+    # Check permissions
+    require_course_grader(g.user, course_id)
+    is_grader = g.user.is_grader(int(course_id))
+    # Get failed-to-grade submissions
+    failures = course.get_grading_failures()
+    return render_template("courses/grading_failures.html",
+                           course_id=course_id,
+                           assignments=assignments,
+                           #students=students,
+                           submissions=failures,
+                           criteria='fails',
+                           is_instructor=is_grader)
+
 
 @courses.route('/edit_points', methods=['GET', 'POST'])
 @courses.route('/edit_points/', methods=['GET', 'POST'])

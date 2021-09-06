@@ -20,7 +20,7 @@
 {% if criteria=="assignment" %}
     <a href="{{ url_for("assignments.export_submissions",
             assignment_id=search_key,
-            course_id=course_id) }}" target="_blank">Download all submissions</a><br>
+            course_id=course_id) }}" target="_blank">Download all submissions for assignment</a><br>
     <a href="{{  url_for("assignments.load",
                         assignment_id=search_key, course_id=course_id) }}"
        target="_blank">Open assignment</a>
@@ -34,8 +34,8 @@
 <caption>Student's submissions for course's assignments.</caption>
 <tbody>
 <tr>
-    {% if criteria=="student" %}<th>Assignment</th>{%endif %}
-    {% if criteria=="assignment" %}<th>Student</th>{%endif %}
+    {% if criteria!="assignment" %}<th>Assignment</th>{%endif %}
+    {% if criteria!="student" %}<th>Student</th>{%endif %}
     <th>Correct</th>
     <th>Submission</th>
     <th>Grading</th>
@@ -53,13 +53,13 @@
         elif (submission[0].score is defined and submission[0].score|round(1) > 0)
     %}table-warning{% endif %}'>
 
-    {% if criteria=="student" %}
+    {% if criteria!="assignment" %}
     <td>
         <a href="{{  url_for("courses.submissions_filter",
                         criteria="assignment", search_key=submission[2].id, course_id=course_id) }}"
        ><i class="fas fa-eye"></i></a> {{ submission[2].title() }}
     </td>{%endif %}
-    {% if criteria=="assignment" %}
+    {% if criteria!="student" %}
         <td>
             <a href="{{  url_for("courses.submissions_filter",
                         criteria="student", search_key=submission[1].id, course_id=course_id) }}"
