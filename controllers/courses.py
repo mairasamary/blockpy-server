@@ -489,13 +489,26 @@ def submissions_specific(submission_id):
 @login_required
 def submissions_grid(course_id):
     ''' List all the users in the course '''
-    # TODO: Fix this
-    course_id = int(course_id)
-    is_instructor = g.user.is_instructor(course_id)
-    if not is_instructor:
-        return "You are not an instructor!"
+    course_id = get_course_id()
+    user, user_id = get_user()
+    # Check permissions
+    require_course_grader(user, course_id)
+    # Get course
     course = Course.by_id(course_id)
-    students = course.get_students()
+    # Organize the students and non-students
+    users = course.get_users()
+    students, non_students = set(), set()
+    for role, user in users:
+        if "learner" in role.name.lower():
+            students.add(user)
+        else:
+            non_students.add(user)
+            if user in students:
+                students.remove(user)
+    students = natsorted(students, key=lambda s: s.name())
+    non_students = natsorted(non_students, key=lambda s: s.name())
+    students = list(students) + list(non_students)
+    # Get all the assignments
     assignments = natsorted(course.get_submitted_assignments_grouped(),
                             key=lambda r: r[0].name)
     grouped_assignments = defaultdict(list)
@@ -522,7 +535,7 @@ def submissions_grid(course_id):
                            scores=scores,
                            assignment_groups=grouped_assignments,
                            grouped_assignments=grouped_assignments,
-                           is_instructor=is_instructor)
+                           is_instructor=True)
 
 
 @courses.route('/making_problems', methods=['GET', 'POST'])
