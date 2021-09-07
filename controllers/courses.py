@@ -496,18 +496,31 @@ def submissions_grid(course_id):
         return "You are not an instructor!"
     course = Course.by_id(course_id)
     students = course.get_students()
-    assignments = natsorted(course.get_submitted_assignments(),
+    assignments = natsorted(course.get_submitted_assignments_grouped(),
                             key=lambda r: r[0].name)
     grouped_assignments = defaultdict(list)
-    #for assignment in assignments:
-    #    grouped_assignments[membership.assignment_group_id].append(assignment)
-    assignment_groups = course.get_assignment_groups()
+    total_points = 0
+    for assignment, group in assignments:
+        grouped_assignments[group].append(assignment)
+        total_points += (assignment.points or 1)
+    #assignment_groups = course.get_assignment_groups()
     submissions = {(s.assignment_id, s.user_id): s for s in course.get_submissions()}
+    scores = {}
+    for student in students:
+        scores[student.id] = 0
+        for assignment, group in assignments:
+            if (assignment.id, student.id) in submissions:
+                submission = submissions[(assignment.id, student.id)]
+                scores[student.id] += ((assignment.points or 1)
+                                       if submission.correct else
+                                       (submission.score or 0)/100 * (assignment.points or 1))
     return render_template('courses/submissions_grid.html',
                            course_id=course_id,
                            students=students,
                            submissions=submissions,
-                           assignment_groups=assignment_groups,
+                           total_points=total_points,
+                           scores=scores,
+                           assignment_groups=grouped_assignments,
                            grouped_assignments=grouped_assignments,
                            is_instructor=is_instructor)
 
