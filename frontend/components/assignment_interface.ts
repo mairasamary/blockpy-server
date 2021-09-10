@@ -62,10 +62,10 @@ export class AssignmentInterface {
             file_path: file_path,
             message: message
         };
-        BlockPyServer._postRetry(data, "logEvent", 0, callback);
+        return BlockPyServer._postRetry(data, "logEvent", 0, callback);
     }
 
-    saveFile(filename: string, contents: string, block: boolean) {
+    saveFile(filename: string, contents: string, block: boolean, onSuccess: (response: any) => void) {
         let BlockPyServer = window['$MAIN_BLOCKPY_EDITOR'].components.server;
         let now = new Date();
         let data = {
@@ -84,11 +84,13 @@ export class AssignmentInterface {
         const onError = (e: any, textStatus: string, errorThrown: any) => {
             console.error("Failed to load (HTTP LEVEL)", e, textStatus, errorThrown);
         };
-        const onSuccess = (response: any) => response.success && console.log(response);
+        if (onSuccess == null) {
+            onSuccess = (response: any) => response.success; // && console.log(response);
+        }
         if (block) {
-            BlockPyServer._postBlocking("saveFile", data, 3, () => 0, onSuccess, onError);
+            return BlockPyServer._postBlocking("saveFile", data, 3, () => 0, onSuccess, onError);
         } else {
-            BlockPyServer._postLatestRetry(data, filename, "saveFile", 300, onError);
+            return BlockPyServer._postLatestRetry(data, filename, "saveFile", 300, onError, onSuccess);
         }
     }
 
@@ -124,7 +126,7 @@ export class AssignmentInterface {
             console.error("Failed to load (HTTP LEVEL)", e, textStatus, errorThrown);
         };
         const onSuccess = (response: any) => response.success && console.log(response);
-        BlockPyServer._postBlocking("saveAssignment", data, 3, () => 0, onSuccess, onError);
+        return BlockPyServer._postBlocking("saveAssignment", data, 3, () => 0, onSuccess, onError);
     }
 }
 

@@ -54,6 +54,14 @@ class User(Base, UserMixin):
     def get_course_roles(self, course_id):
         return models.Role.query.filter_by(user_id=self.id, course_id=course_id).all()
 
+    @staticmethod
+    def get_user_role(course_id, user_id):
+        return (db.session.query(models.Role, models.User)
+                          .filter(models.Role.user_id == models.User.id)
+                          .filter(models.Role.user_id == user_id)
+                          .filter(models.Role.course_id == course_id)
+                          .distinct())
+
     def get_editable_courses(self):
         return (db.session.query(models.Course)
                 .filter(models.Role.user_id == self.id,

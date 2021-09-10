@@ -162,7 +162,7 @@ export class Reader extends AssignmentInterface {
     }
 
     saveAssignment() {
-        this.saveFile("!instructions.md", this.assignment().instructions(), true);
+        this.saveFile("!instructions.md", this.assignment().instructions(), true, ()=>{});
         this.saveAssignmentSettings({
             settings: this.assignment().settings(),
             points: this.assignment().points(),

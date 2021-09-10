@@ -18,6 +18,7 @@ PROGSNAP_CSV_WRITER_OPTIONS = {'delimiter': ',', 'quotechar': '"', 'quoting': cs
 
 # TODO: Investigate filenames of instructor files - shouldn't they be _instructor/*?
 
+
 def generate_readme(zip_file):
     zip_file.writestr("Readme.txt", "Generated from BlockPy")
     return "Readme.txt"
@@ -176,7 +177,7 @@ def to_progsnap_event(log, order_id, code_states, latest_code_states, scores):
                      ]
 
 
-def generate_maintable(zip_file, course_id, assignment_group_ids):
+def generate_maintable(zip_file, course_id, assignment_group_ids, user_ids):
     code_states, latest_code_states, scores = {}, {}, {}
     query = Log.query.filter_by(course_id=course_id)
     if assignment_group_ids is not None:
@@ -184,6 +185,8 @@ def generate_maintable(zip_file, course_id, assignment_group_ids):
                           for group_id in assignment_group_ids
                           for assignment in AssignmentGroup.by_id(group_id).get_assignments()]
         query = query.filter(Log.assignment_id.in_(assignment_ids))
+    if user_ids is not None:
+        query = query.filter(Log.subject_id.in_(user_ids))
     estimated_size = query.count()
     logs = query.order_by(Log.date_created.asc()).yield_per(100)
     tempdir = tempfile.mkdtemp()
@@ -202,27 +205,36 @@ def generate_maintable(zip_file, course_id, assignment_group_ids):
     return "MainTable.csv", code_states
 
 
-def generate_link_subjects(zip_file, course_id):
+def generate_link_subjects(zip_file, course_id, user_ids):
     with io.StringIO() as linktable_file:
         writer = csv.writer(linktable_file, **PROGSNAP_CSV_WRITER_OPTIONS)
         writer.writerow(["SubjectID", "X-IsStaff", "X-Roles",
                          "X-Name.Last", "X-Name.First", "X-Email"])
 
         # Get any users explicitly in this course
-        users_with_roles = Course.by_id(course_id).get_users()
         users, user_roles = {}, {}
-        for role, user in users_with_roles:
-            if user.id not in users:
+        if user_ids:
+            for user_id in user_ids:
+                role_users = User.get_user_role(course_id, user_id)
+                if not role_users:
+                    continue
+                user = role_users[0][1]
                 users[user.id] = user
-                user_roles[user.id] = set()
-            user_roles[user.id].add(role.name)
+                user_roles[user.id] = {role.name for role, user in role_users}
+        else:
+            users_with_roles = Course.by_id(course_id).get_users()
+            for role, user in users_with_roles:
+                if user.id not in users:
+                    users[user.id] = user
+                    user_roles[user.id] = set()
+                user_roles[user.id].add(role.name)
 
-        # Get any additional users found in the logs
-        log_users = Log.get_users_for_course(course_id)
-        for log_user in log_users:
-            if log_user.id not in users:
-                users[log_user.id] = log_user
-                user_roles[log_user.id] = {role.name for role in log_user.get_course_roles(course_id)}
+            # Get any additional users found in the logs
+            log_users = Log.get_users_for_course(course_id)
+            for log_user in log_users:
+                if log_user.id not in users:
+                    users[log_user.id] = log_user
+                    user_roles[log_user.id] = {role.name for role in log_user.get_course_roles(course_id)}
 
         # Report their information
         for user_id, user in natsorted(users.items(), lambda u: (u[1].last_name, u[1].first_name)):
@@ -240,7 +252,7 @@ def generate_link_subjects(zip_file, course_id):
         return "LinkTables/Subject.csv"
 
 
-def generate_link_assignments(zip_file, course_id, assignment_group_ids):
+def generate_link_assignments(zip_file, course_id, assignment_group_ids, user_ids):
     if assignment_group_ids is None:
         assignments = Log.get_assignments_for_course(course_id)
         all_groups = set()
@@ -259,7 +271,6 @@ def generate_link_assignments(zip_file, course_id, assignment_group_ids):
                     assignment_groups[assignment.id] = set()
                 assignment_groups[assignment.id].add(group)
                 assignments.add(assignment)
-
 
     with io.StringIO() as assignment_file:
         assignment_writer = csv.writer(assignment_file, **PROGSNAP_CSV_WRITER_OPTIONS)
@@ -304,18 +315,18 @@ def generate_link_assignments(zip_file, course_id, assignment_group_ids):
         yield "LinkTables/AssignmentGroup.csv"
 
 
-def dump_progsnap(zip_file, course_id, assignment_group_ids):
+def dump_progsnap(zip_file, course_id, assignment_group_ids, user_ids):
     yield generate_readme(zip_file)
     yield generate_metadata(zip_file)
-    filename, code_states = generate_maintable(zip_file, course_id, assignment_group_ids)
+    filename, code_states = generate_maintable(zip_file, course_id, assignment_group_ids, user_ids)
     yield filename
     for code_base, code_state_id in tqdm(code_states.items()):
         for filename, contents in code_base:
             path = "CodeStates/{}/{}".format(code_state_id, filename)
             zip_file.writestr(path, contents)
     yield "CodeStates/*"
-    yield generate_link_subjects(zip_file, course_id)
-    for filename in generate_link_assignments(zip_file, course_id, assignment_group_ids):
+    yield generate_link_subjects(zip_file, course_id, user_ids)
+    for filename in generate_link_assignments(zip_file, course_id, assignment_group_ids, user_ids):
         yield filename
     # LinkTables/
     #   Subject.csv + Roles

@@ -79,8 +79,13 @@ export const getDefaultValue = (question: Question, answer: any): any => {
             let fimbResult: {[key: string]: ko.Observable} = {};
             getBracketed(question.body).map((key: string) => {
                 fimbResult[key] = ko.observable(answer ? answer[key] || '' : "")
+                    .extend({ rateLimit: { method: "notifyWhenChangesStop", timeout: 400 } });
             });
             return fimbResult;
+        case QuizQuestionTypes.numerical_question:
+        case QuizQuestionTypes.short_answer_question:
+            return ko.observable(answer || "")
+                    .extend({ rateLimit: { method: "notifyWhenChangesStop", timeout: 400 } });
         default:
             return ko.observable(answer || "");
     }
@@ -372,7 +377,7 @@ export class Quiz {
                     return part.slice(1, -1);
                 } else if (part.startsWith('[') && part.endsWith(']')) {
                     const key = part.slice(1, -1);
-                    return `<span class="d-inline-block"><input id="question-fimb-${index}-${part}" type="text" class="form-control" data-bind="value: student['${key}'], disable: $component.isReadOnly()"></span>`;
+                    return `<span class="d-inline-block"><input id="question-fimb-${index}-${part}" type="text" class="form-control" data-bind="textInput: student['${key}'], disable: $component.isReadOnly()"></span>`;
                 } else {
                     return part;
                 }
@@ -421,7 +426,6 @@ export class Quizzer extends AssignmentInterface {
         this.errorMessage = ko.observable("");
 
         this.subscriptions.currentAssignmentId = this.currentAssignmentId.subscribe((newId) => {
-            console.log("I AM STILL SUBSCRIBED");
             this.loadQuiz(newId);
         }, this);
         this.loadQuiz(this.currentAssignmentId());
@@ -462,6 +466,7 @@ export class Quizzer extends AssignmentInterface {
                         this.assignment(assignment);
                         this.submission(submission);
                         this.quiz(new Quiz(assignment, submission));
+                        this.markClean();
                         console.log(this.quiz())
                     } else {
                         console.error("Failed to load", response);
@@ -479,20 +484,32 @@ export class Quizzer extends AssignmentInterface {
     }
 
     onChange() {
-        this.saveFile("answer.py", this.quiz().submissionAsJson(), false);
+        this.markDirty();
+        this.saveFile("answer.py", this.quiz().submissionAsJson(), false, this.markClean.bind(this));
     }
 
     saveSubmission() {
-        this.saveFile("answer.py", this.quiz().submissionAsJson(), true);
+        this.markDirty();
+        this.saveFile("answer.py", this.quiz().submissionAsJson(), true, this.markClean.bind(this));
     }
 
     saveSubmissionRaw() {
-        this.saveFile("answer.py", this.submission().code(), true);
+        this.markDirty();
+        this.saveFile("answer.py", this.submission().code(), true, this.markClean.bind(this));
     }
 
     clearSubmission() {
-        this.saveFile("answer.py", "", true);
+        this.markDirty();
+        this.saveFile("answer.py", "", true, this.markClean.bind(this));
         this.submission().code("");
+    }
+
+    markDirty() {
+        this.isDirty(true);
+    }
+
+    markClean() {
+        this.isDirty(false);
     }
 
     startQuiz() {
@@ -508,8 +525,8 @@ export class Quizzer extends AssignmentInterface {
 
     saveAssignment() {
         this.quiz().loadAssignment(this.assignment(), this.submission());
-        this.saveFile("!instructions.md", this.assignment().instructions(), true);
-        this.saveFile("!on_run.py", this.assignment().onRun(), true);
+        this.saveFile("!instructions.md", this.assignment().instructions(), true, this.markClean.bind(this));
+        this.saveFile("!on_run.py", this.assignment().onRun(), true, this.markClean.bind(this));
         this.saveAssignmentSettings({
             settings: this.assignment().settings(),
             points: this.assignment().points(),
@@ -559,6 +576,9 @@ export class Quizzer extends AssignmentInterface {
 
 export const INSTRUCTIONS_BAR_HTML = (position: string) => `
 <p>
+    <!-- ko if: isDirty() -->
+        <small class="alert alert-info p-1 border rounded float-right">Saving changes</small>
+    <!-- /ko -->
     <div data-bind="switch: quiz()?.attemptStatus()">
         <!-- ko case: 'READY' -->
             To begin the quiz, click "Start Quiz".<br>
@@ -788,16 +808,18 @@ export const QUIZZER_HTML = `
                         <div data-bind="case: 'short_answer_question'">
                             <div class="form-group">
                                 <input type="text" class="form-control"
-                                    data-bind="value: student, 
-                                               disable: $component.isReadOnly(), attr: {id: 'question-sa-'+$index()}">
+                                    data-bind="textInput: student, 
+                                               disable: $component.isReadOnly(),
+                                               attr: {id: 'question-sa-'+$index()}">
                             </div>
                         </div>
                         <!-- Numerical Input -->
                         <div data-bind="case: 'numerical_question'">
                             <div class="form-group">
                                 <input type="number" class="form-control"
-                                    data-bind="value: student, 
-                                               disable: $component.isReadOnly(), attr: {id: 'question-num-'+$index()}">
+                                    data-bind="textInput: student, 
+                                               disable: $component.isReadOnly(),
+                                               attr: {id: 'question-num-'+$index()}">
                             </div>
                         </div>
                         <!-- Multiple Fill in the Blank Question -->

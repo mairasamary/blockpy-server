@@ -1,7 +1,11 @@
+import io
 import json
+import zipfile
 
 from natsort import natsorted
+from werkzeug.utils import secure_filename
 
+from models.data_formats.progsnap2 import dump_progsnap
 from models.portation import export_bundle, import_bundle, export_zip
 
 try:
@@ -288,3 +292,26 @@ def export_submissions():
     filename = assignment.get_filename(extension='.zip')
     return Response(bundle, mimetype='application/zip',
                     headers={'Content-Disposition': 'attachment;filename={}'.format(filename)})
+
+
+@blueprint_assignments.route('/export_progsnap/', methods=['GET', 'POST'])
+@blueprint_assignments.route('/export_progsnap', methods=['GET', 'POST'])
+@login_required
+@require_request_parameters('user_id')
+def export_progsnap():
+    student_id = int(request.values.get('user_id'))
+    course_id = get_course_id()
+    user, user_id = get_user()
+    # Verify permissions
+    if course_id is None or not user.is_instructor(int(course_id)) or not user_id == student_id:
+        return "You are not an instructor or the owner of the assignment!"
+    # Get data
+    zip_filename = secure_filename(user.name()) + '.zip'
+    # Start filling it up
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+        for filename in dump_progsnap(zip_file, course_id, None, [student_id]):
+            pass
+
+    return Response(zip_buffer.getvalue(), mimetype='application/zip',
+                    headers={'Content-Disposition': f'attachment;filename={zip_filename}'})

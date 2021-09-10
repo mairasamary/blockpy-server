@@ -554,6 +554,7 @@ def switch_course():
 
 # TODO: update course via JSON file or API
 
+
 @courses.route('/fix_course_outcome_url/', methods=['GET', 'POST'])
 @courses.route('/fix_course_outcome_url', methods=['GET', 'POST'])
 @require_request_parameters('new_url')

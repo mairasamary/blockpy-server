@@ -104,3 +104,5 @@ def import_endpoint():
     # TODO: Verify that memberships are all attached to a group owned by this user
     import_bundle(request.json, owner_id=user.id, course_id=course_id)
     return jsonify(success=True)
+
+# export_progsnap2
