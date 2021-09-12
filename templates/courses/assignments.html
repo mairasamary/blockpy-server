@@ -61,6 +61,7 @@ function MainModel() {
     self.createAssignmentType = ko.observable('BlockPy');
     self.createAssignmentName = ko.observable('Day 1 - #1.1');
     self.createAssignmentUrl = ko.observable('unique_name');
+    self.createAssignmentGroup = ko.observable(-1);
     self.createAssignmentLevel = ko.observable('Level 1');
     self.createAssignmentCourse = ko.observable();
     self.createGroupName = ko.observable("Day X - ");
@@ -170,6 +171,7 @@ function MainModel() {
             if (data.success) {
                 assignment.group_id(new_group.id);
             } else {
+                alert("ERROR"+data.message);
                 console.error(data.message);
             }
         });
@@ -184,6 +186,7 @@ function MainModel() {
             if (data.success) {
                 assignment.course_id(new_course.id());
             } else {
+                alert("ERROR"+data.message);
                 console.error(data.message);
             }
         });
@@ -219,6 +222,7 @@ function MainModel() {
                     group.name(new_name);
                     group.url(new_url);
                 } else {
+                    alert("ERROR"+data.message);
                     console.error(data.message);
                 }
             });
@@ -243,7 +247,9 @@ function MainModel() {
                     'url': ko.observable(data.url),
                     'assignments': ko.observableArray()
                 });
+                mainModel.createAssignmentGroup(data.id);
             } else {
+                alert("ERROR"+data.message);
                 console.error(data.message);
             }
         });
@@ -265,6 +271,7 @@ function MainModel() {
                     var course = findById(self.groups(), course_id, true);
                     course.groups.remove(function(a_group) { return a_group.id() == group_id});
                 } else {
+                    alert("ERROR"+data.message);
                     console.error(data.message);
                 }
             });
@@ -281,6 +288,7 @@ function MainModel() {
                 if (data.success) {
                     self.assignments.remove(function(item) { return item.id == assignment_id });
                 } else {
+                    alert("ERROR"+data.message);
                     console.error(data.message);
                 }
             });
@@ -293,20 +301,22 @@ function MainModel() {
         var url = mainModel.createAssignmentUrl();
         var level = mainModel.createAssignmentLevel();
         var type = mainModel.createAssignmentType().toLowerCase();
+        var group = mainModel.createAssignmentGroup();
         $.post("{{ url_for('assignments.new_assignment') }}", {
             'menu': "{{ menu }}",
             'name': name,
             'url': url,
             "course_id": course_id,
             'level': level,
-            'type': type
+            'type': type,
+            'group': group
         }, function(data) {
             $("#assignment-create").modal('hide');
             if (data.success) {
                 self.assignments.unshift({
                     'id': data.id,
                     'url': data.url,
-                    'group_id': ko.observable(-1),
+                    'group_id': ko.observable(data.group),
                     'type': ko.observable(type),
                     'course_id': ko.observable(parseInt(course_id)),
                     'name': ko.observable(data.name),
@@ -405,6 +415,13 @@ tr.hover-remove-rows a.view-button {
             </select>
             </label>
         </div>
+          <!-- ko with: thisCourse() -->
+        <div class="form-group">
+            <label for="assignment-group">Add to group:
+                <select class="form-control" data-bind="options: groups, optionsText: 'name', optionsValue: 'id', value: $parent.createAssignmentGroup"></select>
+            </label>
+        </div>
+          <!-- /ko -->
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>

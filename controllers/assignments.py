@@ -5,6 +5,7 @@ import zipfile
 from natsort import natsorted
 from werkzeug.utils import secure_filename
 
+from models.assignment_group_membership import AssignmentGroupMembership
 from models.data_formats.progsnap2 import dump_progsnap
 from models.portation import export_bundle, import_bundle, export_zip
 
@@ -20,7 +21,7 @@ from controllers.helpers import (lti, strip_tags,
                                  get_lti_property, require_request_parameters, login_required,
                                  require_course_instructor, get_select_menu_link,
                                  check_resource_exists, parse_assignment_load, get_course_id, get_user, ajax_success,
-                                 ajax_failure)
+                                 ajax_failure, maybe_int)
 
 from main import app
 
@@ -78,11 +79,14 @@ def new_assignment(lti=lti):
     level = request.values.get('level', None) or None
     is_embedded = ('embed' == request.values.get('menu', "select"))
     assignment_type = request.values.get('type', "blockpy")
+    group = maybe_int(request.values.get('group', "-1"))
     # Verify permissions
     require_course_instructor(g.user, course_id)
     # Perform action
     assignment = Assignment.new(owner_id=g.user.id, course_id=course_id, url=url,
                                 type=assignment_type, name=name, level=level)
+    if group != -1:
+        AssignmentGroupMembership.move_assignment(assignment.id, group)
     select_url = get_select_menu_link(assignment.id, assignment.title(), is_embedded, False)
     return jsonify(success=True,
                    redirect=url_for('assignments.load', assignment_id=assignment.id),
@@ -90,6 +94,7 @@ def new_assignment(lti=lti):
                    url=url,
                    name=assignment.name,
                    type=assignment_type,
+                   group=group,
                    instructions=strip_tags(assignment.instructions)[:255],
                    title=assignment.title(),
                    view=url_for('assignments.load', assignment_id=assignment.id, embed=is_embedded),
