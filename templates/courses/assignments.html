@@ -374,8 +374,8 @@ tr.hover-remove-rows a.view-button {
   <div class="modal-dialog" role="document">
     <div class="modal-content">
       <div class="modal-header">
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
         <h4 class="modal-title" id="assignment-create-label">Create Assignment</h4>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
       </div>
       <div class="modal-body">
         <div class="form-group">
@@ -397,7 +397,9 @@ tr.hover-remove-rows a.view-button {
             <label for="assignment-url">Unique URL:
             <input type="text" class="form-control" id="assignment-url"
                    data-bind="value: createAssignmentUrl" placeholder="assignment_url">
-            </label>
+            </label><br>
+            <small>Recommend format: <code>(course)_(topic name)_(problem_name)</code>, like <code>sneks_loops_convert_temperatures</code></small><br>
+            <small>Make sure this is unique across all courses, and should only use letters, numbers, underscores, and dashes</small>
         </div>
         <div class="form-group" data-bind="visible: createAssignmentType() == 'Maze'">
             <label for="assignment-name">Maze Level:
@@ -435,8 +437,8 @@ tr.hover-remove-rows a.view-button {
   <div class="modal-dialog" role="document">
     <div class="modal-content">
       <div class="modal-header">
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
         <h4 class="modal-title" id="group-create-label">Create Assignment Group</h4>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
       </div>
       <div class="modal-body">
         <div class="form-group">
@@ -449,7 +451,9 @@ tr.hover-remove-rows a.view-button {
             <label for="group-url">Url:
             <input type="text" class="form-control" id="group-url"
                    data-bind="value: createGroupUrl" placeholder="unique_group">
-            </label>
+            </label><br>
+              <small>Recommend format: <code>(course)_(topic name)</code>, like <code>sneks_loops</code></small><br>
+            <small>Make sure this is unique across all courses, and should only use letters, numbers, underscores, and dashes</small>
         </div>
       </div>
       <div class="modal-footer">
