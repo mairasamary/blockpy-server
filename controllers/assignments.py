@@ -67,6 +67,11 @@ def load_reading(path):
 
     return jsonify(success=False, message="There is no reading with that information")
 
+
+def fork(lti=lti):
+    pass
+
+
 @blueprint_assignments.route('/new/', methods=['GET', 'POST'])
 @blueprint_assignments.route('/new', methods=['GET', 'POST'])
 @require_request_parameters('course_id')
