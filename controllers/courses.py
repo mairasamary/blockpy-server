@@ -415,7 +415,7 @@ def submissions_user(course_id, owner_id):
                             key=lambda r: r.name)
     all_subs = Submission.by_student(owner_id, course_id)
     all_subs = {s[0].assignment_id: s for s in all_subs}
-    submissions = [all_subs.get(assignment.id, (None, None, assignment))
+    submissions = [all_subs.get(assignment.id, (None, owner, assignment))
                    for assignment in assignments]
     return render_template('courses/submissions_user.html',
                            course_id=course_id,
