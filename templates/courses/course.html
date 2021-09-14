@@ -39,9 +39,10 @@ function renameCourse() {
 
 
 {% if is_grader %}
-<a href="{{ url_for('courses.submissions_user', course_id=course.id, owner_id=g.user.id) }}" class='btn btn-outline-secondary'>View Assignments as Student</a> View assignments as if you were a student<br><br>
-<a href="{{ url_for('courses.submissions_filter', course_id=course.id) }}" class='btn btn-outline-secondary'>View Submissions</a> Old-style review and grade all student submissions<br><br>
+    <a href="{{ url_for('courses.submissions_user', course_id=course.id, owner_id=g.user.id) }}" class='btn btn-outline-secondary'>View Assignments as Student</a> View assignments as if you were a student<br><br>
+    <a href="{{ url_for('courses.submissions_filter', course_id=course.id) }}" class='btn btn-outline-secondary'>View Submissions</a> Old-style review and grade all student submissions<br><br>
     <a href="{{ url_for('courses.watch_events', course_id=course.id) }}" class='btn btn-outline-secondary'>Watch Submissions</a> New-style review and grade all student submissions<br><br>
+    <a href="{{ url_for('courses.submissions_grid', course_id=course.id) }}" class='btn btn-outline-secondary'>View Grid</a> See all your students' assignment submissions' status in a big table.<br><br>
 {%  endif %}
 
 {% if is_instructor %}
