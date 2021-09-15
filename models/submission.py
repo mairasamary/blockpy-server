@@ -12,7 +12,7 @@ from sqlalchemy.orm import relationship
 from main import app
 from models import models
 from models.assignment import Assignment
-from models.data_formats.quizzes import process_quiz_str, QuizResult
+from models.data_formats.quizzes import process_quiz_str, QuizResult, try_parse_file
 from models.log import Log
 from models.models import Base, db, ensure_dirs, optional_encoded_field, datetime_to_string
 from models.review import Review
@@ -392,3 +392,19 @@ class Submission(Base):
             # And return the information
             return quiz_result
         return False
+
+    def give_quiz_mulligan(self, amount):
+        attempt_count = 0
+        if self.assignment.type == "quiz":
+            # Try parsing both as JSON - report errors
+            student_ready, student = try_parse_file(self.code or "{}", "Student Submission")
+            if student_ready:
+                attempt = student.get('attempt', {})
+                attempt_count = attempt.get('mulligans', 0)+amount
+                attempt['mulligans'] = attempt_count
+                student['attempt'] = attempt
+                self.code = json.dumps(student, indent=2)
+                self.version += 1
+                db.session.commit()
+            # And return the information
+        return attempt_count

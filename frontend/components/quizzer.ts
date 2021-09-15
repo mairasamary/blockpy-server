@@ -83,6 +83,7 @@ export const getDefaultValue = (question: Question, answer: any): any => {
             });
             return fimbResult;
         case QuizQuestionTypes.numerical_question:
+        case QuizQuestionTypes.essay_question:
         case QuizQuestionTypes.short_answer_question:
             return ko.observable(answer || "")
                     .extend({ rateLimit: { method: "notifyWhenChangesStop", timeout: 400 } });
@@ -305,6 +306,7 @@ export class Quiz {
         }
         this.attempting(currentAnswer.attempt.attempting);
         this.attemptCount(currentAnswer.attempt.count);
+        this.attemptMulligans(currentAnswer.attempt.mulligans);
         this.attemptLimit(instructions.settings.attemptLimit)
         this.includeFeedbacks(currentAnswer.feedback);
         this.pools(instructions.pools || []);
@@ -348,9 +350,15 @@ export class Quiz {
 
     submissionAsJson(): string {
         // Build up the fields that need to be edited to save the submission
-        let result: QuizSubmission = {studentAnswers: {}, feedback: {}, attempt: {
-            attempting: this.attempting(), count: this.attemptCount()
-            }} as QuizSubmission;
+        let result: QuizSubmission = {
+            studentAnswers: {},
+            feedback: {},
+            attempt: {
+                attempting: this.attempting(),
+                count: this.attemptCount(),
+                mulligans: this.attemptMulligans()
+            }
+        } as QuizSubmission;
         this.questions().forEach((question: Question) => {
             // @ts-ignore
             result.studentAnswers[question.id] = getValue(question);
@@ -812,6 +820,11 @@ export const QUIZZER_HTML = `
                                                disable: $component.isReadOnly(),
                                                attr: {id: 'question-sa-'+$index()}">
                             </div>
+                        </div>
+                        <div data-bind="case: 'essay_question'">
+                        <textarea data-bind="textInput: student, 
+                                               disable: $component.isReadOnly(),
+                                               attr: {id: 'question-es-'+$index()}" style="width: 100%; height: 300px"></textarea><br>
                         </div>
                         <!-- Numerical Input -->
                         <div data-bind="case: 'numerical_question'">

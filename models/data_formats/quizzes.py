@@ -135,7 +135,7 @@ def check_quiz_question(question, check, student) -> (float, bool, list):
             return 0, False, "Unknown Fill In Multiple Blanks Question Check: "+ str(check)
         feedback = check.get('wrong_any', 'Incorrect') if not all(corrects) else 'Correct'
         return sum(corrects) / len(corrects) if corrects else 0, all(corrects), feedback
-    elif question.get('type') == 'text_only_question':
+    elif question.get('type') in ('text_only_question', 'essay_question'):
         return 1, True, "Correct"
     return None
 

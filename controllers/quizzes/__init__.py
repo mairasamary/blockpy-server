@@ -13,6 +13,8 @@ from flask import Blueprint, url_for, session, request, jsonify, g, render_templ
 from controllers.blockpy import lti_post_grade
 from controllers.pylti.common import LTIPostMessageException
 from main import app
+from models.assignment import Assignment
+from models.course import Course
 
 from models.review import Review
 from models.submission import Submission, GradingStatuses
@@ -32,6 +34,44 @@ blueprint_quizzes = Blueprint('quizzes', __name__, url_prefix='/quizzes')
 def grading_static(path):
     return app.send_static_file(path)
 
+
+@blueprint_quizzes.route('/submissions/', methods=['GET', 'POST'])
+@blueprint_quizzes.route('/submissions', methods=['GET', 'POST'])
+def list_quiz_submissions():
+    # Get parameters
+    assignment_id = maybe_int(request.values.get('assignment_id'))
+    student_id = maybe_int(request.values.get('user_id'))
+    user, user_id = get_user()
+    course_id = get_course_id()
+    # Get resources
+    assignment = Assignment.by_id(assignment_id)
+    student = User.by_id(student_id)
+    course = Course.by_id(course_id)
+    # Verify user can see the submission
+    require_course_grader(user, course_id)
+    # Load up all the submissions
+    suas = Submission.by_assignment(assignment_id, course_id)
+    # Load up the assignment
+    return render_template('quizzes/submissions.html', assignment=assignment,
+                           student=student, course=course, suas=suas)
+
+@blueprint_quizzes.route('/give_mulligan/', methods=['GET', 'POST'])
+@blueprint_quizzes.route('/give_mulligan', methods=['GET', 'POST'])
+def give_mulligan():
+    # Get parameters
+    submission_id = maybe_int(request.values.get('submission_id'))
+    user, user_id = get_user()
+    amount = maybe_int(request.values.get('amount', "1"))
+    course_id = get_course_id()
+    # Get resource
+    submission = Submission.by_id(submission_id)
+    check_resource_exists(submission, Submission, submission_id)
+    # Verify permissions
+    require_course_grader(user, submission.course_id)
+    # Make change
+    count = submission.give_quiz_mulligan(amount)
+    # Return result
+    return ajax_success({'count': count})
 
 
 class QuizAPI(MethodView):
@@ -112,8 +152,8 @@ class QuizAPI(MethodView):
 
 
 quiz_view = QuizAPI.as_view('quizzes_api')
-blueprint_quizzes.add_url_rule('/review/', defaults={'review_id': None},
+blueprint_quizzes.add_url_rule('/quizzes/', defaults={'review_id': None},
                                view_func=quiz_view, methods=['GET'])
-blueprint_quizzes.add_url_rule('/review/', view_func=quiz_view, methods=['POST'])
-blueprint_quizzes.add_url_rule('/review/<int:review_id>', view_func=quiz_view,
+blueprint_quizzes.add_url_rule('/quizzes/', view_func=quiz_view, methods=['POST'])
+blueprint_quizzes.add_url_rule('/quizzes/<int:review_id>', view_func=quiz_view,
                                methods=['GET', 'PUT', 'DELETE'])
