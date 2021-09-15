@@ -432,6 +432,7 @@ def update_submission(lti, lti_exception=None):
                                  'submission_status': submission.submission_status})
     else:
         feedbacks = {}
+
     # Do action
     was_changed = submission.update_submission(score, correct)
     if assignment_group_id is None:

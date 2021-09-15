@@ -313,6 +313,7 @@ export class Quiz {
     }
 
     includeFeedbacks(feedbacks: {[key: string]: Feedback}) {
+        console.log(feedbacks);
         for (const questionId in feedbacks) {
             let feedback = feedbacks[questionId];
             if (questionId in this.questionMap) {
@@ -563,7 +564,7 @@ export class Quizzer extends AssignmentInterface {
                     //console.log(response.message.feedbacks);
                     if (response.success || response.message.message === "Generic LTI Failure - perhaps not logged into LTI session?") {
                         console.log(response);
-                        this.quiz().includeFeedbacks(response.feedbacks);
+                        this.quiz().includeFeedbacks(response.feedbacks || response.message.feedbacks);
                     }
                     if (!response.success) {
                         console.error(response);
