@@ -559,6 +559,7 @@ export class Quizzer extends AssignmentInterface {
             timezone: now.getTimezoneOffset(),
             passcode: window['$MAIN_BLOCKPY_EDITOR'].model.display.passcode(),
         };
+        // TODO: Skipping questions doesn't skip giving you points does it??
         BlockPyServer._postBlocking("updateSubmission", data, 3,
                (response: any) => {
                     //console.log(response.message.feedbacks);
