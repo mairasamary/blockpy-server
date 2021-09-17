@@ -279,6 +279,7 @@ function MainModel() {
     }
     
     self.removeAssignment = function(parent_group, assignment) {
+        console.log("REMOVE", assignment, this);
         var assignment_id = assignment.id;
         var youSureHuh = confirm("Are you really sure you want to delete this assignment?");
         if (youSureHuh != null) {
@@ -331,6 +332,43 @@ function MainModel() {
                 console.error(data.message);
             }
         });
+    };
+
+    self.forkAssignment = function(parent_group, skipUrlAsk) {
+        var assignment_id = this.id;
+        var course_id = mainModel.thisCourse().id; //mainModel.createAssignmentCourse();
+        var newUrl = skipUrlAsk || prompt("What would you like the URL to be?", this.url() || "");
+        if (newUrl != null) {
+            var data = {
+                'menu': "{{ menu }}",
+                'assignment_id': assignment_id,
+                "course_id": course_id,
+                'group': parent_group.id
+            }
+            if (!skipUrlAsk) {
+                data['url'] = newUrl;
+            }
+            $.post("{{ url_for('assignments.fork') }}", data, function (data) {
+                if (data.success) {
+                    self.assignments.unshift({
+                        'id': data.id,
+                        'url': data.url,
+                        'group_id': ko.observable(data.group),
+                        'type': ko.observable(data.type),
+                        'course_id': ko.observable(parseInt(course_id)),
+                        'name': ko.observable(data.name),
+                        'title': ko.observable(data.title),
+                        'select': "{{ return_url }}?url=" + data.select,
+                        'edit': data.edit,
+                        'modified': ko.observable(data.date_modified),
+                        'body': ko.observable(data.body)
+                    });
+                    //window.open(data.redirect);
+                } else {
+                    console.error(data.message);
+                }
+            });
+        }
     };
 }
 mainModel = new MainModel();
@@ -544,6 +582,8 @@ tr.hover-remove-rows a.view-button {
                 <!-- Extended buttons -->
                 <div class="dropdown-menu">
                     <a class="dropdown-item" href="#" data-bind="click: $root.removeAssignment.bind($data, $parent)">Delete</a>
+                    <a class="dropdown-item" href="#" data-bind="click: $root.forkAssignment.bind($data, $parent, false)">Fork (prompt URL)</a>
+                    <a class="dropdown-item" href="#" data-bind="click: $root.forkAssignment.bind($data, $parent, true)">Fork</a>
                 </div>
             </div>
         </td>

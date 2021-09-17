@@ -272,7 +272,7 @@ class Assignment(Base):
         db.session.commit()
 
     def fork(self, new_owner_id: int, new_course_id: int):
-        assignment = Assignment(name=self.name,
+        assignment = Assignment(name=make_copy(self.name),
                                 url=make_copy(self.url),
                                 type=self.type,
                                 instructions=self.instructions,

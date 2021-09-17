@@ -68,8 +68,50 @@ def load_reading(path):
     return jsonify(success=False, message="There is no reading with that information")
 
 
+@blueprint_assignments.route('/fork', methods=['GET', 'POST'])
+@blueprint_assignments.route('/fork/', methods=['GET', 'POST'])
+@require_request_parameters('assignment_id')
+@login_required
 def fork(lti=lti):
-    pass
+    ''' Fork an assignment to a course'''
+    # Get arguments
+    course_id = get_course_id()
+    assignment_id = int(request.values.get('assignment_id'))
+    is_embedded = ('embed' == request.values.get('menu', "select"))
+    group = maybe_int(request.values.get('group', "-1"))
+    new_url = request.values.get('url')
+    # Load resource
+    assignment = Assignment.by_id(assignment_id)
+    # Verify exists
+    check_resource_exists(assignment, "Assignment", assignment_id)
+    # Verify permissions
+    require_course_instructor(g.user, course_id)
+    # Perform action
+    if new_url is not None:
+        existing = Assignment.by_url(new_url)
+        if existing:
+            return ajax_failure("Assignment URL is already taken!")
+    forked_assignment = assignment.fork(new_owner_id=g.user.id, new_course_id=course_id)
+    if group != -1:
+        AssignmentGroupMembership.move_assignment(forked_assignment.id, group)
+    if new_url is not None:
+        forked_assignment.url = new_url
+        db.session.commit()
+    # Result
+    select_url = get_select_menu_link(forked_assignment.id, forked_assignment.name, is_embedded, False)
+    return jsonify(success=True,
+                   redirect=url_for('assignments.load', assignment_id=forked_assignment.id),
+                   id=forked_assignment.id,
+                   url=forked_assignment.url,
+                   name=forked_assignment.name,
+                   type=forked_assignment.type,
+                   group=group,
+                   instructions=strip_tags(forked_assignment.instructions)[:255],
+                   title=forked_assignment.title(),
+                   view=url_for('assignments.load', assignment_id=forked_assignment.id, embed=is_embedded),
+                   select=select_url,
+                   edit=url_for('assignments.load', assignment_id=forked_assignment.id, course_id=forked_assignment.course_id),
+                   date_modified=forked_assignment.pretty_date_modified())
 
 
 @blueprint_assignments.route('/new/', methods=['GET', 'POST'])
