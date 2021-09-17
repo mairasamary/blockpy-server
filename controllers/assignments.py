@@ -106,7 +106,7 @@ def fork(lti=lti):
                    name=forked_assignment.name,
                    type=forked_assignment.type,
                    group=group,
-                   instructions=strip_tags(forked_assignment.instructions)[:255],
+                   instructions=forked_assignment.instructions[:255], #strip_tags(forked_assignment.instructions)[:255],
                    title=forked_assignment.title(),
                    view=url_for('assignments.load', assignment_id=forked_assignment.id, embed=is_embedded),
                    select=select_url,

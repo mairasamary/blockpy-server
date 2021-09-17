@@ -21,6 +21,8 @@ migrate = Migrate(app, db)
 
 
 def make_copy(url):
+    if not url:
+        return "_NO_URL_copy1"
     ending = re.search(r"(.*)_copy(\d+)$", url)
     if not ending:
         return url+"_copy1"
