@@ -2,13 +2,41 @@
     <h2 id='{{ assignment.slug() }}'>Quiz {{ assignment.name }}</h2>
     <strong>Status:</strong><span> {{ submission.full_status() }}</span>
 
-
     {% set hiding = assignment.hidden or assignment.get_setting('hide_submission', False) %}
 
     {% set code = submission.code|json_load %}
     {% set questions = assignment.instructions|json_load %}
     {% set questions = questions.get('questions', {}) %}
 
+{% if is_grader %}
+    <div>Full Submission: <a href="{{ url_for('blockpy.load_assignment',
+                            assignment_id=submission.assignment_id,
+                            user_id=submission.user_id,
+                            course_id=submission.course_id,
+                            force_download=True,
+                            embed=True) }}">download</a></div>
+    <div>History: <a href="{{ url_for('blockpy.browse_history', assignment_id=submission.assignment_id,
+        user_id=submission.user_id, course_id=submission.course_id) }}">view</a></div>
+    {% if 'feedback' in code %}
+        {% for question_id, student in code['feedback'].items() %}
+            {% set question = questions.get(question_id, {}) %}
+            {% set answer = code.get('studentAnswers', {}).get(question_id, {}) %}
+            <div class="border border-bottom mb-2 p-2">
+                <h4>Quiz Question {{ loop.index }}
+                </h4>
+                <span>{%  if student.get('correct', False) %}
+                Correct!{% else %} Incorrect ({{ student.get('status') }} with {{ student.get('score', 0)|float|round(2) }} points) {% endif %}</span>
+                <div>{{ question['body']|highlight_python_code|safe  }}</div>
+                <div>Type: {{ question.type }}</div>
+                <div>Statements: {{ question.statements }}</div>
+                <div>Answers: {{ question.answers }}</div>
+                <div>Student Answer: <pre>{{ answer }}</pre></div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div>No feedback given yet.</div>
+    {% endif %}
+{% else %}
     {% if 'feedback' in code %}
         <ul>
         {% for question_id, student in code['feedback'].items() %}
@@ -21,4 +49,5 @@
     {% else %}
         <div>No feedback given yet.</div>
     {% endif %}
+{% endif  %}
 </div>
