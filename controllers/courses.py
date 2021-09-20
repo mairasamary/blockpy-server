@@ -684,3 +684,25 @@ def edit_points():
                                course_id=course_id,
                                course=course,
                                groups=groups)
+
+@courses.route('/get_group_submission_links', methods=['GET', 'POST'])
+@courses.route('/get_group_submission_links/', methods=['GET', 'POST'])
+@login_required
+def get_group_submission_links():
+    course_id = get_course_id()
+    user, user_id = get_user()
+    assignment_group_id = maybe_int(request.values.get('assignment_group_id'))
+    # Load Resources
+    course: Course = Course.by_id(course_id)
+    assignment_group: AssignmentGroup = AssignmentGroup.by_id(assignment_group_id)
+    # Check exists
+    check_resource_exists(assignment_group, "Assignment Group", assignment_group_id)
+    # Check grader
+    require_course_grader(user, course_id)
+    # Get users
+    students = course.get_students()
+    return "\n".join([f"{student.name()}\t{student.email}\t" +
+                      url_for('blockpy.view_submissions', _external=True,
+                          assignment_group_id=assignment_group_id, course_id=course_id,
+                          user_id=student.id)
+                      for student in students])
