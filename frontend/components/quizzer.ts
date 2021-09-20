@@ -8,16 +8,14 @@ import {subsetRandomly} from "../utilities/random"
 
 // Maybe TODO: Add bookmarking
     // Add a question mark button that let's them flag this to return to later
-// TODO: Event logging
-// TODO: Question Pool
 // TODO: Attempt cooldowns
 // TODO: One question at a time
 // TODO: Allow bulk regrading of students' feedbacks/scoring
 // TODO: Check for orphaned feedbacks and answers
 // TODO: Allow instructors to see currently failed to grade assignemnts
-// TODO: Update on blur - perhaps just have an icon to indicate readiness? ("unsaved changes")
-// TODO: Make it more obvious that the "next" button is at the top
-// TODO: Hide Generic LTI error message better
+// TODO: Hide feedback/score mode
+// TODO: Show as [instructor|student] mode
+// TODO: Click to edit component in modal
 
 export interface QuizzerJson {
     server: Server;
