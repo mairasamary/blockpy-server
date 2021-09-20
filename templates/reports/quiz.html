@@ -26,7 +26,7 @@
                 </h4>
                 <span>{%  if student.get('correct', False) %}
                 Correct!{% else %} Incorrect ({{ student.get('status') }} with {{ student.get('score', 0)|float|round(2) }} points) {% endif %}</span>
-                <div>{{ question['body']|highlight_python_code|safe  }}</div>
+                <pre>{{ question['body']|safe  }}</pre>
                 <div>Type: {{ question.type }}</div>
                 <div>Statements: {{ question.statements }}</div>
                 <div>Answers: {{ question.answers }}</div>
