@@ -241,7 +241,7 @@ class LTI(object):
             # All good to go, store all of the LTI params into a
             # session dict for use in views
             for prop in LTI_PROPERTY_LIST:
-                if params.get(prop, None):
+                if params.get(prop, None) is not None:
                     log.debug("params %s=%s", prop, params.get(prop, None))
                     session[prop] = params[prop]
             if params.get('user_id', None):
