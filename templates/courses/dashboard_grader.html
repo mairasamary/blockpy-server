@@ -106,6 +106,10 @@ Dashboard
 
     <p>If you wanted the default assignment scratchpad, go <a href="{{ {"force_default_assignment":"true"}|modify_query }}">here</a>.</p>
 
+    <p>If you wanted to view submissions for this course, go to <a target=_blank href="{{ url_for('courses.submissions_filter', course_id=course_id) }}">View Submissions</a>.</p>
+
+    <p>If you wanted to watch events for this course, go to <a target=_blank href="{{ url_for('courses.watch_events', course_id=course_id) }}">Watch Events</a>.</p>
+
     <p>The following submissions are ready for review</p>
 
     <!-- User Set Selector -->
