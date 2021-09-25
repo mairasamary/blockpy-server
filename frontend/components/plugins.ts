@@ -48,7 +48,7 @@ ko.bindingHandlers.jsoneditor = {
                 initialValue.value(newValue);
             },
             modes: ['tree', 'code', 'text'] as JSONEditorMode[],
-            mode: 'tree' as JSONEditorMode
+            mode: 'code' as JSONEditorMode
         };
         element.editor = new JSONEditor(element, options, JSON.parse(initialValue.value() || "{}"));
 

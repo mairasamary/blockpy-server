@@ -1,21 +1,27 @@
 import {Server} from "./server";
 import {User} from "../models/user";
 import * as ko from 'knockout';
-import {Assignment} from "../models/assignment";
-import {Submission, SubmissionStatus} from "../models/submission";
 import {AssignmentInterface, AssignmentInterfaceJson, EditorMode} from "./assignment_interface";
-import {subsetRandomly} from "../utilities/random"
+
+import {Quiz, QuizMode} from './quizzes/quiz';
+import {Question, subscribeToStudent} from './quizzes/questions';
+import "./quizzes/quizzer_question_status";
 
 // Maybe TODO: Add bookmarking
     // Add a question mark button that let's them flag this to return to later
 // TODO: Attempt cooldowns
-// TODO: One question at a time
 // TODO: Allow bulk regrading of students' feedbacks/scoring
 // TODO: Check for orphaned feedbacks and answers
-// TODO: Allow instructors to see currently failed to grade assignemnts
-// TODO: Hide feedback/score mode
-// TODO: Show as [instructor|student] mode
 // TODO: Click to edit component in modal
+// TODO: One question at a time
+
+// TODO: Click to edit the markdown of a question
+
+// Done:
+// Show as [instructor|student] mode
+// Hide feedback/score mode
+// Allow instructors to see currently failed to grade assignments
+
 
 export interface QuizzerJson {
     server: Server;
@@ -23,382 +29,6 @@ export interface QuizzerJson {
     user: User;
     currentAssignmentId: ko.Observable<number>;
     assignmentGroupId: number;
-}
-
-export enum QuizQuestionTypes {
-    multiple_choice_question="multiple_choice_question",
-    multiple_answers_question="multiple_answers_question",
-    true_false_question="true_false_question",
-    text_only_question="text_only_question",
-    matching_question="matching_question",
-    multiple_dropdowns_question="multiple_dropdowns_question",
-    short_answer_question="short_answer_question",
-    fill_in_multiple_blanks_question="fill_in_multiple_blanks_question",
-
-    calculated_question="calculated_question",
-    essay_question="essay_question",
-    file_upload_question="file_upload_question",
-
-    numerical_question="numerical_question"
-}
-
-export const clearValue = (question: Question) => {
-    switch (question.type) {
-        case QuizQuestionTypes.multiple_answers_question:
-            return question.student([]);
-        case QuizQuestionTypes.matching_question:
-            return question.student.map((v: any) => v(undefined));
-        case QuizQuestionTypes.multiple_dropdowns_question:
-        case QuizQuestionTypes.fill_in_multiple_blanks_question:
-            for (const key in question.student) {
-                question.student[key]('');
-            }
-            return question.student;
-        default:
-            return question.student("");
-    }
-}
-
-export const getDefaultValue = (question: Question, answer: any): any => {
-    switch (question.type) {
-        case QuizQuestionTypes.multiple_answers_question:
-            return ko.observableArray(answer && answer.length ? answer: []);
-        case QuizQuestionTypes.matching_question:
-            return answer && answer.length
-                ? question.statements.map((v: any, i: number) => ko.observable(answer[i]))
-                : question.statements.map((v: any) => ko.observable(undefined));
-        case QuizQuestionTypes.multiple_dropdowns_question:
-            let mdqResult: {[key: string]: ko.Observable} = {};
-            Object.entries(question.answers).forEach(([key, value])=> {
-                mdqResult[key] = ko.observable(answer ? answer[key] || '' : '')
-            });
-            return mdqResult;
-        case QuizQuestionTypes.fill_in_multiple_blanks_question:
-            let fimbResult: {[key: string]: ko.Observable} = {};
-            getBracketed(question.body).map((key: string) => {
-                fimbResult[key] = ko.observable(answer ? answer[key] || '' : "")
-                    .extend({ rateLimit: { method: "notifyWhenChangesStop", timeout: 400 } });
-            });
-            return fimbResult;
-        case QuizQuestionTypes.numerical_question:
-        case QuizQuestionTypes.essay_question:
-        case QuizQuestionTypes.short_answer_question:
-            return ko.observable(answer || "")
-                    .extend({ rateLimit: { method: "notifyWhenChangesStop", timeout: 400 } });
-        default:
-            return ko.observable(answer || "");
-    }
-}
-
-export const getBracketed = (body: string): string[] => {
-    return body.split(SQUARE_BRACKETS)
-        .filter((part: string) => part.startsWith('[') && part.endsWith(']'))
-        .map((part: string) => part.slice(1, -1));
-}
-
-export const subscribeToStudent = (question: Question): ko.Observable[] => {
-    ///console.log(question.id, question.student);
-    switch (question.type) {
-        case QuizQuestionTypes.matching_question:
-            return question.student;
-        case QuizQuestionTypes.multiple_dropdowns_question:
-        case QuizQuestionTypes.fill_in_multiple_blanks_question:
-            return Object.values(question.student);
-        case QuizQuestionTypes.multiple_answers_question:
-        default:
-            return [question.student];
-    }
-}
-
-export const getValue = (question: Question): any => {
-    switch (question.type) {
-        case QuizQuestionTypes.matching_question:
-            return question.student.map((value: ko.Observable) => value());
-        case QuizQuestionTypes.multiple_dropdowns_question:
-        case QuizQuestionTypes.fill_in_multiple_blanks_question:
-            let result: {[key: string]: string} = {};
-            Object.entries(question.student).forEach(([key, value]: [string, ko.Observable])=> {
-                result[key] = value();
-            });
-            return result;
-        case QuizQuestionTypes.multiple_answers_question:
-        default:
-            return question.student();
-    }
-}
-
-export interface Feedback {
-    correct: boolean
-    score: number
-    message: string
-    status: string
-}
-
-export interface Question {
-    body: string
-    id: string
-    title: string
-    type: string
-    points: number
-    student: any
-    answers?: string[] | {[key: string]: string[]}
-    statements?: string[]
-
-    feedback: ko.Observable<Feedback>
-    visible: ko.Observable<boolean>
-}
-
-export interface QuestionPool {
-    questions: string[]
-    amount: number
-}
-
-export enum QuizFeedbackType {
-    // TODO: Support other kinds besides immediate
-    IMMEDIATE = "IMMEDIATE", NONE = "NONE", SUMMARY = "SUMMARY"
-}
-
-export interface QuizInstructionsSettings {
-    /** How many times you can attempt a quiz; -1 is infinite attempts */
-    attemptLimit?: number
-    /** How many minutes you must wait between attempts; -1 is no minutes */
-    coolDown?: number
-    feedbackType?: QuizFeedbackType
-    /** How many questions to show on each "page"; -1 is all questions on one page */
-    questionsPerPage?: number
-}
-
-export interface QuizInstructions {
-    questions?: Record<string, Question>
-    settings?: QuizInstructionsSettings
-    pools: QuestionPool[]
-}
-
-export interface QuizSubmissionAttempt {
-    attempting?: boolean
-    count?: number
-    /** Number of times the instructor has given extra attempts **/
-    mulligans?: number
-}
-
-export interface QuizSubmission {
-    studentAnswers?: {[questionId: string]: Question}
-    attempt?: QuizSubmissionAttempt
-    feedback?: {[questionId: string]: Feedback}
-}
-
-export const EMPTY_QUIZ_SUBMISSION_STRING = JSON.stringify({
-    attempt: {attempting: false, count: 0},
-    studentAnswers: {},
-    feedback: {}
-});
-
-export const EMPTY_QUIZ_INSTRUCTIONS_STRING = JSON.stringify({
-    questions: {},
-    settings: {
-        attemptLimit: -1,
-        coolDown: -1,
-        feedbackType: QuizFeedbackType.IMMEDIATE,
-        questionsPerPage: -1
-    }
-});
-
-export function fillInMissingQuizSubmissionFields(quizSubmission: QuizSubmission) {
-    if (!("studentAnswers" in quizSubmission)) {
-        quizSubmission.studentAnswers = {};
-    }
-    if (!("feedback" in quizSubmission)) {
-        quizSubmission.feedback = {};
-    }
-    if (!("attempt" in quizSubmission)) {
-        quizSubmission.attempt = {};
-    }
-    quizSubmission.attempt.attempting ??= false;
-    quizSubmission.attempt.count ??= 0;
-    quizSubmission.attempt.mulligans ??= 0;
-}
-
-export function fillInMissingQuizInstructionFields(quizInstructions: QuizInstructions) {
-    if (!("questions" in quizInstructions)) {
-        quizInstructions.questions = {};
-    }
-    if (!("settings" in quizInstructions)) {
-        quizInstructions.settings = {};
-    }
-    quizInstructions.settings.attemptLimit ??= -1;
-    quizInstructions.settings.coolDown ??= -1;
-    quizInstructions.settings.feedbackType ??= QuizFeedbackType.IMMEDIATE;
-    quizInstructions.settings.questionsPerPage ??= -1;
-}
-
-export const matchKeyInBrackets = (key: string) => new RegExp(`(?<!\\\))(\\[${key}\\])(?!\\()`);
-export const SQUARE_BRACKETS = /(?<!\\)(\[.*?\]\]?)(?!\()/
-
-export class Quiz {
-    questionMap: Record<string, Question>;
-    questions: ko.ObservableArray<Question>;
-
-    seed: ko.Observable<number>;
-
-    attemptCount: ko.Observable<number>;
-    attempting: ko.Observable<boolean>;
-    attemptStatus: ko.PureComputed<QuizMode>;
-    attemptMulligans: ko.Observable<number>;
-
-    attemptLimit: ko.Observable<number>;
-    attemptsLeft: ko.PureComputed<string>;
-    canAttempt: ko.PureComputed<boolean>;
-
-    pools: ko.Observable<QuestionPool[]>
-
-    constructor(assignment: Assignment, submission: Submission) {
-        this.questions = ko.observableArray([]);
-        this.questionMap = {};
-        this.attempting = ko.observable(false);
-        this.attemptCount = ko.observable(0);
-        this.attemptMulligans = ko.observable(0);
-        this.attemptLimit = ko.observable<number>(-1);
-
-        this.pools = ko.observable<QuestionPool[]>([]);
-
-        this.loadAssignment(assignment, submission);
-        this.seed = ko.observable<number>(submission.id);
-
-        this.attemptStatus = ko.pureComputed<QuizMode>( () => {
-            return this.attempting() ? QuizMode.ATTEMPTING :
-                this.attemptCount() > 0 ? QuizMode.COMPLETED : QuizMode.READY;
-        }, this);
-
-        this.attemptsLeft = ko.pureComputed<string>( () => {
-            const attempts = (this.attemptLimit() + this.attemptMulligans() - this.attemptCount());
-            return this.attemptLimit() === -1 ? 'infinite attempts left.' :
-                attempts < 0 ? 'no attempts left!' :
-                attempts === 1 ? 'only one attempt left.' : `${attempts} attempts left.`;
-        }, this);
-
-        this.canAttempt = ko.pureComputed<boolean>( () => {
-            const attempts = (this.attemptLimit() + this.attemptMulligans() - this.attemptCount());
-            return this.attemptLimit() === -1 || attempts > 0;
-        }, this);
-    }
-
-    loadAssignment(assignment: Assignment, submission: Submission) {
-        this.questions.removeAll();
-        this.questionMap = {};
-        let currentAnswer: QuizSubmission = JSON.parse(submission.code() || EMPTY_QUIZ_SUBMISSION_STRING) as QuizSubmission;
-        fillInMissingQuizSubmissionFields(currentAnswer);
-        //console.log("Loading Answer:", currentAnswer);
-        let instructions: QuizInstructions = JSON.parse(assignment.instructions() || EMPTY_QUIZ_INSTRUCTIONS_STRING) as QuizInstructions;
-        fillInMissingQuizInstructionFields(instructions);
-        // TODO: For random ones, choose an alternate question based on pool
-        // User ID + Assignment ID + Course ID, modulo the quantity of questions available
-        // If instructions[questionId] is an array, then pool from it "randomly"
-        for (const questionId in instructions.questions) {
-            let answer = currentAnswer.studentAnswers[questionId];
-            let question = {...instructions.questions[questionId], id: questionId,
-                            feedback: ko.observable(null),
-                            visible: ko.observable(true)} as Question;
-            question.student = getDefaultValue(question, answer);
-            this.questionMap[questionId] = question;
-            this.questions.push(question);
-        }
-        this.attempting(currentAnswer.attempt.attempting);
-        this.attemptCount(currentAnswer.attempt.count);
-        this.attemptMulligans(currentAnswer.attempt.mulligans);
-        this.attemptLimit(instructions.settings.attemptLimit)
-        this.includeFeedbacks(currentAnswer.feedback);
-        this.pools(instructions.pools || []);
-    }
-
-    includeFeedbacks(feedbacks: {[key: string]: Feedback}) {
-        console.log(feedbacks);
-        for (const questionId in feedbacks) {
-            let feedback = feedbacks[questionId];
-            if (questionId in this.questionMap) {
-                this.questionMap[questionId].feedback(feedback);
-            }
-        }
-    }
-
-    clearFeedback() {
-        for (const questionId in this.questionMap) {
-            this.questionMap[questionId].feedback(null);
-        }
-    }
-
-    clearAnswers() {
-        for (const questionId in this.questionMap) {
-            clearValue(this.questionMap[questionId]);
-        }
-        this.attemptCount(0);
-    }
-
-    hidePools() {
-        this.questions().forEach((question: Question) => {
-            question.visible(true);
-        })
-        this.pools().forEach((pool: QuestionPool) => {
-            const allQuestions = pool.questions;
-            const seed = this.seed() + this.attemptCount();
-            const chosenQuestions = subsetRandomly(allQuestions, pool.amount, seed);
-            allQuestions.forEach((questionId: string) => {
-                this.questionMap[questionId].visible(chosenQuestions.includes(questionId));
-            })
-        })
-    }
-
-    submissionAsJson(): string {
-        // Build up the fields that need to be edited to save the submission
-        let result: QuizSubmission = {
-            studentAnswers: {},
-            feedback: {},
-            attempt: {
-                attempting: this.attempting(),
-                count: this.attemptCount(),
-                mulligans: this.attemptMulligans()
-            }
-        } as QuizSubmission;
-        this.questions().forEach((question: Question) => {
-            // @ts-ignore
-            result.studentAnswers[question.id] = getValue(question);
-            // @ts-ignore
-            result.feedback[question.id] = question.feedback;
-        });
-        return JSON.stringify(result, null, 2);
-    }
-
-    makeBody(question: Question, index: number): string {
-        let body = question.body;
-        if (question.type === 'multiple_dropdowns_question') {
-            let answers = question.answers as {[key: string]: string[]};
-            for (let key in answers) {
-                let randomizedAnswers = [...answers[key]].sort(() => Math.random() - 0.5);
-                let options: string[] = ["", ...randomizedAnswers];
-                let optionsStr = options.map((option: string) => (`<option>${option}</option>`)).join("")
-                body = body.replace(matchKeyInBrackets(key), `<select id="question-md-${index}" data-bind="value: student['${key}'], disable: $component.isReadOnly()">${optionsStr}</select>`)
-            }
-        } else if (question.type === 'fill_in_multiple_blanks_question') {
-            body = body.split(SQUARE_BRACKETS).map((part: string) => {
-                //console.log(part);
-                if (part.startsWith('[[') && part.endsWith(']]')) {
-                    return part.slice(1, -1);
-                } else if (part.startsWith('[') && part.endsWith(']')) {
-                    const key = part.slice(1, -1);
-                    return `<span class="d-inline-block"><input id="question-fimb-${index}-${part}" type="text" class="form-control" data-bind="textInput: student['${key}'], disable: $component.isReadOnly()"></span>`;
-                } else {
-                    return part;
-                }
-            }).join('');
-        }
-        return body
-    }
-
-}
-
-export enum QuizMode {
-    ATTEMPTING = "ATTEMPTING",
-    COMPLETED = "COMPLETED",
-    READY = "READY"
 }
 
 
@@ -411,6 +41,7 @@ export class Quizzer extends AssignmentInterface {
     isReadOnly: ko.PureComputed<boolean>;
 
     editorMode: ko.Observable<EditorMode>;
+    asStudent: ko.Observable<boolean>;
     isDirty: ko.Observable<boolean>;
 
     errorMessage: ko.Observable<string>;
@@ -429,6 +60,7 @@ export class Quizzer extends AssignmentInterface {
 
         // UI state
         this.isDirty = ko.observable(false);
+        this.asStudent = ko.observable(!this.isInstructor());
         this.editorMode = ko.observable(EditorMode.SUBMISSION);
         this.errorMessage = ko.observable("");
 
@@ -472,6 +104,7 @@ export class Quizzer extends AssignmentInterface {
                         let submission = this.server.submissionStore.newInstance(response.submission);
                         this.assignment(assignment);
                         this.submission(submission);
+                        console.log(submission, submission.code);
                         this.quiz(new Quiz(assignment, submission));
                         this.markClean();
                         console.log(this.quiz())
@@ -491,8 +124,10 @@ export class Quizzer extends AssignmentInterface {
     }
 
     onChange() {
-        this.markDirty();
-        this.saveFile("answer.py", this.quiz().submissionAsJson(), false, this.markClean.bind(this));
+        if (this.quiz().attemptStatus() === QuizMode.ATTEMPTING) {
+            this.markDirty();
+            this.saveFile("answer.py", this.quiz().submissionAsJson(), false, this.markClean.bind(this));
+        }
     }
 
     saveSubmission() {
@@ -603,7 +238,15 @@ export const INSTRUCTIONS_BAR_HTML = (position: string) => `
             </div>
         <!-- /ko -->
         <!-- ko case: 'COMPLETED' -->
-            You have completed the quiz. You can see the feedback for each question ${position}.<br>
+            You have completed the quiz.<br>
+            <span data-bind="switch: quiz()?.feedbackType()">
+                <!-- ko case: 'IMMEDIATE' -->
+                You can see the feedback for each question ${position}.<br>
+                <!-- /ko -->
+                <!-- ko case: 'NONE' -->
+                However, you will <strong>not</strong> see any feedback.<br>
+                <!-- /ko -->
+            </span>
             To try again, click "Start Quiz".<br>
             You have <span data-bind="text: quiz()?.attemptsLeft()"></span><br>
             <div class="text-center" data-bind="visible: quiz()?.canAttempt()">
@@ -668,9 +311,9 @@ export const QUIZZER_HTML = `
             <div data-bind="if: editorMode() === 'FORM'">
                 <button data-bind="click: saveAssignment">Save Assignment</button><br>
                 <h6>Instructions</h6>
-                <div data-bind="jsoneditor: {value: assignment().instructions}" style="width: 100%; height: 300px"></div><br>
+                <div data-bind="jsoneditor: {value: assignment().instructions}" style="width: 100%; height: 300px; resize: vertical; overflow: auto"></div><br>
                 <h6>On Run</h6>
-                <div data-bind="jsoneditor: {value: assignment().onRun}" style="width: 100%; height: 300px"></div><br>
+                <div data-bind="jsoneditor: {value: assignment().onRun}" style="width: 100%; height: 300px; resize: vertical; overflow: auto"></div><br>
                 
                 <!-- Other settings -->
                 <div class="form-group">
@@ -695,7 +338,7 @@ export const QUIZZER_HTML = `
                     </label>
                 </div>
                 <h6>Additional Settings</h6>
-                <div data-bind="jsoneditor: {value: assignment().settings}" style="width: 100%; height: 300px"></div><br>
+                <div data-bind="jsoneditor: {value: assignment().settings}" style="width: 100%; height: 300px; resize: vertical; overflow: auto"></div><br>
                 
                 <!-- ko if: submission -->
                     <h6>Submission</h6>
@@ -709,30 +352,46 @@ export const QUIZZER_HTML = `
         <!-- Main Instructions -->
         ${INSTRUCTIONS_BAR_HTML('below')}
         
+        <!-- Interface Settings -->
+        <div data-bind="visible: isInstructor">
+            <div class="form-check">
+                <input type="checkbox" class="form-check-input" 
+                    id="quizzer-as-student" name="quizzer-as-student"
+                    class="form-control" data-bind="checked: asStudent">
+                <label class="form-check-label"  for="quizzer-as-student">View As Student</label>
+            </div>    
+        </div>
+        
         <!-- Quick Jump -->
-        <div data-bind="visible: quiz()?.attemptCount() > 0">
+        <div data-bind="visible: !asStudent() || quiz()?.attemptCount() > 0">
             <span>Overview: </span>
-            <span data-bind="foreach: quiz()?.questions().filter(question => question.visible())">
-                <quizzer-question-status params="indexId: 1+$index(), status: student, question: $data, isAnchor: false"></quizzer-question-status>
+            <span data-bind="foreach: quiz()?.questions().filter(question => !asStudent() || question.visible())">
+                <quizzer-question-status params="indexId: 1+$index(), status: student, 
+                                                 question: $data, isAnchor: false, 
+                                                 quiz: $component.quiz(), asStudent: $component.asStudent()"></quizzer-question-status>
             </span>
         </div>
     
     </div>
     
     <!-- ko if: editorMode() === 'SUBMISSION' -->
-    <div data-bind="foreach: quiz()?.questions().filter(question => question.visible())">
+    <div data-bind="foreach: quiz()?.questions().filter(question => !asStudent() || question.visible())">
         <div class="card m-4">
             <div class="quizzer-question card-body">
-                <quizzer-question-status params="indexId: 1+$index(), status: student, question: $data, isAnchor: true" class="float-right"></quizzer-question-status>
+                <quizzer-question-status params="indexId: 1+$index(), status: student, question: $data, isAnchor: true, 
+                                                 quiz: $component.quiz(), asStudent: $component.asStudent()" class="float-right"></quizzer-question-status>
                 <h5 class="card-title">Question <span data-bind="text: 1+$index()"></span></h5>
                 <h6 class="card-subtitle mb-2 text-muted">
-                    <!-- ko if: feedback() -->
+                    <!-- ko if: feedback() && (!$component.asStudent() || $component.quiz().feedbackType() !== 'NONE') -->
                     <span data-bind="text: Math.round(((feedback().score * points) + Number.EPSILON) * 100) / 100 + ' /'"></span>
                     <!-- /ko -->
                     <span data-bind="text: points"></span> points
-                    <span data-bind="text: ' ('+id+')', visible: $component.isInstructor()"></span>
+                    <span data-bind="text: ' ('+id+')', visible: !$component.asStudent()"></span>
                 </h6>
-                <div data-bind="visible: $parent.quiz().attemptCount() > 0">
+                <div data-bind="if: pool() && !$component.asStudent()">
+                    Pool: <span data-bind="text: pool().name"></span>
+                </div>
+                <div data-bind="visible: !$component.asStudent() || $parent.quiz().attemptCount() > 0">
                     <div data-bind="markdowned: $parent.quiz().makeBody($data, $index())"></div>
                     <!-- Actual Question Code -->
                     <div data-bind="switch: type">
@@ -844,7 +503,7 @@ export const QUIZZER_HTML = `
                         </div>
                     </div>
                 </div>
-                <!-- ko if: feedback() -->
+                <!-- ko if: feedback() && (!$component.asStudent() || $component.quiz().feedbackType() !== 'NONE') -->
                 <div class="border rounded m-2 p-2" data-bind="class: feedback().status == 'error' ? 'bg-dark' :
                                                                       feedback().correct ? 'bg-success' : 'bg-danger'">
                     <span data-bind="html: feedback().message" class="text-white"></span>
@@ -868,79 +527,4 @@ export const QUIZZER_HTML = `
 ko.components.register("quizzer", {
     viewModel: Quizzer,
     template: QUIZZER_HTML
-});
-
-export const QUIZZER_QUESTION_STATUS_HTML = `
-<!--<a data-bind="attr: { href: '#quizzer-question-anchor-'+indexId() }">-->
-    <!-- ko if: isAnchor -->
-        <span data-bind="attr: {id: 'quizzer-question-anchor-'+indexId()}"></span>
-    <!-- /ko -->
-    <span data-bind="switch: statusCode">
-        <!-- ko case: 'unanswered' -->
-            <i class="far fa-square text-secondary"></i>
-        <!-- /ko -->
-        <!-- ko case: 'answered' -->
-            <i class="fas fa-square text-secondary"></i>
-        <!-- /ko -->
-        <!-- ko case: 'error' -->
-            <i class="fas fa-square text-info"></i>
-        <!-- /ko -->
-        <!-- ko case: 'correct' -->
-            <i class="fas fa-square text-success"></i>
-        <!-- /ko -->
-        <!-- ko case: 'incorrect' -->
-            <i class="fas fa-square text-danger"></i>
-        <!-- /ko -->
-    </span>
-<!--</a>-->
-`;
-
-interface QuizzerQuestionStatusJson {
-    status: ko.Observable<string>[];
-    question: Question;
-    isAnchor: boolean;
-    indexId: number
-}
-
-class QuizzerQuestionStatus {
-    private status: ko.Observable<string>[];
-    private question: Question;
-    private isAnchor: boolean;
-    private indexId: number;
-    private statusCode: ko.PureComputed<string>;
-    constructor(params: QuizzerQuestionStatusJson) {
-        this.status = params.status;
-        this.question = params.question;
-        this.isAnchor = params.isAnchor;
-        this.indexId = params.indexId;
-        this.statusCode = ko.pureComputed<string>(() => {
-            const value = this.question && subscribeToStudent(this.question);
-            //console.log(this.question.id, value && value.map((answer) => answer()));
-            const answered = value && value.filter((answer: ko.Observable<string>) =>
-                Array.isArray(answer()) ? answer().length : answer()).length;
-            const graded = this.question && this.question.feedback();
-            const errored = graded && this.question.feedback().status === "error";
-            const correct = graded && this.question.feedback().correct;
-            if (graded) {
-                if (errored) {
-                    return 'error';
-                } else if (correct) {
-                    return 'correct';
-                } else {
-                    return 'incorrect';
-                }
-            } else {
-                if (answered) {
-                    return 'answered';
-                } else {
-                    return 'unanswered';
-                }
-            }
-        }, this);
-    }
-}
-
-ko.components.register("quizzer-question-status", {
-    viewModel: QuizzerQuestionStatus,
-    template: QUIZZER_QUESTION_STATUS_HTML
 });
