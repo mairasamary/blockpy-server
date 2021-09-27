@@ -350,6 +350,8 @@ class Assignment(Base):
         return settings.get(key, default_value)
 
     def update_setting(self, key, value):
+        if not self.settings:
+            self.settings = "{}"
         settings = json.loads(self.settings)
         settings[key] = value
         self.settings = json.dumps(settings)
