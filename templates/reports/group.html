@@ -20,10 +20,14 @@
 </script>
 {% endblock %}
 
+{% set reduced_layout = embed or 'iframe' == request.form.get('launch_presentation_document_target') %}
+
 {% block body %}
 
+    {% if not reduced_layout %}
     <h1>Submissions</h1>
     {{ navigation.navigate_course() }}
+    {% endif %}
 
     <assignment-group params="group: group"></assignment-group>
     <watcher params="courseId: pageCourseId, group: group, user: user, submissions: submissions"></watcher>

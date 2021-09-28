@@ -1,3 +1,5 @@
+{% import 'reports/quiz_question.html' as quiz_questions %}
+
 <div xml:lang="en">
     <h2 id='{{ assignment.slug() }}'>Quiz {{ assignment.name }}</h2>
     <strong>Status:</strong><span> {{ submission.full_status() }}</span>
@@ -37,15 +39,34 @@
         <div>No feedback given yet.</div>
     {% endif %}
 {% else %}
-    {% if 'feedback' in code %}
-        <ul>
+    {% if 'feedback' in code and not hiding %}
+        <div class="accordion" id="quiz-{{ assignment.id }}">
         {% for question_id, student in code['feedback'].items() %}
-            <li>Quiz Question {{ loop.index }}:
-            <span>{%  if student.get('correct', False) %}
-                Correct!{% else %} Incorrect ({{ student.get('status') }} with {{ student.get('score', 0)|float }} points) {% endif %}</span>
-            </li>
+            {% set unique_id = "quiz-"~(assignment.id)~"-question-"~(loop.index) %}
+            {% set question = questions.get(question_id, {}) %}
+            {% set answer = code.get('studentAnswers', {}).get(question_id, {}) %}
+            <div class="card">
+                <div class="card-header p-1">
+                    <h3 class="mb-0">
+                        <button class="btn btn-link btn-block text-left" type="button" data-toggle="collapse"
+                                data-target="#{{ unique_id }}"
+                                aria-expanded="true" aria-controls="{{ unique_id }}">
+                            Quiz Question {{ loop.index }}:
+                            {%  if student.get('correct', False) %}
+                                Correct!{% else %} Incorrect ({{ student.get('status') }} with {{ student.get('score', 0)|float|round(2) }} points) {% endif %}
+                        </button>
+                    </h3>
+                </div>
+                <div id="{{ unique_id }}" class="collapse {% if loop.first %}show{% endif %}"
+                     aria-labelledby="header-{{ unique_id }}" data-parent="#quiz-{{ assignment.id }}">
+                    <div class="card-body">
+                        {{ quiz_questions.render_quiz_question(question, student, answer) }}
+                    </div>
+                </div>
+            </div>
+
         {% endfor %}
-        </ul>
+        </div>
     {% else %}
         <div>No feedback given yet.</div>
     {% endif %}

@@ -6,6 +6,7 @@ from natsort import natsorted
 from controllers import highlight_python_code
 from flask import request
 from werkzeug.urls import url_encode
+from markdown import Markdown
 
 
 def attempt_json_load(data):
@@ -55,6 +56,7 @@ def modify_query(new_values):
 
 
 def setup_jinja_filters(app):
+    app.jinja_env.filters['markdown'] = Markdown(extensions=['fenced_code']).convert
     app.jinja_env.filters['zip'] = zip
     app.jinja_env.filters['json_load'] = attempt_json_load
     app.jinja_env.filters['list'] = list

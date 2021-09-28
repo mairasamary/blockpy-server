@@ -8,6 +8,7 @@ flask-mail
 flask-wtf
 flask-assets
 flask-migrate
+markdown
 jinja2~=2.11.2
 wtforms~=2.3.3
 sqlalchemy~=1.3.22

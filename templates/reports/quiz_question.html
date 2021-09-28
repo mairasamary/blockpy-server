@@ -1,0 +1,43 @@
+{% macro render_quiz_question(question, student, answer) %}
+    <div>{{  question.type }}</div>
+    <div>{{ question['body']|markdown|safe  }}</div>
+    {% if question.type == "true_false_question" %}
+        <div>You chose <strong>{{ answer }}</strong>.</div>
+    {% elif question.type == "multiple_choice_question" %}
+        <ul>
+        {% for answer in question.answers %}
+            <li>{{ answer }}</li>
+        {% endfor %}
+        </ul>
+        <div>You chose <strong>{{ answer }}</strong></div>
+    {% elif question.type == "multiple_answers_question" %}
+        <ul>
+        {% for a in question.answers %}
+            {% if a in student %}
+                <li><strong>{{ answer }}</strong></li>
+            {% else %}
+                <li>{{ answer }}</li>
+            {% endif %}
+        {% endfor %}
+        </ul>
+    {% elif question.type == "matching_question" %}
+        <table class="table table-bordered table-striped table-condensed">
+        {% for s, a in question.statements|zip(answer) %}
+            <tr>
+            <td>{{ s }}</td><td>{{ a }}</td>
+            </tr>
+        {% endfor %}
+        </table>
+    {% elif question.type in ("multiple_dropdowns_question", "fill_in_multiple_blanks_question") %}
+        <div>You entered:</div>
+        <ul>
+        {% for s in answer %}
+            <li>{{ s }}</li>
+        {% endfor %}
+        </ul>
+    {% elif question.type in ("short_answer_question", "numerical_question") %}
+        <div>You entered <strong>{{ answer }}</strong></div>
+    {% elif question.type == "essay_question" %}
+        <div>You entered <pre>{{ answer }}</pre></div>
+    {% endif %}
+{% endmacro %}
