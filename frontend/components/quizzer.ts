@@ -79,6 +79,7 @@ export class Quizzer extends AssignmentInterface {
                     this.subscriptions.questions.push(subscription);
                 })
             });
+            this.quiz().hidePools();
         });
 
         this.isReadOnly = ko.pureComputed<boolean>(() => {

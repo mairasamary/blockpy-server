@@ -15,6 +15,10 @@ export enum QuizFeedbackType {
     IMMEDIATE = "IMMEDIATE", NONE = "NONE", SUMMARY = "SUMMARY"
 }
 
+export enum QuizPoolRandomness {
+    ATTEMPT = "ATTEMPT", SEED="SEED", NONE="NONE"
+}
+
 export interface QuestionPool {
     questions: string[]
     amount: number
@@ -29,6 +33,8 @@ export interface QuizInstructionsSettings {
     feedbackType?: QuizFeedbackType
     /** How many questions to show on each "page"; -1 is all questions on one page */
     questionsPerPage?: number
+    /** What to use when choose the pool, for consistency */
+    poolRandomness?: QuizPoolRandomness
 }
 
 export interface QuizInstructions {
@@ -62,7 +68,8 @@ export const EMPTY_QUIZ_INSTRUCTIONS_STRING = JSON.stringify({
         attemptLimit: -1,
         coolDown: -1,
         feedbackType: QuizFeedbackType.IMMEDIATE,
-        questionsPerPage: -1
+        questionsPerPage: -1,
+        poolRandomness: QuizPoolRandomness.SEED
     },
     pools: []
 });
@@ -96,6 +103,7 @@ export function fillInMissingQuizInstructionFields(quizInstructions: QuizInstruc
     quizInstructions.settings.coolDown ??= -1;
     quizInstructions.settings.feedbackType ??= QuizFeedbackType.IMMEDIATE;
     quizInstructions.settings.questionsPerPage ??= -1;
+    quizInstructions.settings.poolRandomness ??= QuizPoolRandomness.ATTEMPT;
 }
 
 
@@ -105,6 +113,7 @@ export class Quiz {
     questions: ko.ObservableArray<Question>;
 
     seed: ko.Observable<number>;
+    poolRandomness: ko.Observable<QuizPoolRandomness>;
 
     attemptCount: ko.Observable<number>;
     attempting: ko.Observable<boolean>;
@@ -129,6 +138,7 @@ export class Quiz {
         this.feedbackType = ko.observable<QuizFeedbackType>(QuizFeedbackType.IMMEDIATE);
 
         this.pools = ko.observable<QuestionPool[]>([]);
+        this.poolRandomness = ko.observable<QuizPoolRandomness>(QuizPoolRandomness.SEED);
 
         this.loadAssignment(assignment, submission);
         this.seed = ko.observable<number>(submission.id);
@@ -179,6 +189,7 @@ export class Quiz {
         this.attemptMulligans(currentAnswer.attempt.mulligans);
         this.attemptLimit(instructions.settings.attemptLimit);
         this.feedbackType(instructions.settings.feedbackType);
+        this.poolRandomness(instructions.settings.poolRandomness);
         this.includeFeedbacks(currentAnswer.feedback);
         this.includePools(instructions.pools || []);
     }
@@ -222,7 +233,11 @@ export class Quiz {
         })
         this.pools().forEach((pool: QuestionPool) => {
             const allQuestions = pool.questions;
-            const seed = this.seed();
+            const seed = this.poolRandomness() === QuizPoolRandomness.SEED ?
+                this.seed() :
+                this.poolRandomness() === QuizPoolRandomness.ATTEMPT ?
+                this.seed() + this.attemptCount() :
+                0;
             const chosenQuestions = subsetRandomly(allQuestions, pool.amount, seed);
             allQuestions.forEach((questionId: string) => {
                 this.questionMap[questionId].visible(chosenQuestions.includes(questionId));
