@@ -132,13 +132,13 @@
         $(document).ready(function () {
             // Load in Quiz interface
             let loggedInUser = {{ user.encode_json()|tojson }};
-            server = new frontend.Server({{ course_id }}, {
+            server = new frontend.Server({{ course_id or "null" }}, {
             }, {
                 users: [loggedInUser],
                 courses: []
             });
             mainModel = {
-                courseId: {{  course_id }},
+                courseId: {{  course_id or "null" }},
                 server: server,
                 user: loggedInUser,
                 isInstructor: {{  (role in ("owner", "grader")) | tojson }},

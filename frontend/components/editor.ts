@@ -10,7 +10,7 @@ export function launchEditor(assignment: Assignment, submission: Submission) {
 
     let formData = {
         user: {
-            role: "instructor"
+            role: "owner"
         },
         assignment: assignment ? assignment.toJson(): null,
         submission: submission ? submission.toJson(): null

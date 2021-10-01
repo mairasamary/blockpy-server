@@ -87,7 +87,7 @@ def load_readonly(lti=lti):
     assignment_data = json.loads(request.values.get("assignment_data", "{}"))
     # Handle Passcode
     # Handle IP Addresses
-    print(assignment_data)
+    #print(assignment_data)
     return load_editor(lti, {
         "user": user,
         "user_id": user_id,
@@ -95,7 +95,7 @@ def load_readonly(lti=lti):
         "read_only": True,
         "current_submission_id": None,
         "course_id": None,
-        "role": assignment_data.get('user', {}).get('role', 'instructor'),
+        "role": assignment_data.get('user', {}).get('role', 'owner'),
         "assignment_group_id": None,
         "assignment_data": assignment_data
     })
@@ -133,7 +133,7 @@ def load_editor(lti, editor_information):
     :return:
     '''
     quiz_questions, readings = [], []
-    for assignment in editor_information['assignments']:
+    for assignment in editor_information.get('assignments', []):
         if assignment.type == 'quiz':
             quiz_questions.append(assignment.id)
         elif assignment.type == 'reading':
