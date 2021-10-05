@@ -12,11 +12,11 @@
         <div>You chose <strong>{{ answer }}</strong></div>
     {% elif question.type == "multiple_answers_question" %}
         <ul>
-        {% for a in question.answers %}
-            {% if a in student %}
-                <li><strong>{{ answer }}</strong></li>
+        {% for potentialAnswer in question.answers %}
+            {% if potentialAnswer in answer %}
+                <li><strong>{{ potentialAnswer }}</strong></li>
             {% else %}
-                <li>{{ answer }}</li>
+                <li>{{ potentialAnswer }}</li>
             {% endif %}
         {% endfor %}
         </ul>
