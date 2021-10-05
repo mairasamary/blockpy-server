@@ -136,11 +136,15 @@ export let md = new MarkdownIt({
 });
 
 ko.bindingHandlers.markdowned = {
-    update: function (element, valueAccessor) {
+    'init': function() {
+        return { 'controlsDescendantBindings': true };
+    },
+    update: function (element, valueAccessor, allBindings, vieModel, bindingContext) {
         let code = ko.unwrap(valueAccessor());
         element.innerHTML = md.render(code);
         let codeBlocks = element.querySelectorAll("pre code");
         codeBlocks.forEach((block: HTMLElement) => hljs.highlightBlock(block));
+        ko.applyBindingsToDescendants(bindingContext, element);
         //hljs.highlightBlock(element.querySelector("pre code"));
         /*if (code.trim()) {
             hljs.lineNumbersBlock(element.querySelector("pre code"));
