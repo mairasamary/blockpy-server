@@ -360,7 +360,16 @@ export const QUIZZER_HTML = `
                     id="quizzer-as-student" name="quizzer-as-student"
                     class="form-control" data-bind="checked: asStudent">
                 <label class="form-check-label"  for="quizzer-as-student">View As Student</label>
-            </div>    
+            </div>
+            <!-- ko if: quiz() -->
+            <div class="form-group">
+                <label for="quizzer-seed-editor">
+                    Current Seed:
+                    <input type="text" id="quizzer-seed-editor" name="quizzer-seed-editor"
+                        class="form-control" data-bind="value: quiz().seed">
+                </label>
+            </div>
+            <!-- /ko -->
         </div>
         
         <!-- Quick Jump -->

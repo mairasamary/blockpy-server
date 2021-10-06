@@ -102,7 +102,10 @@ def check_quiz_question(question, check, student) -> (float, bool, list):
         return correct, correct, check.get('feedback', {}).get(student) if not correct else "Correct"
     elif question.get('type') == 'multiple_answers_question':
         correct = set(student) == set(check.get('correct', []))
-        return correct, correct, check.get('wrong_any', 'Incorrect') if not correct else 'Correct'
+        answers = question.get('answers', [])
+        corrects = [(s in check.get('correct', [])) == (s in student)
+                    for s in answers]
+        return sum(corrects)/len(answers), correct, check.get('wrong_any', 'Incorrect') if not correct else 'Correct'
     elif question.get('type') == 'multiple_dropdowns_question':
         corrects = [student.get(blank_id) == answer
                     for blank_id, answer in check.get('correct', {}).items()]

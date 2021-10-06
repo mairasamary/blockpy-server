@@ -30,6 +30,7 @@ export interface QuizInstructionsSettings {
     attemptLimit?: number
     /** How many minutes you must wait between attempts; -1 is no minutes */
     coolDown?: number
+    /** What type of feedback this is **/
     feedbackType?: QuizFeedbackType
     /** How many questions to show on each "page"; -1 is all questions on one page */
     questionsPerPage?: number
