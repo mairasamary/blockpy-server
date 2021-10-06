@@ -64,7 +64,7 @@ def process_quiz(body: dict, checks: dict, submission_body: dict) -> QuizResult:
     feedbacks = {}
     for question_id, question in questions.items():
         student = student_answers.get(question_id)
-        if not student:
+        if student is None:
             # Hack - for now we just skip missing student submissions
             continue
         check = checks.get(question_id, {})

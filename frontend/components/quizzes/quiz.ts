@@ -257,10 +257,12 @@ export class Quiz {
             }
         } as QuizSubmission;
         this.questions().forEach((question: Question) => {
-            // @ts-ignore
-            result.studentAnswers[question.id] = getValue(question);
-            // @ts-ignore
-            result.feedback[question.id] = question.feedback;
+            if (question.visible()) {
+                // @ts-ignore
+                result.studentAnswers[question.id] = getValue(question);
+                // @ts-ignore
+                result.feedback[question.id] = question.feedback;
+            }
         });
         return JSON.stringify(result, null, 2);
     }
