@@ -262,7 +262,7 @@ class Submission(Base):
         db.session.commit()
 
     def update_submission(self, score, correct):
-        was_changed = self.score != score or self.correct != correct
+        was_changed = self.score != score or self.correct != correct or self.grading_status == GradingStatuses.FAILED
         self.score = int(round(100*score))
         self.correct = correct
         assignment = Assignment.by_id(self.assignment_id)
