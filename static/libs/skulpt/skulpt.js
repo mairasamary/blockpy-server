@@ -31485,27 +31485,27 @@ SymbolTable.prototype.exitBlock = function () {
     }
 };
 
-SymbolTable.prototype.visitParams = function (args, toplevel) {
+SymbolTable.prototype.visitParams = function (args, toplevel, lineno) {
     var arg;
     var i;
     for (i = 0; i < args.length; ++i) {
         arg = args[i];
         if (arg.constructor === Sk.astnodes.arg) {
             // TODO arguments are more complicated in Python 3...
-            this.addDef(arg.arg, DEF_PARAM, arg.lineno);
+            this.addDef(arg.arg, DEF_PARAM, lineno);
         } else {
             // Tuple isn't supported
-            throw new Sk.builtin.SyntaxError("invalid expression in parameter list", this.filename);
+            throw new Sk.builtin.SyntaxError("invalid expression in parameter list", this.filename, lineno);
         }
     }
 };
 
 SymbolTable.prototype.visitArguments = function (a, lineno) {
     if (a.args) {
-        this.visitParams(a.args, true);
+        this.visitParams(a.args, true, lineno);
     }
     if (a.kwonlyargs) {
-        this.visitParams(a.kwonlyargs, true);
+        this.visitParams(a.kwonlyargs, true, lineno);
     }
     if (a.vararg) {
         this.addDef(a.vararg.arg, DEF_PARAM, lineno);
@@ -31617,7 +31617,7 @@ SymbolTable.prototype.visitStmt = function (s) {
                 this.visitExpr(s.value);
                 this.cur.returnsValue = true;
                 if (this.cur.generator) {
-                    throw new Sk.builtin.SyntaxError("'return' with argument inside generator", this.filename);
+                    throw new Sk.builtin.SyntaxError("'return' with argument inside generator", this.filename, s.lineno);
                 }
             }
             break;
@@ -31827,7 +31827,7 @@ SymbolTable.prototype.visitExpr = function (e) {
             }
             this.cur.generator = true;
             if (this.cur.returnsValue) {
-                throw new Sk.builtin.SyntaxError("'return' with argument inside generator", this.filename);
+                throw new Sk.builtin.SyntaxError("'return' with argument inside generator", this.filename, e.lineno);
             }
             break;
         case Sk.astnodes.YieldFrom:
@@ -31928,7 +31928,7 @@ SymbolTable.prototype.visitAlias = function (names, lineno) {
             this.addDef(new Sk.builtin.str(storename), DEF_IMPORT, lineno);
         } else {
             if (this.cur.blockType !== ModuleBlock) {
-                throw new Sk.builtin.SyntaxError("import * only allowed at module level", this.filename);
+                throw new Sk.builtin.SyntaxError("import * only allowed at module level", this.filename, lineno);
             }
         }
     }
@@ -34562,7 +34562,7 @@ var Sk = {}; // jshint ignore:line
 
 Sk.build = {
     githash: "dc70288aedcd7670605ef28f8525546440b39f93",
-    date: "2021-08-16T16:58:31.345Z"
+    date: "2021-10-08T23:46:30.987Z"
 };
 
 /**
