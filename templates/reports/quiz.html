@@ -67,6 +67,8 @@
 
         {% endfor %}
         </div>
+    {% elif hiding %}
+        The feedback for this quiz is hidden.
     {% else %}
         <div>No feedback given yet.</div>
     {% endif %}
