@@ -131,7 +131,7 @@
 
         $(document).ready(function () {
             // Load in Quiz interface
-            let loggedInUser = {{ user.encode_json()|tojson if user else "{id:null,email:'',first_name:'',last_name:''}" }};
+            let loggedInUser = {{ user.encode_json()|tojson if user else "{id:null,email:null,first_name:null,last_name:null}" }};
             server = new frontend.Server({{ course_id or "null" }}, {
             }, {
                 users: [loggedInUser],
