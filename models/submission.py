@@ -19,6 +19,19 @@ from models.review import Review
 from models.statuses import GradingStatuses, SubmissionStatuses
 
 
+def build_extra_starting_files(extra_starting_files):
+    try:
+        data = json.loads(extra_starting_files)
+    except:
+        return extra_starting_files
+    if isinstance(data, dict):
+        return json.dumps({(k[1:] if k[0] in "^?!" else k): v for k, v in data.items()})
+    elif isinstance(data, list):
+        return extra_starting_files
+    else:
+        return extra_starting_files
+
+
 class Submission(Base):
     code = Column(Text(), default="")
     extra_files = Column(Text(), default="")
@@ -201,7 +214,7 @@ class Submission(Base):
                                 assignment_group_id=assignment_group_id,
                                 course_id=course_id,
                                 code=assignment.starting_code,
-                                extra_files=assignment.extra_starting_files,
+                                extra_files=build_extra_starting_files(assignment.extra_starting_files),
                                 assignment_version=assignment.version)
         db.session.add(submission)
         db.session.commit()
