@@ -6,7 +6,7 @@
     {% elif question.type == "multiple_choice_question" %}
         <ul>
         {% for answer in question.answers %}
-            <li>{{ answer }}</li>
+            <li>{{ answer|safe }}</li>
         {% endfor %}
         </ul>
         <div>You chose <strong>{{ answer }}</strong></div>
@@ -14,9 +14,9 @@
         <ul>
         {% for potentialAnswer in question.answers %}
             {% if potentialAnswer in answer %}
-                <li><strong>{{ potentialAnswer }}</strong></li>
+                <li><strong>{{ potentialAnswer|safe }}</strong></li>
             {% else %}
-                <li>{{ potentialAnswer }}</li>
+                <li>{{ potentialAnswer|safe }}</li>
             {% endif %}
         {% endfor %}
         </ul>
@@ -24,19 +24,26 @@
         <table class="table table-bordered table-striped table-condensed">
         {% for s, a in question.statements|zip(answer) %}
             <tr>
-            <td>{{ s }}</td><td>{{ a }}</td>
+            <td>{{ s|safe }}</td><td>{{ a|safe }}</td>
             </tr>
         {% endfor %}
         </table>
-    {% elif question.type in ("multiple_dropdowns_question", "fill_in_multiple_blanks_question") %}
+    {% elif question.type == "multiple_dropdowns_question" %}
+        <div>You chose:</div>
+        <ul>
+        {% for key, s in answer.items() %}
+            <li>{{ key }}: {{ s|safe }}</li>
+        {% endfor %}
+        </ul>
+    {% elif question.type == "fill_in_multiple_blanks_question" %}
         <div>You entered:</div>
         <ul>
-        {% for s in answer %}
-            <li>{{ s }}</li>
+        {% for key, s in answer.items() %}
+            <li>{{ key }}: <code>{{ s }}</code></li>
         {% endfor %}
         </ul>
     {% elif question.type in ("short_answer_question", "numerical_question") %}
-        <div>You entered <strong>{{ answer }}</strong></div>
+        <div>You entered <strong><code>{{ answer }}</code></strong></div>
     {% elif question.type == "essay_question" %}
         <div>You entered <pre>{{ answer }}</pre></div>
     {% endif %}
