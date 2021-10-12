@@ -30828,6 +30828,7 @@ var reservedWords_ = {
     watch: true,
     length: true,
     name: true,
+    Date: true
 };
 
 function fixReserved(name) {
@@ -34562,7 +34563,7 @@ var Sk = {}; // jshint ignore:line
 
 Sk.build = {
     githash: "dc70288aedcd7670605ef28f8525546440b39f93",
-    date: "2021-10-08T23:46:30.987Z"
+    date: "2021-10-12T04:10:30.714Z"
 };
 
 /**
