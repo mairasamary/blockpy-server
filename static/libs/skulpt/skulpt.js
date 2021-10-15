@@ -22322,7 +22322,8 @@ Sk.builtin.list = Sk.abstr.buildNativeClass("list", {
         },
         nb$inplace_add: function (other) {
             other = Sk.misceval.arrayFromIterable(other);
-            this.v.push(...other);
+            //this.v.push(...other);
+            this.v = this.v.concat(other);
             return this;
         },
         nb$inplace_multiply: function (n) {
@@ -34563,7 +34564,7 @@ var Sk = {}; // jshint ignore:line
 
 Sk.build = {
     githash: "dc70288aedcd7670605ef28f8525546440b39f93",
-    date: "2021-10-12T04:10:30.714Z"
+    date: "2021-10-15T04:36:07.935Z"
 };
 
 /**
