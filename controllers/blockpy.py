@@ -326,10 +326,19 @@ def view_submissions(course_id, user_id, assignment_group_id):
         if not submission:
             return ajax_failure(f"No submission for the given course, user, and group.")
         elif submission.user_id != viewer_id:
-            require_course_grader(viewer, submission.course_id)
+            if not viewer.is_grader(submission.course_id):
+                return ("<h3>↑ The submission could not be loaded. If you "
+                        "are loading this assignment through the Grades menu in Canvas, then you can click "
+                        "the link directly above to open your latest submission. If you want to edit your submission "
+                        "assignment, then use the link at the top of the page to open the assignment.</h3>"
+                        "<br><br><br><h3>If you are not in Canvas, then you may not have Grader permissions "
+                        "for this course, or this might not be your submission.</h3>")
     # Do action
     points_total, points_possible = calculate_submissions_score(assignments, submissions)
-    score = round(points_total / points_possible, 2)
+    if points_possible:
+        score = round(points_total / points_possible, 2)
+    else:
+        score = 0
     # TODO: Handle tags
     is_grader = viewer.is_grader(course_id)
     tags = []
