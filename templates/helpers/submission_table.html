@@ -2,12 +2,18 @@
     <script>
     function regrade(element, submission_id) {
         let url = "{{ url_for('grading.update_grading_status') }}?submission_id="+submission_id;
+        {% if request.values.get('resubmit') == 'hard' %}
+        url = "{{ url_for('blockpy.update_submission') }}?submission_id="+submission_id;
+        {% endif %}
         console.log(this, element, submission_id);
         element.style.backgroundColor = 'white';
         fetch(url, {method: 'POST'}).then((response) => {
-            if (response.new_status === "FullyGraded") {
-                element.getElementByName('span')[0].className = "green-check-mark";
-                element.getElementByName('span')[0].innerHTML = "&#10004;";
+            if (response.success) {
+                element.className = "green-check-mark";
+                element.innerHTML = "&#10004;";
+            } else {
+                element.className = "red-x";
+                element.innerHTML = "&#10060;"
             }
             element.style.backgroundColor = 'transparent';
         }).catch(() => {
@@ -80,6 +86,8 @@
             <span class="green-check-mark">&#10004;</span>
         {% elif submission[0].grading_status == 'Failed' %}
             <span class="red-x">&#10060;</span>
+        {% elif submission[0].grading_status == 'Pending' %}
+            <span style="color: transparent">.</span>
         {% endif %}
         </span>
         {{ submission[0].grading_status }}

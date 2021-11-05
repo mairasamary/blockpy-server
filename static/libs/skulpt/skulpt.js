@@ -14396,6 +14396,10 @@ Compiler.prototype.vstmt = function (s, class_for_super) {
                 throw new Sk.builtin.SyntaxError("'return' outside function", this.filename, s.lineno);
             }
             val = s.value ? this.vexpr(s.value) : "Sk.builtin.none.none$";
+            // Track that we are about to call the function
+            if (this.filename && !this.filename.startsWith("src/lib/")) {
+                out("Sk.beforeReturn && Sk.beforeReturn("+val+");");
+            }
             if (this.u.finallyBlocks.length == 0) {
                 out("return ", val, ";");
             } else {
@@ -34564,7 +34568,7 @@ var Sk = {}; // jshint ignore:line
 
 Sk.build = {
     githash: "dc70288aedcd7670605ef28f8525546440b39f93",
-    date: "2021-10-15T17:29:53.353Z"
+    date: "2021-10-21T03:27:46.125Z"
 };
 
 /**

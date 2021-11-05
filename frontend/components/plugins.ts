@@ -124,15 +124,15 @@ ko.bindingHandlers.highlightedCode = {
 export let md = new MarkdownIt({
     html: true,
     highlight: function (str, lang) {
-    if (lang && hljs.getLanguage(lang)) {
-      try {
-          // @ts-ignore
-          return hljs.highlight(str, { language: lang }).value;
-      } catch (__) {}
-    }
+        if (lang && hljs.getLanguage(lang)) {
+          try {
+              // @ts-ignore
+              return hljs.highlight(str, { language: lang }).value;
+          } catch (__) {}
+        }
 
-    return ''; // use external default escaping
-  }
+        return ''; // use external default escaping
+    }
 });
 
 ko.bindingHandlers.markdowned = {

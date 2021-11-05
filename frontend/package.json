@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "main": "./index.ts",
   "dependencies": {
+    "@gerhobbelt/markdown-it-attrs": "^4.0.0-22",
     "@types/codemirror": "0.0.103",
     "@types/highlightjs": "^10.1.0",
     "@types/select2": "^4.0.53",
@@ -12,6 +13,8 @@
     "jsoneditor": "^9.5.3",
     "knockout-switch-case": "^2.1.0",
     "markdown-it": "^12.0.6",
+    "markdown-it-anchor": "^8.4.1",
+    "markdown-it-attrs": "^4.1.0",
     "style-loader": "^3.2.1"
   },
   "typings": "./declarations/index.d.ts",

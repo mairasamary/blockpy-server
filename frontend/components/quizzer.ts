@@ -437,7 +437,7 @@ export const QUIZZER_HTML = `
                                                     value: $data,
                                                     disable: $component.isReadOnly(),
                                                     attr: {name: 'question-mcq-'+$parentContext.$index(),
-                                                           id: 'question-mcq-'+$index()}"
+                                                           id: 'question-mcq-'+$parentContext.$index()}"
                                     class="form-check-input" type="radio">
                                     <span data-bind="html: $data"></span>
                               </label>
