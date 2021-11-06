@@ -5,9 +5,11 @@
         {% if request.values.get('resubmit') == 'hard' %}
         url = "{{ url_for('blockpy.update_submission') }}?submission_id="+submission_id;
         {% endif %}
-        console.log(this, element, submission_id);
+        //console.log(this, element, submission_id);
         element.style.backgroundColor = 'white';
         fetch(url, {method: 'POST'}).then((response) => {
+            return response.json()
+        }).then(response => {
             if (response.success) {
                 element.className = "green-check-mark";
                 element.innerHTML = "&#10004;";
@@ -18,6 +20,7 @@
             element.style.backgroundColor = 'transparent';
         }).catch(() => {
             element.style.backgroundColor = 'red';
+            console.error(arguments);
         }).finally(() => {
         });
     }

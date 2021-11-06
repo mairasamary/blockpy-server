@@ -438,7 +438,8 @@ def update_submission(lti, lti_exception=None):
                            course_id, user_id, "X-Quiz.Grade.Failure", "answer.py", message=quiz.error)
             return ajax_failure({"submitted": False, "changed": False, "correct": submission.correct,
                                  "message": quiz.error, "feedbacks": quiz.feedbacks,
-                                 'submission_status': submission.submission_status})
+                                 'submission_status': submission.submission_status,
+                                 "grading_status": submission.grading_status})
     else:
         feedbacks = {}
 
@@ -465,9 +466,11 @@ def update_submission(lti, lti_exception=None):
             make_log_entry(submission.assignment_id, submission.assignment_version,
                            course_id, user_id, "X-Submission.LMS.Failure", "answer.py", message=error)
             return ajax_failure({"submitted": False, "changed": was_changed, "correct": correct,
-                                 "message": error, "feedbacks": feedbacks, 'submission_status': submission.submission_status})
+                                 "message": error, "feedbacks": feedbacks, 'submission_status': submission.submission_status,
+                                 "grading_status": submission.grading_status})
     return ajax_success({"submitted": was_changed or force_update, "changed": was_changed, "correct": correct,
-                         "feedbacks": feedbacks, 'submission_status': submission.submission_status})
+                         "feedbacks": feedbacks, 'submission_status': submission.submission_status,
+                         "grading_status": submission.grading_status})
 
 
 @blueprint_blockpy.route('/update_submission_status/', methods=['GET', 'POST'])
