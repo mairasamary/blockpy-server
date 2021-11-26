@@ -154,6 +154,10 @@ def to_progsnap_event(log, order_id, code_states, latest_code_states, scores):
         intervention_category = "Feedback"
         intervention_type = log.category + "|" + log.label
         intervention_message = log.message
+    elif log.event_type == "Resource.View":
+        intervention_category = log.category
+        intervention_type = log.label
+        intervention_message = log.message
     else:
         intervention_category = ""
         intervention_type = ""
