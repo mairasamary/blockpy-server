@@ -57,7 +57,7 @@ export class Review extends Model<ReviewJson> {
 
 
 export class ReviewStore extends ModelStore<ReviewJson, Review> {
-    GET_FIELD: string = "submissions";
+    GET_FIELD: string = "reviews";
 
     getPayload(): any {
         return {
@@ -67,7 +67,7 @@ export class ReviewStore extends ModelStore<ReviewJson, Review> {
     }
 
     getUrl(): string {
-        return "submission/get_ids";
+        return "reviews/get_ids";
     }
 
     makeEmptyInstance(id: number): Review {
