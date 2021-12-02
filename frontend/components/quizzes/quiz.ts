@@ -142,7 +142,7 @@ export class Quiz {
         this.poolRandomness = ko.observable<QuizPoolRandomness>(QuizPoolRandomness.SEED);
 
         this.loadAssignment(assignment, submission);
-        this.seed = ko.observable<number>(submission.id);
+        this.seed = ko.observable<number>(submission ? submission.id : 0);
 
         this.attemptStatus = ko.pureComputed<QuizMode>( () => {
             return this.attempting() ? QuizMode.ATTEMPTING :
@@ -165,7 +165,8 @@ export class Quiz {
     loadAssignment(assignment: Assignment, submission: Submission) {
         this.questions.removeAll();
         this.questionMap = {};
-        let currentAnswer: QuizSubmission = JSON.parse(submission.code() || EMPTY_QUIZ_SUBMISSION_STRING) as QuizSubmission;
+        const code = (submission && submission.code()) ? submission.code() : EMPTY_QUIZ_SUBMISSION_STRING;
+        let currentAnswer: QuizSubmission = JSON.parse(code) as QuizSubmission;
         fillInMissingQuizSubmissionFields(currentAnswer);
         //console.log("Loading Answer:", currentAnswer);
         let instructions: QuizInstructions = JSON.parse(assignment.instructions() || EMPTY_QUIZ_INSTRUCTIONS_STRING) as QuizInstructions;

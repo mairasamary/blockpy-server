@@ -102,10 +102,10 @@ export class Quizzer extends AssignmentInterface {
                 (response: any) => {
                     if (response.success) {
                         let assignment = this.server.assignmentStore.newInstance(response.assignment);
-                        let submission = this.server.submissionStore.newInstance(response.submission);
+                        let submission = response.submission ? this.server.submissionStore.newInstance(response.submission) : null;
                         this.assignment(assignment);
                         this.submission(submission);
-                        console.log(submission, submission.code);
+                        //console.log(submission, submission.code);
                         this.quiz(new Quiz(assignment, submission));
                         this.markClean();
                         console.log(this.quiz())

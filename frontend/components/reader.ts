@@ -58,14 +58,16 @@ export class Reader extends AssignmentInterface {
                 (response: any) => {
                     if (response.success) {
                         let assignment = this.server.assignmentStore.newInstance(response.assignment);
-                        let submission = this.server.submissionStore.newInstance(response.submission);
+                        let submission = response.submission ? this.server.submissionStore.newInstance(response.submission) : null;
                         this.assignment(assignment);
                         this.submission(submission);
                         this.logCount = 1;
                         this.logTimer = setTimeout(this.logReadingStart.bind(this), 1000);
                         this.assignment().instructions.subscribe(this.registerWatcher.bind(this));
                         this.parseAdditionalSettings();
-                        this.markRead();
+                        if (response.submission) {
+                            this.markRead();
+                        }
                         this.registerWatcher();
                     } else {
                         console.error("Failed to load", response);
@@ -117,12 +119,17 @@ export class Reader extends AssignmentInterface {
         //let id = url.replace(/.*\/(\w+)\/?.*$/, '$1');
         //youtubes.attr("id", id);
 
-        // @ts-ignore
-        this.ytPlayer = new YT.Player('reader-youtube-video', {
-            events: {
-                'onStateChange': this.logWatching.bind(this)
-            }
-        })
+        try {
+            // @ts-ignore
+            this.ytPlayer = new YT.Player('reader-youtube-video', {
+                events: {
+                    'onStateChange': this.logWatching.bind(this)
+                }
+            })
+        } catch (error) {
+            console.log("YT Player probably not available.");
+            console.error(error);
+        }
     }
 
     getWindowPositioning(event: any) {
@@ -148,7 +155,7 @@ export class Reader extends AssignmentInterface {
             height = $(document).height();
         }
         let progress = 100* position / height;
-        if (this.assignment()) {
+        if (this.assignment() && this.submission()) {
             this.logEvent("Resource.View", "reading", "read",
                 JSON.stringify({
                     "count": this.logCount,
