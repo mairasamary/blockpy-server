@@ -14,8 +14,10 @@ export {Server} from "./components/server";
 // Interfaces
 export {Watcher} from "./components/watcher";
 export {launchEditor} from "./components/editor";
+
 // These interfaces are just new tags
 import "./components/course_list";
 import "./components/assignment_manager";
 import "./components/quizzer";
 import "./components/reader";
+import "./components/review_interface";

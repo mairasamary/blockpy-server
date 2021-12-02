@@ -10,6 +10,60 @@
 <hr>
 
 {% if assignment.reviewed %}
+    <script type='text/javascript'>
+    /*
+    $(function() {
+        let target = 'reviewable-code-area-{{ submission.id }}';
+
+        let loggedInUser = {{ g.user.encode_json()|tojson }};
+        let submissionId = {{ submission.id|tojson }};
+        let submission = {{ submission.encode_json()|tojson }};
+        let assignment = {{ assignment.encode_json()|tojson }};
+        let reviews = {{ submission.get_reviews()|tojson }};
+        let metaReviews = {{ submission.get_meta_reviews()|tojson }};
+        let tags = {{ tags|tojson }};
+
+        $("#"+target).prepend($(`<submission-review-interface
+            params="submission: submission,
+            assignment: assignment,
+            author: user,
+            reviews: reviews,
+            genericReviews: metaReviews,
+            tags: tags,
+            isGrader: isGrader"
+        />`));
+
+        const COMMENT_COLUMN = "<td class='comment-column'></td>";
+        $(`#${target}.highlighttable`).find("td.code").after($(COMMENT_COLUMN));
+        $(`#${target}.highlighttable span[id^='code-span-']`).each(function(index, elem) {
+            let parameters = "location: "+index+",reviews: reviews,isGrader: isGrader,parent: $root";
+            let button = $("<line-review params='"+parameters+"'></line-review>");
+            button.css({"top": elem.top});
+            $(COMMENT_COLUMN).append(button);
+        });
+
+        server = new frontend.Server({{ course_id|tojson }}, {
+            submissionIds: [submissionId]
+        }, {
+            users: [loggedInUser],
+            submissions: submissions,
+            reviews: reviews.concat(metaReviews),
+            tags: tags
+        });
+        let editModel = {
+            server: server,
+            submission: submission,
+            assignment: assignment,
+            author: user,
+            reviews: reviews,
+            genericReviews: metaReviews,
+            tags: tags,
+            isGrader: isGrader
+        }
+        ko.applyBindings(editModel, document.getElementById(target));
+    });
+    */
+    </script>
     {# include "helpers/review_interface.html" with context #}
 {% endif %}
 
@@ -39,7 +93,7 @@
 <!--<div>Estimated Duration: {{ (submission.version/10.0)|round(2) }} minutes</div>-->
 
 {% if is_grader or not hiding %}
-<div>Submitted code:<br>
+<div id="reviewable-code-area-{{ submission.id }}">Submitted code:<br>
     {{ submission.code|highlight_python_code|safe }}
     {% if submission.extra_files %}
         {% for filename, contents in (submission.extra_files|json_load).items() %}
