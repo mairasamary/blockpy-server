@@ -162,6 +162,20 @@ export class Quiz {
         }, this);
     }
 
+    editAssignmentBody(assignment: Assignment, question: Question, newText: string) {
+        let instructions: QuizInstructions = JSON.parse(assignment.instructions()) as QuizInstructions;
+        localStorage.setItem("backup-instructions", assignment.instructions());
+        fillInMissingQuizInstructionFields(instructions);
+        if (instructions.questions[question.id].body !== newText) {
+            instructions.questions[question.id].body = newText;
+            let modifiedInstructions = JSON.stringify(instructions, undefined, 2);
+            assignment.instructions(modifiedInstructions);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     loadAssignment(assignment: Assignment, submission: Submission) {
         this.questions.removeAll();
         this.questionMap = {};
@@ -176,11 +190,14 @@ export class Quiz {
         // If instructions[questionId] is an array, then pool from it "randomly"
         for (const questionId in instructions.questions) {
             let answer = currentAnswer.studentAnswers[questionId];
+            let questionData = instructions.questions[questionId];
             // Create the new question
-            let question = {...instructions.questions[questionId],
+            let question = {...questionData,
                             id: questionId,
                             feedback: ko.observable(null),
                             visible: ko.observable(true),
+                            editing: ko.observable(false),
+                            rawBody: ko.observable(questionData.body),
                             pool: ko.observable(null)} as Question;
             question.student = getDefaultValue(question, answer);
             this.questionMap[questionId] = question;

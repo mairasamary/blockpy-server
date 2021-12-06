@@ -127,4 +127,6 @@ export interface Question {
     feedback: ko.Observable<Feedback>
     visible: ko.Observable<boolean>
     pool: ko.Observable<QuestionPool>
+    editing: ko.Observable<boolean>
+    rawBody: ko.Observable<string>
 }
