@@ -552,7 +552,8 @@ function BlockMirrorTextEditor(blockMirror) {
         var oldText = change.text[0];
 
         if (_this.isImageUrl(oldText)) {
-          var newText = imageLiteralHook(oldText);
+          var newText = _this.blockMirror.configuration.imageLiteralHook(oldText);
+
           change.update(null, null, [newText]);
         }
       }
