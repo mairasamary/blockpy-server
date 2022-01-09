@@ -8,6 +8,7 @@ from typing import Union
 from flask import url_for
 from sqlalchemy import Column, Text, Integer, Boolean, ForeignKey, Index, func, String, or_
 from sqlalchemy.orm import relationship
+from werkzeug.utils import secure_filename
 
 from main import app
 from models import models
@@ -347,6 +348,7 @@ class Submission(Base):
         return self.save_image('submission_blocks', image, 'blockpy.get_submission_image')
 
     def save_image(self, directory, data, endpoint='blockpy.get_image'):
+        directory = secure_filename(directory)
         sub_folder = os.path.join(app.config['UPLOADS_DIR'], directory)
         image_path = os.path.join(sub_folder, str(self.id) + '.png')
         if data != "":

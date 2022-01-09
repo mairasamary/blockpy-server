@@ -10313,7 +10313,8 @@ Sk.builtin.fabs = function fabs(x) {
 Sk.builtin.ord = function ord(x) {
     if (!Sk.builtin.checkString(x)) {
         throw new Sk.builtin.TypeError("ord() expected a string of length 1, but " + Sk.abstr.typeName(x) + " found");
-    } else if (x.v.length !== 1) {
+    // Unicode aware string length
+    } else if ([...x.v].length !== 1) {
         throw new Sk.builtin.TypeError("ord() expected a character, but string of length " + x.v.length + " found");
     }
     return new Sk.builtin.int_(x.v.charCodeAt(0));
@@ -11087,11 +11088,18 @@ Sk.builtin.exec = function execf(pythonCode, new_globals, newLocals) {
         var name = filename.endsWith(".py") ? filename.slice(0, -3) : filename;
         var pyName = new Sk.builtin.str(name);
         var loadModule = function() {
-            var sysModules = Sk.sysmodules.mp$subscript(Sk.builtin.str.$sys);
+            /*var sysModules = Sk.getSysModulesPolitely();
+            if (sysModules.quick$lookup(pyName)) {
+                console.log("OH HEY WAIT WHY ARE YOU HERE:", name);
+                sysModules.del$item(pyName);
+            }*/
             var modname = name;
             var caughtError = null;
             const res = Sk.misceval.tryCatch(() => {
-                Sk.importModuleInternal_(name, false, modname, pythonCode, undefined, false, true);
+                let r = Sk.importModuleInternal_(name, false, modname, pythonCode, undefined, false, true);
+                while (r instanceof Sk.misceval.Suspension) {
+                    r = r.resume();
+                }
                 //console.log(Sk.sysmodules.mp$subscript(pyName).$js);
             }, (e) => {
                 console.error("SYSTEMATIC ERROR", e);
@@ -11114,7 +11122,7 @@ Sk.builtin.exec = function execf(pythonCode, new_globals, newLocals) {
                 if (caughtError !== null) {
                     throw caughtError;
                 }
-                resolve();
+                resolve(Sk.builtin.none.none$);
             });
         };
         if (!Sk.sysmodules.sq$contains(Sk.builtin.str.$sys)) {
@@ -12528,6 +12536,57 @@ Compiler.prototype.cyield = function (e) {
     return "$gen.gi$sentvalue"; // will either be null if none sent, or the value from gen.send(value)
 };
 
+Compiler.prototype.cyieldfrom = function (e) {
+    if (this.u.ste.blockType !== Sk.SYMTAB_CONSTS.FunctionBlock) {
+        throw new Sk.builtin.SyntaxError("'yield' outside function", this.filename, e.lineno);
+    }
+    let iterable = this.vexpr(e.value);
+    // get the iterator we are yielding from and store it
+    iterable = this._gr("iter", "Sk.abstr.iter(", iterable, ")");
+    out("$gen." + iterable + "=", iterable, ";");
+    var afterIter = this.newBlock("after iter");
+    var afterBlock = this.newBlock("after yield from");
+    this._jump(afterIter);
+    this.setBlock(afterIter);
+    var retval = this.gensym("retval");
+    // We may have entered this block resuming from a yield
+    // So get the iterable stored on $gen.
+    out(iterable, "=$gen.", iterable, ";");
+    out("var ", retval, ";");
+    // fast path -> we're sending None (not sending a value)
+    // or we use gen.tp$iternext(true, val) (see generator.js) which is the equivalent of gen.send(val)
+    out("if ($gen.gi$sentvalue === Sk.builtin.none.none$ || " + iterable + ".constructor === Sk.builtin.generator) {");
+    out(    "$ret=", iterable, ".tp$iternext(true, $gen.gi$sentvalue);");
+    out("} else {");
+    var send = this.makeConstant("new Sk.builtin.str('send');");
+    // slow path -> get the send method of the non-generator iterator and call it
+    // throw anything other than a StopIteration
+    out(    "$ret=Sk.misceval.tryCatch(");
+    out(        "function(){");
+    out(            "return Sk.misceval.callsimOrSuspendArray(Sk.abstr.gattr(", iterable, ",", send, "), [$gen.gi$sentvalue]);},");
+    out(        "function (e) { ");
+    out(            "if (e instanceof Sk.builtin.StopIteration) { ");
+    out(                    iterable ,".gi$ret = e.$value;");
+                            // store the return value on the iterator
+                            // otherwise we lose it beause iterator code in skulpt relies on returning undefined;
+                            // one day maybe we can use the js .next protocol {value: ret, done: true} ;-)
+    out(                    "return undefined;");
+    out(            "} else { throw e; }");
+    out(        "}");
+    out(    ");");
+    out("}");
+    this._checkSuspension(e);
+    out(retval, "=$ret;");
+    // if the iterator is done (undefined) and we still have an unused sent value, it will be in `[iterable].gi$ret`, so we grab it from there and move on from the `yield from` ("afterBlock")
+    out("if(", retval, "===undefined) {");
+    out(    "$gen.gi$sentvalue=$gen." + iterable + ".gi$ret;");
+    out(    "$blk=", afterBlock, ";continue;");
+    out("}");
+    out("return [/*resume*/", afterIter, ",/*ret*/", retval, "];");
+    this.setBlock(afterBlock);
+    return "$gen.gi$sentvalue"; // will either be none if none sent, or the value retuned from gen.send(value)
+};
+
 Compiler.prototype.ccompare = function (e) {
     var res;
     var rhs;
@@ -12797,6 +12856,8 @@ Compiler.prototype.vexpr = function (e, data, augvar, augsubs) {
             return this.cgenexp(e);
         case Sk.astnodes.Yield:
             return this.cyield(e);
+        case Sk.astnodes.YieldFrom:
+            return this.cyieldfrom(e);
         case Sk.astnodes.Compare:
             return this.ccompare(e);
         case Sk.astnodes.Call:
@@ -13114,6 +13175,7 @@ Compiler.prototype.outputSuspensionHelpers = function (unit) {
         "var susp = " + unit.scopename + ".$wakingSuspension; " + unit.scopename + ".$wakingSuspension = undefined;" +
         "$blk=susp.$blk; $loc=susp.$loc; $gbl=susp.$gbl; $exc=susp.$exc; $err=susp.$err; $postfinally=susp.$postfinally;" +
         "$currLineNo=susp.$lineno;$currColNo=susp.$colno;$currSource=susp.$source;Sk.lastYield=Date.now();" +
+        //"console.log('WAKEY', $fname, $loc, $gbl, $exc, $exc.length, $currColNo, $currLineNo, $err, $currSource,$blk);" +
         (hasCell ? "$cell=susp.$cell;" : "");
 
     for (i = 0; i < localsToSave.length; i++) {
@@ -13677,7 +13739,7 @@ Compiler.prototype.cimport = function (s) {
     var n = s.names.length;
     for (i = 0; i < n; ++i) {
         alias = s.names[i];
-        out("$ret = Sk.builtin.__import__(", alias.name["$r"]().v, ",$gbl,$loc,[],", (Sk.__future__.absolute_import ? 0 : -1), ");");
+        out("$ret = Sk.builtin.__import__(", alias.name["$r"]().v, ",$gbl,$loc,[],", (Sk.__future__.absolute_import ? 0 : -1), ",true);");
 
         this._checkSuspension(s);
 
@@ -13712,7 +13774,7 @@ Compiler.prototype.cfromimport = function (s) {
     for (i = 0; i < n; ++i) {
         names[i] = "'" + fixReserved(s.names[i].name.v) + "'";
     }
-    out("$ret = Sk.builtin.__import__(", s.module["$r"]().v, ",$gbl,$loc,[", names, "],", level, ");");
+    out("$ret = Sk.builtin.__import__(", s.module["$r"]().v, ",$gbl,$loc,[", names, "],", level, ",true);");
 
     this._checkSuspension(s);
 
@@ -15826,6 +15888,7 @@ Sk.builtin.str.$doc = new Sk.builtin.str("__doc__");
 Sk.builtin.str.$enter = new Sk.builtin.str("__enter__");
 Sk.builtin.str.$eq = new Sk.builtin.str("__eq__");
 Sk.builtin.str.$exit = new Sk.builtin.str("__exit__");
+Sk.builtin.str.$import = new Sk.builtin.str("__import__");
 Sk.builtin.str.$index = new Sk.builtin.str("__index__");
 Sk.builtin.str.$init = new Sk.builtin.str("__init__");
 Sk.builtin.str.$int_ = new Sk.builtin.str("__int__");
@@ -20759,7 +20822,8 @@ Sk.importModuleInternal_ = function (name, dumpJS, modname, suppliedPyBody, rela
                 module["$d"]["__path__"] = new Sk.builtin.tuple([new Sk.builtin.str(co.packagePath)]);
             }
 
-            return modscope(module["$d"]);
+            let r = modscope(module["$d"]);
+            return r;
 
         }, function (modlocs) {
             var i;
@@ -20880,9 +20944,18 @@ Sk.importBuiltinWithBody = function (name, dumpJS, body, canSuspend) {
     return Sk.importModuleInternal_(name, dumpJS, "__builtin__." + name, body, undefined, false, canSuspend);
 };
 
-Sk.builtin.__import__ = function (name, globals, locals, fromlist, level) {
+Sk.builtin.__import__ = function (name, globals, locals, fromlist, level, askeyword=false) {
     //print("Importing: ", JSON.stringify(name), JSON.stringify(fromlist), level);
     //if (name == "") { debugger; }
+
+    // TODO: Need to check if there is a builtins with the name __import__
+    if (askeyword && Sk.globals["__builtins__"] !== undefined) {
+        builtinModuleVersion = Sk.globals["__builtins__"].mp$lookup(Sk.builtin.str.$import);
+        //console.log("Overrode __builtins__", name, builtinModuleVersion);
+        if (builtinModuleVersion !== undefined) {
+            return Sk.misceval.callsimOrSuspend(builtinModuleVersion, new Sk.builtin.str(name), globals, locals, Sk.ffi.remapToPy(fromlist), Sk.ffi.remapToPy(level));
+        }
+    }
 
     // Save the Sk.globals variable importModuleInternal_ may replace it when it compiles
     // a Python language module.
@@ -23694,9 +23767,11 @@ Sk.misceval.loadname = function (name, other) {
     }
 
     // Check if we've overridden the builtin via the builtin's module
+    //console.log("MISCEVAL", other, other["__builtins__"], name);
+    //console.log(Object.keys(other));
+    //console.log("CONSIDERING LOADING", name, Object.keys(other), Object.keys(Sk.globals), Sk.globals === other);
     if (other["__builtins__"] !== undefined) {
         builtinModuleVersion = other["__builtins__"].mp$lookup(new Sk.builtin.str(name));
-        //console.log("Overrode __builtins__", other, name, builtinModuleVersion);
         if (builtinModuleVersion !== undefined) {
             return builtinModuleVersion;
         }
@@ -24506,6 +24581,7 @@ Sk.builtin.module = Sk.abstr.buildNativeClass("module", {
                 }
             }
         },
+        tp$setattr: Sk.generic.setAttr,
         $r: function () {
             let get = (s) => {
                 let v = this.tp$getattr(new Sk.builtin.str(s));
@@ -29509,11 +29585,15 @@ Sk.builtin.str.methods.split = function (self, sep, maxsplit) {
 Sk.builtin.str.methods.rsplit = function (self, sep, maxsplit) {
     var allSplit = genericsSplit(self, sep, undefined);
     if (maxsplit !== undefined) {
+        // TODO: Replace with better skulpt implementation
         if (!Sk.builtin.checkInt(maxsplit)) {
             throw new Sk.builtin.TypeError("an integer is required");
         }
-        // TODO
-        return allSplit;
+        const splitEnds = allSplit.v.slice(allSplit.v.length-maxsplit.v);
+        const pieces = allSplit.v.slice(0, allSplit.v.length-maxsplit.v).map(s => s.v).join(sep.v);
+        const unsplitEnd = new Sk.builtin.str(pieces);
+        splitEnds.unshift(unsplitEnd);
+        return new Sk.builtin.list(splitEnds);
     } else {
         return allSplit;
     }
@@ -34568,7 +34648,7 @@ var Sk = {}; // jshint ignore:line
 
 Sk.build = {
     githash: "dc70288aedcd7670605ef28f8525546440b39f93",
-    date: "2021-10-21T03:27:46.125Z"
+    date: "2022-01-07T15:10:02.602Z"
 };
 
 /**

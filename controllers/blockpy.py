@@ -496,6 +496,145 @@ def update_submission_status(lti, lti_exception=None):
     return ajax_success({"success": success})
 
 
+@blueprint_blockpy.route('/upload_file/', methods=['GET', 'POST'])
+@blueprint_blockpy.route('/upload_file', methods=['GET', 'POST'])
+@require_request_parameters('placement', 'directory', 'filename')
+def upload_file():
+    # Get parameters
+    placement = request.values.get('placement')
+    directory = request.values.get('directory')
+    filename = secure_filename(request.values.get('filename'))
+    contents = request.files.get('contents')
+    delete = maybe_bool(request.values.get('delete', 'False'))
+    user, user_id = get_user()
+    if None in (placement, directory, filename, contents):
+        return ajax_failure("No placement, directory, filename, contents given!")
+    if placement not in ("global", "course", "assignment", "submission", "user"):
+        return ajax_failure(f"Invalid placement: {placement!r}")
+    files_folder = os.path.join(app.config['UPLOADS_DIR'], 'files', placement)
+    # Check file size
+    contents.seek(0, os.SEEK_END)
+    file_length = contents.tell()
+    contents.seek(0, 0)
+    if app.config["MAXIMUM_CODE_SIZE"] < file_length:
+        return ajax_failure(
+            "Maximum size of file exceeded. Current limit is {}, you uploaded {} characters.".format(
+                app.config["MAXIMUM_CODE_SIZE"], file_length
+            ))
+    # Global file
+    if placement == "global" and not user.is_admin():
+        return ajax_failure(f"Invalid permissions to upload global file. User is not an admin.")
+    # Course file
+    if placement == "course":
+        course = Course.by_id(directory)
+        if not course:
+            return ajax_failure(f"Course {directory} does not exist.")
+        if not user.is_instructor(course_id=course.id) and not user.is_admin():
+            return ajax_failure(f"You do not have sufficient permissions to upload files for this course.")
+    # Assignment file
+    if placement == "assignment":
+        assignment = Assignment.by_id(directory)
+        if not assignment:
+            return ajax_failure(f"Assignment {directory} does not exist.")
+        if not user.is_instructor(course_id=assignment.course_id) and not user.is_admin():
+            return ajax_failure(f"You do not have sufficient permissions to upload files for this assignment's course ({assignment.course_id}).")
+    # Submission file
+    if placement == "submission":
+        submission = Submission.by_id(directory)
+        if not submission:
+            return ajax_failure(f"Submission {directory} does not exist.")
+        if user_id != submission.user_id and not user.is_instructor(submission.course_id) and not user.is_admin():
+            return ajax_failure(
+                f"You do not have sufficient permissions to upload files for this submission; you must either own it or be an instructor in its course.")
+    # User file
+    if placement == "user":
+        folder_user = User.by_id(directory)
+        if not folder_user:
+            return ajax_failure(f"User {directory} does not exist.")
+        if user_id != folder_user.id and not user.is_admin():
+            return ajax_failure(f"You do not have permissions to upload files for this user.")
+    # Okay, we got this far, create it!
+    files_folder = os.path.join(files_folder, secure_filename(directory))
+    ensure_dirs(files_folder)
+    file_path = os.path.join(files_folder, secure_filename(filename))
+    if delete:
+        if os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+                return jsonify(success=True, ip=request.remote_addr)
+            except Exception as e:
+                app.logger.info(f"Could not delete file {file_path} because: {e}")
+                return ajax_failure(f"Could not delete the file!")
+    else:
+        try:
+            contents.save(file_path)
+            endpoint = url_for("blockpy.download_file", _external=True,
+                               placement=placement, directory=directory, filename=filename)
+            return ajax_success({"success": True, "endpoint": endpoint})
+        except IOError as e:
+            return ajax_failure(str(e))
+
+
+@blueprint_blockpy.route('/download_file/', methods=['GET', 'POST'])
+@blueprint_blockpy.route('/download_file', methods=['GET', 'POST'])
+@require_request_parameters('placement', 'directory', 'filename')
+def download_file():
+    """
+    Files are not private. Anyone can see them if you upload them.
+
+    :return:
+    """
+    # Get parameters
+    placement = request.values.get('placement')
+    directory = request.values.get('directory')
+    filename = secure_filename(request.values.get('filename'))
+    user, user_id = get_user()
+    if None in (placement, directory, filename):
+        return ajax_failure("No placement, directory, filename given!")
+    if placement not in ("global", "course", "assignment", "submission", "user"):
+        return ajax_failure(f"Invalid placement: {placement!r}")
+    # app.config['UPLOADS_DIR']
+    files_folder = "/".join(('uploads', 'files', placement))
+    # Okay, we got this far, create it!
+    file_path = "/".join((files_folder, secure_filename(directory), secure_filename(filename)))
+    print(file_path)
+    return app.send_static_file(file_path)
+
+
+@blueprint_blockpy.route('/list_files/', methods=['GET', 'POST'])
+@blueprint_blockpy.route('/list_files', methods=['GET', 'POST'])
+@require_request_parameters('submission_id')
+def list_files():
+    submission_id = maybe_int(request.values.get("submission_id"))
+    global_directory = request.values.get('global_directory', 'any')
+    course_id = get_course_id()
+    user, user_id = get_user()
+    # Get submission
+    submission = Submission.by_id(submission_id)
+    check_resource_exists(submission, "Submission", submission_id)
+    # Get assignment
+    assignment = Assignment.by_id(submission.assignment_id)
+    check_resource_exists(assignment, "Assignment", submission.assignment_id)
+    # Get all possible file placements
+    placements = [('global', 'global', global_directory),
+                  ('user', 'user', user_id),
+                  ('submission user', 'user', submission.user_id),
+                  ('given course', 'course', course_id),
+                  ('submission course', 'course', submission.course_id),
+                  ('assignment course', 'course', assignment.course_id),
+                  ('assignment', 'assignment', assignment.id),
+                  ('submission', 'submission', submission.id)]
+    file_lists = {}
+    for name, placement, directory in placements:
+        files_folder = os.path.join(app.config['UPLOADS_DIR'], 'files', placement, str(directory))
+        if os.path.exists(files_folder):
+            for filename in os.listdir(files_folder):
+                if name not in file_lists:
+                    file_lists[name] = []
+                url = url_for('blockpy.download_file', placement=placement, directory=directory, filename=filename)
+                file_lists[name].append([filename, url])
+    return ajax_success({"success": True, "files": file_lists})
+
 @blueprint_blockpy.route('/save_image/', methods=['GET', 'POST'])
 @blueprint_blockpy.route('/save_image', methods=['GET', 'POST'])
 @require_request_parameters('submission_id', 'directory', 'image')
@@ -533,6 +672,7 @@ def get_submission_image(lti=lti):
     if submission.user_id != user_id:
         require_course_grader(user, submission.course_id)
     # Do action
+    print(relative_image_path)
     return app.send_static_file(relative_image_path)
 
 

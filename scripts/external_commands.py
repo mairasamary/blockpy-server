@@ -55,6 +55,8 @@ class UpdateBlockPy(Command):
             '../../pedal-edu/pedal/dist-js/skulpt-pedal.js': 'libs/pedal/',
             '../../pedal-edu/curriculum-ctvt/dist-js/skulpt-curriculum-ctvt.js': 'libs/pedal/',
             '../../pedal-edu/curriculum-sneks/dist-js/skulpt-curriculum-sneks.js': 'libs/pedal/',
+            '../../gamedev/designer/dist-js/skulpt-designer.js': 'libs/designer/',
+            '../../gamedev/designer/dist-js/skulpt-designer-files.js': 'libs/designer/',
             '../blockly/blockly_uncompressed.js': 'blockly/',
             '../blockly/blockly_compressed.js': 'blockly/',
             '../blockly/blocks_compressed.js': 'blockly/',

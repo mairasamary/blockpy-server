@@ -40,7 +40,7 @@ class Config(object):
     CANVAS_DIR = os.path.join(STATIC_DIRECTORY, 'canvas/courses/')
     CORGIS_URL = secrets.get("CORGIS_URL", None)
 
-    MAXIMUM_CODE_SIZE = secrets.get("MAXIMUM_CODE_SIZE", 500 * 1024) # Defaults to 500kb
+    MAXIMUM_CODE_SIZE = secrets.get("MAXIMUM_CODE_SIZE", 750 * 1024) # Defaults to 500kb
 
     PREFERRED_LOGIN = secrets.get("PREFERRED_LOGIN", None)
 

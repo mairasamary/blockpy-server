@@ -65,6 +65,12 @@ bundles = {
         output='gen/pedal.js'
     ),
 
+    'designer_js': Bundle(
+        "libs/designer/skulpt-designer-files.js" if app.config["IS_PRODUCTION"] else "../../gamedev/designer/dist-js/skulpt-designer-files.js",
+        "libs/designer/skulpt-designer.js" if app.config["IS_PRODUCTION"] else "../../gamedev/designer/dist-js/skulpt-designer.js",
+        output='gen/designer.js'
+    ),
+
     'blockpy_js': Bundle(
         "libs/block_mirror/block_mirror.js",
         #"libs/blockpy/blockpy.js",

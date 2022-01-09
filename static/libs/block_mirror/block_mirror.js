@@ -324,6 +324,7 @@ BlockMirror.prototype.validateConfiguration = function (configuration) {
     return old;
   };
 
+  this.configuration.imageDetection = configuration.imageDetection || 'string';
   this.configuration.imageMode = configuration.imageMode || false;
 };
 
@@ -634,12 +635,13 @@ BlockMirrorTextEditor.prototype.updateImages = function (cm, from, to) {
 
   cm.doc.eachLine(from, to, function (line) {
     var match;
+    var regex = BlockMirrorTextEditor.REGEX_PATTERNS[_this2.blockMirror.configuration.imageDetection];
 
-    while ((match = CONSTRUCTOR_IMAGE_URL.exec(line.text)) !== null) {
+    while ((match = regex.exec(line.text)) !== null) {
       var imageWidget = _this2.makeImageWidget(match[3]);
 
-      var offset = match[0].length - match[1].length;
-      console.log(offset);
+      var offset = match[0].length - match[1].length; //console.log(offset);
+
       var imageMarker = cm.markText({
         line: cm.doc.getLineNumber(line),
         ch: match.index + offset
@@ -660,7 +662,7 @@ BlockMirrorTextEditor.prototype.updateImages = function (cm, from, to) {
 var FULL_IMAGE_URL = /^(?:http(s)?:\/\/)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:/?#[\]@!\$&'\(\)\*\+,;=.]+(?:png|jpg|jpeg|gif|svg|mp4)+$/; //const BLOB_IMAGE_URL = /(["'])(blob:null\/[A-Fa-f0-9-]+)\1/g;
 //const REGULAR_IMAGE_URL = /(["'])((?:http(s)?:\/\/)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:/?#[\]@!\$&'\(\)\*\+,;=.]+(?:png|jpg|jpeg|gif|svg)+)\1/g;
 
-var STRING_IMAGE_URL = /((["'])((?:blob:null\/[A-Fa-f0-9-]+)|(?:(?:https?:\/\/)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:/?#[\]@!\$&'\(\)\*\+,;=.]+(?:png|jpg|jpeg|gif|svg)+))\2)/g; //const CONSTRUCTOR_IMAGE_URL = /(?:^|\W)(Image\((["'])((?:blob:null\/[A-Fa-f0-9-]+)|(?:(?:https?:\/\/)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:/?#[\]@!\$&'\(\)\*\+,;=.]+(?:png|jpg|jpeg|gif|svg)+))\2\))/g;
+var STRING_IMAGE_URL = /((["'])((?:blob:null\/[A-Fa-f0-9-]+)|(?:(?:https?:\/\/)?[\w.-]+(?:\.?[\w\.-]+)+[\w\-\._~:/?#[\]@!\$&'\(\)\*\+,;=.]+(?:png|jpg|jpeg|gif|svg)+)|(?:data:image\/(?:png|jpg|jpeg|gif|svg\+xml|webp|bmp)(?:;charset=utf-8)?;base64,(?:[A-Za-z0-9]|[+/])+={0,2}))\2)/g; //const CONSTRUCTOR_IMAGE_URL = /(?:^|\W)(Image\((["'])((?:blob:null\/[A-Fa-f0-9-]+)|(?:(?:https?:\/\/)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:/?#[\]@!\$&'\(\)\*\+,;=.]+(?:png|jpg|jpeg|gif|svg)+))\2\))/g;
 
 var CONSTRUCTOR_IMAGE_URL = /(?:^|\W)(Image\((["'])(.+?)\2\))/g;
 BlockMirrorTextEditor.REGEX_PATTERNS = {
@@ -3974,8 +3976,8 @@ Blockly.Python['ast_StrChar'] = function (block) {
 
 Blockly.Python['ast_Image'] = function (block) {
   // Text value
-  Blockly.Python.definitions_["import_image"] = "from image import Image";
-  var code = "Image(" + Blockly.Python.quote_(block.src_) + ")";
+  //Blockly.Python.definitions_["import_image"] = "from image import Image";
+  var code = Blockly.Python.quote_(block.src_);
   return [code, Blockly.Python.ORDER_FUNCTION_CALL];
 };
 
@@ -4049,12 +4051,14 @@ BlockMirrorTextToBlocks.prototype.dedent = function (text, levels, isDocString) 
 BlockMirrorTextToBlocks.prototype['ast_Str'] = function (node, parent) {
   var s = node.s;
   var text = Sk.ffi.remapToJs(s);
-  /*if (text.startsWith("http") && text.endsWith(".png")) {
-      return BlockMirrorTextToBlocks.create_block("ast_Image", node.lineno, {}, {}, {},
-          {"@src": text});
-  } else*/
+  var regex = BlockMirrorTextEditor.REGEX_PATTERNS[this.blockMirror.configuration.imageDetection]; //console.log(text, regex.test(JSON.stringify(text)));
 
-  if (this.isSingleChar(text)) {
+  if (regex.test(JSON.stringify(text))) {
+    //if (text.startsWith("http") && text.endsWith(".png")) {
+    return BlockMirrorTextToBlocks.create_block("ast_Image", node.lineno, {}, {}, {}, {
+      "@src": text
+    });
+  } else if (this.isSingleChar(text)) {
     return BlockMirrorTextToBlocks.create_block("ast_StrChar", node.lineno, {
       "TEXT": text
     });
@@ -4124,14 +4128,14 @@ BlockMirrorTextToBlocks.UNARYOPS.forEach(function (unaryop) {
     }],
     "inputsInline": false,
     "output": null,
-    "colour": unaryop[1] == 'Not' ? BlockMirrorTextToBlocks.COLOR.LOGIC : BlockMirrorTextToBlocks.COLOR.MATH
+    "colour": unaryop[1] === 'Not' ? BlockMirrorTextToBlocks.COLOR.LOGIC : BlockMirrorTextToBlocks.COLOR.MATH
   });
 
   Blockly.Python[fullName] = function (block) {
     // Basic arithmetic operators, and power.
-    var order = unaryop[1] == 'Not' ? Blockly.Python.ORDER_LOGICAL_NOT : Blockly.Python.ORDER_UNARY_SIGN;
+    var order = unaryop[1] === 'Not' ? Blockly.Python.ORDER_LOGICAL_NOT : Blockly.Python.ORDER_UNARY_SIGN;
     var argument1 = Blockly.Python.valueToCode(block, 'VALUE', order) || Blockly.Python.blank;
-    var code = unaryop[0] + (unaryop[1] == 'Not' ? ' ' : '') + argument1;
+    var code = unaryop[0] + (unaryop[1] === 'Not' ? ' ' : '') + argument1;
     return [code, order];
   };
 });

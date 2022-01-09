@@ -27,6 +27,10 @@
         <script type="text/javascript" src="{{ ASSET_URL }}"></script>
     {% endassets %}
 
+    {% assets "designer_js" %}
+        <script type="text/javascript" src="{{ ASSET_URL }}"></script>
+    {% endassets %}
+
     {% assets "blockpy_js" %}
         <script type="text/javascript" src="{{ ASSET_URL }}"></script>
     {% endassets %}
@@ -154,18 +158,21 @@
             editor = new blockpy.BlockPy({
                 // Configuration constants
                 'blockly.path': {{ url_for('static', filename='blockly/media/')|tojson }},
-                'attachment.point': document.getElementById('blockpy-div'),
+                'attachment.point': '#blockpy-div',
                 "urls": {
                     "importDatasets": {{ config['CORGIS_URL']|tojson }},
                     'loadAssignment': {{ url_for('blockpy.load_assignment')|tojson }},
                     'instructionsAssignmentSetup': {{ url_for('courses.making_problems')|tojson }},
                     'forkAssignment': {{ url_for('blockpy.fork_assignment')|tojson }},
+                    'downloadFile': {{ url_for('blockpy.download_file', external=True)|tojson }},
                     {% if submissions %}
                         'saveAssignment': {{ url_for('blockpy.save_assignment')|tojson }},
                         'loadHistory': {{ url_for('blockpy.load_history')|tojson }},
                         'logEvent': {{ url_for('blockpy.log_event')|tojson }},
                         'saveFile': {{ url_for('blockpy.save_file')|tojson }},
                         'saveImage': {{ url_for('blockpy.save_image')|tojson }},
+                        'listUploadedFiles': {{ url_for('blockpy.list_files')|tojson }},
+                        'uploadFile': {{ url_for('blockpy.upload_file')|tojson }},
                         'updateSubmission': {{ url_for('blockpy.update_submission')|tojson }},
                         'updateSubmissionStatus': {{ url_for('blockpy.update_submission_status')|tojson }},
                     {% endif %}
@@ -197,6 +204,8 @@
                     {% endif %}
                 {% endfor %}
             });
+
+            Sk.emojiProxy = (part) => `{{ url_for('static', filename='images/emoji/') }}${part.toLowerCase()}.svg`;
 
             $MAIN_BLOCKPY_EDITOR = editor;
 
