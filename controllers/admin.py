@@ -58,8 +58,8 @@ class UserView(RegularView):
     column_exclude_list = ('password', 'proof')
     column_display_pk = True
     column_searchable_list = ('first_name', 'last_name', 'email')
-    column_list = ('id', 'first_name', 'last_name', 'email', 'active', 'roles')
-    column_filters = ('id', 'first_name', 'last_name', 'email')
+    column_list = ('id', 'first_name', 'last_name', 'email', 'active', 'anonymous', 'roles')
+    column_filters = ('id', 'first_name', 'last_name', 'email', 'active', 'anonymous')
 
 
 class ModelIdView(RegularView):

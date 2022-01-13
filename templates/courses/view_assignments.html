@@ -1,7 +1,7 @@
 {% extends 'helpers/layout.html' %}
 
 {% block title %}
-Courses: Assignments
+{{ course.name }}: Assignments
 {% endblock %}
 
 {% block statusbar %}
@@ -51,29 +51,59 @@ tr.hover-remove-rows button.remove-button {
 
 {% block body %}
 
-<h1>Assignments</h1>
+    <h1>{{ course.name }}</h1>
+    <h3>Assignments</h3>
+
+    {%  if is_grader %}
+        <p>Back to <a href="{{ url_for('courses.course', course_id=course_id) }}">Course</a></p>
+    {% else %}
+        <a href="{{ url_for('courses.index') }}">Back to all courses</a>
+    {% endif %}
 
 {% for group in groups %}
 
 {% endfor %}
 
 
+
 <table class="table table-condensed table-hover">
 <tbody>
+
+    <!-- Default assignments -->
+    {% if default_assignment %}
+    <tr class='hover-movers-rows'>
+        <td class=''>
+            <a href="{{ url_for('assignments.load', assignment_id=default_assignment.id, course_id=course_id) }}">
+                <strong>{{ default_assignment.title() }}</strong></a><br>
+            Last modified at
+            <span>
+                {{ default_assignment.date_modified.strftime(" %I:%M%p on %a %d, %b %Y").replace(" 0", " ") }}
+            </span>
+        </td>
+        <td class=''>
+            <span>{{ default_assignment.instructions|safe }}</span>
+        </td>
+        <td></td>
+    </tr>
+    {% endif %}
+
+    <!--- Non-default assignments -->
     
     {% for group in groups %}
     
     <tr class="table-active hover-remove-rows">
-        <td class="col-md-12 col-sm-12 col-xs-12" colspan="2">
+        <td class="col-md-12 col-sm-12 col-xs-12" colspan="{{ '2' if is_instructor else '3' }}">
             <a href="{{ url_for('assignments.load', assignment_group_id=group.id, course_id=course_id) }}">
                 <strong>{{ group.name }}</strong>
             </a>
         </td>
+        {% if is_instructor %}
         <td>
             <a href="{{ url_for('assignment_group.export', assignment_group_id=group.id) }}">
                 Export
             </a>
         </td>
+        {% endif %}
     </tr>
     
     {% for assignment in group.get_assignments() %}

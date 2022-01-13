@@ -239,17 +239,14 @@
                 }
             }
 
-
-            // Load initial assignment
-            {% if current_assignment_id is defined and current_assignment_id != None %}
-                loadAssignmentWrapper({{ current_assignment_id }});
-                //editor.loadAssignment({{ current_assignment_id }});
-                altAssignmentChangingFunction = loadAssignmentWrapper; //editor.loadAssignment.bind(editor);
-            {% endif %}
-
             // And/Or load assignment data explicitly passed in
             {% if assignment_data %}
                 editor.loadAssignmentData_({{ assignment_data|tojson }});
+            // Load initial assignment
+            {% elif current_assignment_id is defined and current_assignment_id != None %}
+                loadAssignmentWrapper({{ current_assignment_id }});
+                //editor.loadAssignment({{ current_assignment_id }});
+                altAssignmentChangingFunction = loadAssignmentWrapper; //editor.loadAssignment.bind(editor);
             {% endif %}
 
             // Snippet that handles intelligent resizing

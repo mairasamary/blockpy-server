@@ -1,4 +1,5 @@
 import os
+import uuid
 from urllib.parse import unquote
 
 from flask import session, g, send_from_directory, request, jsonify, render_template
@@ -16,8 +17,14 @@ def load_user():
         g.user = current_user
         if 'lti_course' in session:
             g.course = models.Course.by_id(session['lti_course'])
-    else:
-        g.user = None
+    elif not request.endpoint.startswith('security.'):
+        if 'uid' in session:
+            uid = session['uid']
+            g.user = models.User.find_anonymous_user(uid)
+        if 'uid' not in session or g.user is None:
+            uid = uuid.uuid4().hex
+            session['uid'] = uid
+            g.user = models.User.make_anonymous_user(uid)
 
 from controllers.admin import admin
 

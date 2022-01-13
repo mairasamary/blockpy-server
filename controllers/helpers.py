@@ -257,6 +257,15 @@ def parse_assignment_load(assignment_id_or_url=None):
             assignments = []
     else:
         assignments = assignment_group.get_assignments()
+    # No existing assignment, let's get the default
+    if not assignments:
+        # And no known course? Better get the default course!
+        if course_id is None:
+            course = Course.get_default()
+            course_id = course.id
+        else:
+            course = g.course
+        assignments = [course.get_default_assignment()]
     # Potentially adjust assignment_id
     if current_assignment_id is None and assignments:
         current_assignment_id = assignments[0].id

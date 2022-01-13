@@ -71,6 +71,10 @@ class Course(Base):
         return '<Course {}>'.format(self.id)
 
     @staticmethod
+    def get_default():
+        return Course.by_url('default')
+
+    @staticmethod
     def get_public():
         return Course.query.filter_by(visibility='public').all()
 
@@ -193,12 +197,16 @@ class Course(Base):
         return course
 
     @staticmethod
-    def new(name, owner_id, visibility, term):
+    def new(name, owner_id, visibility, term, url):
         if visibility == 'public':
             visibility = 'public'
         else:
             visibility = 'private'
-        new_course = Course(name=name, owner_id=owner_id, visibility=visibility, term=term)
+        if url:
+            existing_course = Course.by_url(url)
+            if existing_course:
+                return None
+        new_course = Course(name=name, owner_id=owner_id, visibility=visibility, term=term, url=url)
         db.session.add(new_course)
         db.session.flush()
         new_role = models.Role(name='instructor', user_id=owner_id, course_id=new_course.id)
@@ -241,7 +249,25 @@ class Course(Base):
         """
         For now, the default assignment URL is just the course URL appended with "_default"
 
+        If the assignment does not exist already, it will be created.
+
+        If there is no course url, then no assignment is created.
+
         :return:
         """
+        if not self.url:
+            return None
         default_assignment_url = self.url+"_default"
-        return models.Assignment.by_url(default_assignment_url)
+        default_assignment = models.Assignment.by_url(default_assignment_url)
+        if not default_assignment:
+            default_assignment = self.make_default_assignment(default_assignment_url)
+        return default_assignment
+
+    def make_default_assignment(self, default_assignment_url):
+        new_assignment = models.Assignment(name="Default Scratchpad", url=default_assignment_url,
+                                           type="blockpy", instructions="You may write whatever you want here. It will not be graded.",
+                                           reviewed=False, hidden=False, public=self.visibility == 'public',
+                                           settings='{"disable_feedback": true}', owner_id=self.owner_id, course_id=self.id, )
+        db.session.add(new_assignment)
+        db.session.commit()
+        return new_assignment

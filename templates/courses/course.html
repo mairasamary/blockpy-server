@@ -33,17 +33,20 @@ function renameCourse() {
     <a href="{{ url_for('courses.edit_points', course_id=course.id) }}" class='btn btn-outline-secondary'>Edit Points</a> Bulk Edit Points for assignments.<br><br>
     <a href="{{ url_for('courses.list_grading_failures', course_id=course.id) }}" class='btn btn-outline-secondary'>List Grading Failures</a> Review any students' submissions that triggered an error on the way to Canvas.<br><br>
 <button onclick="renameCourse()" class='btn btn-outline-secondary'>Rename Course</button> Rename this course.<br><br>
+    <a href="{{ url_for('courses.view_assignments', course_id=course.id) }}" class='btn btn-outline-secondary'>View Assignments as Student</a> View all the available assignments for this course as if you were a student.<br><br>
 {% else %}
 <a href="{{ url_for('courses.view_assignments', course_id=course.id) }}" class='btn btn-outline-secondary'>View Assignments</a> View all the available assignments for this course.<br><br>
 {% endif %}
 
 
 {% if is_grader %}
-    <a href="{{ url_for('courses.submissions_user', course_id=course.id, owner_id=g.user.id) }}" class='btn btn-outline-secondary'>View Assignments as Student</a> View assignments as if you were a student<br><br>
     <a href="{{ url_for('courses.submissions_filter', course_id=course.id) }}" class='btn btn-outline-secondary'>View Submissions</a> Old-style review and grade all student submissions<br><br>
+    <a href="{{ url_for('courses.submissions_user', course_id=course.id, owner_id=g.user.id) }}" class='btn btn-outline-secondary'>View Your Submissions as Student</a> View your submissions as if you were a student<br><br>
     <a href="{{ url_for('courses.watch_events', course_id=course.id) }}" class='btn btn-outline-secondary'>Watch Submissions</a> New-style review and grade all student submissions<br><br>
     <a href="{{ url_for('courses.submissions_grid', course_id=course.id) }}" class='btn btn-outline-secondary'>View Grid</a> See all your students' assignment submissions' status in a big table.<br><br>
-{%  endif %}
+{% else %}
+    <a href="{{ url_for('courses.submissions_user', course_id=course.id, owner_id=g.user.id) }}" class='btn btn-outline-secondary'>View Your Submissions</a> View your submissions for all of the assignments.<br><br>
+{% endif %}
 
 {% if is_instructor %}
 

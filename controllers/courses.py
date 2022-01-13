@@ -35,6 +35,7 @@ class AddCourseForm(Form):
     name = StringField("Name")
     visibility = SelectField('Visibility', choices=[('private', 'Private'), ('public', 'Public')])
     term = StringField("Term")
+    url = StringField("URL")
     submit = SubmitField("Add new course")
 
 
@@ -46,12 +47,16 @@ def add():
     """
     add_form = AddCourseForm(request.form)
     if request.method == 'POST':
-        Course.new(name=add_form.name.data,
-                   owner_id=g.user.id,
-                   visibility=add_form.visibility.data,
-                   term=add_form.term.data)
-        flash('New course added')
-        return redirect(url_for('courses.index'))
+        new_course = Course.new(name=add_form.name.data,
+                                owner_id=g.user.id,
+                                visibility=add_form.visibility.data,
+                                term=add_form.term.data,
+                                url=add_form.url.data)
+        if new_course:
+            flash('New course added')
+            return redirect(url_for('courses.index'))
+        else:
+            flash('Course not created; Non-unique URL perhaps?')
     return render_template('courses/add.html', add_form=add_form)
 
 
@@ -114,13 +119,12 @@ def course(course_id):
         return redirect(url_for('courses.index'))
     is_instructor = user.is_instructor(course_id)
     is_grader = user.is_grader(course_id)
-    if is_grader:
-        return render_template('courses/course.html',
+    return render_template('courses/course.html',
                                course=course,
                                course_id=course_id,
                                is_grader=is_grader,
                                is_instructor=is_instructor)
-    return view_assignments(course_id)
+    #return view_assignments(course_id)
 
 
 @courses.route('/assignments/<course_id>/', methods=['GET', 'POST'])
@@ -229,15 +233,18 @@ def watch_events():
 @courses.route('/view_assignments/<course_id>', methods=['GET', 'POST'])
 @login_required
 def view_assignments(course_id):
-    if not g.user.in_course(course_id):
-        return redirect(url_for('courses.index'))
     course = Course.by_id(course_id)
+    if not g.user.in_course(course_id) and course.visibility != "public":
+        return redirect(url_for('courses.index'))
     assignments = Assignment.by_course(course_id)
+    default_assignment = course.get_default_assignment()
     groups = AssignmentGroup.by_course(course_id)
-
+    is_instructor = g.user.is_instructor(course.id)
+    is_grader = g.user.is_grader(course.id)
     return render_template('courses/view_assignments.html', assignments=assignments,
-                           groups=groups, course=course,
-                           course_id=course_id)
+                           groups=groups, course=course, is_instructor=is_instructor,
+                           is_grader=is_grader,
+                           course_id=course_id, default_assignment=default_assignment)
 
 
 @courses.route('/', methods=['GET', 'POST'])

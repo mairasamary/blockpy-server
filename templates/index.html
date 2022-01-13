@@ -30,7 +30,7 @@
 
 {% block body %}
     <h1>Welcome to BlockPy!</h1>
-    {% if g.user %}
+    {% if g.user and not g.user.anonymous %}
         <a href="{{ url_for('courses.index') }}" class="btn btn-outline-secondary">View Courses</a>
         {% if g.user.is_admin() %}
             <br><br><a href="{{ url_for('admin.index') }}" class="btn btn-outline-secondary">Administration</a>

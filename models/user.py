@@ -15,6 +15,7 @@ class User(Base, UserMixin):
     proof = Column(String(255), default='')
     password = Column(String(255))
     active = Column(Boolean())
+    anonymous = Column(Boolean(), default=False)
     confirmed_at = Column(DateTime())
 
     # Foreign key relationships
@@ -46,7 +47,28 @@ class User(Base, UserMixin):
     @staticmethod
     def find_student(email):
         # Hack: We have to lowercase emails because apparently some LMSes want to SHOUT EMAIL ADDRESSES
+        if not email:
+            return None
         return User.query.filter(func.lower(User.email) == func.lower(email)).first()
+
+    @staticmethod
+    def make_anonymous_user(uid):
+        new_user = User(first_name=uid, last_name="UNKNOWN", email="", proof="", password="", active=False, anonymous=True)
+        db.session.add(new_user)
+        db.session.flush()
+        new_authentication = models.Authentication(type='session',
+                                                   value=uid,
+                                                   user_id=new_user.id)
+        db.session.add(new_authentication)
+        db.session.commit()
+        return new_user
+
+    @staticmethod
+    def find_anonymous_user(uid):
+        authentication = models.Authentication.query.filter_by(type='session', value=uid).first()
+        if authentication:
+            return models.User.by_id(authentication.user_id)
+        return None
 
     def get_roles(self):
         return models.Role.query.filter_by(user_id=self.id).all()

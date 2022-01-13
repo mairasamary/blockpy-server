@@ -42,7 +42,7 @@ class AddMazeCourse(Command):
         from models.assignment_group_membership import AssignmentGroupMembership
 
         owner_id = int(owner_id)
-        maze_course = Course.new('Maze Course', owner_id, 'public')
+        maze_course = Course.new('Maze Course', owner_id, 'public', '', 'maze')
 
         maze_group = AssignmentGroup.new(owner_id, maze_course.id, "Maze Game")
 
@@ -130,7 +130,8 @@ class PopulateDB(Command):
         db.session.add(Role(name='admin', user_id=admin.id))
 
         print("Adding default course")
-        default_course = Course(name="Default Course", owner_id=admin.id, service="native")
+        default_course = Course(name="Default Course", owner_id=admin.id, service="native",
+                                url="default", visibility='public')
         db.session.add(default_course)
         db.session.flush()
         db.session.add(Role(name='instructor', course_id=default_course.id, user_id=admin.id))

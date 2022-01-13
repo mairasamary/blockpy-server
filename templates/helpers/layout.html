@@ -192,6 +192,10 @@
             $(document).ready(function () {
                 $("#{{request.endpoint|replace('.', '\\\\.')}}").parent().addClass("active");
             });
+
+            $(function () {
+                $('[data-toggle="popover"]').popover();
+            });
         {% endif %}
     </script>
 
@@ -233,11 +237,19 @@
                         </li>
                     {% endif %}
                 </ul>
+                {% if g.user and g.user.anonymous %}
+                    <a tabindex="0" role="button" type="button" class="navbar-text btn btn-danger mr-4 text-white"
+                            data-trigger="focus"
+                        data-toggle="popover" title="Guest Account" data-content="You are NOT logged in as a regular user. Your work will not be saved and graded. Please use the buttons to the right to login properly!">
+                        <span class="fas fa-exclamation-circle"></span>
+                        Guest Account
+                    </a>
+                {% endif %}
                 <form class="form-inline">
-                    {% if g.user %}
+                    {% if g.user and not g.user.anonymous %}
                         <span class="navbar-text">
                         Signed in as {{ g.user.name() }}
-                            <a href="{{ url_for('security.logout') }}"
+                            <a href="{{ url_for('security.register') }}"
                                class="navbar-link">(log out)</a>
                         </span>
                     {%  elif config.PREFERRED_LOGIN %}
@@ -278,7 +290,11 @@
     <div class="container-fluid">
         <p class="pull-right">
             {% if g.user %}
-                You are {{ g.user.name() }}<span> ({{ g.user.email }})</span>
+                {% if g.user.anonymous %}
+                    You are a guest user<span> ({{ g.user.first_name }})</span>
+                {% else %}
+                    You are {{ g.user.name() }}<span> ({{ g.user.email }})</span>
+                {% endif %}
                 {%  if g.course %}
                     <span>in {{ g.course.name }}</span>
                 {% endif %}
