@@ -122,6 +122,7 @@ export class Reader extends AssignmentInterface {
         try {
             // @ts-ignore
             this.ytPlayer = new YT.Player('reader-youtube-video', {
+                // TODO: log 'onPlaybackRateChange'
                 events: {
                     'onStateChange': this.logWatching.bind(this)
                 }
