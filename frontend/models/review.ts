@@ -1,6 +1,7 @@
 import * as ko from 'knockout';
 import {Model, ModelJson, ModelStore} from "./model";
 import {TwoWayReadonlyMap} from "../components/plugins";
+import {ajax_delete, ajax_post, ajax_put, hideOverlay, showOverlay} from "../components/ajax";
 
 export interface ReviewJson extends ModelJson {
     comment: string;
@@ -68,6 +69,42 @@ export class ReviewStore extends ModelStore<ReviewJson, Review> {
 
     getUrl(): string {
         return "reviews/get_ids";
+    }
+
+    create(newReview: Partial<ReviewJson>) {
+        const serialized = newReview;
+        showOverlay();
+        return new Promise((resolve, reject) => {
+            ajax_post("grading/review/", serialized).done((response: any) => {
+                let review = response.review;
+                let created = [this.newInstance(review)];
+                resolve(this.cleanData(created)[0]);
+            }).always(hideOverlay);
+        });
+    }
+
+    update(review: Partial<ReviewJson>) {
+        const serialized = review;
+        showOverlay();
+        return new Promise((resolve, reject) => {
+            ajax_put("grading/review/"+review.id, serialized).done((response: any) => {
+                /*let review = response.review;
+                let created = [this.newInstance(review)];
+                resolve(this.cleanData(created));*/
+                resolve(response.review);
+                // TODO: Actually update the local version
+            }).always(hideOverlay);
+        });
+    }
+
+    remove(review: Review) {
+        showOverlay();
+        return new Promise((resolve, reject) => {
+            ajax_delete("grading/review/"+review.id).done((response: any) => {
+                // TODO: Actually remove the data
+                resolve(review);
+            }).always(hideOverlay);
+        });
     }
 
     makeEmptyInstance(id: number): Review {

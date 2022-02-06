@@ -158,11 +158,93 @@
             font-size: 12px;
         }
 
+        .highlighttable pre {
+            font-size: 15px;
+        }
+        .highlighttable tr:first-child {
+            vertical-align: top;
+        }
+        td.code div.highlight {
+            max-width: 600px;
+            overflow-x: auto;
+        }
+        td.comment-column {
+            vertical-align: top;
+        }
+        span.line-review-quick-button {
+            padding: 0;
+            margin: 0;
+            line-height: 125%;
+            font-size: 15px;
+            display: block;
+            color: #EEE;
+            position: relative;
+        }
+        span.line-review-quick-button:hover {
+            color: darkgray;
+        }
+        span.line-review-quick-button:active {
+            color: black;
+        }
+
+        .total-row {
+            border-top: 2px solid darkgray;
+        }
+
+        .individual-review-show-box {
+            padding: 7px;
+            border-bottom: 1px solid lightgray;
+        }
+
+        .draft-comment {
+            font-style: italic;
+        }
+
+        div.line-review-box {
+            position: relative;
+        }
+
+        table.review-report td:last-child {
+            text-align: right;
+        }
+
+        .draft-review {
+            border: 1px solid lightgray;
+            padding: 4px;
+            background-color: #EEE;
+        }
+
+        .static-popover {
+            position: absolute;
+            min-width: 500px;
+        }
+        .static-popover.expanded {
+
+        }
+        .static-popover.collapsed {
+            min-width: 300px;
+        }
+        .static-popover .arrow {
+            top: -1px;
+        }
+
+        .static-popover.inactive {
+            border: 0;
+        }
+
+        .popover-header-sm {
+            padding: 1px .5rem;
+        }
+
+        .popover-control {
+            padding-top: .25rem;
+        }
+
         div.overlay {
             height: 100%;
             width: 100%;
             position: fixed;
-            z-index: 1;
+            z-index: 1000000;
             left: 0;
             top: 0;
             background-color: rgba(16, 16, 16, 0.5);

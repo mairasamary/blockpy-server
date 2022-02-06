@@ -11,7 +11,7 @@
 
 {% if assignment.reviewed %}
     <script type='text/javascript'>
-    /*
+
     $(function() {
         let target = 'reviewable-code-area-{{ submission.id }}';
 
@@ -22,52 +22,74 @@
         let reviews = {{ submission.get_reviews()|tojson }};
         let metaReviews = {{ submission.get_meta_reviews()|tojson }};
         let tags = {{ tags|tojson }};
+        let isGrader = ko.observable({{ is_grader|tojson }});
+        let mainReviewInterface = ko.observable(null);
+        // Improve this check
+        let isLtiActive = {{ (True == (session['is_lti_active'] and g.course and g.course.id == submission.course_id))|tojson }};
 
         $("#"+target).prepend($(`<submission-review-interface
-            params="submission: submission,
+            params="server: server,
+            submission: submission,
             assignment: assignment,
-            author: user,
+            author: author,
             reviews: reviews,
-            genericReviews: metaReviews,
+            reviewInterfaces: reviewInterfaces,
+            genericReviews: genericReviews,
             tags: tags,
-            isGrader: isGrader"
+            isGrader: isGrader,
+            isLtiActive: isLtiActive,
+            canSeeFeedback: canSeeFeedback,
+            canEditFeedback: canEditFeedback,
+            mainReviewInterface: mainReviewInterface"
         />`));
 
-        const COMMENT_COLUMN = "<td class='comment-column'></td>";
-        $(`#${target}.highlighttable`).find("td.code").after($(COMMENT_COLUMN));
-        $(`#${target}.highlighttable span[id^='code-span-']`).each(function(index, elem) {
-            let parameters = "location: "+index+",reviews: reviews,isGrader: isGrader,parent: $root";
+        const COMMENT_COLUMN = $("<td class='comment-column'></td>");
+        $(`#${target} .highlighttable`).find("td.code").after(COMMENT_COLUMN);
+        $(`#${target} .highlighttable span[id^='code-span-']`).each(function(index, elem) {
+            let parameters = (
+                "location: "+index+
+                ", reviews: reviewInterfaces"+
+                ", isGrader: isGrader"+
+                ", canSeeFeedback: canSeeFeedback"+
+                ", canEditFeedback: canEditFeedback"+
+                ", parent: mainReviewInterface");
             let button = $("<line-review params='"+parameters+"'></line-review>");
             button.css({"top": elem.top});
-            $(COMMENT_COLUMN).append(button);
+            COMMENT_COLUMN.append(button);
         });
 
         server = new frontend.Server({{ course_id|tojson }}, {
             submissionIds: [submissionId]
         }, {
             users: [loggedInUser],
-            submissions: submissions,
+            submissions: [submission],
             reviews: reviews.concat(metaReviews),
             tags: tags
         });
+        console.log({server, submission, assignment, reviews, metaReviews, tags});
         let editModel = {
             server: server,
-            submission: submission,
-            assignment: assignment,
-            author: user,
-            reviews: reviews,
-            genericReviews: metaReviews,
+            reviewInterfaces: ko.observableArray([]),
+            submission: server.submissionStore.getInstance(submission.id),
+            assignment: server.assignmentStore.getInstance(assignment.id),
+            author: server.userStore.getInstance(loggedInUser.id),
+            reviews: reviews.map((review) => server.reviewStore.getInstance(review.id)),
+            genericReviews: metaReviews.map((review) => server.reviewStore.getInstance(review.id)),
             tags: tags,
-            isGrader: isGrader
+            isGrader: isGrader,
+            isLtiActive: isLtiActive,
+            canSeeFeedback: ko.pureComputed(() => isGrader() || server.submissionStore.getInstance(submission.id).isFullyGraded()),
+            canEditFeedback: ko.pureComputed(() => isGrader()),
+            mainReviewInterface: mainReviewInterface
         }
         ko.applyBindings(editModel, document.getElementById(target));
     });
-    */
+
     </script>
     {# include "helpers/review_interface.html" with context #}
 {% endif %}
 
-<div class="col-lg-6 col-md-12">
+<div class="col-md-12">
 <div>Submission Status: {{ submission.submission_status }}</div>
 <div>Grading Status: {{ submission.grading_status }}</div>
 <div>Score Status: {{ submission.full_status() }}</div>

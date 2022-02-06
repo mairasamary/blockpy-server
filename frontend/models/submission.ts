@@ -92,6 +92,10 @@ export class Submission extends Model<SubmissionJson> {
         return this.submissionStatus().toLowerCase() === expected.toLowerCase();
     }
 
+    isFullyGraded(): boolean {
+        return this.checkGrading(GradingStatus.FULLY_GRADED);
+    }
+
 }
 
 

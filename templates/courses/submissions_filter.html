@@ -56,10 +56,18 @@ $().ready(function() {
 <label>Assignment:
 <select id='search-assignments'>
 <option value=''></option>
-{% for assignment in assignments %}
-<option value='{{ assignment.id }}'
-{%- if criteria == "assignment" and search_key == assignment.id %} selected 
-{%- endif %} >{{ assignment.title() }}</option>
+{% for group, assignments in assignments_by_group.items() %}
+    {% if group == None %}
+        <optgroup label="Ungrouped">
+    {% else %}
+        <optgroup label="{{ group }}">
+    {% endif %}
+    {% for assignment in assignments %}
+        <option value='{{ assignment.id }}'
+        {%- if criteria == "assignment" and search_key == assignment.id %} selected
+        {%- endif %} >{{ assignment.title() }}</option>
+    {% endfor %}
+    </optgroup>
 {% endfor %}
 </select>
 </label>

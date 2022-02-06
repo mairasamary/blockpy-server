@@ -443,24 +443,33 @@ def submissions_filter(course_id):
     course_id = int(course_id)
     course = Course.by_id(course_id)
     students = natsorted(course.get_students(), key=lambda r: r.name())
-    assignments = natsorted(course.get_submitted_assignments(),
-                            key=lambda r: r.name)
+    #assignments = natsorted(course.get_submitted_assignments(),
+    #                        key=lambda r: r.title())
+    grouped_assignments = natsorted(course.get_submitted_assignments_grouped(),
+                                    key=lambda r: (r.AssignmentGroup.name if r.AssignmentGroup is not None else "~~~~~~~~",
+                                                   r.Assignment.title()))
     criteria = request.values.get("criteria", "none")
     search_key = int(request.values.get("search_key", "-1"))
     submissions = []
     if criteria == "student":
         all_subs = Submission.by_student(search_key, course_id)
         all_subs = {s[0].assignment_id: s for s in all_subs}
-        submissions = [all_subs.get(assignment.id, (None, None, assignment))
-                       for assignment in assignments]
+        submissions = [all_subs.get(row.Assignment.id, (None, None, row.Assignment))
+                       for row in grouped_assignments]
     elif criteria == "assignment":
         all_subs = Submission.by_assignment(search_key, course_id)
         all_subs = {s[0].user_id: s for s in all_subs}
         submissions = [all_subs.get(student.id, (None, student, None))
                        for student in students]
+    assignments_by_group = {}
+    for row in grouped_assignments:
+        group_name = row.AssignmentGroup.name if row.AssignmentGroup is not None else None
+        assignments_by_group.setdefault(group_name, []).append(row.Assignment)
+    # Horrifying hack to move Ungrouped elements to end
+    assignments_by_group[None] = assignments_by_group.pop(None)
     return render_template('courses/submissions_filter.html',
                            course_id=course_id,
-                           assignments=assignments,
+                           assignments_by_group=assignments_by_group,
                            students=students,
                            submissions=submissions,
                            criteria=criteria,

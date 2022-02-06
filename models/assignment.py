@@ -123,6 +123,8 @@ class Assignment(Base):
         return '<Assignment {} for {} ({})>'.format(self.id, self.course_id, self.url)
 
     def title(self):
+        if self.type == 'maze':
+            return f"Maze {self.name}"
         return self.name if self.name != "Untitled" else "Untitled ({})".format(self.id)
 
     def slug(self):

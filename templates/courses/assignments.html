@@ -130,6 +130,7 @@ function MainModel() {
                 group_id = v.group_id();
             if (!(course_id in mappedCourses)) {
                 var new_course = findById(self.groups(), course_id, true);
+                console.log(course_id, self.groups().map(x => x.id()));
                 mappedCourses[course_id] = {'id': course_id, 
                                             'name': new_course.name(),
                                             'url': new_course.url(),

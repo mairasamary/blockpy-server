@@ -613,9 +613,10 @@ BlockMirrorTextEditor.prototype.disableImages = function () {
 BlockMirrorTextEditor.prototype.makeImageWidget = function (url) {
   var newImage = document.createElement("IMG");
   newImage.setAttribute("src", url);
-  newImage.setAttribute("height", "40");
-  newImage.style.maxHeight = "100px";
-  newImage.setAttribute("width", "40");
+  newImage.style.display = "none"; //newImage.setAttribute("height", "40");
+
+  newImage.style.maxHeight = "100px"; //newImage.setAttribute("width", "40");
+
   newImage.setAttribute("title", url);
 
   newImage.onclick = function (x) {
@@ -628,7 +629,20 @@ BlockMirrorTextEditor.prototype.makeImageWidget = function (url) {
     }
   };
 
-  return newImage;
+  var newSpan = document.createElement("span");
+  newSpan.className = "cm-string";
+  newSpan.innerText = JSON.stringify(url);
+
+  newSpan.onmouseover = function (x) {
+    newImage.style.display = "block";
+  };
+
+  newSpan.onmouseout = function (x) {
+    newImage.style.display = "none";
+  };
+
+  newSpan.appendChild(newImage);
+  return newSpan; //return newImage;
 };
 
 BlockMirrorTextEditor.prototype.updateImages = function (cm, from, to) {
@@ -650,9 +664,14 @@ BlockMirrorTextEditor.prototype.updateImages = function (cm, from, to) {
         line: cm.doc.getLineNumber(line),
         ch: match.index + match[1].length + offset
       }, {
-        atomic: true,
-        replacedWith: imageWidget
-      }); //imageWidget.onclick = (x) => imageMarker.clear();
+        className: "bm-hyperlinked-image",
+        attributes: {
+          "data-url": match[3]
+        },
+        inclusiveLeft: false,
+        inclusiveRight: false
+      });
+      console.log(imageMarker); //imageWidget.onclick = (x) => imageMarker.clear();
 
       _this2.imageMarkers.push(imageMarker);
     }
