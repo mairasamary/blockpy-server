@@ -666,7 +666,7 @@ export const SUBMISSION_REVIEW_INTERFACE_TEMPLATE = `
     </tr>
     <tr>
         <td>Autograder submission score:</td>
-        <td data-bind="text: submission.score()"></td>
+        <td data-bind="text: 100*submission.score()"></td>
     </tr>
     <tr>
         <th>General Feedback</th>
