@@ -10317,7 +10317,7 @@ Sk.builtin.ord = function ord(x) {
     } else if ([...x.v].length !== 1) {
         throw new Sk.builtin.TypeError("ord() expected a character, but string of length " + x.v.length + " found");
     }
-    return new Sk.builtin.int_(x.v.charCodeAt(0));
+    return new Sk.builtin.int_(x.v.codePointAt(0));
 };
 
 Sk.builtin.chr = function chr(x) {
@@ -34647,8 +34647,8 @@ Sk.builtin.type.prototype.__class_getitem__ = function(self, key) {
 var Sk = {}; // jshint ignore:line
 
 Sk.build = {
-    githash: "dc70288aedcd7670605ef28f8525546440b39f93",
-    date: "2022-01-07T15:10:02.602Z"
+    githash: "f335c4461cd9b35dab383f841a5d449d096a3ef9",
+    date: "2022-02-24T14:59:30.029Z"
 };
 
 /**
