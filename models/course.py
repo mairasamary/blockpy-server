@@ -1,4 +1,5 @@
 from sqlalchemy import Column, String, Integer, ForeignKey, Text, or_
+from werkzeug.utils import secure_filename
 
 from models import models
 from models.models import Base, datetime_to_string, string_to_datetime, db
@@ -271,3 +272,9 @@ class Course(Base):
         db.session.add(new_assignment)
         db.session.commit()
         return new_assignment
+
+    def get_filename(self):
+        if self.url:
+            return secure_filename(self.url) + ".json"
+        else:
+            return secure_filename(self.name) + ".json"

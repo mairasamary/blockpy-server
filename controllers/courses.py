@@ -1,7 +1,7 @@
 from datetime import datetime
 from pprint import pprint
 from collections import defaultdict
-
+import json
 from natsort import natsorted
 
 from flask_wtf import Form
@@ -9,7 +9,7 @@ from wtforms import IntegerField, BooleanField, StringField, SubmitField, Select
 
 from flask import Blueprint, send_from_directory
 from flask import Flask, redirect, url_for, session, request, jsonify, g, \
-    make_response, Response, render_template, flash
+    make_response, Response, render_template, flash, abort
 
 from controllers.helpers import (lti, strip_tags,
                                  get_lti_property, require_request_parameters, login_required,
@@ -22,6 +22,7 @@ from main import app
 from models.data_formats.report import make_report
 from models.log import Log
 from models.models import db, AssignmentGroup
+from models.portation import export_bundle
 from models.user import User
 from models.course import Course
 from models.role import Role
@@ -722,3 +723,23 @@ def get_group_submission_links():
                           assignment_group_id=assignment_group_id, course_id=course_id,
                           user_id=student.id)
                       for student in students])
+
+
+@courses.route('/export/', methods=['GET', 'POST'])
+@courses.route('/export', methods=['GET', 'POST'])
+def export():
+    course_id = get_course_id(True)
+    user, user_id = get_user()
+    if not user.is_instructor(course_id):
+        return abort(400, "Not an instructor in this course.")
+    course = Course.by_id(course_id)
+    check_resource_exists(course, "Course", course_id)
+    groups = course.get_assignment_groups()
+    assignment_and_memberships = course.get_assignments()
+    assignments = [a for a, m in assignment_and_memberships]
+    memberships = [m for a, m in assignment_and_memberships]
+    bundle = export_bundle(groups=groups, assignments=assignments,
+                           memberships=memberships)
+    filename = course.get_filename()
+    return Response(json.dumps(bundle, indent=2), mimetype='application/json',
+                    headers={'Content-Disposition': 'attachment;filename={}'.format(filename)})
