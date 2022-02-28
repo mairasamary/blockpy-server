@@ -56,7 +56,8 @@ def fork_group(lti=lti):
                                                               new_course_id=assignment_group.course_id)
     # Result
     select_url = get_select_menu_link(new_assignment_group.id, new_assignment_group.name, is_embedded, True)
-    return jsonify(success=True, id=new_assignment_group.id, name=new_assignment_group.name, select=select_url)
+    return jsonify(success=True, id=new_assignment_group.id,
+                   name=new_assignment_group.name, select=select_url)
 
 
 @blueprint_assignment_group.route('/remove', methods=['GET', 'POST'])
