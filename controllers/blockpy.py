@@ -944,10 +944,10 @@ def fork_assignment(lti=lti):
     # TODO: Parse updated settings for the assignment_id, if it's not None
 
     # TODO: Perform update
-    modified = assignment.edit(updates)
+    modified = assignment.edit(updated_settings)
     # TODO: Log
     make_log_entry(assignment.id, assignment.version,
                    course_id or assignment.course_id,
                    user.id, "X-Instructor.Settings.Edit", "assignment_settings.blockpy",
-                   message=json.dumps(updates))
+                   message=json.dumps(updated_settings))
     return ajax_success({"modified": modified})

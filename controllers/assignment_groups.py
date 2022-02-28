@@ -52,11 +52,8 @@ def fork_group(lti=lti):
     # Verify permissions
     require_course_instructor(g.user, assignment_group.course_id)
     # Perform action
-    new_assignment_group = AssignmentGroup.new(owner_id=g.user.id,
-                                               course_id=assignment_group.course_id,
-                                               name=assignment_group.name)
-    new_assignment_group.forked_id = assignment_group_id
-    new_assignment_group.forked_version = assignment_group.version
+    new_assignment_group, assignments = assignment_group.fork(new_owner_id=g.user.id,
+                                                              new_course_id=assignment_group.course_id)
     # Result
     select_url = get_select_menu_link(new_assignment_group.id, new_assignment_group.name, is_embedded, True)
     return jsonify(success=True, id=new_assignment_group.id, name=new_assignment_group.name, select=select_url)

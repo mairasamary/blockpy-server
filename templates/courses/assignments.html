@@ -11,6 +11,13 @@ Courses: Assignments
 
 <script type='text/javascript'>
 
+function hideOverlay() {
+    $('.overlay').hide();
+}
+function showOverlay() {
+    $('.overlay').show();
+}
+
 var groupBy = function(xs, inner_key, outer_key) {
     var result = xs.reduce(function(rv, x) {
         (rv[x[inner_key]] = rv[x[inner_key]] || []).push(x);
@@ -164,6 +171,7 @@ function MainModel() {
     });
     
     self.moveMembership = function(assignment, old_group, new_group) {
+        showOverlay();
         $.post("{{ url_for('assignment_group.move_membership') }}", {
                 'new_group_id': new_group.id,
                 'old_group_id': old_group.id,
@@ -175,11 +183,12 @@ function MainModel() {
                 alert("ERROR"+data.message);
                 console.error(data.message);
             }
-        });
+        }).always(hideOverlay);
     };
     
     self.moveCourse = function(assignment, old_course) {
         var new_course = this;
+        showOverlay();
         $.post("{{ url_for('assignments.move_course') }}", {
                 'new_course_id': new_course.id(),
                 'assignment_id': assignment.id
@@ -190,7 +199,7 @@ function MainModel() {
                 alert("ERROR"+data.message);
                 console.error(data.message);
             }
-        });
+        }).always(hideOverlay);
     };
 
 
@@ -211,6 +220,7 @@ function MainModel() {
         var course_id = course.id,
             group_id = group.id;
         if (new_name != null || new_url != null) {
+            showOverlay();
             $.post("{{ url_for('assignment_group.edit_group') }}", {
                 'new_name': new_name,
                 'new_url': new_url,
@@ -226,7 +236,7 @@ function MainModel() {
                     alert("ERROR"+data.message);
                     console.error(data.message);
                 }
-            });
+            }).always(hideOverlay);
         }
     };
     
@@ -234,6 +244,7 @@ function MainModel() {
         var course_id = parseInt(mainModel.thisCourse().id); //mainModel.createGroupCourse());
         var name = mainModel.createGroupName();
         var url = mainModel.createGroupUrl();
+        showOverlay();
         $.post("{{ url_for('assignment_group.add_group') }}", {
             "course_id": course_id,
             "url": url,
@@ -253,8 +264,39 @@ function MainModel() {
                 alert("ERROR"+data.message);
                 console.error(data.message);
             }
-        });
+        }).always(hideOverlay);
     };
+
+    self.forkGroup = function(course, group) {
+        var course_id = course.id,
+            group_id = group.id;
+        if (group_id == -1) {
+            // Can't fork the Stray group.
+            return false;
+        }
+        var youSureHuh = confirm("Are you sure you want to fork this group?");
+        if (youSureHuh != null) {
+            showOverlay();
+            $.post("{{ url_for('assignment_group.fork_group') }}", {
+                'assignment_group_id': group_id
+            }, function(data) {
+                if (data.success) {
+                    $("#group-create").modal('hide');
+                    var course = findById(self.groups(), course_id, true);
+                    course.groups.push({
+                        'id': ko.observable(data.id),
+                        'name': ko.observable(data.name),
+                        'url': ko.observable(data.url),
+                        'assignments': ko.observableArray()
+                    });
+                    mainModel.createAssignmentGroup(data.id);
+                } else {
+                    alert("ERROR"+data.message);
+                    console.error(data.message);
+                }
+            }).always(hideOverlay);
+        }
+    }
     
     self.removeGroup = function(course, group) {
         var course_id = course.id,
@@ -265,6 +307,7 @@ function MainModel() {
         }
         var youSureHuh = confirm("Are you really sure you want to delete this group?");
         if (youSureHuh != null) {
+            showOverlay();
             $.post("{{ url_for('assignment_group.remove_group') }}", {
                 'assignment_group_id': group_id
             }, function(data) {
@@ -275,15 +318,16 @@ function MainModel() {
                     alert("ERROR"+data.message);
                     console.error(data.message);
                 }
-            });
+            }).always(hideOverlay);
         }
     }
     
     self.removeAssignment = function(parent_group, assignment) {
-        console.log("REMOVE", assignment, this);
+        //console.log("REMOVE", assignment, this);
         var assignment_id = assignment.id;
         var youSureHuh = confirm("Are you really sure you want to delete this assignment?");
         if (youSureHuh != null) {
+            showOverlay();
             $.post("{{ url_for('assignments.remove_assignment') }}", {
                 'assignment_id': assignment_id,
             }, function(data) {
@@ -293,7 +337,7 @@ function MainModel() {
                     alert("ERROR"+data.message);
                     console.error(data.message);
                 }
-            });
+            }).always(hideOverlay);
         }
     }
     
@@ -304,6 +348,7 @@ function MainModel() {
         var level = mainModel.createAssignmentLevel();
         var type = mainModel.createAssignmentType().toLowerCase();
         var group = mainModel.createAssignmentGroup();
+        showOverlay();
         $.post("{{ url_for('assignments.new_assignment') }}", {
             'menu': "{{ menu }}",
             'name': name,
@@ -330,9 +375,10 @@ function MainModel() {
                 });
                 //window.open(data.redirect);
             } else {
+                alert("Error:"+data.message);
                 console.error(data.message);
             }
-        });
+        }).always(hideOverlay);
     };
 
     self.forkAssignment = function(parent_group, skipUrlAsk) {
@@ -349,6 +395,7 @@ function MainModel() {
             if (!skipUrlAsk) {
                 data['url'] = newUrl;
             }
+            showOverlay();
             $.post("{{ url_for('assignments.fork') }}", data, function (data) {
                 if (data.success) {
                     self.assignments.unshift({
@@ -366,9 +413,10 @@ function MainModel() {
                     });
                     //window.open(data.redirect);
                 } else {
+                    alert("Error: "+data.message);
                     console.error(data.message);
                 }
-            });
+            }).always(hideOverlay);
         }
     };
 }
@@ -400,6 +448,18 @@ tr.hover-remove-rows div.hide-buttons,
 tr.hover-remove-rows button.remove-button,
 tr.hover-remove-rows a.view-button {
     visibility: hidden;
+}
+
+div.overlay {
+    height: 100%;
+    width: 100%;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    background-color: rgba(16, 16, 16, 0.5);
+    overflow-x: hidden; /* Disable horizontal scroll */
+    transition: 0.5s;
 }
 
 </style>
@@ -521,9 +581,11 @@ tr.hover-remove-rows a.view-button {
     
     <!-- ko with: thisCourse() -->
     <!-- ko foreach: groups -->
-    <tr class="active hover-remove-rows">
+    <tr class="table-secondary hover-remove-rows">
         <td colspan="3">
-            <a href="#" data-bind="click: $root.renameGroup.bind($data, $parent)"><strong data-bind="text: name"></strong></a>
+            <a href="#" data-bind="click: $root.renameGroup.bind($data, $parent)">
+                <strong data-bind="text: name"></strong></a><br>
+                <code data-bind="text: url" style="color: #333"></code>
         </td>
         <td>
             <!--<button class='remove-button btn btn-danger btn-xs' type='button'
@@ -544,6 +606,7 @@ tr.hover-remove-rows a.view-button {
                 <!-- Extended buttons -->
                 <div class="dropdown-menu">
                     <a target="_blank" class="dropdown-item" data-bind="attr: { href: $root.editSecurity($parent, $data)}">Edit Security</a>
+                    <a class="dropdown-item" href="#" data-bind="click: $root.forkGroup.bind($data, $parent)">Fork Group</a>
                     <a class="dropdown-item" href="#" data-bind="click: $root.removeGroup.bind($data, $parent)">Delete</a>
                 </div>
             </div>
@@ -555,6 +618,7 @@ tr.hover-remove-rows a.view-button {
     <tr class='hover-movers-rows'>
         <td style='width: 25%'>
             <strong data-bind="text: title"></strong><br>
+            <code data-bind="text: url" style="color: #333"></code><br>
             Last modified at
             <span data-bind="text: modified"></span>
         </td>

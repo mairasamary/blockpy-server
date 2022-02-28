@@ -270,6 +270,9 @@ def parse_assignment_load(assignment_id_or_url=None):
     if current_assignment_id is None and assignments:
         current_assignment_id = assignments[0].id
     # Get submissions
+    if user and user.anonymous and course_id is None:
+        course_id = Course.get_default().id
+    print(user, course_id, user.anonymous)
     if user_id is None or course_id is None:
         submissions = []
     else:
