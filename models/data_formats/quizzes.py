@@ -4,8 +4,6 @@ from pprint import pprint
 import sys
 import json
 
-from werkzeug.utils import secure_filename
-
 
 class QuizResult:
     score: float
@@ -76,13 +74,13 @@ def process_quiz(body: dict, checks: dict, submission_body: dict) -> QuizResult:
                                       "correct": None, "score": 0, "status": "error"}
         else:
             score, correct, feedback = checked_question
-            print(question_id, score)
+            #print(question_id, score)
             total_score += score*points
             total_correct = total_correct and correct
             message = str(feedback)
             feedbacks[question_id] = { 'message': message, 'correct': correct, 'score': score, 'status': 'graded' }
     # Report back the final score and feedback objects
-    print(total_score, total_points)
+    #print(total_score, total_points)
     return QuizResult(total_score / total_points, total_correct, total_points, feedbacks, True, submission_body, None)
 
 
@@ -218,57 +216,70 @@ def clean_name(filename):
 
 
 if __name__ == "__main__":
-    all_json_path = r"C:\Users\acbart\Projects\cisc108\s21\submission\all_quizzes.json"
-    with open(all_json_path) as all_json_file:
-        all_json = json.load(all_json_file)
-    all_done = []
-    for quiz in sorted(all_json, key=lambda x: x['title']):
-        print(quiz['title'])
-        body, checks = {'questions': {}}, {'questions': {}}
-        for question in quiz['questions']:
-            body_item, checks_item = convert_quiz_question(question)
-            body['questions'][body_item.pop('id')] = body_item
-            checks['questions'][checks_item.pop('id')] = checks_item
-        #pprint(body)
-        #pprint(checks)
-        folder_name = "sneks_"+clean_name(quiz['title']+"_quiz")
-        try:
-            os.makedirs(f"sneks_quizzes/{folder_name}")
-        except FileExistsError:
-            pass
-        with open(rf'sneks_quizzes/{folder_name}/index.md', 'w') as index_file:
-            index_file.write(f"""---
-waltz:
-  title: {folder_name}
-  display title: '{quiz['title']}'
-  resource: problem
-  type: quiz
-  visibility:
-    hide status:
-    publicly indexed: false
-  additional settings: {{}}
-  identity:
-    owner id: 1
-    owner email: acbart@udel.edu
-    course id: 4
-    version downloaded: 1
-    created: August 9 2021, 1300
-    modified: August 9 2021, 1300
-  files:
-    path: {folder_name}
-    hidden but accessible files: []
-    instructor only files: []
-    extra starting files: []
-    read-only files: []  
----
-""")
-            json.dump(body, index_file, indent=2)
-        with open(rf'sneks_quizzes/{folder_name}/on_run.py', 'w') as on_run_file:
-            json.dump(checks, on_run_file, indent=2)
-        for touchee in ['on_eval.py', 'starting_code.py']:
-            with open(rf'sneks_quizzes/{folder_name}/{touchee}', 'w') as touched:
+    if len(sys.args) < 3:
+        raise ValueError("Too few arguments to the script: provide `command` and `filename`")
+    if sys.args[1] == 'grade':
+        # X-Instructions
+        instructions = json.loads(sys.args[2])
+        # X-Code.OnRun
+        on_run = json.loads(sys.args[3])
+        # Student submission
+        contents = json.loads(sys.args[4])
+        result = process_quiz(instructions, on_run, contents)
+        print(result)
+    if sys.args[1] == 'convert_question':
+        from werkzeug.utils import secure_filename
+        all_json_path = sys.args[2]
+        with open(all_json_path) as all_json_file:
+            all_json = json.load(all_json_file)
+        all_done = []
+        for quiz in sorted(all_json, key=lambda x: x['title']):
+            print(quiz['title'])
+            body, checks = {'questions': {}}, {'questions': {}}
+            for question in quiz['questions']:
+                body_item, checks_item = convert_quiz_question(question)
+                body['questions'][body_item.pop('id')] = body_item
+                checks['questions'][checks_item.pop('id')] = checks_item
+            #pprint(body)
+            #pprint(checks)
+            folder_name = "sneks_"+clean_name(quiz['title']+"_quiz")
+            try:
+                os.makedirs(f"sneks_quizzes/{folder_name}")
+            except FileExistsError:
                 pass
-        #all_done.append({'body': body, 'checks': checks})
-    #with open(r'sneks_quizzes/', 'w') as output:
-    #    json.dump(all_done, output, indent=2)
-    #body_path, checks_path, student_path = sys.args[1:]
+            with open(rf'sneks_quizzes/{folder_name}/index.md', 'w') as index_file:
+                index_file.write(f"""---
+    waltz:
+      title: {folder_name}
+      display title: '{quiz['title']}'
+      resource: problem
+      type: quiz
+      visibility:
+        hide status:
+        publicly indexed: false
+      additional settings: {{}}
+      identity:
+        owner id: 1
+        owner email: acbart@udel.edu
+        course id: 4
+        version downloaded: 1
+        created: August 9 2021, 1300
+        modified: August 9 2021, 1300
+      files:
+        path: {folder_name}
+        hidden but accessible files: []
+        instructor only files: []
+        extra starting files: []
+        read-only files: []  
+    ---
+    """)
+                json.dump(body, index_file, indent=2)
+            with open(rf'sneks_quizzes/{folder_name}/on_run.py', 'w') as on_run_file:
+                json.dump(checks, on_run_file, indent=2)
+            for touchee in ['on_eval.py', 'starting_code.py']:
+                with open(rf'sneks_quizzes/{folder_name}/{touchee}', 'w') as touched:
+                    pass
+            #all_done.append({'body': body, 'checks': checks})
+        #with open(r'sneks_quizzes/', 'w') as output:
+        #    json.dump(all_done, output, indent=2)
+        #body_path, checks_path, student_path = sys.args[1:]
