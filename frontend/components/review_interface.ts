@@ -485,6 +485,7 @@ export class SubmissionReviewInterface {
 
     private canSeeFeedback: KnockoutReadonlyComputed<boolean>;
     private canEditFeedback: KnockoutReadonlyComputed<boolean>;
+    private canMarkCorrect: KnockoutReadonlyComputed<boolean>;
     private totalScore: KnockoutReadonlyComputed<number>;
     private releaseFeedbackExplanation: KnockoutReadonlyComputed<string>;
     private releaseFeedbackColor: KnockoutReadonlyComputed<string>;
@@ -551,7 +552,7 @@ export class SubmissionReviewInterface {
             let totalReviewScore = this.reviews().map( (reviewInterface: SingleReviewInterface) =>
                 reviewInterface.calculateScore() ? reviewInterface.calculateScore() : 0
             ).reduce( (score, total) => score+total, 0);
-            return this.submission.score() + totalReviewScore;
+            return this.submission.score()*100 + totalReviewScore;
         });
 
         this.releaseFeedbackExplanation = ko.pureComputed<string>( () => explainGradingStatus(this.submission.gradingStatus()));
@@ -561,6 +562,9 @@ export class SubmissionReviewInterface {
             this.submission.checkSubmission(SubmissionStatus.COMPLETED) ?
                 "Close submission" : "Reopen submission"
         );
+        this.canMarkCorrect = ko.pureComputed<boolean>(() =>
+            (undefined === this.reviews().find((review) =>
+                review.review.comment() === "Passed human review")));
     }
 
     releaseFeedback() {
@@ -623,6 +627,41 @@ export class SubmissionReviewInterface {
         }, false);
         this.reviews.push(draftReviewInterface);
     }
+
+    markCorrect() {
+        const existingReview = this.reviews().find((review) => review.review.comment() === "Passed human review");
+        if (existingReview !== undefined) {
+            return;
+        }
+        let draftReview = new Review({
+            assignment_version: this.assignment.version(),
+            author_id: this.author.id,
+            comment: "Passed human review",
+            date_created: ""+new Date(),
+            date_modified: ""+new Date(),
+            forked_id: null,
+            forked_version: null,
+            generic: false,
+            id: null,
+            location: null,
+            score: (100 - this.submission.score()*100) || 100,
+            submission_id: this.submission.id,
+            submission_version: this.submission.version(),
+            tag_id: null,
+            version: 0
+        });
+        let draftReviewInterface = new SingleReviewInterface({
+            inherits: "nothing",
+            parent: this,
+            review: draftReview,
+            state: ReviewModelState.DRAFT
+        }, false);
+        this.reviews.push(draftReviewInterface);
+        this.server.reviewStore.create(draftReviewInterface.serialized()).then((savedReview: Review) => {
+            draftReview.id = savedReview.id;
+            draftReviewInterface.state(ReviewModelState.SAVED);
+        });
+    }
 }
 
 export const SUBMISSION_REVIEW_INTERFACE_TEMPLATE = `
@@ -632,8 +671,8 @@ export const SUBMISSION_REVIEW_INTERFACE_TEMPLATE = `
 <!-- ko if: !isLtiActive() && canEditFeedback() -->
     <div class="alert alert-warning" role="alert">
         You are not in a grading LTI session for this course.
-        Launch an LTI session by opening any random BlockPy question.
-        This will store a cookie that lets Canvas recognize that you can grade questions.
+        Launch an LTI session by opening the BlockPy Dashboard from within Canvas.
+        This will store a cookie that lets Canvas recognize that you can grade questions!
     </div>
 <!-- /ko -->
 
@@ -650,6 +689,11 @@ export const SUBMISSION_REVIEW_INTERFACE_TEMPLATE = `
         data-bind="text: closeSubmissionLabel, click: closeSubmission"></button>
     Closed assignments prevent students from submitting.
 </p>
+<p class="col-xl-6 col-md-12">
+    <button type="button" class="btn btn-sm btn-info"
+        data-bind="click: markCorrect, enabled: canMarkCorrect">Mark as Fully Correct</button>
+    Adds a new General Feedback (<code>Passed human review</code>) that is worth all the remaining points of the assignment.
+</p>
 <!-- /ko -->
 
 
@@ -662,7 +706,7 @@ export const SUBMISSION_REVIEW_INTERFACE_TEMPLATE = `
     </thead>
     <tr>
         <td>Passed all autograder tests?</td>
-        <td data-bind="html: submission.correct()"></td>
+        <td data-bind="html: submission.correct() ? '✔' : '❌'"></td>
     </tr>
     <tr>
         <td>Autograder submission score:</td>
