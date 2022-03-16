@@ -91,15 +91,19 @@ def mass_close_assignment():
     assignment_id = maybe_int(request.values.get("assignment_id"))
     course_id = maybe_int(request.values.get("course_id"))
     new_submission_status = request.values.get("new_submission_status")
+    skip_unchanged = maybe_bool(request.values.get("skip_unchanged"))
     user, user_id = get_user()
     submissions = Submission.by_assignment(assignment_id=assignment_id, course_id=course_id)
     # Verify permissions
     if not user.is_grader(course_id):
         return ajax_failure("You are not a grader in this course.")
     # Do action
-    for submission in submissions:
-        submission.update_submission_status(new_submission_status)
-    return ajax_success({'new_status': new_submission_status})
+    changed = []
+    for submission, student, assignment in submissions:
+        if not skip_unchanged or submission.version:
+            submission.update_submission_status(new_submission_status)
+            changed.append(student.id)
+    return ajax_success({'new_status': new_submission_status, "students": changed})
 
 def fix_nullables(review_data):
     for nullable in ['score', 'tag_id', 'forked_id', 'submission_id']:
