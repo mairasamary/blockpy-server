@@ -23,6 +23,7 @@
         </td>
     </tr>
 
+    {% if rows %}
     {% for submission, assignment, group in rows %}
 
     {% set hiding = assignment.hidden or assignment.get_setting('hide_submission', False) %}
@@ -54,6 +55,7 @@
         </td>
     </tr>
     {% endfor %}
+    {% endif %}
 {% endfor %}
 </tbody>
 </table>
