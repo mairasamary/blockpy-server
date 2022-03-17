@@ -373,21 +373,27 @@ def dashboard(lti=lti, lti_exception=None):
 
     course = Course.by_id(course_id)
     assignment = course.get_default_assignment()
-    if assignment is not None:
+    if force_default_assignment and assignment is not None:
         return redirect(url_for("blockpy.load", assignment_id=assignment.id,
                                 course_id=course_id, user_id=user_id, force_download=False,
                                 embed=True))
     else:
-        # No default assignment!
-        assignments = natsorted(course.get_submitted_assignments(),
-                                key=lambda r: r.name)
-        all_subs = Submission.by_student(user_id, course_id)
-        all_subs = {s[0].assignment_id: s for s in all_subs}
-        submissions = [all_subs.get(assignment.id, (None, None, assignment))
-                       for assignment in assignments]
+        # Sub - Assign - Group
+        grouped_assignments = natsorted(course.get_users_submitted_assignments_grouped(user_id),
+                                        key=lambda r: (
+                                        r.AssignmentGroup.name if r.AssignmentGroup is not None else "~~~~~~~~",
+                                        r.Assignment.title()))
+        assignments_by_group = {}
+        for row in grouped_assignments:
+            #group_name = row.AssignmentGroup.name if row.AssignmentGroup is not None else None
+            assignments_by_group.setdefault(row.AssignmentGroup, []).append(
+                (row.Submission, row.Assignment, row.AssignmentGroup)
+            )
+        # Horrifying hack to move Ungrouped elements to end
+        assignments_by_group[None] = assignments_by_group.pop(None)
         return render_template('courses/dashboard.html', embed=True,
-                               course_id=course_id, user=user, is_grader=is_grader,
-                               submissions=submissions, criteria='student')
+                               course_id=course_id, user=user,
+                               assignments_by_group=assignments_by_group)
 
 
 @courses.route('/config/', methods=['GET', 'POST'])
@@ -467,7 +473,7 @@ def submissions_filter(course_id):
         group_name = row.AssignmentGroup.name if row.AssignmentGroup is not None else None
         assignments_by_group.setdefault(group_name, []).append(row.Assignment)
     # Horrifying hack to move Ungrouped elements to end
-    assignments_by_group[None] = assignments_by_group.pop(None)
+    assignments_by_group[None] = assignments_by_group.pop(None, None)
     return render_template('courses/submissions_filter.html',
                            course_id=course_id,
                            assignments_by_group=assignments_by_group,

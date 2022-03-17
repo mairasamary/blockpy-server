@@ -18,8 +18,10 @@ Dashboard
 
     <p>This feature is in beta. Expect issues!</p>
 
-    {% include "helpers/submission_table.html" %}
+    <p>If you wanted a scratchpad to work in, go <a href="{{ {"force_default_assignment":"true"}|modify_query }}">here</a>.</p>
 
-    <p>Currently in "{{ g.course.name }}"</p>
+    {% include "helpers/submission_student_table.html" %}
+
+    <p>You are {{ g.user.name() }} ({{ g.user.id }}), currently in "{{ g.course.name }}" ({{g.course.id}})</p>
 
 {% endblock %}

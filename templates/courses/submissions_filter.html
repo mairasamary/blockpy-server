@@ -62,11 +62,13 @@ $().ready(function() {
     {% else %}
         <optgroup label="{{ group }}">
     {% endif %}
+    {% if assignments %}
     {% for assignment in assignments %}
         <option value='{{ assignment.id }}'
         {%- if criteria == "assignment" and search_key == assignment.id %} selected
         {%- endif %} >{{ assignment.title() }}</option>
     {% endfor %}
+    {% endif %}
     </optgroup>
 {% endfor %}
 </select>

@@ -54,6 +54,27 @@ def modify_query(new_values):
 
     return '{}?{}'.format(request.path, url_encode(args))
 
+def make_readonly_form(assignment, submission):
+    data = {
+        "assignment": assignment.encode_json(),
+        "submission": submission.encode_json(),
+        "user": {"role": "owner"}
+    }
+    data['assignment']['forked_id'] = assignment.id
+    data['assignment']['forked_version'] = assignment.version
+    data['assignment']['id'] = None
+    data['assignment']['url'] = ""
+    data['assignment']['course_id'] = None
+    data['submission']['id'] = None
+    data['submission']['endpoint'] = ""
+    data['submission']['url'] = ""
+    data['submission']['user_id'] = None
+    data['submission']['course_id'] = None
+    data['submission']['assignment_id'] = None
+    data['submission']['grading_status'] = "NotReady"
+    data['submission']['submission_status'] = "inProgress"
+    return json.dumps(data)
+
 
 def setup_jinja_filters(app):
     app.jinja_env.filters['markdown'] = Markdown(extensions=['fenced_code']).convert
@@ -67,3 +88,4 @@ def setup_jinja_filters(app):
     app.jinja_env.filters['from_friendly_date'] = from_friendly_date
     app.jinja_env.filters['modify_query'] = modify_query
     app.jinja_env.filters['date_description'] = date_description
+    app.jinja_env.filters['make_readonly_form'] = make_readonly_form

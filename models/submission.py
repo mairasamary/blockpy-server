@@ -177,7 +177,7 @@ class Submission(Base):
 
     def full_status(self, allow_hide=True):
         if allow_hide and self.assignment.hidden:
-            return "????"
+            return "???? (Status Hidden)"
         elif self.correct:
             return "Complete"
         elif self.assignment.reviewed:

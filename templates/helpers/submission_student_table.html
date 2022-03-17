@@ -1,0 +1,59 @@
+<table class="table table-condensed table-hover table-striped table-bordered">
+<caption>Here are your past submissions.</caption>
+<tbody>
+<thead class="thead-dark">
+    <th>Assignment</th>
+    <th>Status</th>
+    <th>Last Edited</th>
+</thead>
+{% for group, rows in assignments_by_group.items() %}
+
+    <tr class="table-dark">
+        <td colspan="7"><h6>
+            {% if group %}
+                <a href="{{ url_for('blockpy.view_submissions',
+                                assignment_group_id=group.id,
+                                user_id=user.id,
+                                course_id=course_id,
+                                embed=True) }}"
+                target="_blank">{{ group.name }}</a>
+            {% else %}
+                Stand-alone Assignments
+            {% endif %}</h6>
+        </td>
+    </tr>
+
+    {% for submission, assignment, group in rows %}
+
+    {% set hiding = assignment.hidden or assignment.get_setting('hide_submission', False) %}
+
+
+    <!-- Row Color based on Assignment status -->
+    <tr
+        class='{%
+            if submission.correct or (submission.score is defined and submission.score|round(1) >= 100)
+        %}table-success{%
+            elif (submission.score is defined and submission.score|round(1) > 0)
+        %}table-warning{% endif %}'>
+
+        <td>
+            {% if group %}
+                {{ assignment.title() }}
+            {% else %}
+                <a href="{{ url_for('blockpy.view_submission', submission_id=submission.id, embed=True) }}"
+            target="_blank">{{ assignment.title() }}</a>
+            {% endif %}
+        </td>
+        <td>
+            {{ submission.full_status() }}
+        </td>
+        <td>
+            <span title="{{ submission.date_modified }}">
+                {{ submission.date_modified|date_description }}
+            </span>
+        </td>
+    </tr>
+    {% endfor %}
+{% endfor %}
+</tbody>
+</table>

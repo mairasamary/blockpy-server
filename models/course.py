@@ -119,6 +119,19 @@ class Course(Base):
                 .filter(models.Assignment.id.in_(assignments))
                 .distinct())
 
+    def get_users_submitted_assignments_grouped(self, user_id):
+        return (db.session.query(models.Submission, models.Assignment, models.AssignmentGroup)
+                .join(models.Submission,
+                      models.Submission.assignment_id == models.Assignment.id)
+                .join(models.AssignmentGroupMembership,
+                      models.AssignmentGroupMembership.assignment_id == models.Assignment.id, isouter=True)
+                .join(models.AssignmentGroup,
+                      models.AssignmentGroupMembership.assignment_group_id == models.AssignmentGroup.id, isouter=True)
+                .filter(models.Submission.course_id==self.id,
+                        models.Submission.user_id==user_id)
+                .order_by(models.Assignment.name, models.AssignmentGroupMembership.position)
+                .distinct())
+
     def get_submitted_assignments_grouped(self):
         assignments = (models.Submission.query.with_entities(models.Submission.assignment_id)
                        .filter_by(course_id=self.id)
