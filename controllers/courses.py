@@ -390,7 +390,7 @@ def dashboard(lti=lti, lti_exception=None):
                 (row.Submission, row.Assignment, row.AssignmentGroup)
             )
         # Horrifying hack to move Ungrouped elements to end
-        assignments_by_group[None] = assignments_by_group.pop(None)
+        assignments_by_group[None] = assignments_by_group.pop(None, None)
         return render_template('courses/dashboard.html', embed=True,
                                course_id=course_id, user=user,
                                assignments_by_group=assignments_by_group)
