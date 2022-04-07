@@ -92,9 +92,9 @@ export const QUIZZER_HTML = `
             <div data-bind="if: editorMode() === 'FORM'">
                 <button data-bind="click: saveAssignment">Save Assignment</button><br>
                 <h6>Instructions</h6>
-                <div data-bind="jsoneditor: {value: assignment().instructions}" style="width: 100%; height: 300px; resize: vertical; overflow: auto"></div><br>
+                <div data-bind="jsoneditor: {value: assignment().instructions}" style="width: 100%; height: 500px; resize: vertical; overflow: auto"></div><br>
                 <h6>On Run</h6>
-                <div data-bind="jsoneditor: {value: assignment().onRun}" style="width: 100%; height: 300px; resize: vertical; overflow: auto"></div><br>
+                <div data-bind="jsoneditor: {value: assignment().onRun}" style="width: 100%; height: 500px; resize: vertical; overflow: auto"></div><br>
                 
                 <!-- Other settings -->
                 <div class="form-group">
