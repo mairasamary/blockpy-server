@@ -261,7 +261,7 @@ export const QUIZZER_HTML = `
                                 <div class="col" data-bind="html: $data"></div>
                                 <div class="col">
                                     <select class="custom-select"
-                                        data-bind="options: $parent.answers.sort(() => Math.random() - 0.5),
+                                        data-bind="options: $parent.retainOrder ? $parent.answers : $parent.answers.sort(() => Math.random() - 0.5),
                                                    disable: $component.isReadOnly(),
                                                    optionsCaption: '',
                                                    value: $parent.student[$index()],
