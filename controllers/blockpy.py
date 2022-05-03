@@ -951,3 +951,22 @@ def fork_assignment(lti=lti):
                    user.id, "X-Instructor.Settings.Edit", "assignment_settings.blockpy",
                    message=json.dumps(updated_settings))
     return ajax_success({"modified": modified})
+
+
+@blueprint_blockpy.route('/get_recent_logs_for_course/', methods=['GET', 'POST'])
+@blueprint_blockpy.route('/get_recent_logs_for_course', methods=['GET', 'POST'])
+@require_request_parameters("course_id")
+def get_recent_logs_for_course():
+    # Get parameters
+    course_id = maybe_int(request.values.get('course_id'))
+    duration_amount = maybe_int(request.values.get('duration_amount', 1))
+    duration_type = request.values.get('duration_type', 'days')
+    embed = maybe_bool(request.values.get('embed'))
+    user, user_id = get_user()
+    # Get resources
+    course = Course.by_id(course_id)
+    # Verify user is a grader
+    if not user.is_grader(course_id):
+        return ajax_failure("Only graders can see logs for the entire course.")
+    history = Log.get_recent_logs_for_course(course_id, duration_amount, duration_type)
+    return ajax_success({'history': history})

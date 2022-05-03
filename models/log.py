@@ -2,8 +2,10 @@ import logging
 from collections import OrderedDict
 import time
 import json
+from datetime import datetime, timedelta
 
-from sqlalchemy import Column, String, Integer, ForeignKey, Text, func, JSON, Index
+
+from sqlalchemy import Column, String, Integer, ForeignKey, Text, func, JSON, Index, and_
 
 from models.assignment import Assignment
 from models.models import Base, db, datetime_to_string
@@ -159,6 +161,25 @@ class Log(Base):
         if page_limit is not None:
             logs = logs.limit(page_limit)
         logs = logs.all()
+        return [log.encode_json() for log in logs]
+
+    @staticmethod
+    def get_recent_logs_for_course(course_id, duration_amount, duration_type):
+        duration_amount = int(duration_amount)
+        start_time = datetime.now() - timedelta(**{duration_type: duration_amount})
+        recent_submissions = (
+            models.Submission.query.with_entities(models.Submission.course_id,
+                                                  models.Submission.assignment_id,
+                                                  models.Submission.user_id)
+                .filter_by(course_id=course_id)
+                .filter(models.Submission.date_modified >= start_time)
+        ).subquery()
+        logs = (Log.query.join(recent_submissions,
+                               and_(Log.course_id == recent_submissions.c.course_id,
+                                    Log.assignment_id == recent_submissions.c.assignment_id,
+                                    Log.subject_id == recent_submissions.c.user_id))
+                .filter(Log.date_modified >= start_time)
+                 ).all()
         return [log.encode_json() for log in logs]
 
     def for_file(self):
