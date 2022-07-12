@@ -669,7 +669,7 @@ def bulk_assignment_editor_setup():
     # Check Resource Exists
     check_resource_exists(course, "Course", course_id)
     grouped_assignments = natsorted(course.get_assignments_grouped(),
-                                    key=lambda r: (r.AssignmentGroup.name if r.AssignmentGroup is not None else None,
+                                    key=lambda r: (r.AssignmentGroup.name or "",
                                                    r.Assignment.name))
     # assignments = [a.Assignment for a in grouped_assignments]
     groups = {}
