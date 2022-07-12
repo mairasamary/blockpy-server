@@ -85,6 +85,7 @@ function MainModel() {
             'title': ko.observable("{{assignment[0].title()}}"),
             'select': "{{ return_url }}?url={{url_for('assignments.load', assignment_id=assignment[0].id, _external=True, embed= menu == 'embed') | urlencode}}&return_type={{ 'lti_launch_url' if menu != 'embed' else 'iframe' }}&title={{ assignment[0].title()|urlencode }}&text=BlockPy%20Exercise&width=100%25&height=600", 
             'edit': "{{ url_for('assignments.load', assignment_id=assignment[0].id, course_id=assignment[0].course_id )|safe }}",
+            'exportUrl': "{{ url_for('assignments.export', assignment_id=assignment[0].id)|safe }}",
             'modified': ko.observable('{{ assignment[0].date_modified.strftime(" %I:%M%p on %a %d, %b %Y").replace(" 0", " ") }}'),
             'body': ko.observable({{ assignment[0].instructions|striptags|safe|truncate(255)|tojson }})
         }{{ "," if not loop.last }}
@@ -370,6 +371,7 @@ function MainModel() {
                     'title': ko.observable(data.title),
                     'select': "{{ return_url }}?url="+data.select,
                     'edit': data.edit,
+                    'exportUrl': data.export,
                     'modified': ko.observable(data.date_modified),
                     'body': ko.observable(data.body)
                 });
@@ -408,6 +410,7 @@ function MainModel() {
                         'title': ko.observable(data.title),
                         'select': "{{ return_url }}?url=" + data.select,
                         'edit': data.edit,
+                        'exportUrl': data.export,
                         'modified': ko.observable(data.date_modified),
                         'body': ko.observable(data.body)
                     });
@@ -650,6 +653,7 @@ div.overlay {
                     <a class="dropdown-item" href="#" data-bind="click: $root.removeAssignment.bind($data, $parent)">Delete</a>
                     <a class="dropdown-item" href="#" data-bind="click: $root.forkAssignment.bind($data, $parent, false)">Fork (prompt URL)</a>
                     <a class="dropdown-item" href="#" data-bind="click: $root.forkAssignment.bind($data, $parent, true)">Fork</a>
+                    <a class="dropdown-item" target="_blank" data-bind="attr: {href: exportUrl}">Export</a>
                 </div>
             </div>
         </td>
