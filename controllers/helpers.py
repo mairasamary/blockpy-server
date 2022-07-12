@@ -267,7 +267,7 @@ def parse_assignment_load(assignment_id_or_url=None):
             course = g.course
         assignments = [course.get_default_assignment()]
     # Potentially adjust assignment_id
-    if current_assignment_id is None and assignments:
+    if current_assignment_id is None and assignments and assignments[0]:
         current_assignment_id = assignments[0].id
     # Get submissions
     if user and user.anonymous and course_id is None:
