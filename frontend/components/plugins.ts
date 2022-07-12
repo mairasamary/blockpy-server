@@ -366,6 +366,7 @@ ko.bindingHandlers.filepond = {
             });
             element.filepond = FilePond.create(element, {
                 files: allFiles,
+                allowMultiple: true,
                 server: {
                     url: window["$URL_ROOT"],
                     load: (source, load) => {
