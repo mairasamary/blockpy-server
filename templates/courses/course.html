@@ -24,9 +24,9 @@ function renameCourse() {
 
 <h1>Course: {{ course.name }}</h1>
 {% if course.url %}
-    <span>{{ course.url }}</span>
+    <span>Course url name: <code>{{ course.url }}</code></span>
 {% else %}
-    <span>(No course url)</span>
+    <span>Course url name: N/A</span>
 {% endif %}<br>
 
 <a href="{{ url_for('courses.index') }}">Back to all courses</a><br><br>
