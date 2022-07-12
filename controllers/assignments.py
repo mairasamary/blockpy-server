@@ -351,7 +351,6 @@ def bulk_upload():
             return redirect(request.url)
         if file:
             bundle = json.loads(file.read().decode('utf-8'))
-            del bundle['courses']
             import_bundle(bundle, owner_id=g.user.id, course_id=course_id)
             flash("File uploaded successfully")
             return redirect(request.url)
