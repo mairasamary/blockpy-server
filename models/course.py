@@ -296,3 +296,8 @@ class Course(Base):
             return secure_filename(self.url) + ".json"
         else:
             return secure_filename(self.name) + ".json"
+
+    def get_textbooks(self):
+        return (db.session.query(models.Assignment)
+                .filter(models.Assignment.course_id == self.id, models.Assignment.type == 'textbook')
+                .all())

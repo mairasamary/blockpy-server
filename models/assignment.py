@@ -395,7 +395,7 @@ class Assignment(Base):
     def load_as_textbook(self):
         try:
             textbook = json.loads(self.instructions)
-            reading_urls = search_textbook_for_key(textbook, 'reading')
+            reading_urls = list(search_textbook_for_key(textbook, 'reading'))
             group_urls = search_textbook_for_key(textbook, 'group')
             db_readings = {a.url: a for a in db.session.query(Assignment)
                                      .filter(Assignment.url.in_(reading_urls))
@@ -404,7 +404,11 @@ class Assignment(Base):
                 .filter(models.AssignmentGroup.url.in_(group_urls))
                 .all()}
             rehydrate_textbook(textbook, db_readings, db_groups)
+            if reading_urls:
+                first_page = db_readings[reading_urls[0]]
+            else:
+                first_page = None
             textbook['success'] = True
-            return textbook
+            return textbook, first_page
         except Exception as e:
             return { "message": e, "success": False}

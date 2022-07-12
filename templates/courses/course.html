@@ -56,6 +56,13 @@ function renameCourse() {
     <a href="{{ url_for('courses.submissions_user', course_id=course.id, owner_id=g.user.id) }}" class='btn btn-outline-secondary'>View Your Submissions</a> View your submissions for all of the assignments.<br><br>
 {% endif %}
 
+{% if textbooks %}
+    <h3>Textbook{{ 's' if textbooks|length > 1 else '' }}</h3>
+    {% for textbook in textbooks %}
+    <a href="{{ url_for('assignments.load_textbook', path=textbook.url, course_id=course.id, embed=False) }}" class='btn btn-outline-secondary'>{{ textbook.name }}</a> View the textbook.<br><br>
+    {% endfor %}
+{% endif %}
+
 {% if is_instructor %}
 <h3>Course Settings</h3>
 <button onclick="renameCourse()" class='btn btn-outline-secondary'>Rename Course</button> Rename this course.<br><br>

@@ -94,11 +94,13 @@ def load_textbook(path):
     if len(editor_information['assignments']) == 1:
         if editor_information['assignments'][0].type == 'textbook':
             assignment = editor_information['assignments'][0]
-            textbook = assignment.load_as_textbook()
+            textbook, default_first_page = assignment.load_as_textbook()
             if not textbook['success']:
                 return abort(400, "Error: " + repr(textbook['message']))
             return render_template('blockpy/textbook.html', textbook=textbook, ip=request.remote_addr,
-                                   assignment=editor_information['assignments'][0], page_id=page, page_title=page_title,
+                                   assignment=editor_information['assignments'][0],
+                                   page_id=page if page else default_first_page.id if default_first_page else None,
+                                   page_title=page_title if page else default_first_page.name if default_first_page else None,
                                    **editor_information)
 
     return jsonify(success=False, message="There is no textbook with that information")

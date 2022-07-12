@@ -120,11 +120,13 @@ def course(course_id):
         return redirect(url_for('courses.index'))
     is_instructor = user.is_instructor(course_id)
     is_grader = user.is_grader(course_id)
+    textbooks = course.get_textbooks()
     return render_template('courses/course.html',
                                course=course,
                                course_id=course_id,
                                is_grader=is_grader,
-                               is_instructor=is_instructor)
+                               is_instructor=is_instructor,
+                               textbooks=textbooks)
     #return view_assignments(course_id)
 
 
