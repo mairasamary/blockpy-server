@@ -19,7 +19,8 @@
         "baseUrl": ".",
         "paths": {
         },
-        "types": ["node", "jquery", "bootstrap", "knockout", "jasmine", "CodeMirror", "select2"]
+        "types": ["node", "jquery", "bootstrap", "knockout", "jasmine", "CodeMirror", "select2"],
+      "allowSyntheticDefaultImports": true
     },
     "include": [
         "components"

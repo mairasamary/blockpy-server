@@ -17,7 +17,7 @@ def load_user():
         g.user = current_user
         if 'lti_course' in session:
             g.course = models.Course.by_id(session['lti_course'])
-    elif not request.endpoint.startswith('security.'):
+    elif not request.endpoint or not request.endpoint.startswith('security.'):
         if 'uid' in session:
             uid = session['uid']
             g.user = models.User.find_anonymous_user(uid)

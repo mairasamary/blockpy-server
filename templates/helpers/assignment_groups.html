@@ -1,5 +1,5 @@
 {% macro assignment_group_header(group, assignment_id, embed, page_type) %}
-    {% set sorted_group = group %}
+    {% set sorted_group = group|rejectattr('0.subordinate')|list %}
 
     {% set ns = namespace(found=false) %}
     {% set ns.any_secretive = False %}

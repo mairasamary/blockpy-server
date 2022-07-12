@@ -68,6 +68,42 @@ def load_reading(path):
     return jsonify(success=False, message="There is no reading with that information")
 
 
+@blueprint_assignments.route('/textbook/<path>/', methods=['GET', 'POST'])
+@blueprint_assignments.route('/textbook/<path>', methods=['GET', 'POST'])
+def load_textbook(path):
+    editor_information = parse_assignment_load(path)
+
+    page = request.values.get('page', '')
+
+    page_title = ""
+    if page:
+        current_page = Assignment.by_url(page)
+        if current_page:
+            page = current_page.id
+            page_title = current_page.name
+        else:
+            page = maybe_int(page)
+            current_page = Assignment.by_id(page)
+            if current_page:
+                page_title = current_page.name
+
+    if 'embed' not in request.values:
+        editor_information['embed'] = True
+
+    # Use the proper template
+    if len(editor_information['assignments']) == 1:
+        if editor_information['assignments'][0].type == 'textbook':
+            assignment = editor_information['assignments'][0]
+            textbook = assignment.load_as_textbook()
+            if not textbook['success']:
+                return abort(400, "Error: " + repr(textbook['message']))
+            return render_template('blockpy/textbook.html', textbook=textbook, ip=request.remote_addr,
+                                   assignment=editor_information['assignments'][0], page_id=page, page_title=page_title,
+                                   **editor_information)
+
+    return jsonify(success=False, message="There is no textbook with that information")
+
+
 @blueprint_assignments.route('/fork', methods=['GET', 'POST'])
 @blueprint_assignments.route('/fork/', methods=['GET', 'POST'])
 @require_request_parameters('assignment_id')
@@ -261,6 +297,21 @@ def get_assignments():
             check_resource_exists(assignment, "Assignment", assignment_id)
             assignments.append(assignment.encode_json())
     return ajax_success(dict(assignments=assignments, errors=errors, groups=groups))
+
+
+@blueprint_assignments.route('/by_url/', methods=['GET'])
+@blueprint_assignments.route('/by_url', methods=['GET'])
+@login_required
+def by_url():
+    assignment_url = request.values.get('url')
+    course_id = get_course_id()
+    user, user_id = get_user()
+    if assignment_url is None:
+        return ajax_failure("No assignment URL was provided")
+    # TODO: verify that they have the permissions to see these assignments
+    assignment = Assignment.by_url(assignment_url)
+    check_resource_exists(assignment, "Assignment", assignment_url)
+    return ajax_success(dict(assignment=assignment.encode_json()))
 
 
 @blueprint_assignments.route('/export/', methods=['GET', 'POST'])

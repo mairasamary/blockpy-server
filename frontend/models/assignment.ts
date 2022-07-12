@@ -14,6 +14,7 @@ export interface AssignmentJson extends ModelJson {
     reviewed: boolean;
     hidden: boolean;
     public: boolean;
+    subordinate: boolean;
     ip_ranges: string;
     points: number;
     settings: string;
@@ -41,6 +42,7 @@ export class Assignment extends Model<AssignmentJson> {
     reviewed: KnockoutObservable<boolean>;
     hidden: KnockoutObservable<boolean>;
     public: KnockoutObservable<boolean>;
+    subordinate: KnockoutObservable<boolean>;
     ipRanges: KnockoutObservable<string>;
     settings: KnockoutObservable<string>;
     points: KnockoutObservable<number>;
@@ -68,6 +70,7 @@ export class Assignment extends Model<AssignmentJson> {
         "reviewed": "reviewed",
         "hidden": "hidden",
         "public": "public",
+        "subordinate": "subordinate",
         "ip_ranges": "ipRanges",
         "points": "points",
         "settings": "settings",
@@ -113,6 +116,17 @@ export class Assignment extends Model<AssignmentJson> {
 export class AssignmentStore extends ModelStore<AssignmentJson, Assignment> {
     GET_FIELD: string = "assignments";
 
+    getIdByUrl(url: string): Promise<number> {
+        return new Promise((resolve, reject) => {
+            const target = Object.values(this.data).find((potential: Assignment) => potential.url() === url);
+            if (target !== undefined) {
+                resolve(target.id);
+            } else {
+                this.getByUrl(url).then((assignment: Assignment)=> resolve(assignment.id)).catch(reject);
+            }
+        });
+    }
+
     getPayload(): any {
         return {
             assignment_ids: this.getDelayedIds().join(","),
@@ -136,6 +150,7 @@ export class AssignmentStore extends ModelStore<AssignmentJson, Assignment> {
             reviewed: false,
             hidden: false,
             public: false,
+            subordinate: false,
             ip_ranges: "",
             points: 1,
             settings: "",
@@ -157,6 +172,19 @@ export class AssignmentStore extends ModelStore<AssignmentJson, Assignment> {
         return `BLOCKPY_COURSE_${this.courseId}_ASSIGNMENTS`;
     }
 
+    getByUrl(url: string): Promise<Assignment> {
+        return new Promise((resolve, reject) => {
+            ajax_get("assignments/by_url", {url}).then((data) => {
+                if (data.success) {
+                    let rawAssignment: AssignmentJson = data.assignment;
+                    let created: Assignment = this.newInstance(rawAssignment);
+                    resolve(created);
+                } else {
+                    reject(data);
+                }
+            });
+        });
+    }
 
     getAllAvailable(payload?: any) {
         payload = payload || this.getPayload();

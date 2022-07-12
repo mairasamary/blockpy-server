@@ -21,11 +21,11 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  *
- * Copyright (c) 2011-2021 Jos de Jong, http://jsoneditoronline.org
+ * Copyright (c) 2011-2022 Jos de Jong, http://jsoneditoronline.org
  *
  * @author  Jos de Jong, <wjosdejong@gmail.com>
- * @version 9.5.3
- * @date    2021-07-28
+ * @version 9.9.0
+ * @date    2022-06-13
  */
 
 /**

@@ -10,6 +10,7 @@ from werkzeug.utils import secure_filename
 
 from models import models
 from models.models import Base, datetime_to_string, string_to_datetime, db, optional_encoded_field, make_copy
+from models.data_formats.textbook import search_textbook_for_key, rehydrate_textbook
 
 
 class Assignment(Base):
@@ -17,7 +18,7 @@ class Assignment(Base):
     url = Column(String(255), default=None, nullable=True)
 
     # Settings
-    TYPES = ['blockpy', 'maze', 'reading', 'quiz', 'typescript']
+    TYPES = ['blockpy', 'maze', 'reading', 'quiz', 'typescript', 'textbook']
     type = Column(String(10), default="blockpy")
     instructions = Column(Text(), default="")
     # Should we suggest this assignment's submissions be reviewed manually?
@@ -26,6 +27,8 @@ class Assignment(Base):
     hidden = Column(Boolean(), default=False)
     # Should we allow ANYONE to see this submission?
     public = Column(Boolean(), default=False)
+    # Is this assignment meant to be used inside of another one?
+    subordinate = Column(Boolean(), default=False)
     # Whitelist or blacklist IP address and address ranges
     ip_ranges = Column(Text(), default="")
     # How many points is this assignment worth?
@@ -69,6 +72,7 @@ class Assignment(Base):
             'reviewed': self.reviewed,
             'hidden': self.hidden,
             'public': self.public,
+            'subordinate': self.subordinate,
             'points': self.points,
             'settings': self.settings,
             'ip_ranges': self.ip_ranges,
@@ -282,6 +286,7 @@ class Assignment(Base):
                                 reviewed=self.reviewed,
                                 hidden=self.hidden,
                                 public=self.public,
+                                subordinate=self.subordinate,
                                 ip_ranges=self.ip_ranges,
                                 points=self.points,
                                 settings=self.settings,
@@ -386,3 +391,20 @@ class Assignment(Base):
                                                 not a.lower().startswith(partial.lower()),
                                                 a))
         return all_assignments
+
+    def load_as_textbook(self):
+        try:
+            textbook = json.loads(self.instructions)
+            reading_urls = search_textbook_for_key(textbook, 'reading')
+            group_urls = search_textbook_for_key(textbook, 'group')
+            db_readings = {a.url: a for a in db.session.query(Assignment)
+                                     .filter(Assignment.url.in_(reading_urls))
+                                     .all()}
+            db_groups = {g.url: g for g in db.session.query(models.AssignmentGroup)
+                .filter(models.AssignmentGroup.url.in_(group_urls))
+                .all()}
+            rehydrate_textbook(textbook, db_readings, db_groups)
+            textbook['success'] = True
+            return textbook
+        except Exception as e:
+            return { "message": e, "success": False}

@@ -239,7 +239,7 @@ def view_assignments(course_id):
         return redirect(url_for('courses.index'))
     assignments = Assignment.by_course(course_id)
     default_assignment = course.get_default_assignment()
-    groups = AssignmentGroup.by_course(course_id)
+    groups = natsorted(AssignmentGroup.by_course(course_id), key=lambda g: g.name)
     is_instructor = g.user.is_instructor(course.id)
     is_grader = g.user.is_grader(course.id)
     return render_template('courses/view_assignments.html', assignments=assignments,
@@ -659,10 +659,7 @@ def list_grading_failures():
                            is_instructor=is_grader)
 
 
-@courses.route('/edit_points', methods=['GET', 'POST'])
-@courses.route('/edit_points/', methods=['GET', 'POST'])
-@login_required
-def edit_points():
+def bulk_assignment_editor_setup():
     course_id = get_course_id()
     user, user_id = get_user()
     # Load Resources
@@ -672,7 +669,7 @@ def edit_points():
     grouped_assignments = natsorted(course.get_assignments_grouped(),
                                     key=lambda r: (r.AssignmentGroup.name if r.AssignmentGroup is not None else None,
                                                    r.Assignment.name))
-    #assignments = [a.Assignment for a in grouped_assignments]
+    # assignments = [a.Assignment for a in grouped_assignments]
     groups = {}
     for a in grouped_assignments:
         if a.AssignmentGroup not in groups:
@@ -684,6 +681,14 @@ def edit_points():
             require_course_instructor(g.user, group.course_id, f"This course has assignment group {group.id}")
         for assignment in assignments:
             require_course_instructor(g.user, assignment.course_id, f"This course has assignment {assignment.id}")
+    return user, user_id, course, course_id, groups
+
+
+@courses.route('/edit_points', methods=['GET', 'POST'])
+@courses.route('/edit_points/', methods=['GET', 'POST'])
+@login_required
+def edit_points():
+    user, user_id, course, course_id, groups = bulk_assignment_editor_setup()
     # Perform action
     if request.method == 'POST':
         modified = []
@@ -707,6 +712,61 @@ def edit_points():
                                course_id=course_id,
                                course=course,
                                groups=groups)
+
+
+ATTRIBUTES_BY_LEVEL = {
+    'group': [('name', str), ('url', str)],
+    'assignment': [('name', str), ('url', str), ('hidden', maybe_bool), ('reviewed', maybe_bool), ('public', maybe_bool),
+                   ('subordinate', maybe_bool)]
+}
+
+def get_updated_settings(group_or_assignment, obj):
+    new_settings = {}
+    if not obj:
+        return new_settings
+    for attribute, converter in ATTRIBUTES_BY_LEVEL[group_or_assignment]:
+        target_field = f'{group_or_assignment}-{attribute}-{obj.id}'
+        if target_field in request.values:
+            original_value = request.values.get(target_field)
+            value = converter(original_value)
+            if original_value is not None and value is not None and getattr(obj, attribute) != value:
+                new_settings[attribute] = value
+    return new_settings
+
+@courses.route('/edit_settings', methods=['GET', 'POST'])
+@courses.route('/edit_settings/', methods=['GET', 'POST'])
+@login_required
+def edit_settings():
+    user, user_id, course, course_id, groups = bulk_assignment_editor_setup()
+    # Perform action
+    if request.method == 'POST':
+        modified = []
+        for group, assignments in groups.items():
+            for assignment in assignments:
+                new_settings = get_updated_settings('assignment', assignment)
+                if new_settings:
+                    assignment.edit(new_settings)
+                    modified.append(f"Assignment: {assignment.name} ({assignment.id})"
+                                    if assignment.name else f"Unknown Assignment: {assignment.id}")
+            if group:
+                new_settings = get_updated_settings('group', group)
+                if new_settings:
+                    group.edit(new_settings)
+                    modified.append(f"Group: {group.name} ({group.id})"
+                                     if group.name else f"Unknown Group: {group.id}")
+        if modified:
+            flash("Modified: " + ", ".join(modified))
+        else:
+            flash("No assignments modified")
+        # if ip_ranges is not None:
+        #    for assignment in assignment_group.get_assignments():
+        #        assignment.edit(dict(ip_ranges=ip_ranges))
+        #        assignment.update_setting("passcode", passcode)
+        return redirect(request.url)
+    return render_template('courses/edit_settings.html', course_id=course_id, course=course, groups=groups,
+                           group_assignment_map=[[group.id if group else None,
+                                                  [assignment.id for assignment in assignments]]
+                                                 for group, assignments in groups.items()])
 
 @courses.route('/get_group_submission_links', methods=['GET', 'POST'])
 @courses.route('/get_group_submission_links/', methods=['GET', 'POST'])
@@ -749,3 +809,28 @@ def export():
     filename = course.get_filename()
     return Response(json.dumps(bundle, indent=2), mimetype='application/json',
                     headers={'Content-Disposition': 'attachment;filename={}'.format(filename)})
+
+@courses.route('/pages/<course_id_or_url>/', methods=['GET', "POST"])
+@courses.route('/pages/<course_id_or_url>', methods=["GET", "POST"])
+def pages(course_id_or_url):
+    user, user_id = get_user()
+    # Load Resources
+    course: Course = Course.by_id_or_url(course_id_or_url)
+    # Check Resource Exists
+    check_resource_exists(course, "Course", course_id_or_url)
+    # Get all assignments
+    grouped_assignments = natsorted(course.get_assignments_grouped(),
+                                    key=lambda r: (r.AssignmentGroup.name if r.AssignmentGroup is not None else None,
+                                                   r.Assignment.name))
+    # Group and verify permissions
+    if not user.in_course(course.id) and course.visibility != "public":
+        return redirect(url_for('courses.index'))
+    groups = {}
+    for a in grouped_assignments:
+        if not user.in_course(a.Assignment.course_id) and not a.Assignment.public:
+            continue
+        if a.AssignmentGroup not in groups:
+            groups[a.AssignmentGroup] = []
+        groups[a.AssignmentGroup].append(a.Assignment)
+    # All ready
+    return render_template('courses/textbook.html', course_id=course.id, course=course, groups=groups)

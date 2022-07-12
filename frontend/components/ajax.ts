@@ -21,6 +21,16 @@ export function ajax_put(url: string, data: any) {
     });
 }
 
+export function ajax_get_file(url: string) {
+    return $.ajax({
+        url: window["$URL_ROOT"]+url,
+        method: 'GET',
+        xhrFields: {
+            responseType: 'blob'
+        }
+    });
+}
+
 export function ajax_delete(url: string) {
     return $.ajax({
         type: 'DELETE',

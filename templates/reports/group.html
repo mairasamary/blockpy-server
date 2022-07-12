@@ -52,6 +52,10 @@
             {% include "reports/reading.html" with context %}
         {% elif assignment.type.lower() == "quiz" %}
             {% include "reports/quiz.html" with context %}
+        {% elif assignment.type.lower() == "textbook" %}
+            {% include "reports/textbook.html" with context %}
+        {% else %}
+            Unknown assignment type.
         {% endif %}
     {% endfor  %}
 </div>

@@ -6,6 +6,15 @@ import * as select2 from 'select2';
 import 'knockout-switch-case';
 import * as MarkdownIt from 'markdown-it';
 import JSONEditor, {JSONEditorMode} from 'jsoneditor';
+import * as FilePond from 'filepond';
+import FilePondPluginImagePreview from 'filepond-plugin-image-preview';
+import 'filepond-plugin-image-preview/dist/filepond-plugin-image-preview.css';
+
+
+import {BlockPyFileRecord} from "../models/files";
+import {ajax_get_file} from "./ajax";
+import StateCore from "markdown-it/lib/rules_core/state_core";
+import Token from "markdown-it/lib/token";
 // The CSS for jsoneditor is loaded via assets.py
 //import 'jsoneditor/dist/jsoneditor.css';
 
@@ -121,6 +130,18 @@ ko.bindingHandlers.highlightedCode = {
     }
 };
 
+function replaceAttr(token: Token, attrName: string, replace: any, env: any) {
+  token.attrs.forEach(function (attr: [string, string]) {
+    if (attr[0] === attrName) {
+      attr[1] = replace(attr[1], env, token)
+    }
+  })
+}
+
+function replaceLink(link: string, env: any) {
+    return link.startsWith("http") ? link : env.downloadUrl(link);
+}
+
 export let md = new MarkdownIt({
     html: true,
     highlight: function (str, lang) {
@@ -133,6 +154,22 @@ export let md = new MarkdownIt({
 
         return ''; // use external default escaping
     }
+}).use((md: MarkdownIt) => {
+    md.core.ruler.after('inline', 'replace-link', (state: StateCore) => {
+        state.tokens.forEach(function (blockToken) {
+          if (blockToken.type === 'inline' && blockToken.children) {
+            blockToken.children.forEach(function (token) {
+              const type = token.type;
+              if (type === 'link_open') {
+                replaceAttr(token, 'href', replaceLink, state.env)
+              } else if (type === 'image') {
+                replaceAttr(token, 'src', replaceLink, state.env)
+              }
+            })
+          }
+        })
+        return false;
+    })
 });
 
 ko.bindingHandlers.markdowned = {
@@ -141,7 +178,9 @@ ko.bindingHandlers.markdowned = {
     },
     update: function (element, valueAccessor, allBindings, vieModel, bindingContext) {
         let code = ko.unwrap(valueAccessor());
-        element.innerHTML = md.render(code);
+        element.innerHTML = md.render(code.value, code.assignment && code.assignment() ? {
+            downloadUrl: (link: string) => window["$URL_ROOT"] + `blockpy/download_file?placement=assignment&directory=${code.assignment().id}&filename=${link}`
+        } : {downloadUrl: (link: string) => link});
         let codeBlocks = element.querySelectorAll("pre code");
         codeBlocks.forEach((block: HTMLElement) => hljs.highlightBlock(block));
         ko.applyBindingsToDescendants(bindingContext, element);
@@ -308,3 +347,47 @@ ko.bindingHandlers.option = {
     }
 };
 
+FilePond.registerPlugin(FilePondPluginImagePreview);
+
+ko.bindingHandlers.filepond = {
+    init: function (element, valueAccessor, allBindingAccessors) {
+        let options = valueAccessor();
+        console.log("Initial options:", options);
+        options.server.fileStore.listFiles(options.onlyPlacements || [], options.submission).then((fileRecord: BlockPyFileRecord) => {
+            const allFiles: FilePond.FilePondInitialFile[] = [];
+            Object.entries(fileRecord).forEach(([group, files]) => {
+                files.forEach(([filename, url]: [string, string])=>allFiles.push({
+                    source: url,
+                    options: {
+                        type: 'local',
+                        /*file: {name: filename}*/
+                    }
+                }));
+            });
+            element.filepond = FilePond.create(element, {
+                files: allFiles,
+                server: {
+                    url: window["$URL_ROOT"],
+                    load: (source, load) => {
+                        console.log(source);
+                        const params = new URL(window["$URL_ROOT"]+source).searchParams;
+                        ajax_get_file(source).then((data) => {
+                            console.log(data, params.get("filename"));
+                            load(new File([data], params.get("filename")));
+                        });
+                    },
+                    process: {
+                        url: "blockpy/upload_file?placement=assignment&directory="+options.assignment().id,
+                    }
+                }
+            });
+        });
+        ko.utils.domNodeDisposal.addDisposeCallback(element, function () {
+            element.filepond.destroy();
+        });
+    },
+    update: function (element, valueAccessor) {
+        let newOptions = ko.unwrap(valueAccessor());
+        console.log("New OPtions:", newOptions);
+    }
+};

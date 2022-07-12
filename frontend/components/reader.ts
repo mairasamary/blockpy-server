@@ -1,3 +1,14 @@
+/***
+ * ### Supporting BlockPy Inside of Readers ###
+ * Add a new "part ID" to configuration settings in BlockPy, set when the instance is loaded.
+ *     That narrows what is rendered in the area and what is saved in the whole thing
+ * Load the plugin in Reader
+ *     https://github.com/markdown-it/markdown-it-container
+ *     Add a new set of tags for BlockPy regions (including the required Part ID)
+ * On backend, need to handle the Part ID for saving/loading files, to only update part of the region of the file.
+ *     Also needs to make "starting_code" work more intelligently - it should make it based on the file type
+ */
+
 import * as ko from 'knockout';
 import {Server} from "./server";
 import {User} from "../models/user";
@@ -11,6 +22,10 @@ import {AssignmentInterface, AssignmentInterfaceJson, EditorMode} from "./assign
 
 export const LOG_TIME_RATE = 30000;
 
+interface ReaderInterfaceJson extends AssignmentInterfaceJson {
+    asPreamble: boolean
+}
+
 export class Reader extends AssignmentInterface {
     logTimer: NodeJS.Timeout
     logCount: number
@@ -20,6 +35,8 @@ export class Reader extends AssignmentInterface {
     slides: ko.Observable<string>;
     summary: ko.Observable<string>;
 
+    asPreamble: ko.Observable<boolean>;
+
     errorMessage: ko.Observable<string>;
     editorMode: ko.Observable<EditorMode>;
 
@@ -28,7 +45,7 @@ export class Reader extends AssignmentInterface {
         windowPositioning: (event: Event) => void
     }
 
-    constructor(params: AssignmentInterfaceJson) {
+    constructor(params: ReaderInterfaceJson) {
         super(params);
         this.subscriptions = {currentAssignmentId: null, windowPositioning: null};
         this.logCount = 0;
@@ -36,6 +53,7 @@ export class Reader extends AssignmentInterface {
         this.header = ko.observable<string>("");
         this.slides = ko.observable<string>("");
         this.summary = ko.observable<string>("");
+        this.asPreamble = ko.observable<boolean>(params.asPreamble || false);
 
         this.editorMode = ko.observable(EditorMode.SUBMISSION);
         this.errorMessage = ko.observable("");
@@ -54,6 +72,7 @@ export class Reader extends AssignmentInterface {
             let BlockPyServer = window['$MAIN_BLOCKPY_EDITOR'].components.server;
             let data = BlockPyServer.createServerData();
             data["assignment_id"] = assignmentId;
+            this.assignment(null);
             BlockPyServer._postBlocking("loadAssignment", data, 4,
                 (response: any) => {
                     if (response.success) {
@@ -123,6 +142,10 @@ export class Reader extends AssignmentInterface {
             // @ts-ignore
             this.ytPlayer = new YT.Player('reader-youtube-video', {
                 // TODO: log 'onPlaybackRateChange'
+                playerVars: {
+                    origin: window["$URL_ROOT"],
+                    enablejsapi: 1,
+                },
                 events: {
                     'onStateChange': this.logWatching.bind(this)
                 }
@@ -134,14 +157,14 @@ export class Reader extends AssignmentInterface {
     }
 
     getWindowPositioning(event: any) {
-        let data = JSON.parse(event.data);
-        if (data.subject === "lti.fetchWindowSize") {
+        let data = (typeof event.data === "string") ? JSON.parse(event.data) : event.data;
+        if (data.subject === "lti.fetchWindowSize" || data.subject === "lti.fetchWindowSize.response") {
             this.logReading(data);
         }
     }
 
     logReadingStart(assignmentId: number) {
-        window.parent.postMessage(JSON.stringify({subject: "lti.fetchWindowSize"}), "*");
+        window.top.postMessage({subject: "lti.fetchWindowSize"}, "*");
     }
 
     logReading(positionData: any) {
@@ -198,7 +221,7 @@ export class Reader extends AssignmentInterface {
                (response: any) => {
                     //console.log(response.message.feedbacks);
                     if (response.success || response.message.message === "Generic LTI Failure - perhaps not logged into LTI session?") {
-                        console.log(response);
+                        //console.log(response);
                     }
                     if (!response.success) {
                         console.error(response);
@@ -206,7 +229,7 @@ export class Reader extends AssignmentInterface {
                     }
                     this.submission().submissionStatus(response.submission_status);
                     this.submission().correct(response.correct);
-                    if (response.correct) {
+                    if (response.correct && this.markCorrect) {
                         this.markCorrect(this.assignment().id);
                     }
                },
@@ -225,12 +248,12 @@ export const EDITOR_HTML = `
 <div class="alert alert-warning p-1 border rounded float-right" data-bind="text: errorMessage, visible: errorMessage().length"></div>
 
 <!-- Instructor Editor Mode Selector -->
-<div data-bind="if: isInstructor()">
+<div data-bind="if: isInstructor() && !asPreamble()">
     <!-- Instructor Editor Mode Selector -->
     <div class="form-check">
         <label class="form-check-label">
             <input data-bind="checked: editorMode"
-               id="editor-mode-radio" name="editor-mode-radio"
+               id="reader-editor-mode-radio" name="reader-editor-mode-radio"
                class="form-check-input" type="radio" value="RAW">
             Raw Editor
         </label>
@@ -238,7 +261,7 @@ export const EDITOR_HTML = `
     <div class="form-check">
         <label class="form-check-label">
             <input data-bind="checked: editorMode"
-                   id="editor-mode-radio" name="editor-mode-radio"
+                   id="reader-editor-mode-radio" name="reader-editor-mode-radio"
                    class="form-check-input" type="radio" value="FORM">
             Form Editor
         </label>
@@ -246,7 +269,7 @@ export const EDITOR_HTML = `
     <div class="form-check">
         <label class="form-check-label">
             <input data-bind="checked: editorMode"
-               id="editor-mode-radio" name="editor-mode-radio"
+               id="reader-editor-mode-radio" name="reader-editor-mode-radio"
                class="form-check-input" type="radio" value="SUBMISSION">
             Actual Reader
         </label>
@@ -291,6 +314,8 @@ export const EDITOR_HTML = `
         </div>
         <h6>Additional Settings</h6>
         <div data-bind="jsoneditor: {value: assignment().settings}" style="width: 100%; height: 300px"></div><br>
+        <h6>Assignment Files</h6>
+        <div data-bind="filepond: {server: server, submission: submission, assignment: assignment}"></div><br>
     </div>
 </div>
 `;
@@ -313,9 +338,9 @@ export const READER_HTML = `
     </a>
     <!-- Body -->
     <div  style="background: #FBFAF7" class="pt-4">
-        <h3 data-bind="text: header(), hidden: !header().length"></h3>
-        <div data-bind="text: summary(), hidden: !summary().length"></div>
-        <iframe style="width: 640px; height: 480px;"
+        <h3 data-bind="text: header(), hidden: !header().length" class="p-1"></h3>
+        <div data-bind="text: summary(), hidden: !summary().length" class="p-1"></div>
+        <iframe style="width: 640px; height: 480px; margin-left: 10%"
             width="300" height="150" allowfullscreen="allowfullscreen"
             webkitallowfullscreen="webkitallowfullscreen"
             mozallowfullscreen="mozallowfullscreen"
@@ -324,7 +349,7 @@ export const READER_HTML = `
                               src: 'https://www.youtube.com/embed/'+youtube()+'?feature=oembed&rel=0&enablejsapi=1'},
                        hidden: !youtube().length">
         </iframe>
-        <div data-bind="markdowned: assignment().instructions()"
+        <div data-bind="markdowned: {value: assignment().instructions(), assignment: assignment}"
             class="p-4"></div>
         <hr>
     </div>

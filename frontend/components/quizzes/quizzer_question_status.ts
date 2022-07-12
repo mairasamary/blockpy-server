@@ -10,7 +10,7 @@ export const QUIZZER_QUESTION_STATUS_HTML = `
     <!-- /ko -->
     <span data-bind="switch: statusCode, attr: {title: 'Question '+indexId()}">
         <!-- ko case: 'unanswered' -->
-            <i class="far fa-square text-secondary"></i>
+            <i class="far fa-square text-secondary" style="background-color: white"></i>
         <!-- /ko -->
         <!-- ko case: 'answered' -->
             <i class="fas fa-square text-secondary"></i>

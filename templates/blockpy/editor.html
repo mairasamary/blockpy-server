@@ -11,59 +11,7 @@
 
 {% block extrahead %}
 
-    {% assets "blockpy_css" %}
-        <link rel="stylesheet" href="{{ ASSET_URL }}"/>
-    {% endassets %}
-
-    {% assets "blockly_js" %}
-        <script type="text/javascript" src="{{ ASSET_URL }}"></script>
-    {% endassets %}
-
-    {% assets "skulpt_js" %}
-        <script type="text/javascript" src="{{ ASSET_URL }}"></script>
-    {% endassets %}
-
-    {% assets "pedal_js" %}
-        <script type="text/javascript" src="{{ ASSET_URL }}"></script>
-    {% endassets %}
-
-    {% assets "designer_js" %}
-        <script type="text/javascript" src="{{ ASSET_URL }}"></script>
-    {% endassets %}
-
-    {% assets "blockpy_js" %}
-        <script type="text/javascript" src="{{ ASSET_URL }}"></script>
-    {% endassets %}
-
-    <style>
-        .embedded-data {
-            display: none;
-        }
-
-        .correct-submission {
-            background-color: #ded;
-        }
-
-        .incorrect-submission {
-            background-color: #edd;
-        }
-
-        .secret-submission {
-            background-color: #dde;
-        }
-
-        reader h4 {
-            padding-top: 10px;
-            padding-bottom: 10px;
-        }
-
-        reader blockquote {
-            padding-right: 20px;
-            font-style: italic;
-        }
-    </style>
-
-
+    {% include 'blockpy/editor_includes.html' with context %}
 
 {% endblock %}
 
@@ -105,6 +53,15 @@
     <!-- Main BlockPy canvas -->
     <div id="blockpy-div" style='height:100%'></div>
     <div id="extras-div" style="height: 100%">
+        <!-- ko if: assignmentType() == 'textbook' -->
+        <textbook params="server: server,
+                          courseId: courseId,
+                          currentAssignmentId: currentTextbookAssignmentId,
+                          assignmentGroupId: assignmentGroupId,
+                          isInstructor: isInstructor,
+                          markCorrect: markCorrect,
+                          user: user"></textbook>
+        <!-- /ko -->
         <!-- ko if: assignmentType() == 'quiz' -->
         <quizzer params="server: server,
                          courseId: courseId,
@@ -121,6 +78,7 @@
                         assignmentGroupId: assignmentGroupId,
                         isInstructor: isInstructor,
                         markCorrect: markCorrect,
+                        asPreamble: false,
                         user: user"></reader>
         <!-- /ko -->
     </div>
@@ -132,6 +90,7 @@
     <script>
         const QUIZZES = {{ quiz_questions|tojson }};
         const READINGS = {{ readings|tojson }};
+        const TEXTBOOKS = {{ textbooks|tojson }};
 
         $(document).ready(function () {
             // Load in Quiz interface
@@ -148,6 +107,7 @@
                 isInstructor: {{  (role in ("owner", "grader")) | tojson }},
                 currentQuizAssignmentId: ko.observable(null),
                 currentReadingAssignmentId: ko.observable(null),
+                currentTextbookAssignmentId: ko.observable(null),
                 assignmentType: ko.observable(null),
                 assignmentGroupId: {{ (assignment_group_id or None)|tojson }},
                 markCorrect: markCorrect
@@ -217,17 +177,25 @@
             // System for switching assignments
             function loadAssignmentWrapper(id) {
                 id = parseInt(id, 10);
-                if (QUIZZES.includes(id) || READINGS.includes(id)) {
+                if (QUIZZES.includes(id) || READINGS.includes(id) || TEXTBOOKS.includes(id)) {
                     editor.hide();
                     //$("quizzer").show();
                     //console.log(mainModel.currentAssignmentId(), mainModel.assignmentType());
-                    mainModel.assignmentType(QUIZZES.includes(id) ? 'quiz' : 'reading');
                     if (QUIZZES.includes(id)) {
+                        mainModel.assignmentType('quiz');
                         mainModel.currentQuizAssignmentId(id);
                         mainModel.currentReadingAssignmentId(null);
-                    } else {
+                        mainModel.currentTextbookAssignmentId(null);
+                    } else if (READINGS.includes(id)) {
+                        mainModel.assignmentType('reading');
                         mainModel.currentReadingAssignmentId(id);
                         mainModel.currentQuizAssignmentId(null);
+                        mainModel.currentTextbookAssignmentId(null);
+                    } else if (TEXTBOOKS.includes(id)) {
+                        mainModel.assignmentType('textbook');
+                        mainModel.currentReadingAssignmentId(null);
+                        mainModel.currentQuizAssignmentId(null);
+                        mainModel.currentTextbookAssignmentId(id);
                     }
                 } else {
                     //$("quizzer").hide();
@@ -235,6 +203,7 @@
                     editor.loadAssignment(id);
                     mainModel.currentQuizAssignmentId(null);
                     mainModel.currentReadingAssignmentId(null);
+                    mainModel.currentTextbookAssignmentId(null);
                     mainModel.assignmentType(null);
                 }
             }

@@ -97,7 +97,8 @@ class Base(Model):
             ignored, renamed = cls.SCHEMA_V2_IGNORE_COLUMNS, cls.SCHEMA_V2_RENAME_COLUMNS
         else:
             raise Exception("Unknown schema version: {}".format(data.get('_schema_version', "Unknown")))
-        data['date_created'] = string_to_datetime(data['date_created'])
+        if 'date_created' in data:
+            data['date_created'] = string_to_datetime(data['date_created'])
         for old, new in renamed:
             data[new] = data.pop(old)
         for key, value in kwargs.items():

@@ -35,6 +35,8 @@ bundles = {
         'libs/codemirror/python.js',
         'libs/codemirror/shell.js',
         'libs/codemirror/yaml-frontmatter.js',
+        # Filepond
+        'libs/filepond/filepond.min.js',
         # D3
         'libs/d3/d3.6.3.1.min.js',
         # Output
@@ -96,6 +98,8 @@ bundles = {
         'libs/codemirror/codemirror.css',
         # jsoneditor
         'libs/jsoneditor/jsoneditor.css',
+        # filepond
+        'libs/filepond/filepond.min.css',
         # Output
         output='gen/libs.css'
     ),

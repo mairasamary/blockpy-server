@@ -59,6 +59,7 @@ def sorter(membership):
 
 
 def import_bundle(bundle, owner_id, course_id=None, update=True):
+    # TODO: Modify to return the items that were updated!
     if 'course' in bundle:
         course = Course.decode_json(bundle['course'], owner_id=owner_id)
         db.session.add(course)

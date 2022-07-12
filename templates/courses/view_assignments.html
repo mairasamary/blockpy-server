@@ -90,6 +90,8 @@ tr.hover-remove-rows button.remove-button {
     <!--- Non-default assignments -->
     
     {% for group in groups %}
+
+        {% if (group.get_assignments()|selectattr('public'))|list or is_instructor %}
     
     <tr class="table-active hover-remove-rows">
         <td class="col-md-12 col-sm-12 col-xs-12" colspan="{{ '2' if is_instructor else '3' }}">
@@ -105,28 +107,42 @@ tr.hover-remove-rows button.remove-button {
         </td>
         {% endif %}
     </tr>
-    
+
     {% for assignment in group.get_assignments() %}
-    
-    <tr class='hover-movers-rows'>
-        <td class=''>
-            <a href="{{ url_for('assignments.load', assignment_id=assignment.id, course_id=course_id) }}">
-                <strong>{{ assignment.title() }}</strong></a><br>
-            Last modified at
-            <span>
-                {{ assignment.date_modified.strftime(" %I:%M%p on %a %d, %b %Y").replace(" 0", " ") }}
-            </span>
-        </td>
-        <td class=''>
-            <span>{{ assignment.instructions|safe }}</span>
-        </td>
-        <td></td>
-    </tr>
+
+
+    {% if (not assignment.hidden and assignment.public) or is_instructor %}
+
+
+            <tr class='hover-movers-rows'>
+                <td class='col-sm-2'>
+                    <a href="{{ url_for('assignments.load', assignment_id=assignment.id, course_id=course_id) }}">
+                        <strong>{{ assignment.title() }}</strong></a><br>
+                    Last modified at
+                    <span>
+                        {{ assignment.date_modified.strftime(" %I:%M%p on %a %d, %b %Y").replace(" 0", " ") }}
+                    </span>
+                </td>
+                <td class='col-sm-10'>
+                    {% if assignment.type == 'quiz' %}
+                        <span>{{ (assignment.instructions|json_load).get('questions')|length }} questions</span>
+                    {% elif assignment.type == 'maze' %}
+                        <span>Maze level {{ assignment.instructions }}</span>
+                    {% else %}
+                        <span>{{ assignment.instructions|truncate }}</span>
+                    {% endif %}
+                </td>
+                <td></td>
+            </tr>
+
+        {% endif %}
+
+    {% endfor %}
+
+        {% endif %}
     
     {% endfor %}
-    
-    {% endfor %}
-    
+
 </tbody>
 </table>
 

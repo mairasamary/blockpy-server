@@ -36,6 +36,8 @@ export interface QuizInstructionsSettings {
     questionsPerPage?: number
     /** What to use when choose the pool, for consistency */
     poolRandomness?: QuizPoolRandomness
+    /** The URL or ID of the reading to use as preamble, if there is one */
+    readingId?: number|null
 }
 
 export interface QuizInstructions {
@@ -70,7 +72,8 @@ export const EMPTY_QUIZ_INSTRUCTIONS_STRING = JSON.stringify({
         coolDown: -1,
         feedbackType: QuizFeedbackType.IMMEDIATE,
         questionsPerPage: -1,
-        poolRandomness: QuizPoolRandomness.SEED
+        poolRandomness: QuizPoolRandomness.SEED,
+        readingId: null
     },
     pools: []
 });
@@ -105,6 +108,7 @@ export function fillInMissingQuizInstructionFields(quizInstructions: QuizInstruc
     quizInstructions.settings.feedbackType ??= QuizFeedbackType.IMMEDIATE;
     quizInstructions.settings.questionsPerPage ??= -1;
     quizInstructions.settings.poolRandomness ??= QuizPoolRandomness.ATTEMPT;
+    quizInstructions.settings.readingId ??= null;
 }
 
 
@@ -123,20 +127,25 @@ export class Quiz {
 
     feedbackType: ko.Observable<QuizFeedbackType>;
 
+    readingId: ko.Observable<number|null>;
     attemptLimit: ko.Observable<number>;
     attemptsLeft: ko.PureComputed<string>;
     canAttempt: ko.PureComputed<boolean>;
 
     pools: ko.Observable<QuestionPool[]>;
 
-    constructor(assignment: Assignment, submission: Submission) {
+    lookupReading: (s: string) => Promise<number>;
+
+    constructor(assignment: Assignment, submission: Submission, lookupReading: (s: string)=> Promise<number>) {
         this.questions = ko.observableArray([]);
         this.questionMap = {};
         this.attempting = ko.observable(false);
         this.attemptCount = ko.observable(0);
         this.attemptMulligans = ko.observable(0);
         this.attemptLimit = ko.observable<number>(-1);
+        this.readingId = ko.observable<number|null>(null);
         this.feedbackType = ko.observable<QuizFeedbackType>(QuizFeedbackType.IMMEDIATE);
+        this.lookupReading = lookupReading;
 
         this.pools = ko.observable<QuestionPool[]>([]);
         this.poolRandomness = ko.observable<QuizPoolRandomness>(QuizPoolRandomness.SEED);
@@ -207,6 +216,12 @@ export class Quiz {
         this.attemptCount(currentAnswer.attempt.count);
         this.attemptMulligans(currentAnswer.attempt.mulligans);
         this.attemptLimit(instructions.settings.attemptLimit);
+        if (typeof instructions.settings.readingId === 'string') {
+            this.lookupReading(instructions.settings.readingId).then((id) => this.readingId(id));
+        } else {
+            this.readingId(instructions.settings.readingId);
+        }
+        //console.log(instructions.settings);
         this.feedbackType(instructions.settings.feedbackType);
         this.poolRandomness(instructions.settings.poolRandomness);
         this.includeFeedbacks(currentAnswer.feedback);

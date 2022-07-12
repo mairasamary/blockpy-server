@@ -242,6 +242,11 @@ class Course(Base):
         return Course.query.filter_by(url=course_url).first()
 
     @staticmethod
+    def by_id_or_url(course_id_or_url):
+        return (Course.query.filter_by(id=course_id_or_url).first() or
+                Course.query.filter_by(url=course_id_or_url).first())
+
+    @staticmethod
     def from_lti(service, lti_context_id, name, user_id, endpoint=""):
         lti_course = Course.query.filter_by(external_id=lti_context_id).first()
         if lti_course is None:

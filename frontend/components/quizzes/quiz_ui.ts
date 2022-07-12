@@ -1,3 +1,38 @@
+export const QUIZ_PREVIEW = `
+<div data-bind="switch: quiz()?.attemptStatus()">
+<p>
+    <!-- ko case: 'READY' -->
+        There is a quiz below this reading, which you have not started yet.
+        You have <span data-bind="text: quiz()?.attemptsLeft()"></span><br>
+        <div class="text-center" data-bind="visible: quiz()?.canAttempt()">
+            <a href="#quiz-start">Jump down</a> to begin the quiz.
+        </div>
+    <!-- /ko -->
+    <!-- ko case: 'ATTEMPTING' -->
+        There is a quiz in progress below this reading. 
+        <div class="text-center">
+            <a href="#quiz-start">Jump down</a> to return to the quiz.
+        </div>
+    <!-- /ko -->
+    <!-- ko case: 'COMPLETED' -->
+        You have completed the quiz below this reading.<br>
+        <span data-bind="switch: quiz()?.feedbackType()">
+            <!-- ko case: 'IMMEDIATE' -->
+            You can see the feedback for each question below.<br> 
+            <!-- /ko -->
+            <!-- ko case: 'NONE' -->
+            However, you will <strong>not</strong> see any feedback.<br>
+            <!-- /ko -->
+        </span>
+        You have <span data-bind="text: quiz()?.attemptsLeft()"></span><br>
+        <div class="text-center" data-bind="visible: quiz()?.canAttempt()">
+            <a href="#quiz-start">Jump down</a> to return to the quiz.
+        </div>
+    <!-- /ko -->
+</p>
+</div>
+`;
+
 
 export const INSTRUCTIONS_BAR_HTML = (position: string) => `
 <p>
@@ -29,9 +64,9 @@ export const INSTRUCTIONS_BAR_HTML = (position: string) => `
                 However, you will <strong>not</strong> see any feedback.<br>
                 <!-- /ko -->
             </span>
-            To try again, click "Start Quiz".<br>
             You have <span data-bind="text: quiz()?.attemptsLeft()"></span><br>
             <div class="text-center" data-bind="visible: quiz()?.canAttempt()">
+                To try again, click "Start Quiz".<br>
                 <button data-bind="click: startQuiz" class="btn btn-success">Try Quiz Again</button>
             </div>
         <!-- /ko -->
@@ -40,7 +75,7 @@ export const INSTRUCTIONS_BAR_HTML = (position: string) => `
 `
 
 export const QUIZZER_HTML = `
-<div data-bind="if: assignment">
+<div data-bind="if: assignment" style="background-color: #fcf8e3; padding-bottom: 1px; padding-top: 1px">
     <div>
         <!-- Errors -->
         <div class="alert alert-warning p-1 border rounded float-right" data-bind="text: errorMessage, visible: errorMessage().length"></div>
@@ -51,7 +86,7 @@ export const QUIZZER_HTML = `
             <div class="form-check">
                 <label class="form-check-label">
                     <input data-bind="checked: editorMode"
-                       id="editor-mode-radio" name="editor-mode-radio"
+                       id="quizzer-editor-mode-radio" name="quizzer-editor-mode-radio"
                        class="form-check-input" type="radio" value="RAW">
                     Raw Editor
                 </label>
@@ -59,7 +94,7 @@ export const QUIZZER_HTML = `
             <div class="form-check">
                 <label class="form-check-label">
                     <input data-bind="checked: editorMode"
-                           id="editor-mode-radio" name="editor-mode-radio"
+                           id="quizzer-editor-mode-radio" name="quizzer-editor-mode-radio"
                            class="form-check-input" type="radio" value="FORM">
                     Form Editor
                 </label>
@@ -67,7 +102,7 @@ export const QUIZZER_HTML = `
             <div class="form-check">
                 <label class="form-check-label">
                     <input data-bind="checked: editorMode"
-                       id="editor-mode-radio" name="editor-mode-radio"
+                       id="quizzer-editor-mode-radio" name="quizzer-editor-mode-radio"
                        class="form-check-input" type="radio" value="SUBMISSION">
                     Actual Submission
                 </label>
@@ -130,9 +165,6 @@ export const QUIZZER_HTML = `
             </div>
         </div>
         
-        <!-- Main Instructions -->
-        ${INSTRUCTIONS_BAR_HTML('below')}
-        
         <!-- Interface Settings -->
         <div data-bind="visible: isInstructor">
             <div class="form-check">
@@ -141,6 +173,25 @@ export const QUIZZER_HTML = `
                     class="form-control" data-bind="checked: asStudent">
                 <label class="form-check-label"  for="quizzer-as-student">View As Student</label>
             </div>
+        </div>
+        
+        <!-- Reading Preamble -->
+        <div data-bind="if: quiz()?.readingId() && editorMode() === 'SUBMISSION' && asStudent()">
+            <reader params="server: server,
+                            courseId: courseId,
+                            currentAssignmentId: quiz().readingId(),
+                            assignmentGroupId: assignmentGroupId,
+                            isInstructor: isInstructor,
+                            markCorrect: ()=>{},
+                            asPreamble: true,
+                            user: user"></reader>
+        </div>
+        
+        <!-- Main Instructions -->
+        ${INSTRUCTIONS_BAR_HTML('below')}
+        
+        <!-- Interface Settings -->
+        <div data-bind="visible: isInstructor">
             <!-- ko if: quiz() -->
             <div class="form-group">
                 <label for="quizzer-seed-editor">
@@ -163,6 +214,8 @@ export const QUIZZER_HTML = `
         </div>
     
     </div>
+    
+    <a id="quiz-start"></a>
     
     <!-- ko if: editorMode() === 'SUBMISSION' -->
     <div data-bind="foreach: quiz()?.questions().filter(question => !asStudent() || question.visible())">
@@ -194,7 +247,7 @@ export const QUIZZER_HTML = `
                     <textarea data-bind="markdowneditor: {value: $data.rawBody}" style="width: 100%; height: 200px"></textarea>
                     <!-- /ko -->
                     <div data-bind="visible: !$data.editing(), 
-                                    markdowned: $parent.quiz().makeBody($data, $index())"></div>
+                                    markdowned: {value: $parent.quiz().makeBody($data, $index())}"></div>
                     <!-- Actual Question Code -->
                     <div data-bind="switch: type">
                         <!-- True/False Question -->

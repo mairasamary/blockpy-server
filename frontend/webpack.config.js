@@ -1,21 +1,31 @@
+const webpack = require('webpack');
 const path = require('path');
 
 module.exports = {
+  //cache: true,
   entry: './app.ts',
   module: {
     rules: [
       {
         test: /\.tsx?$/,
         use: 'ts-loader',
-        exclude: /node_modules/,
+        /*include: [
+            path.resolve(__dirname, 'components/'),
+            path.resolve(__dirname, 'models/'),
+            path.resolve(__dirname, 'utilities/'),
+        ],*/
+        exclude: [
+            /node_modules/
+        ],
       },
       {
         test: /\.css$/i,
         use: ["style-loader", "css-loader"],
+        //exclude: /node_modules/,
       },
     ],
   },
-  devtool: 'source-map',
+  devtool: 'eval-cheap-module-source-map',
   resolve: {
     extensions: [ '.tsx', '.ts', '.js' ],
   },
@@ -31,6 +41,10 @@ module.exports = {
     "highlight.js": 'hljs',
     jquery: "jQuery",
     "$URL_ROOT": "$URL_ROOT",
-    codemirror: 'CodeMirror'
-  }
+    codemirror: 'CodeMirror',
+    filepond: 'FilePond'
+  }/*,
+  plugins: [
+      new webpack.debug.ProfilingPlugin()
+  ]*/
 };

@@ -1,7 +1,7 @@
 import json
 
 import flask_security
-from flask import Blueprint, request, Response, jsonify, abort
+from flask import Blueprint, request, Response, jsonify, abort, g
 
 from controllers.helpers import get_course_id, get_user, check_resource_exists, require_request_parameters
 from models.assignment import Assignment
@@ -23,7 +23,9 @@ def load_api_user():
     email = request.json.get('email')
     password = request.json.get('password')
     if email is None or password is None:
-        abort(400, "Missing email or password arguments")  # missing arguments
+        if g.user is None:
+            abort(400, "Missing email or password arguments")  # missing arguments
+        return g.user
     user = User.find_student(email)
     if not user:
         abort(400, "No user with email '{}' found.".format(email))  # Could not find user
@@ -98,9 +100,9 @@ def import_endpoint():
             return abort(400, "Not an instructor in this assignments' course.")
     groups = request.json.get('groups', [])
     for group in groups:
-        group = Assignment.by_url(group['url'])
+        group = AssignmentGroup.by_url(group['url'])
         if not user.is_instructor(group.course_id):
-            return abort(400, "Not an instructor in this assignments' course.")
+            return abort(400, "Not an instructor in this assignment groups' course.")
     # TODO: Verify that memberships are all attached to a group owned by this user
     import_bundle(request.json, owner_id=user.id, course_id=course_id)
     return jsonify(success=True)

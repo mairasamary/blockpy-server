@@ -7,7 +7,8 @@ from typing import Tuple
 from slugify import slugify
 from natsort import natsorted
 
-from flask import Blueprint, url_for, session, request, jsonify, g, render_template, redirect, Response
+from flask import Blueprint, url_for, session, request, jsonify, g, render_template, redirect, Response, \
+    send_from_directory
 from werkzeug.utils import secure_filename
 
 from controllers.pylti.common import LTIPostMessageException
@@ -132,14 +133,17 @@ def load_editor(lti, editor_information):
     :param editor_information:
     :return:
     '''
-    quiz_questions, readings = [], []
+    quiz_questions, readings, textbooks = [], [], []
     for assignment in editor_information.get('assignments', []):
         if assignment.type == 'quiz':
             quiz_questions.append(assignment.id)
         elif assignment.type == 'reading':
             readings.append(assignment.id)
+        elif assignment.type == 'textbook':
+            textbooks.append(assignment.id)
     return render_template('blockpy/editor.html', lti=lti, ip=request.remote_addr,
                            quiz_questions=quiz_questions, readings=readings,
+                           textbooks=textbooks,
                            **editor_information)
 
 
@@ -451,6 +455,11 @@ def update_submission(lti, lti_exception=None):
     # TODO: If failure on previous submission grading, then retry
     if was_changed or force_update:
         submission.save_block_image(image)
+        if submission.user.is_grader():
+            return ajax_success({"submitted": False, "changed": was_changed, "correct": correct,
+                                 "feedbacks": feedbacks, 'submission_status': submission.submission_status,
+                                 "grading_status": submission.grading_status,
+                                 "message": "Submission user is grader, cannot submit to LMS."})
         error = "Generic LTI Failure - perhaps not logged into LTI session?"
         try:
             success, score = lti_post_grade(lti, submission, lis_result_sourcedid, assignment_group_id,
@@ -498,13 +507,19 @@ def update_submission_status(lti, lti_exception=None):
 
 @blueprint_blockpy.route('/upload_file/', methods=['GET', 'POST'])
 @blueprint_blockpy.route('/upload_file', methods=['GET', 'POST'])
-@require_request_parameters('placement', 'directory', 'filename')
+@require_request_parameters('placement', 'directory')
 def upload_file():
     # Get parameters
     placement = request.values.get('placement')
     directory = request.values.get('directory')
-    filename = secure_filename(request.values.get('filename'))
-    contents = request.files.get('contents')
+    filepond_mode = False
+    if 'filename' not in request.values and 'filepond' in request.files:
+        contents = request.files.get('filepond')
+        filename = secure_filename(contents.filename)
+        filepond_mode = True
+    else:
+        filename = secure_filename(request.values.get('filename'))
+        contents = request.files.get('contents')
     delete = maybe_bool(request.values.get('delete', 'False'))
     user, user_id = get_user()
     if None in (placement, directory, filename, contents):
@@ -570,6 +585,8 @@ def upload_file():
             contents.save(file_path)
             endpoint = url_for("blockpy.download_file", _external=True,
                                placement=placement, directory=directory, filename=filename)
+            if filepond_mode:
+                return endpoint
             return ajax_success({"success": True, "endpoint": endpoint})
         except IOError as e:
             return ajax_failure(str(e))
@@ -596,9 +613,10 @@ def download_file():
     # app.config['UPLOADS_DIR']
     files_folder = "/".join(('uploads', 'files', placement))
     # Okay, we got this far, create it!
-    file_path = "/".join((files_folder, secure_filename(directory), secure_filename(filename)))
-    print(file_path)
-    return app.send_static_file(file_path)
+    file_path = "/".join((files_folder, secure_filename(directory), filename))
+    return send_from_directory(
+        app.static_folder, file_path, attachment_filename=filename
+    )
 
 
 @blueprint_blockpy.route('/list_files/', methods=['GET', 'POST'])
@@ -607,6 +625,7 @@ def download_file():
 def list_files():
     submission_id = maybe_int(request.values.get("submission_id"))
     global_directory = request.values.get('global_directory', 'any')
+    only_placements = {p for p in request.values.get('only_placements', '').split(',') if p}
     course_id = get_course_id()
     user, user_id = get_user()
     # Get submission
@@ -626,6 +645,8 @@ def list_files():
                   ('submission', 'submission', submission.id)]
     file_lists = {}
     for name, placement, directory in placements:
+        if only_placements and placement not in only_placements:
+            continue
         files_folder = os.path.join(app.config['UPLOADS_DIR'], 'files', placement, str(directory))
         if os.path.exists(files_folder):
             for filename in os.listdir(files_folder):

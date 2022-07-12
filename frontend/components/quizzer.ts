@@ -15,6 +15,7 @@ import {QUIZZER_HTML} from './quizzes/quiz_ui';
 // TODO: Check for orphaned feedbacks and answers
 // TODO: Click to edit component in modal
 // TODO: One question at a time
+// TODO: "Validate" mode that shows off whether quiz is valid (questions/feedback work)
 
 // TODO: Click to edit the markdown of a question
 
@@ -94,6 +95,10 @@ export class Quizzer extends AssignmentInterface {
         this.subscriptions.questions.map((question: ko.Subscription) => question.dispose());
     }
 
+    lookupReading(readingUrl: string): Promise<number> {
+        return this.server.assignmentStore.getIdByUrl(readingUrl);
+    }
+
     loadQuiz(assignmentId: number) {
         if (assignmentId != null) {
             let BlockPyServer = window['$MAIN_BLOCKPY_EDITOR'].components.server;
@@ -107,7 +112,7 @@ export class Quizzer extends AssignmentInterface {
                         this.assignment(assignment);
                         this.submission(submission);
                         //console.log(submission, submission.code);
-                        this.quiz(new Quiz(assignment, submission));
+                        this.quiz(new Quiz(assignment, submission, this.lookupReading.bind(this)));
                         this.markClean();
                         console.log(this.quiz())
                     } else {

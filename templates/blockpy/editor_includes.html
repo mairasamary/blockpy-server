@@ -1,0 +1,61 @@
+
+{% assets "blockpy_css" %}
+    <link rel="stylesheet" href="{{ ASSET_URL }}"/>
+{% endassets %}
+
+{% assets "blockly_js" %}
+    <script type="text/javascript" src="{{ ASSET_URL }}"></script>
+{% endassets %}
+
+{% assets "skulpt_js" %}
+    <script type="text/javascript" src="{{ ASSET_URL }}"></script>
+{% endassets %}
+
+{% assets "pedal_js" %}
+    <script type="text/javascript" src="{{ ASSET_URL }}"></script>
+{% endassets %}
+
+{% assets "designer_js" %}
+    <script type="text/javascript" src="{{ ASSET_URL }}"></script>
+{% endassets %}
+
+{% assets "blockpy_js" %}
+    <script type="text/javascript" src="{{ ASSET_URL }}"></script>
+{% endassets %}
+
+<style>
+    .embedded-data {
+        display: none;
+    }
+
+    .correct-submission {
+        background-color: #ded;
+    }
+
+    .incorrect-submission {
+        background-color: #edd;
+    }
+
+    .secret-submission {
+        background-color: #dde;
+    }
+
+    reader h4 {
+        padding-top: 10px;
+        padding-bottom: 10px;
+    }
+
+    reader blockquote {
+        padding-right: 20px;
+        font-style: italic;
+    }
+
+    reader img {
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+        max-height: 256px;
+    }
+
+</style>
+

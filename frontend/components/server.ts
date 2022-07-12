@@ -4,6 +4,7 @@ import {AssignmentGroupJson, AssignmentGroupStore} from "../models/assignment_gr
 import {CourseJson, CourseStore} from "../models/course";
 import {ReviewJson, ReviewStore} from "../models/review";
 import {SubmissionJson, SubmissionStore} from "../models/submission";
+import {FileStore} from "../models/files";
 
 export interface ServerIds {
     userIds?: number[];
@@ -36,6 +37,7 @@ export class Server {
     assignmentGroupStore: AssignmentGroupStore;
     reviewStore: ReviewStore;
     submissionStore: SubmissionStore;
+    fileStore: FileStore;
 
     isLoading: ko.PureComputed<boolean>;
 
@@ -47,6 +49,7 @@ export class Server {
         this.assignmentGroupStore = new AssignmentGroupStore(this, courseId, initialIds.assignmentGroupIds, initialData.assignmentGroups);
         this.reviewStore = new ReviewStore(this, courseId, initialIds.reviewIds, initialData.reviews);
         this.submissionStore = new SubmissionStore(this, courseId, initialIds.submissionIds, initialData.submissions);
+        this.fileStore = new FileStore(this, courseId);
 
         this.isLoading = ko.pureComputed<boolean>(() => {
             let a = this.assignmentStore.isLoading();

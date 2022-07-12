@@ -729,7 +729,7 @@ export const SUBMISSION_REVIEW_INTERFACE_TEMPLATE = `
     <!-- ko foreach: lineReviews -->
     <tr>
         <!-- TODO: Markdown -->
-        <td data-bind="markdowned: $data.getText(), css: {'draft-comment': $data.state() === 'DRAFT'}"></td>
+        <td data-bind="markdowned: {value: $data.getText()}, css: {'draft-comment': $data.state() === 'DRAFT'}"></td>
         <td data-bind="text: $data.getScoreText()"></td>
     </tr>
     <!-- /ko -->
