@@ -32,33 +32,34 @@ function renameCourse() {
 <a href="{{ url_for('courses.index') }}">Back to all courses</a><br><br>
 
 {% if is_instructor %}
+<h3>Assignments</h3>
 <a href="{{ url_for('courses.assignments', course_id=course.id) }}" class='btn btn-outline-secondary'>Manage Assignments</a> Create, edit, reorganize, and remove assignments.<br><br>
+<a href="{{ url_for('courses.edit_points', course_id=course.id) }}" class='btn btn-outline-secondary'>Edit Points</a> Bulk Edit Points for assignments.<br><br>
+<a href="{{ url_for('courses.edit_settings', course_id=course.id) }}" class='btn btn-outline-secondary'>Edit Settings</a> Bulk Edit other settings for assignments.<br><br>
 <a href="{{ url_for('assignments.bulk_upload', course_id=course.id) }}" class='btn btn-outline-secondary'>Import Assignments</a> Load assignments exported from another course.<br><br>
+<a href="{{ url_for('courses.export', course_id=course.id) }}" class="btn btn-outline-secondary">Export Assignments</a> Export all the assignments and groups owned by this course.<br><br>
+<h3>Users</h3>
 <a href="{{ url_for('courses.manage_users', course_id=course.id) }}" class='btn btn-outline-secondary'>Manage Students</a> Add, edit, and remove the students who are in your course.<br><br>
-    <a href="{{ url_for('courses.edit_points', course_id=course.id) }}" class='btn btn-outline-secondary'>Edit Points</a> Bulk Edit Points for assignments.<br><br>
-    <a href="{{ url_for('courses.edit_settings', course_id=course.id) }}" class='btn btn-outline-secondary'>Edit Settings</a> Bulk Edit other settings for assignments.<br><br>
-    <a href="{{ url_for('courses.list_grading_failures', course_id=course.id) }}" class='btn btn-outline-secondary'>List Grading Failures</a> Review any students' submissions that triggered an error on the way to Canvas.<br><br>
-<button onclick="renameCourse()" class='btn btn-outline-secondary'>Rename Course</button> Rename this course.<br><br>
-    <a href="{{ url_for('courses.view_assignments', course_id=course.id) }}" class='btn btn-outline-secondary'>View Assignments as Student</a> View all the available assignments for this course as if you were a student.<br><br>
-{% else %}
-<a href="{{ url_for('courses.view_assignments', course_id=course.id) }}" class='btn btn-outline-secondary'>View Assignments</a> View all the available assignments for this course.<br><br>
 {% endif %}
 
-
 {% if is_grader %}
+    <h3>Student Submissions</h3>
     <a href="{{ url_for('courses.submissions_filter', course_id=course.id) }}" class='btn btn-outline-secondary'>View Submissions</a> Old-style review and grade all student submissions<br><br>
-    <a href="{{ url_for('courses.submissions_user', course_id=course.id, owner_id=g.user.id) }}" class='btn btn-outline-secondary'>View Your Submissions as Student</a> View your submissions as if you were a student<br><br>
     <a href="{{ url_for('courses.watch_events', course_id=course.id) }}" class='btn btn-outline-secondary'>Watch Submissions</a> New-style review and grade all student submissions<br><br>
     <a href="{{ url_for('courses.submissions_grid', course_id=course.id) }}" class='btn btn-outline-secondary'>View Grid</a> See all your students' assignment submissions' status in a big table.<br><br>
+    <a href="{{ url_for('courses.list_grading_failures', course_id=course.id) }}" class='btn btn-outline-secondary'>List Grading Failures</a> Review any students' submissions that triggered an error on the way to Canvas.<br><br>
+    <h3>Your Assignments</h3>
+    <a href="{{ url_for('courses.view_assignments', course_id=course.id) }}" class='btn btn-outline-secondary'>View Assignments as Student</a> View all the available assignments for this course as if you were a student.<br><br>
+    <a href="{{ url_for('courses.submissions_user', course_id=course.id, owner_id=g.user.id) }}" class='btn btn-outline-secondary'>View Your Submissions as Student</a> View your submissions as if you were a student<br><br>
 {% else %}
+    <a href="{{ url_for('courses.view_assignments', course_id=course.id) }}" class='btn btn-outline-secondary'>View Assignments</a> View all the available assignments for this course.<br><br>
     <a href="{{ url_for('courses.submissions_user', course_id=course.id, owner_id=g.user.id) }}" class='btn btn-outline-secondary'>View Your Submissions</a> View your submissions for all of the assignments.<br><br>
 {% endif %}
 
 {% if is_instructor %}
-
-<h3>Special Commands</h3>
-
+<h3>Course Settings</h3>
+<button onclick="renameCourse()" class='btn btn-outline-secondary'>Rename Course</button> Rename this course.<br><br>
 <a href="{{ url_for('courses.remove_course', course_id=course.id) }}" onclick="return confirm('Are you sure?')" class='btn btn-danger'>Delete Course</a><br><br>
-
 {% endif %}
+
 {% endblock %}
