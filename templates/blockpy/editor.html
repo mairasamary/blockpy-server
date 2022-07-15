@@ -219,7 +219,7 @@
             {% endif %}
 
             // Snippet that handles intelligent resizing
-            {% if not embed %}
+            {% if embed %}
                 function fixCanvasSize() {
                     window.parent.postMessage(JSON.stringify({
                         subject: "lti.frameResize",
