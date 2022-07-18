@@ -174,7 +174,7 @@ export class AssignmentStore extends ModelStore<AssignmentJson, Assignment> {
 
     getByUrl(url: string): Promise<Assignment> {
         return new Promise((resolve, reject) => {
-            ajax_get("assignments/by_url", {url}).then((data) => {
+            ajax_get("assignments/by_url", {url, course_id: this.courseId}).then((data) => {
                 if (data.success) {
                     let rawAssignment: AssignmentJson = data.assignment;
                     let created: Assignment = this.newInstance(rawAssignment);
