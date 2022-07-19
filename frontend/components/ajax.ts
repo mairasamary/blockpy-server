@@ -2,6 +2,10 @@
 declare global {
     var $URL_ROOT: string;
     var $MAIN_BLOCKPY_EDITOR: any;
+    var $ALL_BLOCKPY_EDITORS: any[];
+    var $blocklyMediaPath: string;
+    var $blockPyUrls: Record<string, string>;
+    var $blockPyUserData: Record<string, string>;
 }
 
 export function ajax_get(url: string, data: any) {

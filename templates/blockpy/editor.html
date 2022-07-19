@@ -91,6 +91,33 @@
         const QUIZZES = {{ quiz_questions|tojson }};
         const READINGS = {{ readings|tojson }};
         const TEXTBOOKS = {{ textbooks|tojson }};
+        window.$blocklyMediaPath = {{ url_for('static', filename='blockly/media/')|tojson }};
+        window.$blockPyUrls = {
+            "importDatasets": {{ config['CORGIS_URL']|tojson }},
+            'loadAssignment': {{ url_for('blockpy.load_assignment')|tojson }},
+            'instructionsAssignmentSetup': {{ url_for('courses.making_problems')|tojson }},
+            'forkAssignment': {{ url_for('blockpy.fork_assignment')|tojson }},
+            'downloadFile': {{ url_for('blockpy.download_file', external=True)|tojson }},
+            {% if submissions -%}
+            'saveAssignment': {{ url_for('blockpy.save_assignment')|tojson }},
+            'loadHistory': {{ url_for('blockpy.load_history')|tojson }},
+            'logEvent': {{ url_for('blockpy.log_event')|tojson }},
+            'saveFile': {{ url_for('blockpy.save_file')|tojson }},
+            'saveImage': {{ url_for('blockpy.save_image')|tojson }},
+            'listUploadedFiles': {{ url_for('blockpy.list_files')|tojson }},
+            'uploadFile': {{ url_for('blockpy.upload_file')|tojson }},
+            'updateSubmission': {{ url_for('blockpy.update_submission')|tojson }},
+            'updateSubmissionStatus': {{ url_for('blockpy.update_submission_status')|tojson }},
+            {%- endif %}
+        };
+        window.$blockPyUserData = {
+            "user.id": {{  user_id|tojson }},
+            {% if user %}
+            "user.name": {{ user.name()|tojson }},
+            {% endif %}
+            "user.role": {{ role|tojson }},
+            "user.course_id": {{ course_id|tojson }},
+        };
 
         $(document).ready(function () {
             // Load in Quiz interface
@@ -114,36 +141,17 @@
             }
             ko.applyBindings(mainModel, $("#extras-div")[0]);
 
+
+
             // Load in BlockPy interface
             editor = new blockpy.BlockPy({
                 // Configuration constants
-                'blockly.path': {{ url_for('static', filename='blockly/media/')|tojson }},
+                'blockly.path': window.$blocklyMediaPath,
                 'attachment.point': '#blockpy-div',
-                "urls": {
-                    "importDatasets": {{ config['CORGIS_URL']|tojson }},
-                    'loadAssignment': {{ url_for('blockpy.load_assignment')|tojson }},
-                    'instructionsAssignmentSetup': {{ url_for('courses.making_problems')|tojson }},
-                    'forkAssignment': {{ url_for('blockpy.fork_assignment')|tojson }},
-                    'downloadFile': {{ url_for('blockpy.download_file', external=True)|tojson }},
-                    {% if submissions %}
-                        'saveAssignment': {{ url_for('blockpy.save_assignment')|tojson }},
-                        'loadHistory': {{ url_for('blockpy.load_history')|tojson }},
-                        'logEvent': {{ url_for('blockpy.log_event')|tojson }},
-                        'saveFile': {{ url_for('blockpy.save_file')|tojson }},
-                        'saveImage': {{ url_for('blockpy.save_image')|tojson }},
-                        'listUploadedFiles': {{ url_for('blockpy.list_files')|tojson }},
-                        'uploadFile': {{ url_for('blockpy.upload_file')|tojson }},
-                        'updateSubmission': {{ url_for('blockpy.update_submission')|tojson }},
-                        'updateSubmissionStatus': {{ url_for('blockpy.update_submission_status')|tojson }},
-                    {% endif %}
-                },
+                "urls": window.$blockPyUrls,
                 // User information
-                "user.id": {{  user_id|tojson }},
-                {% if user %}
-                    "user.name": {{ user.name()|tojson }},
-                {% endif %}
-                "user.role": {{ role|tojson }},
-                "user.course_id": {{ course_id|tojson }},
+                ...window.$blockPyUserData,
+
                 // Group Information
                 {% if assignment_group_id != None %}
                     "user.group_id": {{ assignment_group_id|tojson }},

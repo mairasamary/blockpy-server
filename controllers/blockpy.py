@@ -218,6 +218,7 @@ def save_file(lti=lti):
 def save_student_file(filename, course_id, user):
     submission_id = request.values.get("submission_id")
     code = request.values.get("code")
+    part_id = request.values.get("part_id")
     submission = Submission.query.get(submission_id)
     # Verify exists
     check_resource_exists(submission, "Submission", submission_id)
@@ -233,9 +234,9 @@ def save_student_file(filename, course_id, user):
     # Perform update
     # TODO: What if submission's assignment version conflicts with current assignments' version?
     version_change = submission.assignment.version != submission.assignment_version
-    submission.save_code(filename, code)
+    new_code = submission.save_code(filename, code, part_id)
     make_log_entry(submission.assignment_id, submission.assignment_version,
-                   course_id, user.id, "File.Edit", "answer.py", message=code)
+                   course_id, user.id, "File.Edit", filename + ("#"+part_id if part_id else ""), message=new_code)
     return ajax_success({"version_change": version_change})
 
 

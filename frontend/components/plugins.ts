@@ -15,6 +15,8 @@ import {BlockPyFileRecord} from "../models/files";
 import {ajax_get_file} from "./ajax";
 import StateCore from "markdown-it/lib/rules_core/state_core";
 import Token from "markdown-it/lib/token";
+import {AssignmentJson} from "../models/assignment";
+import {SubmissionJson} from "../models/submission";
 // The CSS for jsoneditor is loaded via assets.py
 //import 'jsoneditor/dist/jsoneditor.css';
 
@@ -142,17 +144,26 @@ function replaceLink(link: string, env: any) {
     return link.startsWith("http") ? link : env.downloadUrl(link);
 }
 
-export let md = new MarkdownIt({
+export let md: MarkdownIt = new MarkdownIt({
     html: true,
-    highlight: function (str, lang) {
+    highlight: function (str, lang, langAttrs) {
+        // For now, the only option is the partId, hopefully folks don't try to get fancy with that.
         if (lang && hljs.getLanguage(lang)) {
           try {
-              // @ts-ignore
-              return hljs.highlight(str, { language: lang }).value;
-          } catch (__) {}
+              //return hljs.highlight(str, { language: lang }).value;
+              const launchBlockpy = langAttrs ? ` class="reader-launch-blockpy" data-part-id="${langAttrs}"` : "";
+              return `<pre${launchBlockpy} style="margin-bottom: 5px"><code class="language-${lang} hljs">` +
+                   // @ts-ignore
+                   hljs.highlight(lang, str, true).value +
+                   `</code></pre>
+                    <div style="display: none">${str}</div>
+                    <div data-bind="blockPyEditor: {partId: '${langAttrs}', launched: false, assignment: assignment, submission: submission}"></div>`;
+          } catch (e) {
+              console.error(e);
+          }
         }
-
-        return ''; // use external default escaping
+        // @ts-ignore
+        return '<pre class="hljs"><code>' + md.utils.escapeHtml(str) + '</code></pre>';
     }
 }).use((md: MarkdownIt) => {
     md.core.ruler.after('inline', 'replace-link', (state: StateCore) => {
@@ -172,17 +183,20 @@ export let md = new MarkdownIt({
     })
 });
 
+window.$ALL_BLOCKPY_EDITORS = [];
+
 ko.bindingHandlers.markdowned = {
     'init': function() {
         return { 'controlsDescendantBindings': true };
     },
-    update: function (element, valueAccessor, allBindings, vieModel, bindingContext) {
+    update: function (element, valueAccessor, allBindings, viewModel, bindingContext) {
         let code = ko.unwrap(valueAccessor());
+        console.log(code);
         element.innerHTML = md.render(code.value, code.assignment && code.assignment() ? {
             downloadUrl: (link: string) => window["$URL_ROOT"] + `blockpy/download_file?placement=assignment&directory=${code.assignment().id}&filename=${link}`
         } : {downloadUrl: (link: string) => link});
-        let codeBlocks = element.querySelectorAll("pre code");
-        codeBlocks.forEach((block: HTMLElement) => hljs.highlightBlock(block));
+        //let codeBlocks = element.querySelectorAll("pre code");
+        //codeBlocks.forEach((block: HTMLElement) => hljs.highlightBlock(block));
         ko.applyBindingsToDescendants(bindingContext, element);
         //hljs.highlightBlock(element.querySelector("pre code"));
         /*if (code.trim()) {
@@ -190,6 +204,92 @@ ko.bindingHandlers.markdowned = {
         }*/
     }
 };
+
+const DEFAULT_SECTION_PATTERN = /^(##### Part (.+))$/gm;
+
+function injectCodePart(existingCode: string, newCode: string, partId: string, overwrite: boolean): string {
+    const [header, ...rawParts] = existingCode.split(DEFAULT_SECTION_PATTERN);
+    const newBody = header ? [header] : [];
+    let found = false;
+    for (let i = 0; i < rawParts.length; i+= 3) {
+        let [fullPartHeader, candidatePartId, partBody] = rawParts.slice(i, i+3);
+        newBody.push(fullPartHeader);
+        if (overwrite && candidatePartId === partId) {
+            newBody.push(newCode);
+            found = true;
+        } else {
+            if (candidatePartId === partId) {
+                found = true;
+            }
+            if (partBody && partBody[0] === "\n") {
+                partBody = partBody.slice(1);
+            }
+            if (i !== rawParts.length - 3 && partBody && partBody.slice(-1) === "\n") {
+                partBody = partBody.slice(0, -1);
+            }
+            newBody.push(partBody);
+        }
+    }
+    if (!found) {
+        newBody.push("##### Part " + partId);
+        newBody.push(newCode);
+    }
+    return newBody.join("\n");
+}
+
+
+function launchBlockPy(element: Node, partId: string, assignment: AssignmentJson, submission: SubmissionJson, initialBody: string) {
+    // @ts-ignore
+    const newBlockPyEditor = new blockpy.BlockPy({
+        'blockly.path': window.$blocklyMediaPath,
+        "urls": {
+            ...window.$blockPyUrls,
+            saveAssignment: undefined,
+            updateSubmission: undefined,
+            updateSubmissionStatus: undefined
+        },
+        ...window.$blockPyUserData,
+        'attachment.point': element,
+        'partId': partId,
+        "assignment.settings.small_layout": "true",
+        "display.python.mode": "text",
+        "submission.code": initialBody
+    });
+    if (partId) {
+        const data = {
+            assignment: {... assignment, starting_code: initialBody},
+            submission: {... submission,
+                code: injectCodePart(submission.code, initialBody, partId, false)}
+        };
+        console.log(data);
+        newBlockPyEditor.loadAssignmentData_(data);
+    }
+    window.$ALL_BLOCKPY_EDITORS.push(newBlockPyEditor);
+
+    ko.utils.domNodeDisposal.addDisposeCallback(element, function () {
+        newBlockPyEditor.destroy();
+    });
+}
+
+ko.bindingHandlers.blockPyEditor = {
+    'init': function (element, valueAccessor) {
+        let options = ko.unwrap(valueAccessor());
+        if (!options.launched) {
+            const editButton = $("<button class='btn btn-sm blockpy-run' style='margin-bottom: 10px'><span class='fas fa-play'></span> Run</button>");
+            editButton.on('click', () => {
+                editButton.hide();
+                const newBlockPyEditorTag = $(`<div></div>`);
+                $(element).append(newBlockPyEditorTag);
+                const initialBody = $(element).prev().prev().text();
+                console.log(">>>", initialBody);
+                launchBlockPy(newBlockPyEditorTag[0], options.partId, options.assignment().toJson(), options.submission().toJson(), initialBody || "");
+                $(element).prev().prev().prev().hide();
+            });
+            $(element).before(editButton);
+        }
+        return { 'controlsDescendantBindings': true };
+    },
+}
 
 
 /**

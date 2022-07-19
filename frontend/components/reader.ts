@@ -349,7 +349,7 @@ export const READER_HTML = `
                               src: 'https://www.youtube.com/embed/'+youtube()+'?feature=oembed&rel=0&enablejsapi=1'},
                        hidden: !youtube().length">
         </iframe>
-        <div data-bind="markdowned: {value: assignment().instructions(), assignment: assignment}"
+        <div data-bind="markdowned: {value: assignment().instructions(), assignment: assignment, submission: submission}"
             class="p-4"></div>
         <hr>
     </div>
