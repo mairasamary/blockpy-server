@@ -274,7 +274,7 @@ function launchBlockPy(element: Node, partId: string, assignment: AssignmentJson
 ko.bindingHandlers.blockPyEditor = {
     'init': function (element, valueAccessor) {
         let options = ko.unwrap(valueAccessor());
-        if (!options.launched) {
+        if (!options.launched && options.partId) {
             const editButton = $("<button class='btn btn-sm blockpy-run' style='margin-bottom: 10px'><span class='fas fa-play'></span> Run</button>");
             editButton.on('click', () => {
                 editButton.hide();
