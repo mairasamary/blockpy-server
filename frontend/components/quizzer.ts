@@ -54,6 +54,7 @@ export class Quizzer extends AssignmentInterface {
         questions: ko.Subscription[]
     }
 
+
     constructor(params: AssignmentInterfaceJson) {
         super(params);
         this.subscriptions = {quiz: null, currentAssignmentId: null, questions: null};

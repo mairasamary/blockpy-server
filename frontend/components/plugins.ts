@@ -157,7 +157,9 @@ export let md: MarkdownIt = new MarkdownIt({
                    hljs.highlight(lang, str, true).value +
                    `</code></pre>
                     <div style="display: none">${str}</div>
-                    <div data-bind="blockPyEditor: {partId: '${langAttrs}', launched: false, assignment: assignment, submission: submission}"></div>`;
+                    <div data-bind="blockPyEditor: {partId: '${langAttrs}', launched: false,
+                                    assignment: ((typeof assignment).localeCompare('undefined')) ? assignment : null,
+                                    submission: ((typeof submission).localeCompare('undefined')) ? submission : null}"></div>`;
           } catch (e) {
               console.error(e);
           }
