@@ -258,3 +258,16 @@ class ExportProgSnap(Command):
             groups = [int(g) for g in groups.split(",")]
         export_progsnap2(output.format(log_for_course), log_for_course, groups)
 
+
+class ClearOldAnonymousUsers(Command):
+    option_list = (
+        Option('--confirm', '-c', dest='confirm', default=False)
+    )
+
+    def run(self, confirm, **kwargs):
+        # Select all anonymous users who have been in the system for more than 1 week
+        # If there are other resources owned by them, then report those in a file?
+        #   Really, just get a list of all the resources that they own.
+        # Delete their authentication, their logs, their submissions
+        # Return the number of users who were deleted
+        pass

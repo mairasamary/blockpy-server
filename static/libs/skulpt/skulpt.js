@@ -20886,7 +20886,7 @@ Sk.builtin.float_ = Sk.abstr.buildNativeClass("float", {
         }
     },
     slots: /**@lends {Sk.builtin.float_.prototype} */{
-        tp$gettattr: Sk.generic.getAttr,
+        tp$getattr: Sk.generic.getAttr,
         tp$as_number: true,
         tp$doc: "Convert a string or number to a floating point number, if possible.",
         tp$hash() {
@@ -37140,7 +37140,7 @@ var Sk = {}; // jshint ignore:line
 
 Sk.build = {
     githash: "90636790fe6dba05dedb712b4957bba528f65b94",
-    date: "2022-06-22T19:11:08.160Z"
+    date: "2022-07-26T18:13:49.364Z"
 };
 
 /**
