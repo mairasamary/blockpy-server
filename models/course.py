@@ -1,5 +1,6 @@
 from sqlalchemy import Column, String, Integer, ForeignKey, Text, or_
 from werkzeug.utils import secure_filename
+import json
 
 from models import models
 from models.models import Base, datetime_to_string, string_to_datetime, db
@@ -297,7 +298,20 @@ class Course(Base):
         else:
             return secure_filename(self.name) + ".json"
 
+    def get_setting(self, key, default_value):
+        try:
+            result = json.loads(self.settings)
+            return result.get(key, default_value)
+        except json.JSONDecodeError:
+            return default_value
+
     def get_textbooks(self):
-        return (db.session.query(models.Assignment)
-                .filter(models.Assignment.course_id == self.id, models.Assignment.type == 'textbook')
-                .all())
+        textbook_urls = self.get_setting('textbooks', [])
+        associated_textbooks = (db.session.query(models.Assignment)
+                                .filter(models.Assignment.url.in_(textbook_urls))
+                                .all())
+        course_textbooks =  (db.session.query(models.Assignment)
+                             .filter(models.Assignment.course_id == self.id, models.Assignment.type == 'textbook')
+                             .all())
+        course_textbooks.extend(associated_textbooks)
+        return course_textbooks
