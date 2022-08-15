@@ -14,14 +14,47 @@ Dashboard
 
     <h1>Dashboard</h1>
 
-    <p>Welcome to your dashboard!</p>
+    <p>Hello {{ g.user.name() }} ({{ g.user.id }}), you are in "{{ g.course.name }}" ({{g.course.id}}). Welcome to your dashboard!</p>
 
-    <p>This feature is in beta. Expect issues!</p>
+    <div class="row">
 
-    <p>If you wanted a scratchpad to work in, go <a href="{{ {"force_default_assignment":"true"}|modify_query }}">here</a>.</p>
+        <!-- Textbooks -->
+        {% if textbooks %}
+        <div class="col-sm-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Textbook{{ 's' if textbooks|length > 1 else '' }}</h5>
+                    <p class="card-text">See an overview of the entire textbook, including later chapters!.</p>
+                    {% for textbook in textbooks %}
+                    <a href="{{ url_for('assignments.load_textbook', path=textbook.url, course_id=g.course.id, embed=True) }}"
+                       target="_blank"
+                       class='btn btn-primary'>Read {{ textbook.name }}</a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="col-sm-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">BlockPy Scratchpad</h5>
+                    <p class="card-text">Need a place to quickly run some BlockPy code and experiment? Get a reusable scratchpad!</p>
+                    <a href="{{ {"force_default_assignment":"true", "course_id": g.course.id}|modify_query }}" class="btn btn-primary" target="_blank">BlockPy Scratchpad</a>
+                </div>
+            </div>
+        </div>
+
+
+
+    </div>
+
+    <h2>Previous Submissions</h2>
+
+    <p>Below are all the previously submitted assignments that we have found for you in this course.</p>
 
     {% include "helpers/submission_student_table.html" %}
 
-    <p>You are {{ g.user.name() }} ({{ g.user.id }}), currently in "{{ g.course.name }}" ({{g.course.id}})</p>
+
 
 {% endblock %}

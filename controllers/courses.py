@@ -351,9 +351,12 @@ def grader_dashboard(user, course_id):
     pending_review = Submission.by_pending_review(course_id)
     users = {user.email: user.encode_json() for _, user, _ in pending_review}
     is_instructor = user.is_instructor(course_id)
+    course = Course.by_id(course_id)
+    textbooks = course.get_textbooks()
+
     return render_template('courses/dashboard_grader.html', embed=True,
                            course_id=course_id, user=user, pending_review=pending_review,
-                           users=users, is_instructor=is_instructor)
+                           users=users, is_instructor=is_instructor, textbooks=textbooks)
 
 @courses.route('dashboard/', methods=['GET', 'POST'])
 @courses.route('dashboard', methods=['GET', 'POST'])
@@ -381,6 +384,7 @@ def dashboard(lti=lti, lti_exception=None):
                                 embed=True))
     else:
         # Sub - Assign - Group
+        textbooks = course.get_textbooks()
         grouped_assignments = natsorted(course.get_users_submitted_assignments_grouped(user_id),
                                         key=lambda r: (
                                         r.AssignmentGroup.name if r.AssignmentGroup is not None else "~~~~~~~~",
@@ -394,7 +398,7 @@ def dashboard(lti=lti, lti_exception=None):
         # Horrifying hack to move Ungrouped elements to end
         assignments_by_group[None] = assignments_by_group.pop(None, None)
         return render_template('courses/dashboard.html', embed=True,
-                               course_id=course_id, user=user,
+                               course_id=course_id, user=user, textbooks=textbooks,
                                assignments_by_group=assignments_by_group)
 
 

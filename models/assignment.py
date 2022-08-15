@@ -411,4 +411,4 @@ class Assignment(Base):
             textbook['success'] = True
             return textbook, first_page
         except Exception as e:
-            return { "message": e, "success": False}
+            return { "message": e, "success": False}, 0
