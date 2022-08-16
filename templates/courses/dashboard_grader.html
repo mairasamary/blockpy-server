@@ -102,19 +102,60 @@ Dashboard
 
     <h1>Grader Dashboard</h1>
 
-    <p>Welcome to your dashboard! This feature is in beta. Expect issues!</p>
+    <p>Hello {{ g.user.name() }} ({{ g.user.id }}), you are in "{{ g.course.name }}" ({{g.course.id}}). You are a grader! Welcome to your dashboard!</p>
 
-    <p>If you wanted the default assignment scratchpad, go <a href="{{ {"force_default_assignment":"true"}|modify_query }}">here</a>.</p>
+    <div class="row">
 
+    <!-- Textbooks -->
     {% if textbooks %}
-        {% for textbook in textbooks %}
-            <p>Read textbook: <a href="{{ url_for('assignments.load_textbook', path=textbook.url, course_id=course_id, embed=True) }}">{{ textbook.name }}</a></p>
-        {% endfor %}
+    <div class="col-sm-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Textbook{{ 's' if textbooks|length > 1 else '' }}</h5>
+                <p class="card-text">See an overview of the entire textbook, including later chapters!.</p>
+                {% for textbook in textbooks %}
+                <a target=_blank href="{{ url_for('assignments.load_textbook', path=textbook.url, course_id=g.course.id, embed=True) }}"
+                   class='btn btn-primary'>Read {{ textbook.name }}</a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
     {% endif %}
 
-    <p>If you wanted to view submissions for this course, go to <a target=_blank href="{{ url_for('courses.submissions_filter', course_id=course_id) }}">View Submissions</a>.</p>
+    <div class="col-sm-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">BlockPy Scratchpad</h5>
+                <p class="card-text">Need a place to quickly run some BlockPy code and experiment? Get a reusable scratchpad!</p>
+                <a target=_blank href="{{ {"force_default_assignment":"true"}|modify_query }}" class="btn btn-primary">BlockPy Scratchpad</a>
+            </div>
+        </div>
+    </div>
 
-    <p>If you wanted to watch events for this course, go to <a target=_blank href="{{ url_for('courses.watch_events', course_id=course_id) }}">Watch Events</a>.</p>
+    <div class="col-sm-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">View Submissions</h5>
+                <p class="card-text">Want to look at the latest code for anyone in the course?</p>
+                <a target=_blank href="{{ url_for('courses.submissions_filter', course_id=course_id) }}" class="btn btn-primary">View Student Submissions</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Watch Events</h5>
+                <p class="card-text">A different interface for viewing students' submissions, with some fancier features (but also a little harder to get an overview)</p>
+                <a target=_blank href="{{ url_for('courses.watch_events', course_id=course_id) }}" class="btn btn-primary">Watch Events</a>
+            </div>
+        </div>
+    </div>
+
+
+    </div>
+
+    <h2>Ungraded Submission Requiring Human Review</h2>
 
     <p>The following submissions are ready for review</p>
 
@@ -169,8 +210,6 @@ Dashboard
     </tbody>
     </table>
 
-    <p>You are {{ g.user.name() }} ({{ g.user.id }}), currently in "{{ g.course.name }}" ({{g.course.id}})</p>
-
     {% if is_instructor %}
         <h4>Instructor Tools</h4>
         {% if g.course.endpoint != session.get("lis_outcome_service_url", "") %}
@@ -185,7 +224,7 @@ Dashboard
         <button type="button" class="btn btn-info" id="update-course-outcome-url">
             Update LTI course outcome URL </button>
         to <code>{{ session.get("lis_outcome_service_url", "") }}</code><br>
-            <small>Use this button if your initial course outcome URL is not correct.</small>
+            <small>Use this button if your initial course outcome URL is not correct. Advanced instructor usage only!</small>
         {% endif %}
     {% endif %}
 
