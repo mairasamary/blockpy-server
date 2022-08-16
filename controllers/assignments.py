@@ -288,7 +288,8 @@ def get_assignments():
         course: Course = Course.by_id(course_id)
         check_resource_exists(course, "Course", course_id)
         grouped_assignments = natsorted(course.get_submitted_assignments_grouped(),
-                                        key=lambda r: (r.AssignmentGroup.name if r.AssignmentGroup is not None else None, r.Assignment.name))
+                                        key=lambda r: (r.AssignmentGroup.name if r.AssignmentGroup is not None else "~~~~~~~~",
+                                                       r.Assignment.name))
         assignments = [a.Assignment.encode_json() for a in grouped_assignments]
         groups = [a.AssignmentGroup.encode_json() if a.AssignmentGroup is not None else None for a in grouped_assignments]
     else:
