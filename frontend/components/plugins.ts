@@ -486,7 +486,9 @@ ko.bindingHandlers.filepond = {
             });
         });
         ko.utils.domNodeDisposal.addDisposeCallback(element, function () {
-            element.filepond.destroy();
+            if (element.filepond) {
+                element.filepond.destroy();
+            }
         });
     },
     update: function (element, valueAccessor) {

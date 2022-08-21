@@ -31,6 +31,7 @@ export class Reader extends AssignmentInterface {
     logCount: number
     ytPlayer: any
     youtube: ko.Observable<string>;
+    youtubeOptions: ko.Observable<Record<string, string>>;
     header: ko.Observable<string>;
     slides: ko.Observable<string>;
     summary: ko.Observable<string>;
@@ -39,6 +40,8 @@ export class Reader extends AssignmentInterface {
 
     errorMessage: ko.Observable<string>;
     editorMode: ko.Observable<EditorMode>;
+
+    LS_CURRENT_VOICE_CHOICES_KEY = "blockpy-reader-voice-choice";
 
     subscriptions: {
         currentAssignmentId: ko.Subscription,
@@ -49,6 +52,7 @@ export class Reader extends AssignmentInterface {
         super(params);
         this.subscriptions = {currentAssignmentId: null, windowPositioning: null};
         this.logCount = 0;
+        this.youtubeOptions = ko.observable<Record<string, string>>({});
         this.youtube = ko.observable<string>("");
         this.header = ko.observable<string>("");
         this.slides = ko.observable<string>("");
@@ -102,10 +106,61 @@ export class Reader extends AssignmentInterface {
         }
     }
 
+    setVoice(voice: string, voiceUrl: string) {
+        this.youtube(voiceUrl);
+        this.rememberVoiceChoice(voice);
+    }
+
+    getBestVoice(options: Record<string, string>) {
+        let previouslyChosenVoices = localStorage.getItem(this.LS_CURRENT_VOICE_CHOICES_KEY);
+        const defaultVoice = Object.values(options)[0] || "";
+        if (previouslyChosenVoices == null) {
+            return defaultVoice;
+        }
+        try {
+            previouslyChosenVoices = JSON.parse(previouslyChosenVoices);
+        } catch {
+            return defaultVoice;
+        }
+        for (const voice of previouslyChosenVoices) {
+            if (voice in options) {
+                return options[voice];
+            }
+        }
+        return defaultVoice;
+    }
+
+    rememberVoiceChoice(voice: string) {
+        let previouslyChosenVoicesRaw = localStorage.getItem(this.LS_CURRENT_VOICE_CHOICES_KEY);
+        if (previouslyChosenVoicesRaw == null) {
+            localStorage.setItem(this.LS_CURRENT_VOICE_CHOICES_KEY, JSON.stringify([voice]));
+            return;
+        }
+        let previouslyChosenVoices: string[];
+        try {
+            previouslyChosenVoices = JSON.parse(previouslyChosenVoicesRaw);
+        } catch {
+            localStorage.setItem(this.LS_CURRENT_VOICE_CHOICES_KEY, JSON.stringify([voice]));
+            return;
+        }
+        // Remove if it exists
+        previouslyChosenVoices = previouslyChosenVoices.filter(v => v !== voice);
+        // Add it to the front
+        previouslyChosenVoices.unshift(voice);
+        // Store it for next time
+        localStorage.setItem(this.LS_CURRENT_VOICE_CHOICES_KEY, JSON.stringify(previouslyChosenVoices));
+    }
+
     parseAdditionalSettings() {
         let settingsRaw = this.assignment().settings();
         let settings = JSON.parse(settingsRaw || "{}");
-        this.youtube(settings.youtube || "");
+        if (settings.youtube instanceof Object) {
+            this.youtubeOptions(settings.youtube);
+            this.youtube(this.getBestVoice(settings.youtube));
+        } else {
+            this.youtubeOptions({});
+            this.youtube(settings.youtube || "");
+        }
         this.header(settings.header || "");
         this.slides(settings.slides || "");
         this.summary(settings.summary || "");
@@ -250,29 +305,29 @@ export const EDITOR_HTML = `
 <!-- Instructor Editor Mode Selector -->
 <div data-bind="if: isInstructor() && !asPreamble()">
     <!-- Instructor Editor Mode Selector -->
-    <div class="form-check">
-        <label class="form-check-label">
+    <div class="btn-group-toggle mt-2 mb-2">
+        <label class="btn btn-outline-secondary mr-4" for="reader-editor-mode-radio-raw"
+            data-bind="css: { active: editorMode()=='RAW'}">
             <input data-bind="checked: editorMode"
-               id="reader-editor-mode-radio" name="reader-editor-mode-radio"
-               class="form-check-input" type="radio" value="RAW">
+                   id="reader-editor-mode-radio-raw" name="reader-editor-mode-radio"
+                   class="btn-check" type="radio" value="RAW" autocomplete="off">
             Raw Editor
         </label>
-    </div>
-    <div class="form-check">
-        <label class="form-check-label">
+        <label class="btn btn-outline-secondary mr-4" for="reader-editor-mode-radio-form"
+            data-bind="css: { active: editorMode()=='FORM'}">
             <input data-bind="checked: editorMode"
-                   id="reader-editor-mode-radio" name="reader-editor-mode-radio"
-                   class="form-check-input" type="radio" value="FORM">
+                       id="reader-editor-mode-radio-form" name="reader-editor-mode-radio"
+                       class="btn-check" type="radio" value="FORM" autocomplete="off">
             Form Editor
         </label>
-    </div>
-    <div class="form-check">
-        <label class="form-check-label">
+        <label class="btn btn-outline-secondary" for="reader-editor-mode-radio-submission"
+            data-bind="css: { active: editorMode()=='SUBMISSION'}">
             <input data-bind="checked: editorMode"
-               id="reader-editor-mode-radio" name="reader-editor-mode-radio"
-               class="form-check-input" type="radio" value="SUBMISSION">
+               id="reader-editor-mode-radio-submission" name="reader-editor-mode-radio"
+               class="btn-check" type="radio" value="SUBMISSION" autocomplete="off">
             Actual Reader
         </label>
+        <br><hr>
     </div>
     
     <!-- Raw Instructor Editor -->
@@ -340,6 +395,18 @@ export const READER_HTML = `
     <div  style="background: #FBFAF7" class="pt-4">
         <h3 data-bind="text: header(), hidden: !header().length" class="p-1"></h3>
         <div data-bind="text: summary(), hidden: !summary().length" class="p-1"></div>
+        <div style="float: right" class="btn-group" role="group" data-bind="if: Object.keys(youtubeOptions()).length > 1">
+            <button id="blockpy-reader-video-voice-choice" type="button" class="btn btn-outline-secondary dropdown-toggle"
+                    data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">                    
+            </button>
+            <div class="dropdown-menu" aria-labelledby="blockpy-reader-video-voice-choice"
+                data-bind="foreach: Object.keys(youtubeOptions())"">
+                <a href="" data-bind="text : $data,
+                                      click: ()=>$parent.setVoice($data, $parent.youtubeOptions()[$data]),
+                                      css: {active: $parent.youtubeOptions()[$data] === $parent.youtube()}"
+                    class="dropdown-item"></a>
+            </div>
+        </div>
         <iframe style="width: 640px; height: 480px; margin-left: 10%"
             width="300" height="150" allowfullscreen="allowfullscreen"
             webkitallowfullscreen="webkitallowfullscreen"
