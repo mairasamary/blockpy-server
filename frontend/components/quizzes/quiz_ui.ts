@@ -83,29 +83,29 @@ export const QUIZZER_HTML = `
         <!-- Instructor Editor Mode Selector -->
         <div data-bind="if: isInstructor()">
             <!-- Instructor Editor Mode Selector -->
-            <div class="form-check">
-                <label class="form-check-label">
+            <div class="btn-group-toggle mt-2 mb-2">
+                <label class="btn btn-outline-secondary mr-4" for="quizzer-editor-mode-radio-raw"
+                    data-bind="css: { active: editorMode()=='RAW'}">
                     <input data-bind="checked: editorMode"
-                       id="quizzer-editor-mode-radio" name="quizzer-editor-mode-radio"
-                       class="form-check-input" type="radio" value="RAW">
+                           id="quizzer-editor-mode-radio-raw" name="quizzer-editor-mode-radio"
+                           class="btn-check" type="radio" value="RAW" autocomplete="off">
                     Raw Editor
                 </label>
-            </div>
-            <div class="form-check">
-                <label class="form-check-label">
+                <label class="btn btn-outline-secondary mr-4" for="quizzer-editor-mode-radio-form"
+                    data-bind="css: { active: editorMode()=='FORM'}">
                     <input data-bind="checked: editorMode"
-                           id="quizzer-editor-mode-radio" name="quizzer-editor-mode-radio"
-                           class="form-check-input" type="radio" value="FORM">
+                               id="quizzer-editor-mode-radio-form" name="quizzer-editor-mode-radio"
+                               class="btn-check" type="radio" value="FORM" autocomplete="off">
                     Form Editor
                 </label>
-            </div>
-            <div class="form-check">
-                <label class="form-check-label">
+                <label class="btn btn-outline-secondary" for="quizzer-editor-mode-radio-submission"
+                    data-bind="css: { active: editorMode()=='SUBMISSION'}">
                     <input data-bind="checked: editorMode"
-                       id="quizzer-editor-mode-radio" name="quizzer-editor-mode-radio"
-                       class="form-check-input" type="radio" value="SUBMISSION">
-                    Actual Submission
+                       id="quizzer-editor-mode-radio-submission" name="quizzer-editor-mode-radio"
+                       class="btn-check" type="radio" value="SUBMISSION" autocomplete="off">
+                    Actual Quiz
                 </label>
+                <br><hr>
             </div>
             
             <!-- Raw Instructor Editor -->
@@ -185,6 +185,10 @@ export const QUIZZER_HTML = `
                             markCorrect: ()=>{},
                             asPreamble: true,
                             user: user"></reader>
+        </div>
+        <div data-bind="if: quiz()?.readingId() && editorMode() === 'SUBMISSION' && !asStudent()">
+            <strong>Reading is hidden; Click "View as Student" to preview the Reading.</strong>
+            <hr>
         </div>
         
         <!-- Main Instructions -->

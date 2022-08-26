@@ -1,0 +1,70 @@
+{% extends 'helpers/layout.html' %}
+{% import 'helpers/navigation.html' as navigation %}
+
+{% block title %}
+Edit Assignment Group Security Settings
+{% endblock %}
+
+{% block statusbar %}
+{% endblock %}
+
+{% block extrahead %}
+
+<script type='text/javascript'>
+$(document).ready(function() {
+    const editableRanges  = document.getElementById("ip_ranges");
+    editableRanges.addEventListener("input", updateRanges, false);
+    updateRanges();
+});
+function updateRanges() {
+    const foundRanges  = document.getElementById("found-ranges");
+    const editableRanges  = document.getElementById("ip_ranges");
+    foundRanges.innerHTML = editableRanges.value.split(",").join("\n");
+}
+</script>
+
+{% endblock %}
+
+{% block body %}
+
+    <h1>Edit Security Settings</h1>
+    {{ navigation.navigate_course() }}
+
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div class="alert alert-warning">
+            {% for message in messages %}
+                {{ message|safe }}<br>
+            {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    {% if group_name != None %}
+    <p>Assignment: {{group_name}}</p>
+    <p>{{ warning }}</p>
+
+    <form action="" method=post>
+        <div class="form-group row">
+            <label for="passcode" class="col-sm-1 col-form-label">Passcode:</label>
+            <div class="col-sm-6">
+                <input type="text" name="passcode" value="{{ passcode }}"
+                    class="form-control">
+            </div>
+        </div>
+        <div class="form-group row">
+            <label for="ip_ranges" class="col-sm-1 col-form-label">IP Ranges:</label>
+            <div class="col-sm-6">
+                <input type="text" name="ip_ranges" id="ip_ranges" value="{{ ip_ranges }}"
+                    class="form-control">
+                <br>
+                <pre id="found-ranges"></pre>
+            </div>
+        </div>
+
+        <input type="submit" value="Save updates" class="btn btn-success">
+    </form>
+    {% endif %}
+
+
+{% endblock %}

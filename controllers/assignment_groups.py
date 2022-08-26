@@ -1,10 +1,11 @@
 import json
 
-from flask import Blueprint, send_from_directory, Response
+from flask import Blueprint, send_from_directory, Response, render_template, flash
 from flask import Flask, redirect, url_for, session, request, jsonify, g
 
 from controllers.helpers import (lti, require_request_parameters, require_course_instructor, login_required,
-                                 check_resource_exists, get_select_menu_link, get_course_id, get_user, ajax_success)
+                                 check_resource_exists, get_select_menu_link, get_course_id, get_user, ajax_success,
+                                 maybe_int, require_course_grader)
 
 from models.assignment import Assignment
 from models.assignment_group import AssignmentGroup
@@ -149,50 +150,53 @@ def export():
 
 @blueprint_assignment_group.route('/edit_security_settings', methods=['GET', 'POST'])
 @blueprint_assignment_group.route('/edit_security_settings/', methods=['GET', 'POST'])
-@require_request_parameters('assignment_group_id')
 @login_required
 def edit_security_settings(lti=lti):
     # Get arguments
-    assignment_group_id = int(request.values.get('assignment_group_id'))
-    assignment_group = AssignmentGroup.by_id(assignment_group_id)
+    assignment_group_id = maybe_int(request.values.get('assignment_group_id'))
+    assignment_group_url = request.values.get("assignment_group_url")
+    if assignment_group_id is None and not assignment_group_url:
+        return render_template('courses/edit_security.html',
+                               group_name=None,
+                               ip_ranges="",
+                               passcode="",
+                               warning="Set an assignment group id or url via the URL.")
+    if not assignment_group_id:
+        assignment_group = AssignmentGroup.by_url(assignment_group_url)
+    else:
+        assignment_group = AssignmentGroup.by_id(assignment_group_id)
+        assignment_group_id = assignment_group_url
     ip_ranges = request.values.get('ip_ranges')
     passcode = request.values.get('passcode')
     # Verify exists
     check_resource_exists(assignment_group, "Assignment Group", assignment_group_id)
     # Verify permissions
-    require_course_instructor(g.user, assignment_group.course_id)
+    require_course_grader(g.user, assignment_group.course_id)
     # Perform action
     if request.method == 'POST':
         if ip_ranges is not None:
+            message = []
             for assignment in assignment_group.get_assignments():
+                if assignment.ip_ranges != ip_ranges:
+                    message.append(f"{assignment.name} ip_ranges to <code>{ip_ranges}</code>")
                 assignment.edit(dict(ip_ranges=ip_ranges))
-                assignment.update_setting("passcode", passcode)
+                if assignment.update_setting("passcode", passcode):
+                    message.append(f"{assignment.name} passcode to <code>{passcode}</code>")
+            if message:
+                flash("Updating:<br>" + "<br>".join(message))
+            else:
+                flash("No updates made.")
         return redirect(request.url)
     # Result
     else:
         assignments = assignment_group.get_assignments()
         passcode = assignments[0].get_setting("passcode", "")
-        existing_ip_ranges = [assignment.ip_ranges for assignment in assignments]
-        merged_duplicates = set(existing_ip_ranges)
-        warning = ""
-        if len(merged_duplicates) == 1:
-            ip_ranges = merged_duplicates.pop()
-        elif merged_duplicates:
-            ip_ranges = existing_ip_ranges[0]
-            warning = "This assignment has multiple IP ranges: <pre>{}</pre>".format("\n".join(existing_ip_ranges))
-        return '''
-            <!doctype html>
-            <title>Edit Assignment Group Settings</title>
-            <h1>Edit Assignment Group Settings</h1>
-            <p>Assignment: {group_name}</p>
-            <p>{warning}</p>
-            <form action="" method=post>
-              <p>IP Ranges: <input type=text name=ip_ranges value="{ip_ranges}"><br>
-                 Passcode: <input type=text name=passcode value="{passcode}"><br>
-                 <input type=submit value=Change>
-            </form>
-            '''.format(group_name=assignment_group.name,
-                       ip_ranges=ip_ranges if ip_ranges else "",
-                       passcode=passcode if passcode else "",
-                       warning=warning)
-
+        existing_ip_ranges = [ip_range.strip()
+                              for assignment in assignments
+                              for ip_range in assignment.ip_ranges.split(",")]
+        ip_ranges = ",".join(list(set(existing_ip_ranges)))
+        return render_template('courses/edit_security.html',
+                               group_name=assignment_group.name,
+                               ip_ranges=ip_ranges if ip_ranges else "",
+                               passcode=passcode if passcode else "",
+                               warning="")

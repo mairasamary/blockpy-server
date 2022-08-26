@@ -357,13 +357,16 @@ class Assignment(Base):
         return settings.get(key, default_value)
 
     def update_setting(self, key, value):
+        """ Returns whether the given setting was changed """
         if not self.settings:
             self.settings = "{}"
         settings = json.loads(self.settings)
+        old_value = settings.get(key)
         settings[key] = value
         self.settings = json.dumps(settings)
         self.version += 1
         db.session.commit()
+        return old_value != value
 
     def passcode_fails(self, given_passcode):
         """

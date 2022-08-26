@@ -283,7 +283,7 @@ ko.bindingHandlers.blockPyEditor = {
                 const newBlockPyEditorTag = $(`<div></div>`);
                 $(element).append(newBlockPyEditorTag);
                 const initialBody = $(element).prev().prev().text();
-                console.log(">>>", initialBody);
+                //console.log(">>>", initialBody);
                 launchBlockPy(newBlockPyEditorTag[0], options.partId, options.assignment().toJson(), options.submission().toJson(), initialBody || "");
                 $(element).prev().prev().prev().hide();
             });
@@ -454,7 +454,7 @@ FilePond.registerPlugin(FilePondPluginImagePreview);
 ko.bindingHandlers.filepond = {
     init: function (element, valueAccessor, allBindingAccessors) {
         let options = valueAccessor();
-        console.log("Initial options:", options);
+        //console.log("Initial options:", options);
         options.server.fileStore.listFiles(options.onlyPlacements || [], options.submission).then((fileRecord: BlockPyFileRecord) => {
             const allFiles: FilePond.FilePondInitialFile[] = [];
             Object.entries(fileRecord).forEach(([group, files]) => {
@@ -472,10 +472,10 @@ ko.bindingHandlers.filepond = {
                 server: {
                     url: window["$URL_ROOT"],
                     load: (source, load) => {
-                        console.log(source);
+                        //console.log(source);
                         const params = new URL(window["$URL_ROOT"]+source).searchParams;
                         ajax_get_file(source).then((data) => {
-                            console.log(data, params.get("filename"));
+                            //console.log(data, params.get("filename"));
                             load(new File([data], params.get("filename")));
                         });
                     },

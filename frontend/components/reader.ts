@@ -162,7 +162,11 @@ export class Reader extends AssignmentInterface {
             this.youtube(settings.youtube || "");
         }
         this.header(settings.header || "");
-        this.slides(settings.slides || "");
+        let slides = settings.slides || "";
+        if (slides && !(/^https?:\/\//.test(slides))) {
+            slides = window["$URL_ROOT"] + `blockpy/download_file?placement=assignment&directory=${this.assignment().id}&filename=${slides}`;
+        }
+        this.slides(slides);
         this.summary(settings.summary || "");
     }
 
