@@ -33,6 +33,13 @@
     <watcher params="courseId: pageCourseId, group: group, user: user, submissions: submissions"></watcher>
 
 <h1>Overview</h1>
+    <p>
+    {% if reduced_layout %}
+        Below, you can see your current submission for this assignment.<br>
+        If you would like to continue attempting the assignment,
+        you should return to the assignment from the Modules tab (if the assignment is not past its lock date).
+    {% endif %}
+    </p>
 <div>Status: {{ points_total }}/{{ points_possible }} problems</div>
 <div>Score: {{ score*100 }}%</div>
 <div>Contents:
@@ -64,8 +71,8 @@
     <small>
         User: {{ user_id }}<br>
         Course: {{ course_id }}<br>
-        Assignments: {{ assignments|join(',', attribute='id') }}<br>
-        Submissions: {{ submissions|join(',', attribute='id') }}
+        Assignments: {{ group|join(',', attribute='0.id') }}<br>
+        Submissions: {{ group|join(',', attribute='1.id') }}
     </small>
 </div>
 

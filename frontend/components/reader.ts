@@ -348,7 +348,7 @@ export const EDITOR_HTML = `
         <button data-bind="click: saveAssignment">Save Assignment</button><br>
         <!-- Actual Contents -->
         <h6>Instructions (Body)</h6>
-        <textarea data-bind="markdowneditor: {value: assignment().instructions}" style="width: 100%; height: 300px"></textarea><br>
+        <textarea data-bind="markdowneditor: {value: assignment().instructions}" style="width: 100%; height: 500px"></textarea><br>
         <!-- Other settings -->
         <div class="form-group">
             <label for="reader-points-editor">
