@@ -185,6 +185,14 @@ class Submission(Base):
                 .all())
 
     @staticmethod
+    def all_by_student(user_id):
+        return (db.session.query(Submission, models.User, models.Assignment)
+                .filter(Submission.user_id == models.User.id)
+                .filter(Submission.assignment_id == models.Assignment.id)
+                .filter(Submission.user_id == user_id)
+                .all())
+
+    @staticmethod
     def by_pending_review(course_id):
         return (db.session.query(Submission, models.User, models.Assignment)
                 .filter(or_(Submission.submission_status == SubmissionStatuses.SUBMITTED,

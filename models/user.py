@@ -214,3 +214,4 @@ class User(Base, UserMixin):
                 return User.new_lti_user(service, lti_user_id, lti_email, lti_first_name, lti_last_name)
         else:
             return lti.user
+

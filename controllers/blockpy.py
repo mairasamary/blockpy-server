@@ -992,3 +992,36 @@ def get_recent_logs_for_course():
         return ajax_failure("Only graders can see logs for the entire course.")
     history = Log.get_recent_logs_for_course(course_id, duration_amount, duration_type)
     return ajax_success({'history': history})
+
+
+@blueprint_blockpy.route('/recent_submissions/', methods=['GET', 'POST'])
+@blueprint_blockpy.route('/recent_submissions', methods=['GET', 'POST'])
+@login_required
+def recent_submissions():
+    ''' List all recent submissions in this course visible to the given user '''
+    # Get the grader
+    user, user_id = get_user()
+    # Get the user
+    student_email = request.values.get('email')
+    student, student_id = None, None
+    if student_email:
+        student = User.find_student(student_email)
+        if student:
+            student_id = student.id
+    else:
+        student_id = maybe_int(request.values.get('id'))
+        if student_id:
+            student = User.by_id(student_id)
+
+    # Get their submissions
+    if student and student_id:
+        submissions = Submission.all_by_student(student_id)
+        # Filter by permissions
+        submissions = [
+            (s, u, a, Course.by_id(s.course_id)) for s, u, a in submissions
+            if g.user.is_grader(int(s.course_id))
+        ]
+        submissions = sorted(submissions, key=lambda suac: suac[0].date_modified, reverse=True)
+        if submissions:
+            return render_template('blockpy/recent_submissions.html', submissions=submissions, student=student)
+    return "Access denied for that user, or user not found. Check spelling!"
