@@ -1025,3 +1025,19 @@ def recent_submissions():
         if submissions:
             return render_template('blockpy/recent_submissions.html', submissions=submissions, student=student)
     return "Access denied for that user, or user not found. Check spelling!"
+
+
+@blueprint_blockpy.route('/estimate_duration/', methods=['GET', 'POST'])
+@blueprint_blockpy.route('/estimate_duration', methods=['GET', 'POST'])
+@require_request_parameters("submission_id")
+def estimate_duration():
+    # Get parameters
+    submission_id = maybe_int(request.values.get('submission_id'))
+    user, user_id = get_user()
+    # Get resources
+    submission = Submission.by_id(submission_id)
+    check_resource_exists(submission, "Submission", submission_id)
+    # Verify user is a grader
+    if not user.is_grader(submission.course_id) and user_id != submission.user_id:
+        return ajax_failure("Only graders or the assignment owner can see their submission duration estimate.")
+    return ajax_success({'duration': submission.estimate_duration()})

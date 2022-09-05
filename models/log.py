@@ -95,15 +95,15 @@ class Log(Base):
         return log
 
     def __str__(self):
-        return '<Log {} for {}>'.format(self.event, self.action)
+        return '<Log {} for {}>'.format(self.event_type, self.category)
 
     @staticmethod
     def calculate_feedbacks(assignment_id, course_id):
         return (db.session.query(func.count(Log.id))
                 .filter(Log.assignment_id == assignment_id)
                 .filter(Log.course_id == course_id)
-                .filter(Log.event == 'feedback')
-                .filter(Log.action != "Success")
+                .filter(Log.event_type == 'feedback')
+                .filter(Log.category != "Success")
                 .group_by(Log.subject_id)
                 .all())
 
@@ -142,7 +142,7 @@ class Log(Base):
                 .delete())
 
     @staticmethod
-    def get_history(course_id, assignment_id, user_id, page_offset=None, page_limit=None):
+    def get_history(course_id, assignment_id, user_id, page_offset=None, page_limit=None, as_json=True):
         logs = Log.query.filter_by(course_id=course_id)
         # JUst need to refactor this to allow lists
         if assignment_id is not None:
@@ -161,7 +161,9 @@ class Log(Base):
         if page_limit is not None:
             logs = logs.limit(page_limit)
         logs = logs.all()
-        return [log.encode_json() for log in logs]
+        if as_json:
+            return [log.encode_json() for log in logs]
+        return logs
 
     @staticmethod
     def get_recent_logs_for_course(course_id, duration_amount, duration_type):

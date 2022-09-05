@@ -1,6 +1,7 @@
 import json
 import os
 import time
+from datetime import timedelta
 import re
 
 import base64
@@ -469,3 +470,25 @@ class Submission(Base):
                 db.session.commit()
             # And return the information
         return attempt_count
+
+    def get_logs(self):
+        pass
+
+    def estimate_duration(self, inactivity_threshold=5):
+        logs = Log.get_history(self.course_id, self.assignment_id, self.user_id, as_json=False)
+        if not logs:
+            return 0
+        current = logs[-1].date_created
+        total = 0
+        for log in reversed(logs[:-1]):
+            if log.event_type == 'Resource.View' and log.category == 'reading' and log.label=='read':
+                data = json.loads(log.message)
+                delay = data['delay']
+                current -= timedelta(milliseconds=delay)
+                total += delay/1000
+                continue
+            diff = max(0, min((current - log.date_created).seconds, inactivity_threshold))
+            total += diff
+            current = log.date_created
+        return total
+
