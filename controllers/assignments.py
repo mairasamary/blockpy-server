@@ -21,7 +21,7 @@ from controllers.helpers import (lti, strip_tags,
                                  get_lti_property, require_request_parameters, login_required,
                                  require_course_instructor, get_select_menu_link,
                                  check_resource_exists, parse_assignment_load, get_course_id, get_user, ajax_success,
-                                 ajax_failure, maybe_int)
+                                 ajax_failure, maybe_int, maybe_bool)
 
 from main import app
 
@@ -29,6 +29,7 @@ import controllers.maze as maze
 import controllers.blockpy as blockpy
 
 from models.models import (db)
+from models.user import User
 from models.course import Course
 from models.assignment import Assignment
 from models.assignment_group import AssignmentGroup
@@ -424,3 +425,46 @@ def export_progsnap():
 
     return Response(zip_buffer.getvalue(), mimetype='application/zip',
                     headers={'Content-Disposition': f'attachment;filename={zip_filename}'})
+
+@blueprint_assignments.route('/transfer_course/', methods=['GET', 'POST'])
+@blueprint_assignments.route('/transfer_course', methods=['GET', 'POST'])
+@login_required
+@require_request_parameters('submission_id')
+def transfer_course():
+    submission_id = int(request.values.get('submission_id'))
+    submission = Submission.by_id(submission_id)
+    assignment = Assignment.by_id(submission.assignment_id)
+    new_course_id = maybe_int(request.values.get('new_course_id'))
+    course_id = get_course_id(True)
+    user, user_id = get_user()
+    # Verify exists
+    check_resource_exists(submission, "Submission", submission_id)
+    # Verify permissions
+    original_course_id = submission.course_id
+    if not user.is_instructor(int(original_course_id)):
+        return "You are not an instructor in the submission's course!"
+    # List some courses for this instructor to move them to
+    if new_course_id is None:
+        course = Course.by_id(original_course_id)
+        student = User.by_id(submission.user_id)
+        editable_courses = g.user.get_editable_courses()
+        editable_submissions = [(course, Submission.get_submission(submission.assignment_id,
+                                                                   submission.user_id,
+                                                                   course.id))
+                                for course in editable_courses]
+        return render_template("assignments/transfer_course.html", submission=submission,
+                               new_course_id=new_course_id, course_id=course_id,
+                               assignment=assignment, course=course, student=student,
+                               editable_courses=editable_courses, editable_submissions=editable_submissions)
+    # Do the change instead
+    if not user.is_instructor(new_course_id):
+        return "You are not an instructor in the new target course!"
+    # Get data
+
+    new_course_submission = Submission.load_or_new(assignment,
+                                                   submission.user_id,
+                                                   new_course_id,
+                                                   assignment_group_id=submission.assignment_group_id)
+    new_course_submission.copy_from(submission)
+    return ajax_success({"message": "Update successful", "new": new_course_submission.encode_json(),
+                         "old": submission.encode_json()})

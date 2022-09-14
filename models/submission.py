@@ -492,3 +492,14 @@ class Submission(Base):
             current = log.date_created
         return total
 
+    def copy_from(self, old_submission):
+        self.code = old_submission.code
+        self.extra_files = old_submission.extra_files
+        self.url = old_submission.url
+        self.score = old_submission.score
+        self.correct = old_submission.correct
+        self.submission_status = old_submission.submission_status
+        self.grading_status = old_submission.grading_status
+        self.version += 1
+        db.session.commit()
+        return self

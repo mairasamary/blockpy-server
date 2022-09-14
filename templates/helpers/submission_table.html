@@ -160,7 +160,10 @@
                         course_id=course_id,
                         force_download=True,
                         embed=True) }}"
-        target="_blank">Download</a>
+        target="_blank">Download</a>,
+    <a href="{{ url_for('assignments.transfer_course',
+                        submission_id=submission[0].id) }}"
+        target="_blank">Copy to Course</a>,
     {%- endif %}
     {%- endif %}</td>
     <td>
