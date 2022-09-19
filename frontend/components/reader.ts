@@ -37,6 +37,7 @@ export class Reader extends AssignmentInterface {
     summary: ko.Observable<string>;
 
     asPreamble: ko.Observable<boolean>;
+    allowPopout: ko.Observable<boolean>;
 
     errorMessage: ko.Observable<string>;
     editorMode: ko.Observable<EditorMode>;
@@ -58,6 +59,7 @@ export class Reader extends AssignmentInterface {
         this.slides = ko.observable<string>("");
         this.summary = ko.observable<string>("");
         this.asPreamble = ko.observable<boolean>(params.asPreamble || false);
+        this.allowPopout = ko.observable<boolean>(true);
 
         this.editorMode = ko.observable(EditorMode.SUBMISSION);
         this.errorMessage = ko.observable("");
@@ -160,6 +162,9 @@ export class Reader extends AssignmentInterface {
         } else {
             this.youtubeOptions({});
             this.youtube(settings.youtube || "");
+        }
+        if (settings.allow_popout) {
+            this.allowPopout(settings.allow_popout);
         }
         this.header(settings.header || "");
         let slides = settings.slides || "";
@@ -385,7 +390,7 @@ export const READER_HTML = `
     ${EDITOR_HTML}
     <!-- Popout button -->
     <a href="" class="btn btn-sm btn-outline-secondary float-right m-3" target="_blank"
-        data-bind="attr: {href: assignment().editUrl()+'&embed=true'}">
+        data-bind="attr: {href: assignment().editUrl()+'&embed=true'}, visible: allowPopout()">
         <span class="fas fa-external-link-alt" aria-hidden="true"></span>
         Popout
     </a>

@@ -132,7 +132,7 @@ def check_quiz_question(question, check, student) -> (float, bool, list):
                         for blank_id, answer in check.get('correct_exact', {}).items()]
         elif 'correct_regex' in check:
             corrects = [any(re.match(reg, student.get(blank_id)) for reg in answer)
-                        for blank_id, answer in check.get('correct_exact', {}).items()]
+                        for blank_id, answer in check.get('correct_regex', {}).items()]
         else:
             return 0, False, "Unknown Fill In Multiple Blanks Question Check: "+ str(check)
         feedback = check.get('wrong_any', 'Incorrect') if not all(corrects) else 'Correct'

@@ -306,8 +306,13 @@ export class Quiz {
         if (question.type === 'multiple_dropdowns_question') {
             let answers = question.answers as {[key: string]: string[]};
             for (let key in answers) {
-                let randomizedAnswers = [...answers[key]].sort(() => Math.random() - 0.5);
-                let options: string[] = ["", ...randomizedAnswers];
+                let options: string[];
+                if (question.retainOrder) {
+                    options = ["", ...answers[key]];
+                } else {
+                    let randomizedAnswers = [...answers[key]].sort(() => Math.random() - 0.5);
+                    options = ["", ...randomizedAnswers];
+                }
                 let optionsStr = options.map((option: string) => (`<option>${option}</option>`)).join("")
                 body = body.replace(matchKeyInBrackets(key), `<select id="question-md-${index}" data-bind="value: student['${key}'], disable: $component.isReadOnly()">${optionsStr}</select>`)
             }
