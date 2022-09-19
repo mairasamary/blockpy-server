@@ -163,8 +163,9 @@ export class Reader extends AssignmentInterface {
             this.youtubeOptions({});
             this.youtube(settings.youtube || "");
         }
-        if (settings.allow_popout) {
-            this.allowPopout(settings.allow_popout);
+        console.log(settings);
+        if ('popout' in settings) {
+            this.allowPopout(settings.popout);
         }
         this.header(settings.header || "");
         let slides = settings.slides || "";
