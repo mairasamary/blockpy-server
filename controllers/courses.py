@@ -299,6 +299,7 @@ def add_users(course_id):
     ''' Generate a form to add a student '''
     if not g.user.is_instructor(int(course_id)):
         return redirect(url_for('courses.index'))
+    course_id = int(course_id)
     add_form = AddUsersForm(request.form)
     if request.method == 'POST':
         newly_created = []
@@ -315,13 +316,13 @@ def add_users(course_id):
                                                       confirmed_at=datetime.now())
                 newly_created.append(new_user)
             new_role = add_form.role.data
-            if new_role == 'student' and not new_user.is_student():
+            if new_role == 'student' and not new_user.is_student(course_id):
                 new_user.add_role('student', course_id=course_id)
                 newly_added.append(new_user)
-            elif new_role == 'teachingassistant' and not new_user.is_grader():
+            elif new_role == 'teachingassistant' and not new_user.is_grader(course_id):
                 new_user.add_role('teachingassistant', course_id=course_id)
                 newly_added.append(new_user)
-            elif new_role == 'instructor' and not new_user.is_instructor():
+            elif new_role == 'instructor' and not new_user.is_instructor(course_id):
                 new_user.add_role('instructor', course_id=course_id)
                 newly_added.append(new_user)
             # TODO: Add an invite for the course and that user
