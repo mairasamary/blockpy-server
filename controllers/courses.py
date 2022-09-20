@@ -307,7 +307,7 @@ def add_users(course_id):
             first_name, last_name = '', ''
             if '|' in new_email:
                 first_name, last_name, new_email = new_email.split('|', maxsplit=2)
-            new_user = User.find_student(email=new_email)
+            new_user = User.find_student(email=new_email.strip())
             if new_user is None:
                 new_user = user_datastore.create_user(first_name=first_name,
                                                       last_name=last_name,
