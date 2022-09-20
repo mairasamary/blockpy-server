@@ -284,10 +284,11 @@ def manage_users(course_id):
                            is_instructor=is_instructor)
 
 
-class AddStudentForm(Form):
+class AddUsersForm(Form):
     # invite = BooleanField("Add Without Invitation")
     # send_email = BooleanField('Send Email')
     new_users = TextAreaField("Emails")
+    role = SelectField("Role", choices=Role.CHOICES)
     submit = SubmitField("Add student")
 
 
@@ -298,8 +299,10 @@ def add_users(course_id):
     ''' Generate a form to add a student '''
     if not g.user.is_instructor(int(course_id)):
         return redirect(url_for('courses.index'))
-    add_form = AddStudentForm(request.form)
+    add_form = AddUsersForm(request.form)
     if request.method == 'POST':
+        newly_created = []
+        newly_added = []
         for new_email in add_form.new_users.data.split("\n"):
             first_name, last_name = '', ''
             if '|' in new_email:
@@ -310,15 +313,20 @@ def add_users(course_id):
                                                       last_name=last_name,
                                                       email=new_email,
                                                       confirmed_at=datetime.now())
-                #new_user = User.new_from_instructor(first_name=first_name,
-                #                                    last_name=last_name,
-                #                                    email=new_email)
-
-            if not new_user.is_student():
-                new_user.add_role('learner', course_id=course_id)
+                newly_created.append(new_user)
+            new_role = add_form.role.data
+            if new_role == 'student' and not new_user.is_student():
+                new_user.add_role('student', course_id=course_id)
+                newly_added.append(new_user)
+            elif new_role == 'teachingassistant' and not new_user.is_grader():
+                new_user.add_role('teachingassistant', course_id=course_id)
+                newly_added.append(new_user)
+            elif new_role == 'instructor' and not new_user.is_instructor():
+                new_user.add_role('instructor', course_id=course_id)
+                newly_added.append(new_user)
             # TODO: Add an invite for the course and that user
             # TODO: Send an email to reset their password
-        flash('New students added')
+        flash('New users added: ' + ", ".join([u.email for u in newly_added]))
         return redirect(url_for('courses.manage_users', course_id=course_id))
     return render_template('courses/add_users.html', add_form=add_form, course_id=course_id)
 
@@ -344,7 +352,20 @@ def remove_role(role_id):
 @login_required
 def change_role():
     ''' Endpoint to change the role of a student '''
-    pass
+    role_id = maybe_int(request.values.get("role_id"))
+    new_role = request.values.get("new_role")
+    if role_id is None or new_role is None:
+        return "Invalid role_id or new_role not given"
+    role = Role.by_id(role_id)
+    if role is None:
+        return "Role not found"
+    course_id = role.course_id
+    is_instructor = g.user.is_instructor(course_id)
+    if not is_instructor:
+        return "You're not an instructor in this course!"
+    role.update_role(new_role)
+    return ajax_success({"new_role": new_role})
+
 
 
 def grader_dashboard(user, course_id):

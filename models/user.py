@@ -129,7 +129,8 @@ class User(Base, UserMixin):
             role_strings = {role.name.lower() for role in self.roles.all()}
         return ('instructor' in role_strings or
                 'urn:lti:sysrole:ims/lis/none' in role_strings or
-                'urn:lti:role:ims/lis/teachingassistant' in role_strings)
+                'urn:lti:role:ims/lis/teachingassistant' in role_strings or
+                'teachingassistant' in role_strings)
 
     def is_student(self, course_id=None):
         if course_id is not None:
@@ -138,9 +139,12 @@ class User(Base, UserMixin):
         return 'learner' in {role.name.lower() for role in self.roles.all()}
 
     def add_role(self, name, course_id):
-        new_role = models.Role(name=name, user_id=self.id, course_id=course_id)
-        db.session.add(new_role)
-        db.session.commit()
+        if name in [id for id, _ in models.Role.CHOICES]:
+            new_role = models.Role(name=name, user_id=self.id, course_id=course_id)
+            db.session.add(new_role)
+            db.session.commit()
+            return new_role
+        return None
 
     def update_roles(self, new_roles, course_id):
         old_roles = [role for role in self.roles.all() if role.course_id == course_id]

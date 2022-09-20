@@ -12,6 +12,11 @@ class Role(Base, RoleMixin):
     course = db.relationship("Course")
 
     NAMES = ['instructor', 'admin', 'student']
+    CHOICES = [
+        ('student', 'Student'),
+        ('instructor', 'Instructor'),
+        ('teachingassistant', 'Teaching Assistant')
+    ]
 
     def encode_json(self, use_owner=True):
         return {
@@ -22,7 +27,11 @@ class Role(Base, RoleMixin):
         }
 
     def update_role(self, new_role):
-        pass
+        if new_role in [id for id, name in self.CHOICES]:
+            self.name = new_role
+            db.session.commit()
+            return new_role
+        return None
 
     def __str__(self):
         return '<User {} is {}>'.format(self.user_id, self.name)
