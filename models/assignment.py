@@ -368,6 +368,26 @@ class Assignment(Base):
         db.session.commit()
         return old_value != value
 
+    def update_ip_address(self, new_ip_ranges, is_instructor):
+        #if is_instructor:
+        #    self.edit(dict(ip_ranges=new_ip_ranges))
+        #    return True
+        try:
+            new_ip_ranges = [network.strip() for network in new_ip_ranges.split(",")]
+        except:
+            return False
+        protected_ip_ranges = self.get_setting('protected_ip_ranges', '')
+        try:
+            protected_ip_ranges = [network.strip() for network in protected_ip_ranges.split(",")]
+        except:
+            protected_ip_ranges = []
+        for protected_value in protected_ip_ranges:
+            if protected_value not in new_ip_ranges:
+                new_ip_ranges.insert(0, protected_value)
+        new_ip_ranges = ",".join(new_ip_ranges)
+        self.edit(dict(ip_ranges=new_ip_ranges))
+        return True
+
     def passcode_fails(self, given_passcode):
         """
         Determine if the given string matches this assignments' stored passcode, or that

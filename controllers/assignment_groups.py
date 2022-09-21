@@ -167,6 +167,7 @@ def edit_security_settings(lti=lti):
         assignment_group = AssignmentGroup.by_id(assignment_group_id)
         assignment_group_id = assignment_group_url
     ip_ranges = request.values.get('ip_ranges')
+    protected_ip_ranges = request.values.get('protected_ip_ranges')
     passcode = request.values.get('passcode')
     # Verify exists
     check_resource_exists(assignment_group, "Assignment Group", assignment_group_id)
@@ -177,11 +178,21 @@ def edit_security_settings(lti=lti):
         if ip_ranges is not None:
             message = []
             for assignment in assignment_group.get_assignments():
-                if assignment.ip_ranges != ip_ranges:
-                    message.append(f"{assignment.name} ip_ranges to <code>{ip_ranges}</code>")
-                assignment.edit(dict(ip_ranges=ip_ranges))
-                if assignment.update_setting("passcode", passcode):
-                    message.append(f"{assignment.name} passcode to <code>{passcode}</code>")
+                is_instructor =g.user.is_instructor(assignment.course_id)
+                # Update protected_ip_ranges
+                if is_instructor:
+                    assignment.update_setting('protected_ip_ranges', protected_ip_ranges)
+                # Update ip_ranges
+                old_ranges = assignment.ip_ranges
+                #if old_ranges != ip_ranges:
+                if assignment.update_ip_address(ip_ranges, is_instructor):
+                    message.append(f"{assignment.name} ip_ranges is now <code>{assignment.ip_ranges}</code>")
+                else:
+                    message.append(f"Failed to update {assignment.name} ip_ranges.")
+                # Update passcode
+                if g.user.is_instructor(assignment.course_id):
+                    if assignment.update_setting("passcode", passcode):
+                        message.append(f"{assignment.name} passcode to <code>{passcode}</code>")
             if message:
                 flash("Updating:<br>" + "<br>".join(message))
             else:
@@ -191,12 +202,21 @@ def edit_security_settings(lti=lti):
     else:
         assignments = assignment_group.get_assignments()
         passcode = assignments[0].get_setting("passcode", "")
-        existing_ip_ranges = [ip_range.strip()
-                              for assignment in assignments
-                              for ip_range in assignment.ip_ranges.split(",")]
-        ip_ranges = ",".join(list(set(existing_ip_ranges)))
+        ip_ranges = merge_assignment_ranges([assignment.ip_ranges for assignment in assignments])
+        protected_ip_ranges = merge_assignment_ranges([assignment.get_setting('protected_ip_ranges', '')
+                                                       for assignment in assignments])
         return render_template('courses/edit_security.html',
                                group_name=assignment_group.name,
+                               protected_ip_ranges=protected_ip_ranges,
+                               is_instructor=g.user.is_instructor(assignment_group.course_id),
                                ip_ranges=ip_ranges if ip_ranges else "",
                                passcode=passcode if passcode else "",
                                warning="")
+
+
+def merge_assignment_ranges(set_of_ranges):
+    ip_ranges = [ip_range.strip()
+                 for ip_ranges in set_of_ranges
+                 for ip_range in ip_ranges.split(",")
+                 if ip_range.strip()]
+    return ",".join(list(set(ip_ranges)))
