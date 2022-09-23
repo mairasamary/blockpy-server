@@ -350,7 +350,7 @@ export const EDITOR_HTML = `
     </div>
 
     <!-- Form Instructor Editor -->
-    <div data-bind="if: editorMode() === 'FORM'">
+    <div data-bind="if: editorMode() === 'FORM'" class="reader-editor">
         <button data-bind="click: saveAssignment">Save Assignment</button><br>
         <!-- Actual Contents -->
         <h6>Instructions (Body)</h6>
