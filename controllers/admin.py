@@ -31,6 +31,15 @@ from models.assignment_tag import AssignmentTag
 admin = Admin(app)
 
 
+def make_ajax_fields(*fields):
+    return {
+        'fields': fields,
+        'placeholder': 'Please select',
+        'page_size': 10,
+        'minimum_input_length': 0
+    }
+
+
 class RegularView(ModelView):
     def is_accessible(self):
         if g.user:
@@ -157,6 +166,10 @@ class RoleView(RegularView):
                          'course_id': _id(Course)}
     column_filters = ('id', 'date_created', 'name', 'user_id', 'course_id')
     # form_columns = ('name', 'user_id', 'course_id')
+    form_ajax_refs = {
+        'course': make_ajax_fields('id', 'url', 'name'),
+        'user': make_ajax_fields('first_name', 'last_name', 'email', 'id')
+    }
 
 
 def _render_course_service(view, context, model, name):
@@ -183,6 +196,9 @@ class CourseView(RegularView):
     column_searchable_list = ('id', 'name', 'url')
     column_filters = ('id', 'name', 'date_modified', 'url', 'term', 'owner_id', 'service')
     column_formatters = {'service': _render_course_service}
+    form_ajax_refs = {
+        'owner': make_ajax_fields('first_name', 'last_name', 'email', 'id')
+    }
 
 
 class AssignmentView(RegularView):
@@ -202,6 +218,15 @@ class AssignmentView(RegularView):
             'style': 'width: 25%'
         }
     }
+    form_ajax_refs = {
+        'owner': make_ajax_fields('first_name', 'last_name', 'email', 'id'),
+        'course': make_ajax_fields('id', 'url', 'name'),
+        'forked': make_ajax_fields('name', 'url', 'id'),
+        'tags': make_ajax_fields('name', 'id'),
+        'sample_submissions': make_ajax_fields('id'),
+    }
+    form_excluded_columns = ('user',)
+    #form_columns = ('id', 'date_modified')
     column_filters = ('id', 'name', 'on_run', 'course_id', 'url', 'instructions', 'reviewed', 'hidden', 'public')
     column_formatters = {'name': _render_assignment_name,
                          # 'type': _render_assignment_type,
@@ -238,6 +263,11 @@ class LogView(RegularView):
     column_formatters = {'message': _render_code}
     column_filters = ('id', 'date_modified',
                       'course_id', 'assignment_id', 'subject_id', 'event_type', 'category', 'label', 'message')
+    form_ajax_refs = {
+        'assignment': make_ajax_fields('name', 'url', 'id'),
+        'course': make_ajax_fields('id', 'url', 'name'),
+        'subject': make_ajax_fields('first_name', 'last_name', 'email', 'id')
+    }
 
 
 class AssignmentGroupMembershipView(RegularView):
@@ -250,7 +280,10 @@ class AssignmentGroupMembershipView(RegularView):
     column_filters = ('id', 'date_modified', 'assignment_id', 'assignment_group_id')
     column_formatters = {'user_id': _editable(User, 'id'),
                          'course_id': _editable(Course, 'id')}
-
+    form_ajax_refs = {
+        'assignment': make_ajax_fields('name', 'url', 'id'),
+        'assignment_group': make_ajax_fields('name', 'url', 'id')
+    }
 
 class AssignmentTagView(RegularView):
     can_export = True
@@ -290,6 +323,13 @@ class SampleSubmissionView(RegularView):
                          'assignment_id': _editable(Assignment, 'id')}
 
 
+class AuthenticationView(ModelIdView):
+    form_ajax_refs = {
+        'user': make_ajax_fields('first_name', 'last_name', 'email', 'id')
+    }
+
+
+
 class SubmissionView(RegularView):
     can_export = True
     column_list = ('id', 'date_modified',
@@ -305,6 +345,13 @@ class SubmissionView(RegularView):
     column_formatters_export = None
     column_export_list = None
 
+    form_ajax_refs = {
+        'assignment': make_ajax_fields('name', 'url', 'id'),
+        'assignment_group': make_ajax_fields('name', 'url', 'id'),
+        'course': make_ajax_fields('id', 'url', 'name'),
+        'user': make_ajax_fields('first_name', 'last_name', 'email', 'id')
+    }
+
 
 admin.add_view(UserView(User, db.session, category='Tables'))
 admin.add_view(CourseView(Course, db.session, category='Tables'))
@@ -314,7 +361,7 @@ admin.add_view(AssignmentView(Assignment, db.session, category='Tables'))
 admin.add_view(AssignmentGroupView(AssignmentGroup, db.session, category='Tables'))
 admin.add_view(AssignmentGroupMembershipView(AssignmentGroupMembership, db.session, category='Tables'))
 admin.add_view(AssignmentTagView(AssignmentTag, db.session, category='Tables'))
-admin.add_view(ModelIdView(Authentication, db.session, category='Tables'))
+admin.add_view(AuthenticationView(Authentication, db.session, category='Tables'))
 admin.add_view(RoleView(Role, db.session, category='Tables'))
 admin.add_view(LogView(Log, db.session, category='Tables'))
 admin.add_view(ReviewView(Review, db.session, category='Tables'))
