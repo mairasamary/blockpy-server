@@ -384,7 +384,7 @@ def view_submission():
     make_log_entry(submission.assignment, submission.assignment_version,
                    submission.course_id, submission.user_id, "X-View.Submission", "answer.py",
                    category="single",
-                   message={"viewer": g.user_id})
+                   message={"viewer": viewer_id})
     return render_template("reports/alone.html", embed=embed,
                            submission=submission, assignment=submission.assignment,
                            is_grader=is_grader, tags=tags,
