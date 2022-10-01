@@ -354,7 +354,7 @@ def view_submissions(course_id, user_id, assignment_group_id):
         make_log_entry(a.id, a.version,
                        course_id, user_id, "X-View.Submission", "answer.py",
                        category="group",
-                       message={"viewer": viewer_id})
+                       message=json.dumps({"viewer": viewer_id}))
     return render_template("reports/group.html", embed=embed,
                            points_total=points_total, points_possible=points_possible,
                            score=score, tags=tags, is_grader=is_grader,
@@ -384,7 +384,7 @@ def view_submission():
     make_log_entry(submission.assignment, submission.assignment_version,
                    submission.course_id, submission.user_id, "X-View.Submission", "answer.py",
                    category="single",
-                   message={"viewer": viewer_id})
+                   message=json.dumps({"viewer": viewer_id}))
     return render_template("reports/alone.html", embed=embed,
                            submission=submission, assignment=submission.assignment,
                            is_grader=is_grader, tags=tags,
