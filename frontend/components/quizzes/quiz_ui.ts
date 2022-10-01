@@ -69,6 +69,7 @@ export const INSTRUCTIONS_BAR_HTML = (position: string) => `
                 To try again, click "Start Quiz".<br>
                 <button data-bind="click: startQuiz" class="btn btn-success">Try Quiz Again</button>
             </div>
+            You can now continue to the next part of the assignment.
         <!-- /ko -->
     </div>
 </p>

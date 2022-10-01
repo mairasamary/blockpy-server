@@ -174,7 +174,8 @@ def load_assignment(lti=lti):
             'browser': request.user_agent.browser,
             'version': request.user_agent.version,
             'language': request.user_agent.language,
-            'user_agent': request.user_agent.string
+            'user_agent': request.user_agent.string,
+            'ip_address': request.remote_addr
         })
         # Log the event
         if user is not None:
@@ -349,6 +350,11 @@ def view_submissions(course_id, user_id, assignment_group_id):
     tags = []
     if is_grader:
         tags = [tag.encode_json() for tag in AssignmentTag.get_all()]
+    for a, s in zip(assignments, submissions):
+        make_log_entry(a.id, a.version,
+                       course_id, user_id, "X-View.Submission", "answer.py",
+                       category="group",
+                       message={"viewer": g.user_id})
     return render_template("reports/group.html", embed=embed,
                            points_total=points_total, points_possible=points_possible,
                            score=score, tags=tags, is_grader=is_grader,
@@ -375,6 +381,10 @@ def view_submission():
     if is_grader:
         tags = [tag.encode_json() for tag in AssignmentTag.get_all()]
     # Do action
+    make_log_entry(submission.assignment, submission.assignment_version,
+                   submission.course_id, submission.user_id, "X-View.Submission", "answer.py",
+                   category="single",
+                   message={"viewer": g.user_id})
     return render_template("reports/alone.html", embed=embed,
                            submission=submission, assignment=submission.assignment,
                            is_grader=is_grader, tags=tags,
