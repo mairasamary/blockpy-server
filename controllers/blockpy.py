@@ -381,7 +381,7 @@ def view_submission():
     if is_grader:
         tags = [tag.encode_json() for tag in AssignmentTag.get_all()]
     # Do action
-    make_log_entry(submission.assignment, submission.assignment_version,
+    make_log_entry(submission.assignment.id, submission.assignment_version,
                    submission.course_id, submission.user_id, "X-View.Submission", "answer.py",
                    category="single",
                    message=json.dumps({"viewer": viewer_id}))
