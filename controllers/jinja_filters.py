@@ -32,8 +32,8 @@ def get_setting(assignment, *keys):
 def date_description(date):
     if not date:
         return "Never"
-    is_today = date > datetime.now()-timedelta(days=1)
     date = (date + date.astimezone().utcoffset())
+    is_today = date > datetime.now().replace(hour=0, minute=0)
     if is_today:
         return "Today, " +date.strftime("%I:%M") + date.strftime("%p").lower()
     return date.strftime("%B %d %Y, %I:%M") + date.strftime("%p").lower()
