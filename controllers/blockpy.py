@@ -350,11 +350,11 @@ def view_submissions(course_id, user_id, assignment_group_id):
     tags = []
     if is_grader:
         tags = [tag.encode_json() for tag in AssignmentTag.get_all()]
-    for a, s in zip(assignments, submissions):
-        make_log_entry(a.id, a.version,
-                       course_id, user_id, "X-View.Submission", "answer.py",
-                       category="group",
-                       message=json.dumps({"viewer": viewer_id}))
+    #for a, s in zip(assignments, submissions):
+    #    make_log_entry(a.id, a.version,
+    #                   course_id, user_id, "X-View.Submission", "answer.py",
+    #                   category="group",
+    #                   message=json.dumps({"viewer": viewer_id}))
     return render_template("reports/group.html", embed=embed,
                            points_total=points_total, points_possible=points_possible,
                            score=score, tags=tags, is_grader=is_grader,
