@@ -91,7 +91,7 @@ class Log(Base):
         db.session.add(log)
         db.session.commit()
         # Single-file logging
-        logging.getLogger('Events').info(log.for_file())
+        #logging.getLogger('Events').info(log.for_file())
         return log
 
     def __str__(self):
