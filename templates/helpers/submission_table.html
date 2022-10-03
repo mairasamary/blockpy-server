@@ -1,5 +1,9 @@
 {% if is_instructor %}
     <script>
+    function switchVisible(submissionId, showHide) {
+        $(`#h-${submissionId}-start`).toggle(!showHide);
+        $(`#h-${submissionId}-end`).toggle(showHide);
+    }
     function regrade(element, submission_id) {
         let url = "{{ url_for('grading.update_grading_status') }}?submission_id="+submission_id;
         {% if request.values.get('resubmit') == 'hard' %}
@@ -137,6 +141,8 @@
         {% elif submission[0].grading_status == 'Failed' %}
             <span class="red-x">&#10060;</span>
         {% elif submission[0].grading_status == 'Pending' %}
+            <span style="color: transparent">*</span>
+        {% else %}
             <span style="color: transparent">.</span>
         {% endif %}
         </span>
@@ -173,8 +179,11 @@
     </td>
 
     <td>
-        <span title="{{ submission[0].date_modified }}">
+        <span title="{{ submission[0].date_modified }}" id="h-{{ submission[0].id }}-start" onclick="switchVisible({{ submission[0].id }}, true)" style="cursor: pointer">
             {{ submission[0].date_modified|date_description }}
+        </span>
+        <span title="{{ submission[0].date_created }}" style="display:none; cursor: pointer"  id="h-{{ submission[0].id }}-end" onclick="switchVisible({{ submission[0].id }}, false)">
+            {{ submission[0].date_created|date_description }}
         </span>
     </td>
 </tr>
