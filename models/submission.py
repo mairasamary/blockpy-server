@@ -480,10 +480,14 @@ class Submission(Base):
             return 0
         current = logs[-1].date_created
         total = 0
+        last_progress = None
         for log in reversed(logs[:-1]):
             if log.event_type == 'Resource.View' and log.category == 'reading' and log.label=='read':
                 data = json.loads(log.message)
+                if last_progress == data['progress']:
+                    continue
                 delay = data['delay']
+                last_progress = data['progress']
                 current -= timedelta(milliseconds=delay)
                 total += delay/1000
                 continue
