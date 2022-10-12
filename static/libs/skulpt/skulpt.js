@@ -20563,7 +20563,8 @@ Sk.builtin.file = function (name, mode, buffering) {
             this.lineList = this.lineList.slice(0, -1);
         }
 
-        for (i in this.lineList) {
+        //for (i in this.lineList) {
+        for (let i=0; i < this.lineList.length-1; i+= 1) {
             this.lineList[i] = this.lineList[i] + "\n";
         }
         this.currentLine = 0;
@@ -37142,7 +37143,7 @@ var Sk = {}; // jshint ignore:line
 
 Sk.build = {
     githash: "90636790fe6dba05dedb712b4957bba528f65b94",
-    date: "2022-10-08T22:34:20.411Z"
+    date: "2022-10-12T15:51:02.728Z"
 };
 
 /**
