@@ -20596,7 +20596,8 @@ Sk.builtin.file.prototype["$r"] = function () {
 
 Sk.builtin.file.prototype.tp$iter = function () {
     var allLines = this.lineList;
-    var currentLine = this.currentLine;
+    var that = this;
+    //var currentLine = this.currentLine;
 
     var ret =
         {
@@ -20604,13 +20605,13 @@ Sk.builtin.file.prototype.tp$iter = function () {
                 return ret;
             },
             $obj: this,
-            $index: currentLine,
+            $index: this.currentLine,
             $lines: allLines,
             tp$iternext: function () {
-                if (ret.$index >= ret.$lines.length) {
+                if (that.currentLine >= ret.$lines.length) {
                     return undefined;
                 }
-                return new Sk.builtin.str(ret.$lines[ret.$index++]);
+                return new Sk.builtin.str(ret.$lines[that.currentLine++]);
             }
         };
     return ret;
@@ -37143,7 +37144,7 @@ var Sk = {}; // jshint ignore:line
 
 Sk.build = {
     githash: "90636790fe6dba05dedb712b4957bba528f65b94",
-    date: "2022-10-12T15:51:02.728Z"
+    date: "2022-10-16T20:34:51.585Z"
 };
 
 /**
