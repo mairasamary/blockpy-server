@@ -56,7 +56,7 @@ def update_grading_status(lti, lti_exception=None):
     error = "Generic LTI Failure - perhaps not logged into LTI session?"
     try:
         success, score = lti_post_grade(lti, submission, None, assignment_group_id,
-                                        submission.user_id, submission.course_id)
+                                        submission.user_id, submission.course_id, use_course_service_url=True)
     except LTIPostMessageException as e:
         success = False
         error = str(e)

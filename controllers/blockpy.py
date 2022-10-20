@@ -406,12 +406,13 @@ def get_outcomes(submission, assignment_group_id, user_id, course_id) -> 'Tuple[
     return score, url
 
 
-def lti_post_grade(lti, submission, lis_result_sourcedid, assignment_group_id, user_id, course_id):
+def lti_post_grade(lti, submission, lis_result_sourcedid, assignment_group_id, user_id, course_id, use_course_service_url=False):
     total_score, view_url = get_outcomes(submission, assignment_group_id, user_id, course_id)
     lis_result_sourcedid = submission.endpoint if lis_result_sourcedid is None else lis_result_sourcedid
-    if 'lis_outcome_service_url' not in session:
+    if 'lis_outcome_service_url' not in session or use_course_service_url:
         course = Course.by_id(course_id)
-        session['lis_outcome_service_url'] = course.endpoint
+        if course.endpoint:
+            session['lis_outcome_service_url'] = course.endpoint
     session['lis_result_sourcedid'] = lis_result_sourcedid
     if lis_result_sourcedid and lti:
         lti.post_grade(total_score, view_url, endpoint=lis_result_sourcedid, url=True)
