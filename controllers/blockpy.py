@@ -604,6 +604,8 @@ def upload_file():
             return ajax_failure(str(e))
 
 
+SUGGEST_DOWNLOAD_EXTENSIONS = [".json", ".sqlite", ".py", ".zip"]
+
 @blueprint_blockpy.route('/download_file/', methods=['GET', 'POST'])
 @blueprint_blockpy.route('/download_file', methods=['GET', 'POST'])
 @require_request_parameters('placement', 'directory', 'filename')
@@ -626,9 +628,12 @@ def download_file():
     files_folder = "/".join(('uploads', 'files', placement))
     # Okay, we got this far, create it!
     file_path = "/".join((files_folder, secure_filename(directory), filename))
-    return send_from_directory(
-        app.static_folder, file_path, attachment_filename=filename
+    suggest_download = any(filename.endswith(extension) for extension in SUGGEST_DOWNLOAD_EXTENSIONS)
+    response = send_from_directory(
+        app.static_folder, file_path, attachment_filename=filename, as_attachment=suggest_download
     )
+    response.headers['x-filename'] = filename
+    return response
 
 
 @blueprint_blockpy.route('/list_files/', methods=['GET', 'POST'])
