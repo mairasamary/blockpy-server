@@ -10654,6 +10654,9 @@ Sk.builtin.open = function open(filename, mode, bufsize) {
     if (mode === undefined) {
         mode = new Sk.builtin.str("r");
     }
+    if (bufsize === undefined) {
+        bufsize = -1;
+    }
 
     if (/\+/.test(mode.v)) {
         throw "todo; haven't implemented read/write mode";
@@ -15308,7 +15311,7 @@ Compiler.prototype.cwith = function (s, itemIdx) {
     // value = mgr.__enter__()
     out("$ret = Sk.abstr.lookupSpecial(",mgr,",Sk.builtin.str.$enter);");
     this._checkSuspension(s);
-    out("$ret = Sk.misceval.callsimOrSuspendArray($ret);");
+    out("$ret = $ret != null && Sk.misceval.callsimOrSuspendArray($ret);");
     this._checkSuspension(s);
     value = this._gr("value", "$ret");
 
@@ -15340,7 +15343,7 @@ Compiler.prototype.cwith = function (s, itemIdx) {
 
     //   if not exit(*sys.exc_info()):
     //     raise
-    out("$ret = Sk.misceval.applyOrSuspend(", exit, ",undefined,Sk.builtin.getExcInfo($err),undefined,[]);");
+    out("$ret = ", exit, "!=null && Sk.misceval.applyOrSuspend(", exit, ",undefined,Sk.builtin.getExcInfo($err),undefined,[]);");
     this._checkSuspension(s);
     this._jumptrue("$ret", carryOn);
     out("throw $err;");
@@ -15351,7 +15354,7 @@ Compiler.prototype.cwith = function (s, itemIdx) {
     this.popFinallyBlock();
 
     //   exit(None, None, None)
-    out("$ret = Sk.misceval.callsimOrSuspendArray(", exit, ",[Sk.builtin.none.none$,Sk.builtin.none.none$,Sk.builtin.none.none$]);");
+    out("$ret = ", exit, "!=null && Sk.misceval.callsimOrSuspendArray(", exit, ",[Sk.builtin.none.none$,Sk.builtin.none.none$,Sk.builtin.none.none$]);");
     this._checkSuspension(s);
     // Ignore $ret.
 
@@ -37143,8 +37146,8 @@ function check_special_type_attr(type, value, pyName) {
 var Sk = {}; // jshint ignore:line
 
 Sk.build = {
-    githash: "90636790fe6dba05dedb712b4957bba528f65b94",
-    date: "2022-11-08T19:11:11.352Z"
+    githash: "02e1453e7e2fc7d8ca2a5b8518954998591eed88",
+    date: "2022-11-14T02:23:34.442Z"
 };
 
 /**
