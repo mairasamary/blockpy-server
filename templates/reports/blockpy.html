@@ -107,15 +107,17 @@
                         course_id=submission.course_id,
                         force_download=True,
                         embed=True) }}">download</a></div>
-<div>Load Read-only:
-<form method="post" target="_blank" action="{{ url_for("blockpy.load_readonly") }}"
+{% endif %}
+{% if not hiding %}
+<div>Load Read-only Mode:
+<form method="post" target="_blank" action="{{ url_for("blockpy.load_readonly", embed=True) }}"
     style="display:inline">
     <input type="hidden" name="assignment_data" value="{{
-        assignment|make_readonly_form(submission)
+        assignment|make_readonly_form(submission, is_grader)
     }}">
     <button type="submit" class="btn btn-sm btn-outline-secondary"
 >Open</button>
-</form></div>
+</form> <small>(read-only mode will not affect your grade at all!)</small></div>
 {% endif %}
 {% if is_grader or not hiding %}
 <div>History: <a href="{{ url_for('blockpy.browse_history', assignment_id=submission.assignment_id,

@@ -56,11 +56,11 @@ def modify_query(new_values):
 
     return '{}?{}'.format(request.path, url_encode(args))
 
-def make_readonly_form(assignment, submission):
+def make_readonly_form(assignment, submission, is_grader):
     data = {
         "assignment": assignment.encode_json(),
         "submission": submission.encode_json(),
-        "user": {"role": "owner"}
+        "user": {"role": "owner" if is_grader else "student"}
     }
     data['assignment']['forked_id'] = assignment.id
     data['assignment']['forked_version'] = assignment.version
