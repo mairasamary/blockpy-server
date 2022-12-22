@@ -1,6 +1,7 @@
 from datetime import datetime
 import time
 import os
+import re
 import json
 from typing import Tuple
 
@@ -22,11 +23,12 @@ from models.submission import Submission, GradingStatuses
 from models.assignment import Assignment
 from models.assignment_group import AssignmentGroup
 
-from controllers.helpers import (lti, highlight_python_code, normalize_url,
+from controllers.helpers import (lti, normalize_url,
                                  ensure_dirs, ajax_failure, parse_assignment_load, require_request_parameters,
                                  get_course_id, maybe_int, get_user, check_resource_exists, ajax_success,
                                  login_required, require_course_instructor, require_course_grader, maybe_bool,
                                  make_log_entry)
+from utilities import highlight_python_code
 from models.user import User
 
 blueprint_blockpy = Blueprint('blockpy', __name__, url_prefix='/blockpy')
@@ -319,20 +321,31 @@ def calculate_submissions_score(assignments, submissions):
     return total_score, total_possible
 
 
+assignment_referer_regex = r"(https?\:\/\/.*?\.instructure\.com/courses/\d+/assignments/\d+).*?"
+
+
 @blueprint_blockpy.route('/view_submissions/<int:course_id>/<int:user_id>/<int:assignment_group_id>/',
                          methods=['GET', 'POST'])
 @blueprint_blockpy.route('/view_submissions/<int:course_id>/<int:user_id>/<int:assignment_group_id>',
                          methods=['GET', 'POST'])
-def view_submissions(course_id, user_id, assignment_group_id):
+def view_submissions(course_id, user_id, assignment_group_id, lti=lti):
     embed = maybe_bool(request.values.get('embed'))
     viewer, viewer_id = get_user()
     group, assignments, submissions = get_groups_submissions(assignment_group_id, user_id, course_id)
     # Check permissions
+    referer_header = request.headers.get('referer', '')
+    referer = re.match(assignment_referer_regex, referer_header)
+    referer = referer.group(0) if referer else ""
     for submission in submissions:
         if not submission:
             return ajax_failure(f"No submission for the given course, user, and group.")
         elif submission.user_id != viewer_id:
             if not viewer.is_grader(submission.course_id):
+                if referer:
+                    return ("<h3>The submission could not be loaded, probably because you are not logged in."
+                            f" Log into the <a href='{referer}' target=_blank>assignment</a> via Canvas "
+                            f"(or open the BlockPy dashboard), and then reload this page."
+                            " If that still does not work, you may not have grader permissions for this course.</h3>")
                 return ("<h3>↑ The submission could not be loaded. If you "
                         "are loading this assignment through the Grades menu in Canvas, then you can click "
                         "the link directly above to open your latest submission. If you want to edit your submission "
@@ -356,6 +369,7 @@ def view_submissions(course_id, user_id, assignment_group_id):
     #                   category="group",
     #                   message=json.dumps({"viewer": viewer_id}))
     return render_template("reports/group.html", embed=embed,
+                           referer=referer,
                            points_total=points_total, points_possible=points_possible,
                            score=score, tags=tags, is_grader=is_grader,
                            assignment_group=group,
@@ -394,15 +408,20 @@ def view_submission():
 def get_outcomes(submission, assignment_group_id, user_id, course_id) -> 'Tuple[float, str]':
     if assignment_group_id is None:
         score = round(submission.full_score(), 2)
-        url = url_for('blockpy.view_submission', _external=True, embed=True,
-                      submission_id=submission.id)
+        #url = url_for('blockpy.view_submission', _external=True, embed=True,
+        #              submission_id=submission.id)
+        url = url_for("assignments.load", _external=True, embed=True,
+                      submission_id=submission.id, grade_mode="single")
     else:
         group, assignments, submissions = get_groups_submissions(assignment_group_id, user_id, course_id)
         total, possible = calculate_submissions_score(assignments, submissions)
         score = round(total / possible, 2)
-        url = url_for('blockpy.view_submissions', _external=True, embed=True,
+        #url = url_for('blockpy.view_submissions', _external=True, embed=True,
+        #              assignment_group_id=assignment_group_id, course_id=course_id,
+        #              user_id=user_id)
+        url = url_for("assignments.load", _external=True, embed=True,
                       assignment_group_id=assignment_group_id, course_id=course_id,
-                      user_id=user_id)
+                      user_id=user_id, grade_mode="group")
     return score, url
 
 
@@ -415,7 +434,7 @@ def lti_post_grade(lti, submission, lis_result_sourcedid, assignment_group_id, u
             session['lis_outcome_service_url'] = course.endpoint
     session['lis_result_sourcedid'] = lis_result_sourcedid
     if lis_result_sourcedid and lti:
-        lti.post_grade(total_score, view_url, endpoint=lis_result_sourcedid, url=True)
+        lti.post_grade(total_score, view_url, endpoint=lis_result_sourcedid, url=True, needs_review=False)
         return True, total_score
     return False, total_score
 
@@ -467,7 +486,7 @@ def update_submission(lti, lti_exception=None):
     # TODO: If failure on previous submission grading, then retry
     if was_changed or force_update:
         submission.save_block_image(image)
-        if submission.user.is_grader():
+        if submission.user.is_grader(course_id):
             return ajax_success({"submitted": False, "changed": was_changed, "correct": correct,
                                  "feedbacks": feedbacks, 'submission_status': submission.submission_status,
                                  "grading_status": submission.grading_status,

@@ -38,6 +38,9 @@
         Below, you can see your current submission for this assignment.<br>
         If you would like to continue attempting the assignment,
         you should return to the assignment from the Modules tab (if the assignment is not past its lock date).
+        {% if referer %}
+            This <a href="{{referer}}" target="_blank">direct link to the assignment</a> may work too.
+        {% endif %}
     {% endif %}
     </p>
 <div>Status: {{ points_total }}/{{ points_possible }} problems</div>

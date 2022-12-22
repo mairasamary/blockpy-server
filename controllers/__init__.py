@@ -8,7 +8,8 @@ from flask_security.core import current_user
 
 from main import app
 from models import models
-from controllers.helpers import (admin_required, lti, highlight_python_code)
+from controllers.helpers import (admin_required, lti)
+from utilities import highlight_python_code
 
 
 @app.before_request

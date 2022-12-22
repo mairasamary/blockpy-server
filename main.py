@@ -16,10 +16,14 @@ if secrets['PRODUCTION']:
 else:
     app.config.from_object('config.TestingConfig')
 
+# Tasks
+from tasks.setup import setup_celery
+celery = setup_celery(app)
+
 # Modify Jinja2
 from controllers.jinja_filters import setup_jinja_filters
 setup_jinja_filters(app)
-    
+
 # Logging
 from controllers.interaction_logger import setup_logging
 setup_logging(app)

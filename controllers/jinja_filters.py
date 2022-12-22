@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 
 from natsort import natsorted
 
-from controllers import highlight_python_code
+from utilities import highlight_python_code
 from flask import request
 from werkzeug.urls import url_encode
 from markdown import Markdown

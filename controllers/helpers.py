@@ -1,21 +1,17 @@
 # Built-in imports
-import logging
 import re
 import os
-from urllib.parse import quote as url_quote, urlencode
+from urllib.parse import quote as url_quote
 from functools import wraps
 
 from html.parser import HTMLParser
 
-from urllib.parse import unquote_plus, urlparse, parse_qsl, quote_plus, urlunparse, urlencode
+from urllib.parse import unquote_plus, urlparse, parse_qsl, quote_plus, urlencode
 
 # Pygments, for reporting nicely formatted Python snippets
-from pygments import highlight
-from pygments.lexers import PythonLexer
-from pygments.formatters import HtmlFormatter
 
 # Flask imports
-from flask import g, request, redirect, url_for, make_response, current_app
+from flask import g, request, redirect, url_for, make_response
 from flask import flash, session, jsonify, abort
 import flask_security
 
@@ -403,16 +399,6 @@ def get_assignment_id(f):
         return f(*args, course_id=course_id, **kwargs)
 
     return decorated_function
-
-
-def highlight_python_code(code, linenos=True, prestyles=''):
-    formatter = HtmlFormatter(linenos=linenos, noclasses=True,
-                              lineanchors="code-lineno",
-                              linespans="code-span",
-                              prestyles=prestyles,
-                              # style='colorful'
-                              )
-    return highlight(code, PythonLexer(), formatter)
 
 
 def normalize_url(url):

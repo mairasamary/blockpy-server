@@ -9,6 +9,7 @@ from scripts.db_commands import (ResetDB, PopulateDB, DisplayDB, ExportCourse,
                                  DumpDB, AddTestUsersDB, AddMazeCourse,
                                  ExportProgSnap)
 from scripts.external_commands import UpdateBlockPy
+from tasks.run import CeleryWorker, CeleryFlower
 
 # Read in secrets
 with open('settings/secrets.json') as secrets_file:
@@ -40,6 +41,10 @@ manager.add_command("update_blockpy", UpdateBlockPy())
 
 # Migrate commands
 manager.add_command("db", MigrateCommand)
+
+# Task Commands
+manager.add_command("celery", CeleryWorker())
+manager.add_command("flower", CeleryFlower())
 
 if __name__ == "__main__":
     manager.run()

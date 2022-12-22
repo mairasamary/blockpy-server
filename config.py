@@ -15,6 +15,7 @@ except IOError:
 
 EMAIL_SECRETS = secrets.get("EMAIL", {})
 DB_SECRETS = secrets.get("DATABASE", {})
+TASK_SECRETS = secrets.get("TASKS", {})
 
 class Config(object):
     IS_PRODUCTION = secrets.get('PRODUCTION', False)
@@ -92,7 +93,8 @@ class ProductionConfig(Config):
     SQLALCHEMY_DATABASE_URI = (DB_SECRETS.get('ACCESS_URL')
                                .format(username=DB_SECRETS.get('USER'),
                                        password=DB_SECRETS.get('PASS')))
-
+    CELERY_BROKER_URL = TASK_SECRETS.get("CELERY_BROKER_URL")
+    CELERY_RESULT_BACKEND = TASK_SECRETS.get("CELERY_RESULT_BACKEND")
 
 class TestingConfig(Config):
     DEBUG = True
@@ -100,3 +102,5 @@ class TestingConfig(Config):
     HOST = 'localhost'
     SITE_ROOT_URL = 'localhost:5001'
     SQLALCHEMY_DATABASE_URI = 'sqlite:///database/main.db'
+    CELERY_BROKER_URL = "redis://localhost:6379"
+    CELERY_RESULT_BACKEND = "redis://localhost:6379"

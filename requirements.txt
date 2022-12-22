@@ -28,3 +28,5 @@ email-validator
 Werkzeug~=1.0.1
 alembic~=1.4.3
 gunicorn
+redis
+huey

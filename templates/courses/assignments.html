@@ -1,4 +1,5 @@
 {% extends 'helpers/layout.html' %}
+{% import 'helpers/navigation.html' as navigation %}
 
 {% block title %}
 Courses: Assignments
@@ -470,7 +471,8 @@ div.overlay {
 
 {% block body %}
 
-<h1>Manage Assignments</h1>
+    <h1>Manage Assignments</h1>
+    {{ navigation.navigate_course() }}
 
 <div class="modal fade" id="assignment-create" tabindex="-1" role="dialog" aria-labelledby="assignment-create-label">
   <div class="modal-dialog" role="document">

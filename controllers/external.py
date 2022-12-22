@@ -17,10 +17,11 @@ from models.submission import Submission
 from models.assignment import Assignment
 from models.assignment_group import AssignmentGroup
 
-from controllers.helpers import (lti, highlight_python_code, normalize_url,
+from controllers.helpers import (lti, normalize_url,
                                  ensure_dirs, ajax_failure, parse_assignment_load, require_request_parameters,
                                  get_course_id, maybe_int, get_user, check_resource_exists, ajax_success,
                                  login_required, require_course_instructor, require_course_grader, maybe_bool)
+from utilities import highlight_python_code
 
 blueprint_external = Blueprint('external', __name__, url_prefix='/external')
 

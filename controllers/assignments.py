@@ -43,6 +43,13 @@ blueprint_assignments = Blueprint('assignments', __name__, url_prefix='/assignme
 @blueprint_assignments.route('/load', methods=['GET', 'POST'])
 @lti(request='initial')
 def load(lti, lti_exception=None):
+    if request.args.get('grade_mode', False) == "group":
+        course_id = request.args.get('course_id')
+        user_id = request.args.get('user_id')
+        assignment_group_id = request.args.get('assignment_group_id')
+        return blockpy.view_submissions(course_id, user_id, assignment_group_id)
+    if request.args.get('grade_mode', False) == "single":
+        return blockpy.view_submission()
     editor_information = parse_assignment_load()
 
     # Use the proper template
@@ -51,6 +58,13 @@ def load(lti, lti_exception=None):
             return maze.load_editor(lti, editor_information)
 
     return blockpy.load_editor(lti, editor_information)
+
+
+@blueprint_assignments.route('/load_grade/', methods=['GET', 'POST'])
+@blueprint_assignments.route('/load_grade', methods=['GET', 'POST'])
+@lti(request='initial')
+def load_grade(*args, lti_exception=None, assignment_group_id=None, course_id=None, user_id=None, **kwargs):
+    return blockpy.view_submissions(course_id, user_id, assignment_group_id, *args, **kwargs)
 
 
 @blueprint_assignments.route('/reading/<path>/', methods=['GET', 'POST'])

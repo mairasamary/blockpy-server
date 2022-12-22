@@ -315,7 +315,7 @@ def verify_request_common(consumers, url, method, headers, params):
 
 
 def generate_request_xml(message_identifier_id, operation,
-                         lis_result_sourcedid, score, message=None, url=False):
+                         lis_result_sourcedid, score, message=None, url=False, needs_review=False):
     # pylint: disable=too-many-locals
     """
     Generates LTI 1.1 XML for posting result to LTI consumer.
@@ -339,6 +339,9 @@ def generate_request_xml(message_identifier_id, operation,
     message_identifier.text = message_identifier_id
     body = etree.SubElement(root, 'imsx_POXBody')
     xml_request = etree.SubElement(body, '%s%s' % (operation, 'Request'))
+    if needs_review:
+        submission = etree.SubElement(xml_request, 'submissionDetails')
+        etree.SubElement(submission, 'needsAdditionalReview')
     record = etree.SubElement(xml_request, 'resultRecord')
 
     guid = etree.SubElement(record, 'sourcedGUID')
@@ -354,11 +357,11 @@ def generate_request_xml(message_identifier_id, operation,
         text_string.text = score.__str__()
         if message is not None:
             result_data = etree.SubElement(result, 'resultData')
-            text_node = etree.SubElement(result_data, 'url' if url else 'text')
+            text_node = etree.SubElement(result_data, 'ltiLaunchUrl' if url else 'text')
             text_node.text = message
     ret = "<?xml version='1.0' encoding='utf-8'?>\n{}".format(
         etree.tostring(root, encoding='utf-8').decode('utf-8'))
-
+    print(ret)
     log.debug("XML Response: \n%s", ret)
     return ret
 

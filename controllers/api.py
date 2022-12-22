@@ -1,7 +1,9 @@
 import json
+import time
+import random
 
 import flask_security
-from flask import Blueprint, request, Response, jsonify, abort, g
+from flask import Blueprint, request, Response, jsonify, abort, g, url_for
 
 from controllers.helpers import get_course_id, get_user, check_resource_exists, require_request_parameters
 from models.assignment import Assignment
@@ -9,6 +11,7 @@ from models.assignment_group import AssignmentGroup
 from models.course import Course
 from models.portation import export_bundle, import_bundle
 from models.user import User
+from main import celery
 
 blueprint_api = Blueprint('api', __name__, url_prefix='/api')
 
@@ -17,6 +20,66 @@ blueprint_api = Blueprint('api', __name__, url_prefix='/api')
 @blueprint_api.route('/test', methods=['GET'])
 def test():
     return jsonify("success")
+
+
+@celery.task(bind=True)
+def do_long_task(self):
+    """Background task that runs a long function with progress reports."""
+    verb = ['Starting up', 'Booting', 'Repairing', 'Loading', 'Checking']
+    adjective = ['master', 'radiant', 'silent', 'harmonic', 'fast']
+    noun = ['solar array', 'particle reshaper', 'cosmic ray', 'orbiter', 'bit']
+    message = ''
+    total = random.randint(10, 50)
+    for i in range(total):
+        if not message or random.random() < 0.25:
+            message = '{0} {1} {2}...'.format(random.choice(verb),
+                                              random.choice(adjective),
+                                              random.choice(noun))
+        self.update_state(state='PROGRESS',
+                          meta={'current': i, 'total': total,
+                                'status': message})
+        time.sleep(1)
+    return {'current': 100, 'total': 100, 'status': 'Task completed!',
+            'result': 42}
+
+
+@blueprint_api.route('/long_task/', methods=['GET'])
+@blueprint_api.route('/long_task', methods=['GET'])
+def long_task():
+    task = do_long_task.apply_async()
+    location = url_for('api.taskstatus', task_id=task.id)
+    return jsonify({'taskstatus': location}), 202, {'Location': location}
+
+
+@blueprint_api.route('/status/<task_id>')
+def taskstatus(task_id):
+    task = do_long_task.AsyncResult(task_id)
+    if task.state == 'PENDING':
+        # job did not start yet
+        response = {
+            'state': task.state,
+            'current': 0,
+            'total': 1,
+            'status': 'Pending...'
+        }
+    elif task.state != 'FAILURE':
+        response = {
+            'state': task.state,
+            'current': task.info.get('current', 0),
+            'total': task.info.get('total', 1),
+            'status': task.info.get('status', '')
+        }
+        if 'result' in task.info:
+            response['result'] = task.info['result']
+    else:
+        # something went wrong in the background job
+        response = {
+            'state': task.state,
+            'current': 1,
+            'total': 1,
+            'status': str(task.info),  # this is the exception raised
+        }
+    return jsonify(response)
 
 
 def load_api_user():
