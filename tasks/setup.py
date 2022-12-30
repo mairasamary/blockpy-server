@@ -1,19 +1,14 @@
 import os
+import logging
 import time
+from huey import RedisHuey, SqliteHuey
 
-from celery import Celery
 
-
-def setup_celery(app):
-    celery = Celery(app.import_name)
-    print(app.import_name)
-    celery.conf.broker_url = app.config['CELERY_BROKER_URL']
-    celery.conf.result_backend = app.config['CELERY_RESULT_BACKEND']
-
-    class ContextTask(celery.Task):
-        def __call__(self, *args, **kwargs):
-            with app.app_context():
-                return self.run(*args, **kwargs)
-    celery.Task = ContextTask
-
-    return celery
+def setup_tasks(task_queue_style, task_db_uri):
+    if task_queue_style == 'sqlite':
+        huey = SqliteHuey(filename=task_db_uri)
+    elif task_queue_style == 'redis':
+        huey = RedisHuey(url=task_db_uri)
+    else:
+        raise ValueError(f"Unknown TASK_QUEUE_STYLE: {task_queue_style} (should be sqlite or redis)")
+    return huey

@@ -17,8 +17,10 @@ else:
     app.config.from_object('config.TestingConfig')
 
 # Tasks
-from tasks.setup import setup_celery
-celery = setup_celery(app)
+from tasks.setup import setup_tasks
+task_queue_style = app.config['TASK_QUEUE_STYLE']
+task_db_uri = app.config['TASK_DB_URI']
+huey = setup_tasks(task_queue_style, task_db_uri)
 
 # Modify Jinja2
 from controllers.jinja_filters import setup_jinja_filters

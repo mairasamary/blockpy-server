@@ -17,7 +17,7 @@ from main import app
 from models.assignment_tag import AssignmentTag
 from models.course import Course
 
-from models.models import (db)
+from models.models import db
 from models.log import Log
 from models.submission import Submission, GradingStatuses
 from models.assignment import Assignment

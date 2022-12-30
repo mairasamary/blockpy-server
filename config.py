@@ -34,6 +34,7 @@ class Config(object):
     BLOCKPY_LOG_DIR = os.path.join(ROOT_DIRECTORY, 'logs')
     ERROR_FILE_PATH = os.path.join(ROOT_DIRECTORY, 'logs', 'blockpy_errors.log')
     EVENTS_FILE_PATH = os.path.join(ROOT_DIRECTORY, 'logs', 'blockpy_events.log')
+    TASKS_FILE_PATH = os.path.join(ROOT_DIRECTORY, 'logs', 'blockpy_tasks.log')
     # TODO: This is for API access with Canvas - nothing actually needs it yet.
     COURSE_TOKENS = os.path.join(ROOT_DIRECTORY, 'settings/course_tokens.yaml')
 
@@ -93,8 +94,9 @@ class ProductionConfig(Config):
     SQLALCHEMY_DATABASE_URI = (DB_SECRETS.get('ACCESS_URL')
                                .format(username=DB_SECRETS.get('USER'),
                                        password=DB_SECRETS.get('PASS')))
-    CELERY_BROKER_URL = TASK_SECRETS.get("CELERY_BROKER_URL")
-    CELERY_RESULT_BACKEND = TASK_SECRETS.get("CELERY_RESULT_BACKEND")
+    TASK_QUEUE_STYLE = 'redis'
+    TASK_DB_URI = TASK_SECRETS.get("TASK_DB_URI")
+
 
 class TestingConfig(Config):
     DEBUG = True
@@ -102,5 +104,5 @@ class TestingConfig(Config):
     HOST = 'localhost'
     SITE_ROOT_URL = 'localhost:5001'
     SQLALCHEMY_DATABASE_URI = 'sqlite:///database/main.db'
-    CELERY_BROKER_URL = "redis://localhost:6379"
-    CELERY_RESULT_BACKEND = "redis://localhost:6379"
+    TASK_QUEUE_STYLE = 'sqlite'
+    TASK_DB_URI = 'database/tasks.db'
