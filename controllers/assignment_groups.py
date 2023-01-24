@@ -3,7 +3,7 @@ import json
 from flask import Blueprint, send_from_directory, Response, render_template, flash
 from flask import Flask, redirect, url_for, session, request, jsonify, g
 
-from controllers.helpers import (lti, require_request_parameters, require_course_instructor, login_required,
+from controllers.helpers import (require_request_parameters, require_course_instructor, login_required,
                                  check_resource_exists, get_select_menu_link, get_course_id, get_user, ajax_success,
                                  maybe_int, require_course_grader)
 
@@ -19,7 +19,7 @@ blueprint_assignment_group = Blueprint('assignment_group', __name__, url_prefix=
 @blueprint_assignment_group.route('/add/', methods=['GET', 'POST'])
 @require_request_parameters('course_id', 'name')
 @login_required
-def add_group(lti=lti):
+def add_group():
     ''' Adds a group to a course'''
     # Get arguments
     course_id = int(request.values.get('course_id'))
@@ -42,7 +42,7 @@ def add_group(lti=lti):
 @blueprint_assignment_group.route('/fork/', methods=['GET', 'POST'])
 @require_request_parameters('assignment_group_id')
 @login_required
-def fork_group(lti=lti):
+def fork_group():
     ''' Adds a group to a course'''
     # Get arguments
     assignment_group_id = int(request.values.get('assignment_group_id'))
@@ -65,7 +65,7 @@ def fork_group(lti=lti):
 @blueprint_assignment_group.route('/remove/', methods=['GET', 'POST'])
 @require_request_parameters('assignment_group_id')
 @login_required
-def remove_group(lti=lti):
+def remove_group():
     ''' Removes a group from a course'''
     assignment_group_id = int(request.values.get('assignment_group_id'))
     assignment_group = AssignmentGroup.by_id(assignment_group_id)
@@ -83,7 +83,7 @@ def remove_group(lti=lti):
 @blueprint_assignment_group.route('/edit/', methods=['GET', 'POST'])
 @require_request_parameters('assignment_group_id', 'new_name')
 @login_required
-def edit_group(lti=lti):
+def edit_group():
     # Get arguments
     assignment_group_id = int(request.values.get('assignment_group_id'))
     assignment_group = AssignmentGroup.by_id(assignment_group_id)
@@ -104,7 +104,7 @@ def edit_group(lti=lti):
 @blueprint_assignment_group.route('/move_membership/', methods=['GET', 'POST'])
 @require_request_parameters('assignment_id', 'old_group_id', 'new_group_id')
 @login_required
-def move_membership(lti=None):
+def move_membership():
     # Get arguments
     assignment_id = int(request.values.get('assignment_id'))
     old_group_id = int(request.values.get('old_group_id'))
@@ -151,7 +151,7 @@ def export():
 @blueprint_assignment_group.route('/edit_security_settings', methods=['GET', 'POST'])
 @blueprint_assignment_group.route('/edit_security_settings/', methods=['GET', 'POST'])
 @login_required
-def edit_security_settings(lti=lti):
+def edit_security_settings():
     # Get arguments
     assignment_group_id = maybe_int(request.values.get('assignment_group_id'))
     assignment_group_url = request.values.get("assignment_group_url")

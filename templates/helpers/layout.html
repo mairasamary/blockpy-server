@@ -264,6 +264,56 @@
             min-height: 500px;
         }
 
+        .mdq {
+            padding: 2px;
+            border: 1px solid lightgray;
+            color: #555;
+        }
+
+        .mdq-True {
+            background-color: #d1e7dd;
+        }
+
+        .mdq-True::before {
+            content: "✔️";
+        }
+
+        .mdq-False {
+            background-color: #f8d7da;
+        }
+
+        .mdq-False::before {
+            content: "❌ ";
+        }
+
+        ul.maq {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        li.maq {
+            position: relative;
+            padding-left: 1.5em;
+        }
+
+        li.maq:before {
+            content: "✔️";
+            position: absolute;
+            left: 0;
+            width: 1em;
+            height: 1em;
+        }
+
+        li.maq-True:before {
+            content: "✔️";
+        }
+
+        li.maq-False::before {
+            content: "❌ ";
+        }
+
+
+
     </style>
 
     <style>
@@ -288,6 +338,89 @@
             });
         {% endif %}
     </script>
+
+    <script>
+        function switchVisible(submissionId, showHide) {
+            $(`#h-${submissionId}-start`).toggle(!showHide);
+            $(`#h-${submissionId}-end`).toggle(showHide);
+        }
+        function regrade(element, submission_id, hard) {
+            let url = "{{ url_for('grading.update_grading_status') }}?submission_id="+submission_id;
+            if (hard) {
+                url = "{{ url_for('blockpy.update_submission') }}?submission_id="+submission_id;
+            }
+            {% if request.values.get('resubmit') == 'hard' %}
+            url = "{{ url_for('blockpy.update_submission') }}?submission_id="+submission_id;
+            {% endif %}
+            //console.log(this, element, submission_id);
+            element.style.backgroundColor = 'white';
+            fetch(url, {method: 'POST'}).then((response) => {
+                return response.json()
+            }).then(response => {
+                if (response.success) {
+                    element.className = "green-check-mark";
+                    element.innerHTML = "&#10004;";
+                } else {
+                    element.className = "red-x";
+                    element.innerHTML = "&#10060;"
+                    console.error(response);
+                    alert(response.message);
+                }
+                element.style.backgroundColor = 'transparent';
+            }).catch(() => {
+                element.style.backgroundColor = 'red';
+                console.error(arguments);
+            }).finally(() => {
+            });
+        }
+
+        function estimateDuration(element, submission_id) {
+            let url = "{{ url_for('blockpy.estimate_duration') }}?submission_id="+submission_id;
+            element.style.backgroundColor = 'white';
+            fetch(url, {method: 'GET'}).then((response) => {
+                return response.json()
+            }).then(response => {
+                if (response.success) {
+                    element.className = "green-check-mark";
+                    element.innerHTML = forHumans(response.duration);
+                } else {
+                    element.className = "red-x";
+                    element.innerHTML = "&#10060;"
+                }
+                element.style.backgroundColor = 'transparent';
+            }).catch(() => {
+                element.style.backgroundColor = 'red';
+                console.error(arguments);
+            }).finally(() => {
+            });
+        }
+
+        /**
+         * Translates seconds into human readable format of seconds, minutes, hours, days, and years
+         *
+         * @param  {number} seconds The number of seconds to be processed
+         * @return {string}         The phrase describing the amount of time
+         */
+        function forHumans ( seconds ) {
+            if (!seconds) {
+                return '0 seconds';
+            }
+            var levels = [
+                [Math.floor(seconds / 31536000), 'years'],
+                [Math.floor((seconds % 31536000) / 86400), 'days'],
+                [Math.floor(((seconds % 31536000) % 86400) / 3600), 'hours'],
+                [Math.floor((((seconds % 31536000) % 86400) % 3600) / 60), 'minutes'],
+                [Math.floor((((seconds % 31536000) % 86400) % 3600) % 60), 'seconds'],
+            ];
+            var returntext = '';
+
+            for (var i = 0, max = levels.length; i < max; i++) {
+                if ( levels[i][0] === 0 ) continue;
+                returntext += ' ' + levels[i][0] + ' ' + (levels[i][0] === 1 ? levels[i][1].substr(0, levels[i][1].length-1): levels[i][1]);
+            };
+            return returntext.trim();
+        }
+        </script>
 
 
 </head>

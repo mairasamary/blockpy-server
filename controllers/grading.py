@@ -18,7 +18,7 @@ from models.review import Review
 from models.submission import Submission, GradingStatuses
 
 
-from controllers.helpers import (lti, normalize_url,
+from controllers.helpers import (normalize_url,
                                  ensure_dirs, ajax_failure, parse_assignment_load, require_request_parameters,
                                  get_course_id, maybe_int, get_user, check_resource_exists, ajax_success,
                                  login_required, require_course_instructor, require_course_grader, maybe_bool,
@@ -35,8 +35,7 @@ def grading_static(path):
 
 
 @blueprint_grading.route('/update_grading_status', methods=['POST'])
-@lti()
-def update_grading_status(lti, lti_exception=None):
+def update_grading_status():
     submission_id = maybe_int(request.values.get("submission_id"))
     # TODO: Pretty sure multiple assignments are broken for grading
     assignment_group_id = maybe_int(request.values.get('assignment_group_id'))
@@ -54,9 +53,11 @@ def update_grading_status(lti, lti_exception=None):
     # Do action
     if assignment_group_id is None:
         assignment_group_id = submission.assignment_group_id
+    if not g.lti:
+        return ajax_success({"submitted": False, "new_status": "FullyGraded"})
     error = "Generic LTI Failure - perhaps not logged into LTI session?"
     try:
-        success, score = lti_post_grade(lti, submission, None, assignment_group_id,
+        success, score = lti_post_grade(g.lti, submission, None, assignment_group_id,
                                         submission.user_id, submission.course_id, use_course_service_url=True)
     except LTIPostMessageException as e:
         success = False

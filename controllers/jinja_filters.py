@@ -1,4 +1,5 @@
 import json
+import re
 from datetime import datetime, timedelta
 
 from natsort import natsorted
@@ -28,6 +29,10 @@ def get_setting(assignment, *keys):
             return None
     return settings
 
+
+def to_iso_time(date):
+    date = (date - date.astimezone().utcoffset())
+    return date.strftime("%Y%m%dT%H%M%S.%fZ")
 
 def date_description(date):
     if not date:
@@ -77,6 +82,41 @@ def make_readonly_form(assignment, submission, is_grader):
     data['submission']['submission_status'] = "inProgress"
     return json.dumps(data)
 
+#export const matchKeyInBrackets = (key: string) => new RegExp(`(?<!\\\))(\\[${key}\\])(?!\\()`);
+
+
+def make_readonly_quiz_body(question, feedback, student, check, is_grader):
+    text = question['body']
+    if question['type'] in ('multiple_dropdowns_question', 'fill_in_multiple_blanks_question'):
+        for key, value in student.items():
+            if 'correct' in check:
+                correct = check.get('correct', {}).get(key) == value
+            elif 'correct_exact' in check:
+                correct = value in check.get('correct_exact', {}).get(key, [])
+            elif 'correct_regex' in check:
+                correct = any(re.match(reg, student) for reg in check.get('correct_regex', {}).get(key))
+            text = re.sub(rf"(?<!\\)(\[{key}\])(?!\()",
+                          f"<span class='mdq mdq-{correct if is_grader else 'unknown'}'>{value}</span>",
+                          text)
+    return Markdown(extensions=['fenced_code']).convert(text)
+
+
+def check_quiz_answer(question, feedback, student, check, is_grader, part=None):
+    if question['type'] == 'true_false_question':
+        return student.lower() == str(check.get('correct')).lower() if is_grader else 'unknown'
+    elif question['type'] == 'multiple_answers_question':
+        return (part in check.get('correct', [])) == (part in student)
+    elif question['type'] == 'matching_question':
+        return student == check.get('correct', [])[part]
+    elif question['type'] == 'multiple_choice_question':
+        return student == check.get('correct')
+    elif question['type'] in ("short_answer_question", "numerical_question"):
+        if 'correct_exact' in check:
+            return student in check['correct_exact']
+        elif 'correct_regex' in check:
+            return any(re.match(reg, student) for reg in check['correct_regex'])
+        else:
+            return False
 
 def setup_jinja_filters(app):
     app.jinja_env.filters['markdown'] = Markdown(extensions=['fenced_code']).convert
@@ -91,3 +131,5 @@ def setup_jinja_filters(app):
     app.jinja_env.filters['modify_query'] = modify_query
     app.jinja_env.filters['date_description'] = date_description
     app.jinja_env.filters['make_readonly_form'] = make_readonly_form
+    app.jinja_env.filters['make_readonly_quiz_body'] = make_readonly_quiz_body
+    app.jinja_env.filters['check_quiz_answer'] = check_quiz_answer

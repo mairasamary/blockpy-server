@@ -16,6 +16,12 @@ if secrets['PRODUCTION']:
 else:
     app.config.from_object('config.TestingConfig')
 
+if app.config['PROFILE_RUNTIME']:
+    from werkzeug.middleware.profiler import ProfilerMiddleware
+    app.wsgi_app = ProfilerMiddleware(app.wsgi_app, stream=None,
+                                      profile_dir=app.config['TIMING_LOG_DIR'],
+                                      filename_format='{method}.{path}.{elapsed:.0f}ms.{time:.0f}.pstat')
+
 # Tasks
 from tasks.setup import setup_tasks
 task_queue_style = app.config['TASK_QUEUE_STYLE']

@@ -125,7 +125,7 @@ tr.hover-remove-rows button.remove-button {
                 </td>
                 <td class='col-sm-10'>
                     {% if assignment.type == 'quiz' %}
-                        <span>{{ (assignment.instructions|json_load).get('questions')|length }} questions</span>
+                        <span>{{ (assignment.instructions|json_load).get('questions', [])|length }} questions</span>
                     {% elif assignment.type == 'maze' %}
                         <span>Maze level {{ assignment.instructions }}</span>
                     {% else %}

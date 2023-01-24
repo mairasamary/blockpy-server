@@ -8,51 +8,29 @@ from flask_security.core import current_user
 
 from main import app
 from models import models
-from controllers.helpers import (admin_required, lti)
+from controllers.helpers import admin_required
 from utilities import highlight_python_code
 
-
-@app.before_request
-def load_user():
-    if current_user.is_authenticated:
-        g.user = current_user
-        if 'lti_course' in session:
-            g.course = models.Course.by_id(session['lti_course'])
-    elif not request.endpoint or not request.endpoint.startswith('security.'):
-        if 'uid' in session:
-            uid = session['uid']
-            g.user = models.User.find_anonymous_user(uid)
-        if 'uid' not in session or g.user is None:
-            uid = uuid.uuid4().hex
-            session['uid'] = uid
-            g.user = models.User.make_anonymous_user(uid)
-
+import controllers.per_request
 from controllers.admin import admin
-
 import controllers.security
 
 from controllers.courses import courses
-
 app.register_blueprint(courses)
 
 from controllers.assignments import blueprint_assignments
-
 app.register_blueprint(blueprint_assignments)
 
 from controllers.assignment_groups import blueprint_assignment_group
-
 app.register_blueprint(blueprint_assignment_group)
 
 from controllers.blockpy import blueprint_blockpy
-
 app.register_blueprint(blueprint_blockpy)
 
 from controllers.maze import blueprint_maze
-
 app.register_blueprint(blueprint_maze)
 
 from controllers.external import blueprint_external
-
 app.register_blueprint(blueprint_external)
 
 from controllers.grading import blueprint_grading

@@ -26,13 +26,14 @@ from .common import (
 
 log = logging.getLogger('pylti.flask')  # pylint: disable=invalid-name
 
+
 def default_error(exception=None):
     """Render simple error page.  This should be overidden in applications."""
     # pylint: disable=unused-argument
     return "There was an LTI communication error", 500
 
 
-class LTI(object):
+class LTI:
     """
     LTI Object represents abstraction of current LTI session. It provides
     callback methods and methods that allow developer to inspect
@@ -44,7 +45,6 @@ class LTI(object):
     def __init__(self, lti_args, lti_kwargs):
         self.lti_args = lti_args
         self.lti_kwargs = lti_kwargs
-        self.nickname = self.name
 
         # Set app to current_app if not specified
         if not self.lti_kwargs['app']:
@@ -260,7 +260,9 @@ class LTI(object):
             session[LTI_SESSION_KEY] = False
             raise
 
-    def post_grade(self, grade, message='', endpoint=None, url=False, needs_review=False):
+    def post_grade(self, grade, message='', endpoint=None, url=False,
+                   needs_review=False, when_submitted_at: str = None,
+                   overwrite_human_grades=False):
         """
         Post grade to LTI consumer using XML
 
@@ -279,7 +281,8 @@ class LTI(object):
         if 0 <= score <= 1.0:
             xml = generate_request_xml(
                 message_identifier_id, operation, lis_result_sourcedid,
-                score, message, url, needs_review)
+                score, message, url, needs_review, when_submitted_at=when_submitted_at,
+                overwrite_human_grades=overwrite_human_grades)
             ret = post_message(self._consumers(), self.key,
                                self.response_url, xml)
             if not ret:
@@ -291,6 +294,7 @@ class LTI(object):
 
     def post_grade2(self, grade, user=None, comment=''):
         """
+        (NOT USED BY BLOCKPY)
         Post grade to LTI consumer using REST/JSON
         URL munging will is related to:
         https://openedx.atlassian.net/browse/PLAT-281

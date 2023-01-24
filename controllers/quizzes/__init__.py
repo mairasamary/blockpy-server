@@ -20,7 +20,7 @@ from models.review import Review
 from models.submission import Submission, GradingStatuses
 
 
-from controllers.helpers import (lti, normalize_url,
+from controllers.helpers import (normalize_url,
                                  ensure_dirs, ajax_failure, parse_assignment_load, require_request_parameters,
                                  get_course_id, maybe_int, get_user, check_resource_exists, ajax_success,
                                  login_required, require_course_instructor, require_course_grader, maybe_bool,

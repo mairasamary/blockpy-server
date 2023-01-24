@@ -1,4 +1,31 @@
 <div xml:lang="en">
     <h2 id='{{ assignment.slug() }}'>Reading {{ assignment.name }}</h2>
     <a href="{{ url_for('assignments.load_reading', path=assignment.url, embed=True) }}" target="_blank">View reading</a>
+
+    <div>Submission Status: {{ submission.submission_status }}</div>
+    <div>Grading Status: {{ submission.grading_status }}</div>
+    <div>Score Status: {{ submission.full_status() }}</div>
+    <div>Date Created: {{ submission.date_created }}</div>
+    <div>Date Modified: {{ submission.date_modified }}</div>
+    <div>Full Submission: <a href="{{ url_for('blockpy.load_assignment',
+                            assignment_id=submission.assignment_id,
+                            user_id=submission.user_id,
+                            course_id=submission.course_id,
+                            force_download=True,
+                            embed=True) }}">download</a></div>
+    <div>History: <a href="{{ url_for('blockpy.browse_history', assignment_id=submission.assignment_id,
+        user_id=submission.user_id, course_id=submission.course_id) }}">view</a></div>
+
+    {% if (is_grader or not hiding) and submission.code %}
+    <div id="reviewable-code-area-{{ submission.id }}">Submitted code:<br>
+        {{ submission.code|highlight_python_code|safe }}
+        {% if submission.extra_files %}
+            {% for filename, contents in (submission.extra_files|json_load).items() %}
+                <strong>{{ filename }}</strong>
+                {{ contents|highlight_python_code|safe }}
+            {% endfor %}
+        {% endif %}
+    </div>
+
+    {% endif %}
 </div>

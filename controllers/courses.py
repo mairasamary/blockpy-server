@@ -11,7 +11,7 @@ from flask import Blueprint, send_from_directory
 from flask import Flask, redirect, url_for, session, request, jsonify, g, \
     make_response, Response, render_template, flash, abort
 
-from controllers.helpers import (lti, strip_tags,
+from controllers.helpers import (strip_tags,
                                  get_lti_property, require_request_parameters, login_required,
                                  require_course_instructor, require_course_grader, get_select_menu_link,
                                  check_resource_exists, get_course_id, get_user, ajax_success, ajax_failure, maybe_int,
@@ -382,11 +382,7 @@ def grader_dashboard(user, course_id):
 
 @courses.route('dashboard/', methods=['GET', 'POST'])
 @courses.route('dashboard', methods=['GET', 'POST'])
-@lti(request='initial')
-def dashboard(lti=lti, lti_exception=None):
-    """
-    :type lti: controllers.pylti.flask.lTI
-    """
+def dashboard():
     force_default_assignment = maybe_bool(request.values.get('force_default_assignment', "false"))
     if 'user' not in g and not g.user:
         return "You are not logged in."

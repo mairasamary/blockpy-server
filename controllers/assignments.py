@@ -17,7 +17,7 @@ except:
 from flask import (Blueprint, g, session, render_template, url_for, request, jsonify, abort, make_response,
                    flash, redirect, Response)
 
-from controllers.helpers import (lti, strip_tags,
+from controllers.helpers import (strip_tags,
                                  get_lti_property, require_request_parameters, login_required,
                                  require_course_instructor, get_select_menu_link,
                                  check_resource_exists, parse_assignment_load, get_course_id, get_user, ajax_success,
@@ -41,8 +41,7 @@ blueprint_assignments = Blueprint('assignments', __name__, url_prefix='/assignme
 @blueprint_assignments.route('/', methods=['GET', 'POST'])
 @blueprint_assignments.route('/load/', methods=['GET', 'POST'])
 @blueprint_assignments.route('/load', methods=['GET', 'POST'])
-@lti(request='initial')
-def load(lti, lti_exception=None):
+def load():
     if request.args.get('grade_mode', False) == "group":
         course_id = request.args.get('course_id')
         user_id = request.args.get('user_id')
@@ -55,15 +54,14 @@ def load(lti, lti_exception=None):
     # Use the proper template
     if editor_information['assignments']:
         if editor_information['assignments'][0].type == 'maze':
-            return maze.load_editor(lti, editor_information)
+            return maze.load_editor(editor_information)
 
-    return blockpy.load_editor(lti, editor_information)
+    return blockpy.load_editor(editor_information)
 
 
 @blueprint_assignments.route('/load_grade/', methods=['GET', 'POST'])
 @blueprint_assignments.route('/load_grade', methods=['GET', 'POST'])
-@lti(request='initial')
-def load_grade(*args, lti_exception=None, assignment_group_id=None, course_id=None, user_id=None, **kwargs):
+def load_grade(*args, assignment_group_id=None, course_id=None, user_id=None, **kwargs):
     return blockpy.view_submissions(course_id, user_id, assignment_group_id, *args, **kwargs)
 
 
@@ -78,7 +76,7 @@ def load_reading(path):
     # Use the proper template
     if len(editor_information['assignments']) == 1:
         if editor_information['assignments'][0].type == 'reading':
-            return blockpy.load_editor(lti, editor_information)
+            return blockpy.load_editor(editor_information)
 
     return jsonify(success=False, message="There is no reading with that information")
 
@@ -125,7 +123,7 @@ def load_textbook(path):
 @blueprint_assignments.route('/fork/', methods=['GET', 'POST'])
 @require_request_parameters('assignment_id')
 @login_required
-def fork(lti=lti):
+def fork():
     ''' Fork an assignment to a course'''
     # Get arguments
     course_id = get_course_id()
@@ -172,7 +170,7 @@ def fork(lti=lti):
 @blueprint_assignments.route('/new', methods=['GET', 'POST'])
 @require_request_parameters('course_id')
 @login_required
-def new_assignment(lti=lti):
+def new_assignment():
     # Get arguments
     course_id = int(request.values.get('course_id'))
     name = request.values.get('name', None) or None
@@ -208,7 +206,7 @@ def new_assignment(lti=lti):
 @blueprint_assignments.route('/get/', methods=['GET', 'POST'])
 @blueprint_assignments.route('/get', methods=['GET', 'POST'])
 @login_required
-def get_assignment(lti=lti):
+def get_assignment():
     assignment_id = int(request.values.get('assignment_id'))
     assignment = Assignment.by_id(assignment_id)
     is_embedded = ('embed' == request.values.get('menu', "select"))
@@ -234,7 +232,7 @@ def get_assignment(lti=lti):
 @blueprint_assignments.route('/remove/', methods=['GET', 'POST'])
 @require_request_parameters('assignment_id')
 @login_required
-def remove_assignment(lti=None):
+def remove_assignment():
     assignment_id = int(request.values.get('assignment_id'))
     assignment = Assignment.by_id(assignment_id)
     # Verify exists
@@ -249,7 +247,7 @@ def remove_assignment(lti=None):
 @blueprint_assignments.route('/move_course/', methods=['GET', 'POST'])
 @require_request_parameters('new_course_id', 'assignment_id')
 @login_required
-def move_course(lti=None):
+def move_course():
     assignment_id = int(request.values.get('assignment_id'))
     new_course_id = int(request.values.get('new_course_id'))
     assignment = Assignment.by_id(int(assignment_id))
@@ -265,8 +263,7 @@ def move_course(lti=None):
 
 @blueprint_assignments.route('/select', methods=['GET', 'POST'])
 @blueprint_assignments.route('/select/', methods=['GET', 'POST'])
-@lti(request='initial')
-def select(lti, menu='select', lti_exception=None):
+def select(menu='select'):
     """ Let's the user select from a list of assignments.
     """
     # Store current user_id and context_id
@@ -282,11 +279,10 @@ def select(lti, menu='select', lti_exception=None):
 
 @blueprint_assignments.route('/select_embed/', methods=['GET', 'POST'])
 @blueprint_assignments.route('/select_embed', methods=['GET', 'POST'])
-@lti(request='initial')
-def select_embed(lti, lti_exception=None):
+def select_embed():
     """ Let's the user select from a list of assignments.
     """
-    return select(menu='embed', lti=lti)
+    return select(menu='embed')
 
 
 @blueprint_assignments.route('/get_ids/', methods=['GET'])

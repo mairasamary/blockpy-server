@@ -22,6 +22,7 @@ class Config(object):
     SHOW_ABOUT_PAGE = secrets.get("SHOW_ABOUT_PAGE", True)
     SITE_VERSION = 5
     DEBUG = False
+    PROFILE_RUNTIME = False
     TESTING = False
     CSRF_ENABLED = True
     WTF_CSRF_ENABLED = True
@@ -32,6 +33,7 @@ class Config(object):
     UPLOADS_DIR = os.path.join(STATIC_DIRECTORY, 'uploads')
     # TODO: Pretty sure a lot of this logging is messed up - need to fix it.
     BLOCKPY_LOG_DIR = os.path.join(ROOT_DIRECTORY, 'logs')
+    TIMING_LOG_DIR = os.path.join(ROOT_DIRECTORY, 'logs', 'timing')
     ERROR_FILE_PATH = os.path.join(ROOT_DIRECTORY, 'logs', 'blockpy_errors.log')
     EVENTS_FILE_PATH = os.path.join(ROOT_DIRECTORY, 'logs', 'blockpy_events.log')
     TASKS_FILE_PATH = os.path.join(ROOT_DIRECTORY, 'logs', 'blockpy_tasks.log')
@@ -96,6 +98,7 @@ class ProductionConfig(Config):
                                        password=DB_SECRETS.get('PASS')))
     TASK_QUEUE_STYLE = 'redis'
     TASK_DB_URI = TASK_SECRETS.get("TASK_DB_URI")
+    PROFILE_RUNTIME = False
 
 
 class TestingConfig(Config):
@@ -106,3 +109,4 @@ class TestingConfig(Config):
     SQLALCHEMY_DATABASE_URI = 'sqlite:///database/main.db'
     TASK_QUEUE_STYLE = 'sqlite'
     TASK_DB_URI = 'database/tasks.db'
+    PROFILE_RUNTIME = False

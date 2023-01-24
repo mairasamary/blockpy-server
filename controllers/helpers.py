@@ -26,62 +26,6 @@ from models.assignment_group import AssignmentGroup
 from models.log import Log
 
 
-def lti(request='any', *lti_args, **lti_kwargs):
-    """
-    LTI decorator
-
-    :param: request - Request type from
-        :py:attr:`pylti.common.LTI_REQUEST_TYPE`. (default: any)
-    :return: wrapper
-    """
-
-    def lti_outer_wrapper(function):
-        @wraps(function)
-        def lti_wrapper(*args, **kwargs):
-            """
-            Pass LTI reference to function or return error.
-            """
-            try:
-                the_lti = LTI(lti_args, lti_kwargs)
-                the_lti.verify()
-                kwargs['lti'] = the_lti
-                old_user = g.user
-                g.user = User.from_lti("canvas",
-                                       session["pylti_user_id"],
-                                       session.get("lis_person_contact_email_primary", ""),
-                                       session.get("lis_person_name_given", "Canvas"),
-                                       session.get("lis_person_name_family", "User"))
-                g.roles = session["roles"].split(",") if "roles" in session else []
-                g.course = Course.from_lti("canvas",
-                                           session["context_id"],
-                                           session.get("context_title", ""),
-                                           g.user.id,
-                                           session.get("lis_outcome_service_url", ""))
-                session['lti_course'] = g.course.id
-                session['is_lti_active'] = True
-                g.user.update_roles(g.roles, g.course.id)
-                if old_user != g.user:
-                    flask_security.utils.logout_user()
-                    flask_security.utils.login_user(g.user, remember=True)
-                elif not old_user:
-                    flask_security.utils.login_user(g.user, remember=True)
-            except LTIException as lti_exception:
-                session['is_lti_active'] = False
-                kwargs['lti'] = None
-                kwargs['lti_exception'] = dict()
-                kwargs['lti_exception']['exception'] = lti_exception
-                kwargs['lti_exception']['kwargs'] = kwargs
-                kwargs['lti_exception']['args'] = args
-                flash("LTI Error: " + str(lti_exception) + ".\nTry reloading!")
-            return function(*args, **kwargs)
-
-        return lti_wrapper
-
-    lti_kwargs['request'] = request
-    lti_kwargs['app'] = app
-    return lti_outer_wrapper
-
-
 def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):

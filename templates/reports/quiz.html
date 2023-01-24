@@ -9,8 +9,11 @@
     {% set code = submission.code|json_load %}
     {% set questions = assignment.instructions|json_load %}
     {% set questions = questions.get('questions', {}) %}
+    {% set checks = assignment.on_run|json_load %}
+    {% set checks = checks.get('questions', {}) %}
 
 {% if is_grader %}
+    <div>Submission Points: {{ assignment.points * submission.score/100 }}/{{ assignment.points }}</div>
     <div>Full Submission: <a href="{{ url_for('blockpy.load_assignment',
                             assignment_id=submission.assignment_id,
                             user_id=submission.user_id,
@@ -19,13 +22,36 @@
                             embed=True) }}">download</a></div>
     <div>History: <a href="{{ url_for('blockpy.browse_history', assignment_id=submission.assignment_id,
         user_id=submission.user_id, course_id=submission.course_id) }}">view</a></div>
+    {% if 'summary' in code and code['summary']['points_possible'] != assignment.points %}
+        <div>
+        Quiz Question Points: {{ code['summary']['points_possible'] }}
+        (the sum of all the possible points within this quiz)
+        </div>
+    {% endif %}
+    <div>
+    {% if 'attempt' in code %}
+        Attempts: {{ code['attempt']['count'] }}
+        {% if code['attempt']['attempting'] %}
+            (new attempt is in progress!)
+        {% endif %}
+    {% else %}
+        Attempts: 0 (not yet submitted)
+    {% endif %}
+    {% if is_grader %}
+        <div>
+            <button class="btn btn-outline-secondary btn-sm"
+                    onclick="regrade(this, {{ submission.id }}, true)"
+            >Force Submit and Regrade</button> on behalf of student</div>
+    {% endif %}
+    </div>
 {% endif %}
 {% if 'feedback' in code and (not hiding or is_grader) %}
     <div class="accordion" id="quiz-{{ assignment.id }}">
-    {% for question_id, student in code['feedback'].items() %}
+    {% for question_id, feedback in code['feedback'].items() %}
         {% set unique_id = "quiz-"~(assignment.id)~"-question-"~(loop.index) %}
         {% set question = questions.get(question_id, {}) %}
-        {% set answer = code.get('studentAnswers', {}).get(question_id, {}) %}
+        {% set student = code.get('studentAnswers', {}).get(question_id, {}) %}
+        {% set check = checks.get(question_id, {}) %}
         <div class="card">
             <div class="card-header p-1">
                 <h3 class="mb-0">
@@ -33,20 +59,27 @@
                             data-target="#{{ unique_id }}"
                             aria-expanded="true" aria-controls="{{ unique_id }}">
                         Quiz Question {{ loop.index }}:
-                        {%  if student.get('correct', False) %}
-                            Correct!{% else %} Incorrect ({{ student.get('status') }} with {{ student.get('score', 0)|float|round(2) }} points) {% endif %}
+                        {%  if feedback.get('correct', False) %}
+                            Correct! ({{- question['points'] }} points
+                        {%- else -%}
+                            Incorrect (
+                                {{- feedback.get('status') }}
+                                as {{ (feedback.get('score', 0)*100)|round()|int }}%
+                                for {{ (question['points'] * feedback.get('score', 0))|float|round(2) -}}/
+                                {{- question['points'] }}
+                                points
+                        {%- endif -%}
+                        {%- if 'summary' in code -%}
+                            , or {{ ((100*feedback.get('score', 0)*question['points'])/code['summary']['points_possible'])|round(1) -}}%
+                            overall
+                        {%- endif -%})
                     </button>
                 </h3>
             </div>
             <div id="{{ unique_id }}" class="collapse {% if loop.first %}show{% endif %}"
                  aria-labelledby="header-{{ unique_id }}" data-parent="#quiz-{{ assignment.id }}">
                 <div class="card-body">
-                    {{ quiz_questions.render_quiz_question(question, student, answer) }}
-
-
-                    {% if is_grader %}
-                        <pre>{{ question|pprint }}</pre>
-                    {% endif %}
+                    {{ quiz_questions.render_quiz_question(question, feedback, student, check, is_grader, question_id) }}
                 </div>
             </div>
         </div>

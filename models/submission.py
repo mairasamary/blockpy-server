@@ -446,6 +446,10 @@ class Submission(Base):
             if quiz_result.graded_successfully:
                 # If we graded successfully, attach the feedback to the submission body
                 quiz_result.submission_body['feedback'] = quiz_result.feedbacks
+                quiz_result.submission_body['summary'] = {
+                    'points_possible': quiz_result.points_possible,
+                    'score': quiz_result.score
+                }
                 if 'attempt' in quiz_result.submission_body:
                     quiz_result.submission_body['attempt']['attempting'] = False
                 self.code = json.dumps(quiz_result.submission_body, indent=2)
@@ -482,15 +486,27 @@ class Submission(Base):
         total = 0
         last_progress = None
         for log in reversed(logs[:-1]):
-            if log.event_type == 'Resource.View' and log.category == 'reading' and log.label=='read':
-                data = json.loads(log.message)
-                if last_progress == data['progress']:
+            if log.event_type == 'Resource.View' and log.category == 'reading' :
+                if log.label=='read':
+                    data = json.loads(log.message)
+                    if last_progress == data['progress']:
+                        continue
+                    delay = data['delay']
+                    last_progress = data['progress']
+                    current -= timedelta(milliseconds=delay if delay else 0)
+                    total += delay/1000 if delay else 0
                     continue
-                delay = data['delay']
-                last_progress = data['progress']
-                current -= timedelta(milliseconds=delay)
-                total += delay/1000
-                continue
+                if log.label == 'watch':
+                    data = json.loads(log.message)
+                    if isinstance(data, (int, float)):
+                        # Older version, ignore these values
+                        continue
+                    else:
+                        delay = round(data.get('time', 0), 1)
+                    total += delay
+                    current -= timedelta(seconds=delay)
+                    continue
+
             diff = max(0, min((current - log.date_created).seconds, inactivity_threshold))
             total += diff
             current = log.date_created
