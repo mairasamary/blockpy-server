@@ -12,6 +12,7 @@ from flask import Blueprint, url_for, session, request, jsonify, g, render_templ
 
 from controllers.blockpy import lti_post_grade
 from controllers.pylti.common import LTIPostMessageException
+from controllers.pylti.post_grade import create_grade_post
 from main import app
 
 from models.review import Review
@@ -57,8 +58,8 @@ def update_grading_status():
         return ajax_success({"submitted": False, "new_status": "FullyGraded"})
     error = "Generic LTI Failure - perhaps not logged into LTI session?"
     try:
-        success, score = lti_post_grade(g.lti, submission, None, assignment_group_id,
-                                        submission.user_id, submission.course_id, use_course_service_url=True)
+        post_params = create_grade_post(submission, None, assignment_group_id, submission.user_id, submission.course_id, True)
+        success, total_score = lti_post_grade(g.lti, *post_params)
     except LTIPostMessageException as e:
         success = False
         error = str(e)

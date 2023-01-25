@@ -161,6 +161,7 @@ from models.review import Review
 from models.submission import Submission
 from models.sample_submission import SampleSubmission
 from models.invite import Invite
+from models.report import Report
 
 ALL_TABLES = (Assignment, AssignmentTag, AssignmentGroup, AssignmentGroupMembership,
               Authentication, Course, Log, Role, Review, Submission, User, SampleSubmission)

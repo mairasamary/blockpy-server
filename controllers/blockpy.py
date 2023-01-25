@@ -14,6 +14,7 @@ from werkzeug.utils import secure_filename
 
 from controllers.jinja_filters import to_iso_time
 from controllers.pylti.common import LTIPostMessageException
+from controllers.pylti.post_grade import get_groups_submissions, calculate_submissions_score, create_grade_post
 from main import app
 from models.assignment_tag import AssignmentTag
 from models.course import Course
@@ -309,18 +310,7 @@ def log_event():
     return ajax_success({"log_id": new_log.id})
 
 
-def get_groups_submissions(group_id, user_id, course_id):
-    group = AssignmentGroup.by_id(group_id)
-    check_resource_exists(group, "AssignmentGroup", group_id)
-    assignments = group.get_assignments()
-    submissions = [assignment.load(user_id, course_id=course_id) for assignment in assignments]
-    return group, assignments, submissions
 
-
-def calculate_submissions_score(assignments, submissions):
-    total_score = sum(submission.full_score() for submission in submissions)
-    total_possible = sum(assignment.get_points() for assignment in assignments)
-    return total_score, total_possible
 
 
 assignment_referer_regex = r"(https?\:\/\/.*?\.instructure\.com/courses/\d+/assignments/\d+).*?"
@@ -407,38 +397,12 @@ def view_submission():
                            user_id=submission.user_id, course_id=submission.course_id)
 
 
-def get_outcomes(submission, assignment_group_id, user_id, course_id) -> 'Tuple[float, str]':
-    if assignment_group_id is None:
-        score = round(submission.full_score(), 2)
-        # url = url_for('blockpy.view_submission', _external=True, embed=True,
-        #              submission_id=submission.id)
-        url = url_for("assignments.load", _external=True, embed=True,
-                      submission_id=submission.id, grade_mode="single")
-    else:
-        group, assignments, submissions = get_groups_submissions(assignment_group_id, user_id, course_id)
-        total, possible = calculate_submissions_score(assignments, submissions)
-        score = round(total / possible, 2)
-        # url = url_for('blockpy.view_submissions', _external=True, embed=True,
-        #              assignment_group_id=assignment_group_id, course_id=course_id,
-        #              user_id=user_id)
-        url = url_for("assignments.load", _external=True, embed=True,
-                      assignment_group_id=assignment_group_id, course_id=course_id,
-                      user_id=user_id, grade_mode="group")
-    return score, url
-
-
-def lti_post_grade(lti, submission, lis_result_sourcedid, assignment_group_id, user_id, course_id,
-                   use_course_service_url=False):
-    total_score, view_url = get_outcomes(submission, assignment_group_id, user_id, course_id)
-    lis_result_sourcedid = submission.endpoint if lis_result_sourcedid is None else lis_result_sourcedid
-    if 'lis_outcome_service_url' not in session or use_course_service_url:
-        course = Course.by_id(course_id)
-        if course.endpoint:
-            session['lis_outcome_service_url'] = course.endpoint
+def lti_post_grade(lti, total_score, view_url, lis_result_sourcedid, lis_outcome_service_url, reviewed):
+    session['lis_outcome_service_url'] = lis_outcome_service_url
     session['lis_result_sourcedid'] = lis_result_sourcedid
     if lis_result_sourcedid and lti:
         lti.post_grade(total_score, view_url, endpoint=lis_result_sourcedid, url=True,
-                       needs_review=submission.assignment.reviewed,
+                       needs_review=reviewed,
                        # Seems to give the wrong time? Need to find a better source than "date_modified" anyway
                        #when_submitted_at=to_iso_time(submission.date_modified)
                        )
@@ -505,25 +469,28 @@ def update_submission():
         error = "Generic LTI Failure - perhaps not logged into LTI session?"
         success = False
         total_score = None
+        post_params = create_grade_post(submission, lis_result_sourcedid, assignment_group_id, user_id, course_id, False)
         try:
-            success, total_score = lti_post_grade(g.lti, submission, lis_result_sourcedid, assignment_group_id,
-                                                  submission.user_id, submission.course_id)
+            success, total_score = lti_post_grade(g.lti, *post_params)
         except LTIPostMessageException as e:
             error = str(e)
+        success = False
         if success:
             make_log_entry(submission.assignment_id, submission.assignment_version,
                            course_id, user_id, "X-Submission.LMS", "answer.py", message=f"{total_score}|{score}")
         else:
             submission.update_grading_status(GradingStatuses.FAILED)
-
-            def reusable_make_log_entry(event_type, message):
-                make_log_entry(submission.assignment_id, submission.assignment_version,
-                               course_id, user_id, event_type, "answer.py", message=message)
-
-            reusable_make_log_entry("X-Submission.LMS.Failure", error)
-            # Needs to be pickable!
-            #queue_lti_post_grade(g.lti, submission, lis_result_sourcedid, assignment_group_id,
-            #                     submission.user_id, submission.course_id, 3, lti_post_grade, reusable_make_log_entry, score)
+            log_params = {'assignment_id': submission.assignment_id,
+                          'assignment_version': submission.assignment_version,
+                          'course_id': course_id,
+                          'user_id': user_id,
+                          'file_path': "answer.py",
+                          'timestamp': request.values.get('timestamp'),
+                          'timezone': request.values.get('timezone')}
+            make_log_entry(**log_params, event_type="X-Submission.LMS.Failure", message=error)
+            queue_lti_post_grade(g.lti.to_json(), post_params,
+                                 submission.id, assignment_group_id, submission.user_id, submission.course_id,
+                                 3, log_params, score)
             return ajax_failure({"submitted": False, "changed": was_changed, "correct": correct,
                                  "message": error, "feedbacks": feedbacks,
                                  'submission_status': submission.submission_status,

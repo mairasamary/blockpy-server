@@ -21,3 +21,11 @@ class GradingStatuses:
     NOT_READY = 'NotReady'
 
     VALID_CHOICES = (FULLY_GRADED, PENDING, PENDING_MANUAL, FAILED, NOT_READY)
+
+
+class ReportStatus:
+    QUEUED = "queued"
+    STARTED = "started"
+    FINISHED = "finished"
+    ERROR = "error"
+    EXPIRED = "expired"

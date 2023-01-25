@@ -28,6 +28,7 @@
             <lticm:property name="canvas_assignment_dueat">$Canvas.assignment.dueAt</lticm:property>
         </lticm:options>
         <lticm:property name="tool_id">blockpy-v{{ version }}</lticm:property>
+        <lticm:property name="oauth_compliant">true</lticm:property>
         <lticm:property name="privacy_level">public</lticm:property>
         <lticm:property name="domain">{{ request.headers['Host'].split(':')[0] }}</lticm:property>
         <lticm:options name="editor_button">

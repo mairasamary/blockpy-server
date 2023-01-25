@@ -161,7 +161,32 @@ def maybe_bool(value):
     return False
 
 
+SINGLE_ARG_HACK_PARAMS = (('embed', maybe_bool),
+                          ('grade_mode', str),
+                          ('assignment_group_id', maybe_int),
+                          ('course_id', maybe_int),
+                          ('user_id', maybe_int))
+
+
+def handle_single_arg_hack():
+    """
+    Horrifying solution to Canvas not correctly handling param bodies in oauth requests.
+
+    Real solution is to use this: https://canvas.instructure.com/doc/api/file.tools_xml.html#do-not-move-lti-query-params-to-post-body
+
+    :return:
+    """
+    single_arg_hack = request.values.get('single_arg_hack', None)
+    if single_arg_hack is None:
+        return None
+    single_arg_hack = single_arg_hack.split("-")
+    for key, value in zip(SINGLE_ARG_HACK_PARAMS, single_arg_hack):
+        yield value
+
+
 def parse_assignment_load(assignment_id_or_url=None):
+    # Single Arg Hack
+    #handle_single_arg_hack()
     # Lookup Code
     assignment_group_id = parse_lookup_code()
     # Assignment Group ID

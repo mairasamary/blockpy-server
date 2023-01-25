@@ -4,6 +4,7 @@ For example, to handle user management, permissions.
 """
 
 import uuid
+import traceback
 
 from flask import session, g, request, flash, render_template
 from flask_security.core import current_user
@@ -65,9 +66,13 @@ def load_user():
     try:
         g.lti = get_or_start_lti()
     except LTIException as lti_exception:
-        flash(f"LTI Error: {lti_exception}")
         app.logger.error(f"LTI Error: {lti_exception}")
-        return render_template('lti/lti_error.html', message=f"Error during LTI: {lti_exception}")
+        if app.config['DEBUG']:
+            flash(f"LTI Error: {lti_exception}")
+            lti_exception = ''.join(traceback.TracebackException.from_exception(lti_exception).format())
+            return render_template('lti/lti_error.html', message=f"Error during LTI: <pre>{lti_exception}</pre>")
+        else:
+            return render_template('lti/lti_error.html', message=f"Error during LTI. Please consult with Dr. Bart.")
     # Get user from Flask-Login, if available
     if current_user.is_authenticated:
         g.user = current_user

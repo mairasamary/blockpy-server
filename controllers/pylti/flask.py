@@ -6,7 +6,7 @@ from functools import wraps
 import logging
 import json
 
-from flask import session, current_app, Flask, g
+from flask import session as flask_session, current_app, Flask, g
 from flask import request as flask_request
 
 from .common import (
@@ -42,13 +42,22 @@ class LTI:
     This object is instantiated by @lti wrapper.
     """
 
-    def __init__(self, lti_args, lti_kwargs):
+    def __init__(self, lti_args, lti_kwargs, use_session=False):
         self.lti_args = lti_args
         self.lti_kwargs = lti_kwargs
+        self.use_session = bool(use_session)
+        self._internal_session = use_session
 
         # Set app to current_app if not specified
         if not self.lti_kwargs['app']:
             self.lti_kwargs['app'] = current_app
+
+    @property
+    def session(self):
+        """
+        Retrieves the global Flask session, or a local mock session object.
+        """
+        return self._internal_session if self.use_session else flask_session
 
     @property
     def name(self):  # pylint: disable=no-self-use
@@ -56,12 +65,12 @@ class LTI:
         Name returns user's name or user's email or user_id
         :return: best guess of name to use to greet user
         """
-        if 'lis_person_sourcedid' in session:
-            return session['lis_person_sourcedid']
-        elif 'lis_person_contact_email_primary' in session:
-            return session['lis_person_contact_email_primary']
-        elif 'pylti_user_id' in session:
-            return session['pylti_user_id']
+        if 'lis_person_sourcedid' in self.session:
+            return self.session['lis_person_sourcedid']
+        elif 'lis_person_contact_email_primary' in self.session:
+            return self.session['lis_person_contact_email_primary']
+        elif 'pylti_user_id' in self.session:
+            return self.session['pylti_user_id']
         else:
             return ''
 
@@ -72,7 +81,7 @@ class LTI:
 
         :return: user_id
         """
-        return session['pylti_user_id']
+        return self.session['pylti_user_id']
 
     def verify(self):
         """
@@ -104,14 +113,13 @@ class LTI:
         except LTINotInSessionException:
             self.verify_request()
 
-    @staticmethod
-    def _verify_session():
+    def _verify_session(self):
         """
         Verify that session was already created
 
         :raises: LTIException
         """
-        if not session.get(LTI_SESSION_KEY, False):
+        if not self.session.get(LTI_SESSION_KEY, False):
             log.debug('verify_session failed')
             raise LTINotInSessionException('Session expired or unavailable')
 
@@ -131,7 +139,7 @@ class LTI:
         OAuth Consumer Key
         :return: key
         """
-        return session['oauth_consumer_key']
+        return self.session['oauth_consumer_key']
 
     @staticmethod
     def message_identifier_id():
@@ -149,7 +157,7 @@ class LTI:
 
         :return: LTI lis_result_sourcedid
         """
-        return session['lis_result_sourcedid']
+        return self.session['lis_result_sourcedid']
 
     @property
     def role(self):  # pylint: disable=no-self-use
@@ -158,10 +166,9 @@ class LTI:
 
         :return: roles
         """
-        return session.get('roles')
+        return self.session.get('roles')
 
-    @staticmethod
-    def is_role(role):
+    def is_role(self, role):
         """
         Verify if user is in role
 
@@ -170,7 +177,7 @@ class LTI:
         :exception: LTIException if role is unknown
         """
         log.debug("is_role %s", role)
-        roles = session['roles'].split(',')
+        roles = self.session['roles'].split(',')
         if role in LTI_ROLES:
             role_list = LTI_ROLES[role]
             # find the intersection of the roles
@@ -207,7 +214,7 @@ class LTI:
 
         :return: remapped lis_outcome_service_url
         """
-        url = session['lis_outcome_service_url']
+        url = self.session['lis_outcome_service_url']
         app_config = self.lti_kwargs['app'].config
         urls = app_config.get('PYLTI_URL_FIX', dict())
         # url remapping is useful for using devstack
@@ -243,21 +250,21 @@ class LTI:
             for prop in LTI_PROPERTY_LIST:
                 if params.get(prop, None) is not None:
                     log.debug("params %s=%s", prop, params.get(prop, None))
-                    session[prop] = params[prop]
+                    self.session[prop] = params[prop]
             if params.get('user_id', None):
-                session['pylti_user_id'] = params['user_id']
+                self.session['pylti_user_id'] = params['user_id']
             
             # Set logged in session key
-            session[LTI_SESSION_KEY] = True
+            self.session[LTI_SESSION_KEY] = True
             return True
         except LTIException as e:
             for prop in LTI_PROPERTY_LIST:
-                if session.get(prop, None):
-                    del session[prop]
-            if session.get('pylti_user_id', None):
-                del session['pylti_user_id']
+                if self.session.get(prop, None):
+                    del self.session[prop]
+            if self.session.get('pylti_user_id', None):
+                del self.session['pylti_user_id']
             
-            session[LTI_SESSION_KEY] = False
+            self.session[LTI_SESSION_KEY] = False
             raise
 
     def post_grade(self, grade, message='', endpoint=None, url=False,
@@ -326,17 +333,30 @@ class LTI:
 
         return False
 
-    @staticmethod
-    def close_session():
+    def close_session(self):
         """
         Invalidates session
         """
         for prop in LTI_PROPERTY_LIST:
-            if session.get(prop, None):
-                del session[prop]
-        if session.get('pylti_user_id', None):
-            del session['pylti_user_id']
-        session[LTI_SESSION_KEY] = False
+            if self.session.get(prop, None):
+                del self.session[prop]
+        if self.session.get('pylti_user_id', None):
+            del self.session['pylti_user_id']
+        self.session[LTI_SESSION_KEY] = False
+
+    def to_json(self):
+        frozen_session = {}
+        for prop in LTI_PROPERTY_LIST:
+            if self.session.get(prop, None) is not None:
+                frozen_session[prop] = self.session[prop]
+        if self.session.get('pylti_user_id', None):
+            frozen_session['user_id'] = self.session['pylti_user_id']
+        lti_kwargs = dict(request=self.lti_kwargs['request'], app=None)
+        return dict(lti_args=self.lti_args, lti_kwargs=lti_kwargs, session=frozen_session)
+
+    @staticmethod
+    def from_json(json_data):
+        return LTI(json_data['lti_args'], json_data['lti_kwargs'], use_session=json_data['session'])
 
 
 def lti(app=None, request='any', error=default_error, role='any',
