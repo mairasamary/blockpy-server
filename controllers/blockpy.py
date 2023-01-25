@@ -474,7 +474,6 @@ def update_submission():
             success, total_score = lti_post_grade(g.lti, *post_params)
         except LTIPostMessageException as e:
             error = str(e)
-        success = False
         if success:
             make_log_entry(submission.assignment_id, submission.assignment_version,
                            course_id, user_id, "X-Submission.LMS", "answer.py", message=f"{total_score}|{score}")
