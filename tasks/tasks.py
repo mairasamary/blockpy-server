@@ -54,7 +54,6 @@ def queue_lti_post_grade(json_lti, post_params,
                 submission.update_grading_status(GradingStatuses.FULLY_GRADED)
                 make_log_entry(**log_params, event_type="X-Submission.LMS", message=f"{total_score}|{subscore}")
                 report.finish()
-                print(report.status)
                 return True
             else:
                 make_log_entry(**log_params, event_type="X-Submission.LMS.Retry-Failure", message=error)
