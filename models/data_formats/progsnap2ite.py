@@ -42,7 +42,7 @@ class CodeStates:
     def __init__(self, cursor, connection):
         self.cursor = cursor
         self.connection = connection
-        self._temp_connection = sqlite3.connect(":memory:")
+        self._temp_connection = sqlite3.connect("")
         self._temp_cursor = self._temp_connection.cursor()
         self._temp_cursor.execute("CREATE TABLE TempCodeState (Hashed, ID)")
         self._temp_cursor.execute("CREATE INDEX TempCodeStateHashed ON TempCodeState (Hashed)")
