@@ -14,6 +14,12 @@ from models.data_formats.progsnap2 import to_progsnap_event, HEADERS, LINK_SUBJE
 from models.log import Log
 from models.user import User
 
+try:
+    profile
+except:
+    def profile(f):
+        return f
+
 
 def generate_readme(cursor, connection):
     cursor.execute("CREATE TABLE Readme(text)")
@@ -36,44 +42,50 @@ class CodeStates:
     def __init__(self, cursor, connection):
         self.cursor = cursor
         self.connection = connection
-        self.cursor.execute("CREATE TABLE TempCodeState (Hashed, ID)")
-        self.cursor.execute("CREATE INDEX TempCodeStateHashed ON TempCodeState (Hashed)")
+        self._temp_connection = sqlite3.connect(":memory:")
+        self._temp_cursor = self._temp_connection.cursor()
+        self._temp_cursor.execute("CREATE TABLE TempCodeState (Hashed, ID)")
+        self._temp_cursor.execute("CREATE INDEX TempCodeStateHashed ON TempCodeState (Hashed)")
         self._latest = None
         self._latest_key = None
         self._id = 0
 
+    @profile
     def __getitem__(self, key):
         str_key = json.dumps(key)
         if self._latest_key == str_key:
             return self._latest[0]
-        self._latest = self.cursor.execute("SELECT ID FROM TempCodeState WHERE Hashed=?",
+        self._latest = self._temp_cursor.execute("SELECT ID FROM TempCodeState WHERE Hashed=?",
                                            (str_key,)).fetchone()
         if not self._latest:
             raise IndexError(f"Item missing from database: {str_key}")
         return self._latest[0]
 
+    @profile
     def __setitem__(self, key, value):
         str_key = json.dumps(key)
         if value != self._id:
             raise ValueError(f"Inserting item out of order: {value} should be {self._id}")
-        self.cursor.execute("INSERT INTO TempCodeState (Hashed, ID) VALUES (?, ?)",
+        self._temp_cursor.execute("INSERT INTO TempCodeState (Hashed, ID) VALUES (?, ?)",
                             (str_key, value))
-        self.connection.commit()
+        self._temp_connection.commit()
         self._id += 1
 
+    @profile
     def __contains__(self, key):
         str_key = json.dumps(key)
-        self._latest = self.cursor.execute("SELECT ID FROM TempCodeState WHERE Hashed=?",
+        self._latest = self._temp_cursor.execute("SELECT ID FROM TempCodeState WHERE Hashed=?",
                                            (str_key, )).fetchone()
         return bool(self._latest)
 
     def __len__(self):
         return self._id
 
+    @profile
     def finish(self):
         self.cursor.execute("CREATE TABLE CodeState (ID, Filename, Contents)")
         self.connection.commit()
-        rows = self.cursor.execute("SELECT Hashed, ID FROM TempCodeState")
+        rows = self._temp_cursor.execute("SELECT Hashed, ID FROM TempCodeState")
         for hashed, ID in rows.fetchall():
             original = json.loads(hashed)
             for filename, contents in original:
@@ -81,12 +93,12 @@ class CodeStates:
                                     "VALUES (?, ?, ?)",
                                     (ID, filename, contents))
         self.connection.commit()
-        self.cursor.execute("DROP TABLE TempCodeState")
-        self.connection.commit()
         self.cursor.execute("CREATE UNIQUE INDEX CodeStateIndex ON CodeState (ID, Filename)")
         self.connection.commit()
+        self._temp_cursor.close()
+        self._temp_connection.close()
 
-
+@profile
 def generate_maintable(cursor, connection, course_id, assignment_group_ids, user_ids):
     code_states = CodeStates(cursor, connection)
     latest_code_states, scores = {}, {}

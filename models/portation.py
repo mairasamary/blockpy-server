@@ -9,6 +9,7 @@ Functions for importing/exporting to various formats
 import io
 import json
 import os
+import time
 import shutil
 import zipfile
 from typing import Type, Union
@@ -121,7 +122,7 @@ def export_bundle(**kwargs):
     return dumped
 
 
-def export_progsnap2(output, course_id, assignment_group_ids=None, log=False, format='csv'):
+def export_progsnap2(output, course_id, assignment_group_ids=None, log=False, format='csv', overwrite=False):
     if format == 'csv':
         output_zip = output+".zip"
         # Start filling it up
@@ -137,6 +138,12 @@ def export_progsnap2(output, course_id, assignment_group_ids=None, log=False, fo
         if log:
             print("Starting")
         output_db = output + '.db'
+        if overwrite:
+            if os.path.exists(output_db):
+                if log:
+                    print("Removing old file:", output_db)
+                os.remove(output_db)
+                time.sleep(1)
         for progress in progsnap2ite.dump(output_db, course_id, assignment_group_ids, None):
             if log:
                 print("Completed", progress)

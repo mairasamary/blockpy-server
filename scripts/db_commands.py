@@ -251,15 +251,16 @@ class ExportProgSnap(Command):
         Option('--log_for_course', '-l', dest='log_for_course', default=1),
         Option('--groups', '-g', dest='groups', default=None),
         Option('--format', '-f', dest='format', default='csv', choices=['csv', 'sqlite'],
-               help="csv is zipped csv, sqlite is a SQLite db")
+               help="csv is zipped csv, sqlite is a SQLite db"),
+        Option('--overwrite', '-w', dest='overwrite', default=False, action="store_true")
     )
 
-    def run(self, output, log_for_course, groups, format, **kwargs):
+    def run(self, output, log_for_course, groups, format, overwrite, **kwargs):
         from models.portation import export_progsnap2
         if groups is not None:
             output = output + "_{}".format(groups.replace(",", "_"))
             groups = [int(g) for g in groups.split(",")]
-        export_progsnap2(output.format(log_for_course), log_for_course, groups, log=True, format=format)
+        export_progsnap2(output.format(log_for_course), log_for_course, groups, log=True, format=format, overwrite=overwrite)
 
 
 class ClearOldAnonymousUsers(Command):
