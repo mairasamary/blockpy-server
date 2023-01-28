@@ -259,7 +259,7 @@ class ExportProgSnap(Command):
         if groups is not None:
             output = output + "_{}".format(groups.replace(",", "_"))
             groups = [int(g) for g in groups.split(",")]
-        export_progsnap2(output.format(log_for_course), log_for_course, groups, format=format)
+        export_progsnap2(output.format(log_for_course), log_for_course, groups, log=True, format=format)
 
 
 class ClearOldAnonymousUsers(Command):
