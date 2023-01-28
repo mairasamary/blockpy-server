@@ -23,6 +23,7 @@ from models.course import Course
 import models
 
 from models.data_formats.progsnap2 import dump_progsnap
+import models.data_formats.progsnap2ite as progsnap2ite
 
 from main import app
 from models.models import db, AssignmentGroup
@@ -120,15 +121,25 @@ def export_bundle(**kwargs):
     return dumped
 
 
-def export_progsnap2(output, course_id, assignment_group_ids=None, log=False):
-    output_zip = output+".zip"
-    # Start filling it up
-    with zipfile.ZipFile(output_zip, "w", zipfile.ZIP_DEFLATED) as zip_file:
+def export_progsnap2(output, course_id, assignment_group_ids=None, log=False, format='csv'):
+    if format == 'csv':
+        output_zip = output+".zip"
+        # Start filling it up
+        with zipfile.ZipFile(output_zip, "w", zipfile.ZIP_DEFLATED) as zip_file:
+            if log:
+                print("Starting")
+            for filename in dump_progsnap(zip_file, course_id, assignment_group_ids, None):
+                if log:
+                    print("Completed", filename)
+            if log:
+                print("Files completed. Writing to disk.")
+    else:
         if log:
             print("Starting")
-        for filename in dump_progsnap(zip_file, course_id, assignment_group_ids, None):
+        output_db = output + '.db'
+        for progress in progsnap2ite.dump(output_db, course_id, assignment_group_ids, None):
             if log:
-                print("Completed", filename)
+                print("Completed", progress)
         if log:
             print("Files completed. Writing to disk.")
 

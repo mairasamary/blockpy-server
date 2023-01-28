@@ -209,36 +209,44 @@ def generate_maintable(zip_file, course_id, assignment_group_ids, user_ids):
     return "MainTable.csv", code_states
 
 
+LINK_SUBJECT_HEADERS = ["SubjectID", "X-IsStaff", "X-Roles",
+                         "X-Name.Last", "X-Name.First", "X-Email"]
+
+
+def get_course_users(course_id, user_ids):
+    # Get any users explicitly in this course
+    users, user_roles = {}, {}
+    if user_ids:
+        for user_id in user_ids:
+            role_users = User.get_user_role(course_id, user_id)
+            if not role_users:
+                continue
+            user = role_users[0][1]
+            users[user.id] = user
+            user_roles[user.id] = {role.name for role, user in role_users}
+    else:
+        users_with_roles = Course.by_id(course_id).get_users()
+        for role, user in users_with_roles:
+            if user.id not in users:
+                users[user.id] = user
+                user_roles[user.id] = set()
+            user_roles[user.id].add(role.name)
+
+        # Get any additional users found in the logs
+        log_users = Log.get_users_for_course(course_id)
+        for log_user in log_users:
+            if log_user.id not in users:
+                users[log_user.id] = log_user
+                user_roles[log_user.id] = {role.name for role in log_user.get_course_roles(course_id)}
+    return users, user_roles
+
+
 def generate_link_subjects(zip_file, course_id, user_ids):
     with io.StringIO() as linktable_file:
         writer = csv.writer(linktable_file, **PROGSNAP_CSV_WRITER_OPTIONS)
-        writer.writerow(["SubjectID", "X-IsStaff", "X-Roles",
-                         "X-Name.Last", "X-Name.First", "X-Email"])
+        writer.writerow(LINK_SUBJECT_HEADERS)
 
-        # Get any users explicitly in this course
-        users, user_roles = {}, {}
-        if user_ids:
-            for user_id in user_ids:
-                role_users = User.get_user_role(course_id, user_id)
-                if not role_users:
-                    continue
-                user = role_users[0][1]
-                users[user.id] = user
-                user_roles[user.id] = {role.name for role, user in role_users}
-        else:
-            users_with_roles = Course.by_id(course_id).get_users()
-            for role, user in users_with_roles:
-                if user.id not in users:
-                    users[user.id] = user
-                    user_roles[user.id] = set()
-                user_roles[user.id].add(role.name)
-
-            # Get any additional users found in the logs
-            log_users = Log.get_users_for_course(course_id)
-            for log_user in log_users:
-                if log_user.id not in users:
-                    users[log_user.id] = log_user
-                    user_roles[log_user.id] = {role.name for role in log_user.get_course_roles(course_id)}
+        users, user_roles = get_course_users(course_id, user_ids)
 
         # Report their information
         for user_id, user in natsorted(users.items(), lambda u: (u[1].last_name, u[1].first_name)):
@@ -256,7 +264,20 @@ def generate_link_subjects(zip_file, course_id, user_ids):
         return "LinkTables/Subject.csv"
 
 
-def generate_link_assignments(zip_file, course_id, assignment_group_ids, user_ids):
+LINK_ASSIGNMENT_HEADERS = ["AssignmentId", "X-Version",
+                            "X-Name", "X-URL", "X-Instructions",
+                            "X-Reviewed", "X-Hidden", "X-Settings",
+                            "X-Code.OnRun", "X-Code.OnChange", "X-Code.OnEval",
+                            "X-Code.Starting", "X-Code.ExtraInstructor", "X-Code.ExtraStarting",
+                            "X-Forked.Id", "X-Forked.Version",
+                            "X-Owner.Id", "X-Course.Id",
+                            "X-AssignmentGroup.Ids"]
+LINK_ASSIGNMENT_GROUP_HEADERS = ["AssignmentGroupId", "X-Version",
+                               "X-Name", "X-URL",
+                               "X-Forked.Id", "X-Forked.Version",
+                               "X-Owner.Id", "X-Course.Id"]
+
+def get_all_assignments_and_groups(course_id, assignment_group_ids):
     if assignment_group_ids is None:
         assignments = Log.get_assignments_for_course(course_id)
         all_groups = set()
@@ -275,17 +296,15 @@ def generate_link_assignments(zip_file, course_id, assignment_group_ids, user_id
                     assignment_groups[assignment.id] = set()
                 assignment_groups[assignment.id].add(group)
                 assignments.add(assignment)
+    return assignments, assignment_groups, all_groups
+
+
+def generate_link_assignments(zip_file, course_id, assignment_group_ids, user_ids):
+    assignments, assignment_groups, all_groups = get_all_assignments_and_groups(course_id, assignment_group_ids)
 
     with io.StringIO() as assignment_file:
         assignment_writer = csv.writer(assignment_file, **PROGSNAP_CSV_WRITER_OPTIONS)
-        assignment_writer.writerow(["AssignmentId", "X-Version",
-                                    "X-Name", "X-URL", "X-Instructions",
-                                    "X-Reviewed", "X-Hidden", "X-Settings",
-                                    "X-Code.OnRun", "X-Code.OnChange", "X-Code.OnEval",
-                                    "X-Code.Starting", "X-Code.ExtraInstructor", "X-Code.ExtraStarting",
-                                    "X-Forked.Id", "X-Forked.Version",
-                                    "X-Owner.Id", "X-Course.Id",
-                                    "X-AssignmentGroup.Ids"])
+        assignment_writer.writerow(LINK_ASSIGNMENT_HEADERS)
         for assignment in natsorted(assignments, key=lambda a: a.name):
             assignment_writer.writerow([
                 assignment.id, assignment.version,
@@ -303,10 +322,7 @@ def generate_link_assignments(zip_file, course_id, assignment_group_ids, user_id
 
     with io.StringIO() as group_file:
         group_writer = csv.writer(group_file, **PROGSNAP_CSV_WRITER_OPTIONS)
-        group_writer.writerow(["AssignmentGroupId", "X-Version",
-                               "X-Name", "X-URL",
-                               "X-Forked.Id", "X-Forked.Version",
-                               "X-Owner.Id", "X-Course.Id"])
+        group_writer.writerow(LINK_ASSIGNMENT_GROUP_HEADERS)
         for group in natsorted(all_groups, key=lambda g: g.name):
             group_writer.writerow([
                 group.id, group.version,

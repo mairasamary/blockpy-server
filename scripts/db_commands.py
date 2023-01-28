@@ -244,19 +244,22 @@ class DumpDB(Command):
         for table_name, table_class in tables.items():
             self.dump_rows(table_class.query.all(), output, table_name)
 
+
 class ExportProgSnap(Command):
     option_list = (
         Option('--output', '-o', dest='output', default='backups/progsnap2_{}'),
         Option('--log_for_course', '-l', dest='log_for_course', default=1),
         Option('--groups', '-g', dest='groups', default=None),
+        Option('--format', '-f', dest='format', default='csv', choices=['csv', 'sqlite'],
+               help="csv is zipped csv, sqlite is a SQLite db")
     )
 
-    def run(self, output, log_for_course, groups, **kwargs):
+    def run(self, output, log_for_course, groups, format, **kwargs):
         from models.portation import export_progsnap2
         if groups is not None:
             output = output + "_{}".format(groups.replace(",", "_"))
             groups = [int(g) for g in groups.split(",")]
-        export_progsnap2(output.format(log_for_course), log_for_course, groups)
+        export_progsnap2(output.format(log_for_course), log_for_course, groups, format=format)
 
 
 class ClearOldAnonymousUsers(Command):

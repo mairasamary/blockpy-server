@@ -27,6 +27,7 @@ from models.sample_submission import SampleSubmission
 from models.assignment import Assignment
 from models.assignment_group import AssignmentGroup
 from models.assignment_tag import AssignmentTag
+from models.report import Report
 
 admin = Admin(app)
 
@@ -329,6 +330,27 @@ class AuthenticationView(ModelIdView):
     }
 
 
+class ReportView(ModelIdView):
+    column_filters = ('id',
+                      'task', 'status', 'attempt', 'result', 'progress', 'message',
+                      'date_started', 'date_modified', 'date_finished',
+                      'parameters', 'visibility',
+                      'owner_id', 'assignment_id', 'course_id',
+                      )
+    form_ajax_refs = {
+        'assignment': make_ajax_fields('name', 'url', 'id'),
+        'course': make_ajax_fields('id', 'url', 'name'),
+        'owner': make_ajax_fields('first_name', 'last_name', 'email', 'id')
+    }
+    column_searchable_list = ('task', 'status', 'message', 'parameters')
+    column_formatters = {'parameters': _render_code}
+    column_list = ('id',
+                            'task', 'status', 'attempt', 'result', 'progress', 'message',
+                            'date_created', 'date_started', 'date_modified', 'date_finished',
+                            'parameters', 'visibility',
+                            'owner', 'assignment', 'course',
+                            )
+
 
 class SubmissionView(RegularView):
     can_export = True
@@ -365,6 +387,7 @@ admin.add_view(AuthenticationView(Authentication, db.session, category='Tables')
 admin.add_view(RoleView(Role, db.session, category='Tables'))
 admin.add_view(LogView(Log, db.session, category='Tables'))
 admin.add_view(ReviewView(Review, db.session, category='Tables'))
+admin.add_view(ReportView(Report, db.session, category='Tables'))
 
 # admin.add_view(FileAdmin(app.config['BLOCKPY_LOG_DIR'], base_url='/admin/code_logs/', name='Disk Logs'))
 admin.add_view(FileAdmin(app.config['UPLOADS_DIR'], '', name='File Uploads'))

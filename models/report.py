@@ -45,7 +45,7 @@ class Report(Base):
     course_id = Column(Integer(), ForeignKey('course.id'), nullable=True)
 
     assignment = relationship("Assignment")
-    subject = relationship("User")
+    owner = relationship("User")
     course = relationship("Course")
 
     def encode_json(self):
