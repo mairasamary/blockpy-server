@@ -181,7 +181,7 @@ def to_progsnap_event(log, order_id, code_states, latest_code_states, scores):
                      ]
 
 
-def generate_maintable(zip_file, course_id, assignment_group_ids, user_ids):
+def generate_maintable(zip_file, course_id, assignment_group_ids, user_ids, exclude=None):
     code_states, latest_code_states, scores = {}, {}, {}
     query = Log.query.filter_by(course_id=course_id)
     if assignment_group_ids is not None:
@@ -277,17 +277,28 @@ LINK_ASSIGNMENT_GROUP_HEADERS = ["AssignmentGroupId", "X-Version",
                                "X-Forked.Id", "X-Forked.Version",
                                "X-Owner.Id", "X-Course.Id"]
 
-def get_all_assignments_and_groups(course_id, assignment_group_ids):
+
+def get_all_assignments_and_groups(course_id, assignment_group_ids, exclude=None):
+    if exclude is None:
+        exclude = set()
+    else:
+        exclude = set(exclude)
     if assignment_group_ids is None:
         assignments = Log.get_assignments_for_course(course_id)
         all_groups = set()
         assignment_groups = {}
+        kept_assignments = []
         for assignment in assignments:
             groups = AssignmentGroup.by_assignment(assignment.id)
+            if groups.id in exclude:
+                continue
             all_groups.update(groups)
             assignment_groups[assignment.id] = groups
+            kept_assignments.append(assignment)
+        assignments = kept_assignments
     else:
-        all_groups = [AssignmentGroup.by_id(group_id) for group_id in assignment_group_ids]
+        all_groups = [AssignmentGroup.by_id(group_id) for group_id in assignment_group_ids
+                      if group_id not in exclude]
         assignment_groups = {}
         assignments = set()
         for group in all_groups:

@@ -99,7 +99,7 @@ class CodeStates:
         self._temp_connection.close()
 
 @profile
-def generate_maintable(cursor, connection, course_id, assignment_group_ids, user_ids):
+def generate_maintable(cursor, connection, course_id, assignment_group_ids, user_ids, exclude):
     code_states = CodeStates(cursor, connection)
     latest_code_states, scores = {}, {}
     query = Log.query.filter_by(course_id=course_id)
@@ -108,6 +108,11 @@ def generate_maintable(cursor, connection, course_id, assignment_group_ids, user
                           for group_id in assignment_group_ids
                           for assignment in AssignmentGroup.by_id(group_id).get_assignments()]
         query = query.filter(Log.assignment_id.in_(assignment_ids))
+    if exclude is not None:
+        assignment_ids = [assignment.id
+                          for group_id in exclude
+                          for assignment in AssignmentGroup.by_id(group_id).get_assignments()]
+        query = query.filter(Log.assignment_id.notin_(assignment_ids))
     if user_ids is not None:
         query = query.filter(Log.subject_id.in_(user_ids))
     estimated_size = query.count()
@@ -152,13 +157,13 @@ def generate_link_subjects(cursor, connection, course_id, user_ids):
     return "LinkTables/Subject.csv"
 
 
-def generate_link_assignments(cursor, connection, course_id, assignment_group_ids, user_ids):
+def generate_link_assignments(cursor, connection, course_id, assignment_group_ids, user_ids, exclude):
     headers = ", ".join(map(repr, LINK_ASSIGNMENT_HEADERS))
     spots = ", ".join("?" for h in LINK_ASSIGNMENT_HEADERS)
     cursor.execute(f"CREATE TABLE LinkAssignment ({headers})")
     connection.commit()
 
-    assignments, assignment_groups, all_groups = get_all_assignments_and_groups(course_id, assignment_group_ids)
+    assignments, assignment_groups, all_groups = get_all_assignments_and_groups(course_id, assignment_group_ids, exclude)
 
     for assignment in natsorted(assignments, key=lambda a: a.name):
         cursor.execute(f"INSERT INTO LinkAssignment ({headers}) VALUES ({spots})",
@@ -203,12 +208,12 @@ def generate_link_table(cursor, connection):
     return "LinkTable.csv"
 
 
-def dump(output_db, course_id, assignment_group_ids, user_ids):
+def dump(output_db, course_id, assignment_group_ids, user_ids, exclude):
     connection = sqlite3.connect(output_db)
     cursor = connection.cursor()
     yield generate_readme(cursor, connection)
     yield generate_metadata(cursor, connection)
-    yield from generate_maintable(cursor, connection, course_id, assignment_group_ids, user_ids)
+    yield from generate_maintable(cursor, connection, course_id, assignment_group_ids, user_ids, exclude)
     yield generate_link_subjects(cursor, connection, course_id, user_ids)
-    yield from generate_link_assignments(cursor, connection, course_id, assignment_group_ids, user_ids)
+    yield from generate_link_assignments(cursor, connection, course_id, assignment_group_ids, user_ids, exclude)
     yield generate_link_table(cursor, connection)

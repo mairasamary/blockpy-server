@@ -122,7 +122,7 @@ def export_bundle(**kwargs):
     return dumped
 
 
-def export_progsnap2(output, course_id, assignment_group_ids=None, log=False, format='csv', overwrite=False):
+def export_progsnap2(output, course_id, assignment_group_ids=None, exclude=None, log=False, format='csv', overwrite=False):
     if format == 'csv':
         output_zip = output+".zip"
         # Start filling it up
@@ -144,7 +144,7 @@ def export_progsnap2(output, course_id, assignment_group_ids=None, log=False, fo
                     print("Removing old file:", output_db)
                 os.remove(output_db)
                 time.sleep(1)
-        for progress in progsnap2ite.dump(output_db, course_id, assignment_group_ids, None):
+        for progress in progsnap2ite.dump(output_db, course_id, assignment_group_ids, None, exclude):
             if log:
                 print("Completed", progress)
         if log:
