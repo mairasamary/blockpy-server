@@ -290,11 +290,10 @@ def get_all_assignments_and_groups(course_id, assignment_group_ids, exclude=None
         kept_assignments = []
         for assignment in assignments:
             groups = AssignmentGroup.by_assignment(assignment.id)
-            if groups.id in exclude:
-                continue
-            all_groups.update(groups)
-            assignment_groups[assignment.id] = groups
-            kept_assignments.append(assignment)
+            if not any(group.id in exclude for group in groups):
+                all_groups.update(groups)
+                assignment_groups[assignment.id] = groups
+                kept_assignments.append(assignment)
         assignments = kept_assignments
     else:
         all_groups = [AssignmentGroup.by_id(group_id) for group_id in assignment_group_ids
