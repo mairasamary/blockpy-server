@@ -99,6 +99,10 @@ class ProductionConfig(Config):
     TASK_QUEUE_STYLE = 'redis'
     TASK_DB_URI = TASK_SECRETS.get("TASK_DB_URI")
     PROFILE_RUNTIME = False
+    TASK_DB_SETTINGS = {
+        'password': TASK_SECRETS.get("TASK_DB_PASSWORD"),
+        'port': TASK_SECRETS.get("TASK_DB_PORT")
+    }
 
 
 class TestingConfig(Config):
@@ -110,3 +114,4 @@ class TestingConfig(Config):
     TASK_QUEUE_STYLE = 'sqlite'
     TASK_DB_URI = 'database/tasks.db'
     PROFILE_RUNTIME = False
+    TASK_DB_SETTINGS = {}
