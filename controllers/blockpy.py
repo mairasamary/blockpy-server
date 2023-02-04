@@ -137,7 +137,7 @@ def load_editor(editor_information):
     :param editor_information:
     :return:
     '''
-    quiz_questions, readings, textbooks = [], [], []
+    quiz_questions, readings, textbooks, javas = [], [], [], []
     for assignment in editor_information.get('assignments', []):
         if assignment.type == 'quiz':
             quiz_questions.append(assignment.id)
@@ -145,9 +145,11 @@ def load_editor(editor_information):
             readings.append(assignment.id)
         elif assignment.type == 'textbook':
             textbooks.append(assignment.id)
+        elif assignment.type == 'java':
+            javas.append(assignment.id)
     return render_template('blockpy/editor.html', ip=request.remote_addr,
                            quiz_questions=quiz_questions, readings=readings,
-                           textbooks=textbooks,
+                           textbooks=textbooks, javas=javas,
                            **editor_information)
 
 

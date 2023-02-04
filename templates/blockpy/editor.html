@@ -81,6 +81,15 @@
                         asPreamble: false,
                         user: user"></reader>
         <!-- /ko -->
+        <!-- ko if: assignmentType() == 'java' -->
+        <java params="server: server,
+                        courseId: courseId,
+                        currentAssignmentId: currentJavaAssignmentId,
+                        assignmentGroupId: assignmentGroupId,
+                        isInstructor: isInstructor,
+                        markCorrect: markCorrect,
+                        user: user"></java>
+        <!-- /ko -->
     </div>
 
     {% if group and group|length > 1 %}
@@ -91,6 +100,7 @@
         const QUIZZES = {{ quiz_questions|tojson }};
         const READINGS = {{ readings|tojson }};
         const TEXTBOOKS = {{ textbooks|tojson }};
+        const JAVAS = {{ javas|tojson }};
         window.$blocklyMediaPath = {{ url_for('static', filename='blockly/media/')|tojson }};
         window.$blockPyUrls = {
             "importDatasets": {{ config['CORGIS_URL']|tojson }},
@@ -135,6 +145,7 @@
                 currentQuizAssignmentId: ko.observable(null),
                 currentReadingAssignmentId: ko.observable(null),
                 currentTextbookAssignmentId: ko.observable(null),
+                currentJavaAssignmentId: ko.observable(null),
                 assignmentType: ko.observable(null),
                 assignmentGroupId: {{ (assignment_group_id or None)|tojson }},
                 markCorrect: markCorrect
@@ -185,7 +196,7 @@
             // System for switching assignments
             function loadAssignmentWrapper(id) {
                 id = parseInt(id, 10);
-                if (QUIZZES.includes(id) || READINGS.includes(id) || TEXTBOOKS.includes(id)) {
+                if (QUIZZES.includes(id) || READINGS.includes(id) || TEXTBOOKS.includes(id) || JAVAS.includes(id)) {
                     editor.hide();
                     //$("quizzer").show();
                     //console.log(mainModel.currentAssignmentId(), mainModel.assignmentType());
@@ -194,16 +205,25 @@
                         mainModel.currentQuizAssignmentId(id);
                         mainModel.currentReadingAssignmentId(null);
                         mainModel.currentTextbookAssignmentId(null);
+                        mainModel.currentJavaAssignmentId(null);
                     } else if (READINGS.includes(id)) {
                         mainModel.assignmentType('reading');
                         mainModel.currentReadingAssignmentId(id);
                         mainModel.currentQuizAssignmentId(null);
                         mainModel.currentTextbookAssignmentId(null);
+                        mainModel.currentJavaAssignmentId(null);
                     } else if (TEXTBOOKS.includes(id)) {
                         mainModel.assignmentType('textbook');
                         mainModel.currentReadingAssignmentId(null);
                         mainModel.currentQuizAssignmentId(null);
                         mainModel.currentTextbookAssignmentId(id);
+                        mainModel.currentJavaAssignmentId(null);
+                    } else if (JAVAS.includes(id)) {
+                        mainModel.assignmentType('java');
+                        mainModel.currentReadingAssignmentId(null);
+                        mainModel.currentQuizAssignmentId(null);
+                        mainModel.currentTextbookAssignmentId(null);
+                        mainModel.currentJavaAssignmentId(id);
                     }
                 } else {
                     //$("quizzer").hide();
@@ -212,6 +232,7 @@
                     mainModel.currentQuizAssignmentId(null);
                     mainModel.currentReadingAssignmentId(null);
                     mainModel.currentTextbookAssignmentId(null);
+                    mainModel.currentJavaAssignmentId(null);
                     mainModel.assignmentType(null);
                 }
             }

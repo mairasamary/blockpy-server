@@ -8,6 +8,7 @@
     "@types/codemirror": "0.0.103",
     "@types/highlightjs": "^10.1.0",
     "@types/select2": "^4.0.53",
+    "doppiojvm": "^0.5.0",
     "filepond": "^4.30.4",
     "filepond-plugin-file-poster": "^2.5.1",
     "filepond-plugin-image-preview": "^4.6.11",

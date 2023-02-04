@@ -42,7 +42,9 @@ module.exports = {
     jquery: "jQuery",
     "$URL_ROOT": "$URL_ROOT",
     codemirror: 'CodeMirror',
-    filepond: 'FilePond'
+    filepond: 'FilePond',
+    browserfs: 'BrowserFS',
+    doppiojvm: "Doppio"
   }/*,
   plugins: [
       new webpack.debug.ProfilingPlugin()

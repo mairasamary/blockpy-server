@@ -27,3 +27,10 @@ create_directories:
 	mkdir logs/
 	mkdir logs/uwsgi/
 	mkdir backups/
+
+restart_redis:
+	sudo systemctl restart redis-server.service
+check_redis:
+	sudo systemctl status redis-server
+check_huey:
+	sudo journalctl -u huey

@@ -327,6 +327,54 @@ Don't forget to start/restart UWSGI (you'll do this when pulling new versions of
 > sudo systemctl restart uwsgi
 ```
 
+## Setup Redis
+
+We use Redis to handle our asynchronous tasks.
+
+Install Redis:
+
+```bash
+> sudo apt-get update
+> sudo apt-get install redis
+```
+
+Edit the `/etc/redis/redis.conf` file to require a password and change the supervised to `systemd`.
+Then, (re)start the Redis service.  
+
+```bash
+> sudo systemctl restart redis-server.service
+```
+
+You'll need to add your Tasks database password to `settings/secrets.json` (the URL should be an empty string).
+
+Then you just need to set up the Huey service with systemd:
+
+```bash
+> sudo nano /etc/systemd/system/huey.service
+```
+
+```ini
+[Unit]
+Description=Huey Service
+After=redis.service
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/blockpy-server/
+ExecStart=/var/www/blockpy-server/env/bin/python3 manage.py huey
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+> sudo systemctl restart huey
+```
+
+And you should now be able to have long-running asynchronous background tasks!
+
 # Using BlockPy
 
 At this point, in theory, your instance is now publicly accessible from the browser. If not, google and our Issue tracker are your friends :)

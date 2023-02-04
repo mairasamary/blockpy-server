@@ -39,6 +39,12 @@ bundles = {
         'libs/filepond/filepond.min.js',
         # D3
         'libs/d3/d3.6.3.1.min.js',
+        # Doppio
+        "libs/doppio/js/base64.js",
+        "libs/doppio/js/util.js",
+        "libs/doppio/js/websock.js",
+        "libs/doppio/js/browserfs.min.js",
+        "libs/doppio/js/doppio.js",
         # Output
         output='gen/libs.js'
     ),
@@ -78,6 +84,31 @@ bundles = {
         #"libs/blockpy/blockpy.js",
         "libs/blockpy/blockpy.js" if app.config["IS_PRODUCTION"] else "../../blockpy-edu/blockpy/dist/blockpy.js",
         output='gen/blockpy.js'
+    ),
+
+    # 'doppio_js': Bundle(
+    #     #"libs/doppio/js/ace.js",
+    #     #"libs/doppio/js/mode-java.js",
+    #     #"libs/doppio/js/theme-twilight.js",
+    #     #"libs/doppio/js/dropbox.min.js",
+    #     #"libs/doppio/js/jquery.min.js",
+    #     #"libs/doppio/js/bootstrap.min.js",
+    #     "libs/doppio/js/base64.js",
+    #     "libs/doppio/js/util.js",
+    #     "libs/doppio/js/websock.js",
+    #     "libs/doppio/js/browserfs.min.js",
+    #     "libs/doppio/js/doppio.js",
+    #     #"libs/doppio/js/app.js",
+    #     output="gen/doppio.js"
+    # ),
+
+    "doppio_css": Bundle(
+        "libs/doppio/css/bitter.css",
+        "libs/doppio/css/style.css",
+        #"libs/doppio/css/bootstrap.min.css",
+        "libs/doppio/css/xterm.css",
+        # Output
+        output='gen/doppio.css'
     ),
 
     'libs_css': Bundle(

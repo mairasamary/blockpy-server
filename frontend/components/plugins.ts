@@ -493,6 +493,6 @@ ko.bindingHandlers.filepond = {
     },
     update: function (element, valueAccessor) {
         let newOptions = ko.unwrap(valueAccessor());
-        console.log("New OPtions:", newOptions);
+        //console.log("New OPtions:", newOptions);
     }
 };

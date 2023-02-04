@@ -18,7 +18,7 @@ class Assignment(Base):
     url = Column(String(255), default=None, nullable=True)
 
     # Settings
-    TYPES = ['blockpy', 'maze', 'reading', 'quiz', 'typescript', 'textbook']
+    TYPES = ['blockpy', 'maze', 'reading', 'quiz', 'typescript', 'textbook', 'java']
     type = Column(String(10), default="blockpy")
     instructions = Column(Text(), default="")
     # Should we suggest this assignment's submissions be reviewed manually?

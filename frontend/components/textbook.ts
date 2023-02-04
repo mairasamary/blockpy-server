@@ -227,7 +227,7 @@ export const EDITOR_HTML = `
         <h6>Additional Settings</h6>
         <div data-bind="jsoneditor: {value: assignment().settings}" style="width: 100%; height: 300px"></div><br>
         <h6>Assignment Files</h6>
-        <div data-bind="filepond: {server: server, submission: submission}"></div><br>
+        <div data-bind="filepond: {server: server, submission: submission, assignment: assignment}"></div><br>
     </div>
 </div>
 `;
