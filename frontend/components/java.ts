@@ -182,6 +182,7 @@ export class Java extends AssignmentInterface {
                     }, (exitCode) => {
                       if (exitCode === 0) {
                           this.updateStatus("Finished in", false);
+                          this.executionTimer.stop();
                         // Class finished executing successfully.
                       } else {
                           this.updateStatus("Execution Failed after", false);
@@ -234,6 +235,7 @@ export class Java extends AssignmentInterface {
                 }, (exitCode) => {
                   if (exitCode === 0) {
                       this.updateStatus("Finished in", false);
+                      this.executionTimer.stop();
                     // Class finished executing successfully.
                   } else {
                       this.updateStatus("Execution Failed after", false);
