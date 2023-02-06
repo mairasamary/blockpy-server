@@ -33,6 +33,7 @@ bundles = {
         'libs/codemirror/fullscreen.js',
         'libs/codemirror/markdown.js',
         'libs/codemirror/python.js',
+        'libs/codemirror/java.js',
         'libs/codemirror/shell.js',
         'libs/codemirror/yaml-frontmatter.js',
         # Filepond

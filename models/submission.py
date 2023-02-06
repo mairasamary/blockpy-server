@@ -168,6 +168,12 @@ class Submission(Base):
                 .all())
 
     @staticmethod
+    def all_by_assignment(assignment_id):
+        return (db.session.query(Submission)
+                .filter(Submission.assignment_id == assignment_id)
+                .all())
+
+    @staticmethod
     def get_latest(assignment_id, course_id):
         return (db.session.query(func.max(Submission.date_modified))
                 .filter(Submission.course_id == course_id,

@@ -30,3 +30,4 @@ alembic~=1.4.3
 gunicorn
 redis
 huey
+compare50

@@ -1,14 +1,17 @@
 import json
+import os
 import time
 import random
 
 import flask_security
-from flask import Blueprint, request, Response, jsonify, abort, g, url_for
+from flask import Blueprint, request, Response, jsonify, abort, g, url_for, send_from_directory
 
+from main import app
 from controllers.helpers import get_course_id, get_user, check_resource_exists, require_request_parameters
 from models.assignment import Assignment
 from models.assignment_group import AssignmentGroup
 from models.course import Course
+from models.report import Report
 from models.portation import export_bundle, import_bundle
 from models.user import User
 from main import huey
@@ -42,6 +45,42 @@ def task_status(task_id):
     if task is None:
         return jsonify({"status": "Pending", "message": str(task)})
     return jsonify({"status": "Complete", "message": task})
+
+
+@blueprint_api.route('/reports/', methods=['GET'])
+@blueprint_api.route('/reports', methods=['GET'])
+def reports():
+    user, user_id = get_user()
+    reports = [report.encode_json() for report in Report.by_user(user_id)]
+    return jsonify({"reports": reports})
+
+
+@blueprint_api.route('/report/<report_id>/', methods=['GET'])
+@blueprint_api.route('/report/<report_id>', methods=['GET'])
+def report(report_id):
+    user, user_id = get_user()
+    report: Report = Report.by_id(report_id)
+    # TODO: Check permissions
+    return send_from_directory(report.get_report_folder(), report.result)
+
+
+@blueprint_api.route('/report/<report_id>/<path:path>', methods=['GET', 'POST'])
+def report_static(report_id, path):
+    user, user_id = get_user()
+    report: Report = Report.by_id(report_id)
+    # TODO: Check permissions
+    if report.owner_id != user_id:
+        return abort(401, "User does not own report.")
+    return send_from_directory(report.get_report_folder(), path)
+
+
+@blueprint_api.route('/check_similarity/<assignment_id>/<course_id>/', methods=['GET'])
+@blueprint_api.route('/check_similarity/<assignment_id>/<course_id>', methods=['GET'])
+def check_similarity(assignment_id, course_id):
+    user, user_id = get_user()
+    task = tasks.check_similarity(user_id, assignment_id, [], course_id, "structure text exact", True, 50)
+    location = url_for('api.task_status', task_id=task.id)
+    return f"<html><head></head><body><a href='{location}'>{location}</a></body></html>", 202, {'Location': location}
 
 
 def load_api_user():

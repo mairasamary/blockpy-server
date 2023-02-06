@@ -9,6 +9,7 @@ static/.webassets-cache/
 static/gen/
 static/uploads/
 static/canvas/
+static/reports/
 
 database/
 tests/

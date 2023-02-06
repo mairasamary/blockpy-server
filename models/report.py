@@ -1,9 +1,10 @@
 import logging
+import os
 from collections import OrderedDict
 import time
 import json
 from datetime import datetime, timedelta
-
+from main import app
 
 from sqlalchemy import Column, String, DateTime, Integer, ForeignKey, Text, func, JSON, Index, and_
 
@@ -13,6 +14,7 @@ from sqlalchemy.orm import relationship
 from models.user import User
 from models import models
 from models.statuses import ReportStatus
+
 
 
 class Report(Base):
@@ -82,6 +84,12 @@ class Report(Base):
         db.session.commit()
         return report
 
+    @classmethod
+    def by_user(cls, user_id):
+        return (db.session.query(Report)
+                .filter(Report.owner_id == user_id)
+                .all())
+
     def __str__(self):
         return f'<Report {self.id} for {self.task}: {self.parameters}>'
 
@@ -110,9 +118,11 @@ class Report(Base):
         db.session.commit()
         return self
 
-    def finish(self, message="Task Finished"):
+    def finish(self, result=None, message="Task Finished"):
         if message is not None:
             self.message = message
+        if result is not None:
+            self.result = result
         self.status = ReportStatus.FINISHED
         self.date_finished = datetime.utcnow()
         self.progress = 100
@@ -127,3 +137,6 @@ class Report(Base):
         self.course_id = course_id
         db.session.commit()
         return self
+
+    def get_report_folder(self):
+        return os.path.join(app.config['REPORT_DIR'], str(self.id))

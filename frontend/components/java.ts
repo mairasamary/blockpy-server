@@ -7,8 +7,67 @@ import {AssignmentInterface, AssignmentInterfaceJson, EditorMode} from "./assign
 import * as BrowserFS from 'browserfs';
 import * as Doppio from 'doppiojvm';
 import {recursiveCopy} from "../utilities/doppio_utils";
+import {Assignment} from "../models/assignment";
+import {FSModule} from "browserfs/dist/node/core/FS";
 
 interface JavaInterfaceJson extends AssignmentInterfaceJson {
+}
+
+const BASIC_INSTRUCTOR_CODE = `public class Instructor {
+    public static void main(String[] args) {
+        Student student = new Student(5);
+        if (student.plus(3) == 8) {
+            grade(100, "TEST PASSED");
+        } else {
+            grade(0, "TEST FAILED");
+        }
+    }
+    
+    public static native void grade(int points, String feedback);
+}`;
+
+class Timer {
+    instance: NodeJS.Timeout | null;
+    time: ko.Observable<number>;
+    _startTime: number;
+    where: string;
+
+    constructor(where: string) {
+        this.time = ko.observable(0);
+        this.instance = null;
+        this.where = where;
+    }
+
+    reset() {
+        if (this.instance != null) {
+            clearInterval(this.instance);
+        }
+        this.instance = null;
+        $(this.where).text("");
+    }
+
+    stop() {
+        if (this.instance != null) {
+            clearInterval(this.instance);
+        }
+        this.instance = null;
+        const newTime = (Date.now() - this._startTime)/1000;
+        this.time(newTime);
+        $(this.where).text(Math.ceil(newTime)+" seconds");
+    }
+
+    start() {
+        this.reset();
+        this._startTime = Date.now();
+        this.instance = setInterval(this.update.bind(this), 1000);
+    }
+    
+    update() {
+        const newTime = (Date.now() - this._startTime)/1000;
+        this.time(newTime);
+        $(this.where).text(Math.ceil(newTime)+" seconds");
+    }
+
 }
 
 export class Java extends AssignmentInterface {
@@ -21,6 +80,8 @@ export class Java extends AssignmentInterface {
         currentAssignmentId: ko.Subscription
     }
 
+    executionTimer: Timer;
+
     constructor(params: JavaInterfaceJson) {
         super(params);
         this.editorMode = ko.observable(EditorMode.SUBMISSION);
@@ -28,11 +89,14 @@ export class Java extends AssignmentInterface {
         this.subscriptions = {currentAssignmentId: null};
         this.persistentFs = null;
 
+        this.executionTimer = new Timer(".java-clock");
+
         this.subscriptions.currentAssignmentId = this.currentAssignmentId.subscribe((newId) => {
             this.loadJava(newId);
         }, this);
         this.loadJava(this.currentAssignmentId());
     }
+
 
     loadDoppio() {
         if (this.persistentFs === null) {
@@ -41,8 +105,8 @@ export class Java extends AssignmentInterface {
             BrowserFS.initialize(_fs);
             this.setupJavaHome(this.persistentFs, () => {
                 this.setupFileSystem(this.persistentFs,  () => {
-                    $('#progress-bar-container').fadeOut('fast', () => {
-                        this.startDemo();
+                    $('.java-progress-bar-container').fadeOut('fast', () => {
+                        this.startEditor();
                     });
                 });
             });
@@ -50,13 +114,21 @@ export class Java extends AssignmentInterface {
         }
     }
 
-    startDemo() {
+    updateStatus(message: string, spinner=true) {
+        $(".java-status").text(message);
+        $(".java-working-spinner").toggle(spinner);
+    }
+
+    updateFeedback(message: string) {
+        $(".java-feedback").html(message.toString());
+    }
+
+    startEditor() {
         let fs = BrowserFS.BFSRequire('fs');
         let process = BrowserFS.BFSRequire('process');
-        var consoleJQuery = $('#console');
+        let consoleJQuery = $('.java-console');
         process.chdir('/home');
-        var consoleElement = consoleJQuery.get()[0];
-        var shell = {
+        let shell = {
             stdout: (text: string)=> {
                 console.log(text);
                 consoleJQuery.append(`<div style="color: white;">${text}</div>`);
@@ -66,50 +138,116 @@ export class Java extends AssignmentInterface {
                 consoleJQuery.append(`<div style="color: red;">${text}</div>`);
             }
         };
-        console.log(fs, process, shell);
+        //process.removeAllListeners('data');
         process.stdout.on('data', function (data) { return shell.stdout(data.toString()); });
         process.stderr.on('data', function (data) { return shell.stderr(data.toString()); });
-        /*fs.writeFile("/home/Answer.java", `
-public class Answer {
-    public static void main(String[] args) {
-        System.out.println("WHAT");
+        ["/home/Instructor", "/home/Student"].forEach((path) => {
+            fs.exists(path, (exists: boolean) => {
+                if (exists) {
+                    fs.unlinkSync(path);
+                }
+            })
+        })
+        shell.stdout("Ready to run!");
+
+        this.updateStatus("Ready", false);
+
+        $(".java-eval-button").on('click', () => {
+            this.evaluateInstructorCode(fs, process, consoleJQuery);
+        });
+        $(".java-run-button").on('click', () => {
+            this.runStudentCode(fs, process, consoleJQuery);
+        });
     }
-}`, "utf-8");*/
-        shell.stdout("Hello world!");
 
-        $("#jvm_status").text("Ready");
-
-        $("#run_btn").on('click', () => {
-            consoleJQuery.html("");
-            $("#jvm_status").text("Saving");
-            fs.writeFile("/home/Answer.java", this.submission().code(), "utf-8", () => {
-                $("#jvm_status").text("Compiling");
+    evaluateInstructorCode(fs: FSModule, process: NodeJS.Process, consoleJQuery: JQuery<HTMLElement>) {
+        consoleJQuery.html("");
+        this.updateStatus("Saving, ");
+        this.executionTimer.start();
+        this.updateFeedback("Compiling and executing your code with the instructor code!");
+        fs.writeFile("/home/Instructor.java", this.assignment().onRun(), "utf-8", () => {
+            fs.writeFile("/home/Student.java", this.submission().code(), "utf-8", () => {
+                this.updateStatus("Compiling, ");
                 Doppio.VM.CLI(
-                  ['classes.util.Javac', '/home/Answer.java'],
+                  ['classes.util.Javac', '/home/Instructor.java', '/home/Student.java'],
                 {
                   doppioHomePath: '/home', launcherName: "javac"
-                }, function(exitCode) {
+                }, (exitCode) => {
                   if (exitCode === 0) {
-                      $("#jvm_status").text("Executing");
+                      this.updateStatus("Executing, ");
                     Doppio.VM.CLI(
-                      ['Answer'],
+                      ['Instructor'],
                     {
                       doppioHomePath: '/home', launcherName: "java"
-                    }, function(exitCode) {
+                    }, (exitCode) => {
                       if (exitCode === 0) {
-                          $("#jvm_status").text("Finished");
+                          this.updateStatus("Finished in", false);
                         // Class finished executing successfully.
                       } else {
-                          $("#jvm_status").text("Execution Failed");
+                          this.updateStatus("Execution Failed after", false);
+                        this.executionTimer.stop();
                         // Execution failed. :(
                       }
-                    }, function(jvmObject) {});
+                    }, (jvmObject) => {
+                        // Native methods can reference DoppioJVM modules from the DoppioJVM global variable.
+                        var ThreadStatus = Doppio.VM.Enums.ThreadStatus;
+                        jvmObject.registerNatives({
+                          'Instructor': {
+                            'grade(ILjava/lang/String;)V': (thread: any, points: number, feedback: string) => {
+                              // This informs the thread to ignore the return value from this JavaScript function.
+                              thread.setStatus(ThreadStatus.ASYNC_WAITING);
+                              this.updateFeedback(feedback);
+                              console.log("HEY LISTEN", feedback);
+                              this.submit(points, feedback, ()=>thread.asyncReturn(null));
+                            }
+                          }
+                        });
+                    });
                   } else {
-                      $("#jvm_status").text("Compilation Failed");
+                      this.updateStatus("Compilation Failed after", false);
+                      this.executionTimer.stop();
                     // Execution failed. :(
                   }
                 }, function(jvmObject) {});
             });
+        });
+    }
+
+    runStudentCode(fs: FSModule, process: NodeJS.Process, consoleJQuery: JQuery<HTMLElement>) {
+        consoleJQuery.html("");
+        this.updateStatus("Saving, ");
+        this.executionTimer.start();
+        this.updateFeedback("Compiling and executing your code on its own!");
+        fs.writeFile("/home/Student.java", this.submission().code(), "utf-8", () => {
+            this.updateStatus("Compiling, ");
+            Doppio.VM.CLI(
+              ['classes.util.Javac', '/home/Student.java'],
+            {
+              doppioHomePath: '/home', launcherName: "javac"
+            }, (exitCode) => {
+              if (exitCode === 0) {
+                  this.updateStatus("Executing, ");
+                Doppio.VM.CLI(
+                  ['Student'],
+                {
+                  doppioHomePath: '/home', launcherName: "java"
+                }, (exitCode) => {
+                  if (exitCode === 0) {
+                      this.updateStatus("Finished in", false);
+                    // Class finished executing successfully.
+                  } else {
+                      this.updateStatus("Execution Failed after", false);
+                      this.executionTimer.stop();
+                    // Execution failed. :(
+                  }
+                }, (jvmObject) => {
+                });
+              } else {
+                  this.updateStatus("Compilation Failed after", false);
+                  this.executionTimer.stop();
+                // Execution failed. :(
+              }
+            }, function(jvmObject) {});
         });
     }
 
@@ -153,8 +291,8 @@ public class Answer {
     }
 
     setupJavaHome(persistentFs: any, cb: any) {
-        const progressBarText = $('.progress-bar span');
-        const progressBar = $('.progress-bar');
+        const progressBarText = $('.java-progress-bar span');
+        const progressBar = $('.java-progress-bar');
         var fs = BrowserFS.BFSRequire('fs');
         const Buffer = BrowserFS.BFSRequire('buffer').Buffer;
         progressBarText.text("Checking browser cache...");
@@ -214,7 +352,6 @@ public class Answer {
             xhr.send();
         }
         function extract(data: any) {
-            console.log("MOUTNING", persistentFs);
             var mfs = new BrowserFS.FileSystem.MountableFileSystem();
             mfs.mount('/persist', persistentFs);
             mfs.mount('/doppio_home', new BrowserFS.FileSystem.ZipFS(new Buffer(data)));
@@ -228,7 +365,6 @@ public class Answer {
                     progressBarText.text("Error extracting doppio_home.zip: " + err);
                 }
                 //else {
-                    console.log("FINISHED");
                     cb();
                 //}
             });
@@ -245,6 +381,7 @@ public class Answer {
                 (response: any) => {
                     if (response.success) {
                         let assignment = this.server.assignmentStore.newInstance(response.assignment);
+                        this.resetAssignmentIfNeeded(assignment, false);
                         let submission = response.submission ? this.server.submissionStore.newInstance(response.submission) : null;
                         this.assignment(assignment);
                         this.submission(submission);
@@ -263,17 +400,31 @@ public class Answer {
         }
     }
 
+    resetAssignmentIfNeeded(assignment: Assignment, force = true) {
+        if (assignment == null) {
+            assignment = this.assignment();
+        }
+        if (force || assignment.onRun() === "") {
+            assignment.onRun(BASIC_INSTRUCTOR_CODE);
+        }
+    }
+
     parseAdditionalSettings() {
         let settingsRaw = this.assignment().settings();
         let settings = JSON.parse(settingsRaw || "{}");
     }
 
     dispose() {
+        let process = BrowserFS.BFSRequire('process');
+        process.removeAllListeners('data');
         this.subscriptions.currentAssignmentId.dispose();
+        this.executionTimer.reset();
     }
 
     saveAssignment() {
         this.saveFile("!instructions.md", this.assignment().instructions(), true, ()=>{});
+        this.saveFile("!on_run.py", this.assignment().onRun(), true, ()=>{});
+        this.saveFile("!on_run.py", this.assignment().startingCode(), true, ()=>{});
         this.saveAssignmentSettings({
             settings: this.assignment().settings(),
             points: this.assignment().points(),
@@ -285,6 +436,46 @@ public class Answer {
     saveSubmissionRaw() {
         this.saveFile("answer.py", this.submission().code(), true, ()=>{});
     }
+
+    submit(points: number, feedback: string, callback: any) {
+        let BlockPyServer = window['$MAIN_BLOCKPY_EDITOR'].components.server;
+        let now = new Date();
+        let data = {
+            assignment_id: this.assignment().id,
+            assignment_group_id: this.assignmentGroupId,
+            course_id: this.courseId,
+            submission_id: this.submission().id,
+            user_id: this.user.id,
+            status: 0,
+            score: points,
+            correct: points >= 100,
+            timestamp: now.getTime(),
+            timezone: now.getTimezoneOffset(),
+            passcode: window['$MAIN_BLOCKPY_EDITOR'].model.display.passcode(),
+        };
+        // TODO: Skipping questions doesn't skip giving you points does it??
+        BlockPyServer._postBlocking("updateSubmission", data, 3,
+               (response: any) => {
+                    //console.log(response.message.feedbacks);
+                    if (response.success || response.message.message === "Generic LTI Failure - perhaps not logged into LTI session?") {
+                        console.log(response);
+                    }
+                    if (!response.success) {
+                        console.error(response);
+                        this.errorMessage(response.message.message);
+                    }
+                    this.submission().submissionStatus(response.submission_status);
+                    if (response.correct) {
+                        this.markCorrect(this.assignment().id);
+                    }
+                    callback();
+               },
+               (e: any, textStatus: string, errorThrown: any) => {
+                    console.error("Failed to load (HTTP LEVEL)", e, textStatus, errorThrown);
+                    this.errorMessage("HTTP ERROR (try reloading the page; if still an error, report to instructor!): "+ textStatus+"\n"+errorThrown);
+                    callback();
+                });
+    }
 }
 
 export const EDITOR_HTML = `
@@ -294,29 +485,29 @@ export const EDITOR_HTML = `
 <!-- Instructor Editor Mode Selector -->
 <div data-bind="if: isInstructor()">
     <!-- Instructor Editor Mode Selector -->
-    <div class="form-check">
-        <label class="form-check-label">
+    <div class="btn-group-toggle mt-2 mb-2">
+        <label class="btn btn-outline-secondary" for="java-editor-mode-radio-submission"
+            data-bind="css: { active: editorMode()=='SUBMISSION'}">
             <input data-bind="checked: editorMode"
-               id="textbook-editor-mode-radio" name="textbook-editor-mode-radio"
-               class="form-check-input" type="radio" value="RAW">
+               id="java-editor-mode-radio-submission" name="java-editor-mode-radio"
+               class="btn-check" type="radio" value="SUBMISSION" autocomplete="off">
+            Student Code Editor
+        </label>
+        <label class="btn btn-outline-secondary mr-4" for="java-editor-mode-radio-form"
+            data-bind="css: { active: editorMode()=='FORM'}">
+            <input data-bind="checked: editorMode"
+                       id="java-editor-mode-radio-form" name="java-editor-mode-radio"
+                       class="btn-check" type="radio" value="FORM" autocomplete="off">
+            Instructor Editor
+        </label>
+        <label class="btn btn-outline-secondary mr-4" for="java-editor-mode-radio-raw"
+            data-bind="css: { active: editorMode()=='RAW'}">
+            <input data-bind="checked: editorMode"
+                   id="java-editor-mode-radio-raw" name="java-editor-mode-radio"
+                   class="btn-check" type="radio" value="RAW" autocomplete="off">
             Raw Editor
         </label>
-    </div>
-    <div class="form-check">
-        <label class="form-check-label">
-            <input data-bind="checked: editorMode"
-                   id="textbook-editor-mode-radio" name="textbook-editor-mode-radio"
-                   class="form-check-input" type="radio" value="FORM">
-            Form Editor
-        </label>
-    </div>
-    <div class="form-check">
-        <label class="form-check-label">
-            <input data-bind="checked: editorMode"
-               id="textbook-editor-mode-radio" name="textbook-editor-mode-radio"
-               class="form-check-input" type="radio" value="SUBMISSION">
-            Actual Textbook
-        </label>
+        <br><hr>
     </div>
     
     <!-- Raw Instructor Editor -->
@@ -335,10 +526,17 @@ export const EDITOR_HTML = `
 
     <!-- Form Instructor Editor -->
     <div data-bind="if: editorMode() === 'FORM'">
-        <button data-bind="click: saveAssignment">Save Assignment</button><br>
-        <!-- Actual Contents -->
+        <button data-bind="click: saveAssignment" class="btn btn-info">Save Assignment Changes</button><br>
+        <!-- On Run -->
+        <h6>Instructor Feedback (On Run) Code</h6>
+        <div data-bind="codemirror: {value: assignment().onRun, lineNumbers: true, matchBrackets: true, mode: 'text/x-java'}" style="width: 100%; height: 300px"></div><br>
+        <button data-bind="click: ()=>resetAssignmentIfNeeded()">Reset On Run</button>
+        <!-- Starting Code -->
+        <h6>Starting Student Code Code</h6>
+        <div data-bind="codemirror: {value: assignment().startingCode, lineNumbers: true, matchBrackets: true, mode: 'text/x-java'}" style="width: 100%; height: 300px"></div><br>
+        <!-- Instructions -->
         <h6>Instructions (Body)</h6>
-        <div data-bind="jsoneditor: {value: assignment().instructions}" style="width: 100%; height: 500px; resize: vertical; overflow: auto"></div><br>
+        <textarea data-bind="markdowneditor: {value: assignment().instructions}" style="width: 100%; height: 300px"></textarea><br>
         <!-- Other settings -->
         <div class="form-group">
             <label for="textbook-points-editor">
@@ -372,14 +570,16 @@ export const EDITOR_HTML = `
 
 export const JAVA_HTML = `
 <div>
-    Testing
     ${EDITOR_HTML}
+    <!-- ko if: assignment -->
+    <div data-bind="markdowned: {value: assignment().instructions()}"></div>
+    <!-- /ko -->
     <!-- Body -->
-    <div class="row" id="progress-bar-container">
+    <div class="row java-progress-bar-container m-2">
         <div class="col-md-12">
           <div class="alert alert-danger" role="alert" style="display: none;"></div>
           <div class="progress">
-            <div class="progress-bar progress-bar-striped active" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%">
+            <div class="java-progress-bar progress-bar-striped active" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%">
               <span>Connecting to server for download...</span>
             </div>
           </div>
@@ -392,13 +592,37 @@ export const JAVA_HTML = `
       <input type='text' id='filename' class='input-xlarge'/>
       <button id='save_btn' class='btn btn-mini btn-primary'>Save &amp; Close</button>
       <button id='close_btn' style="display: none" class='btn btn-mini btn-primary'>Close Without Saving</button>-->
-      <button id='run_btn' class='btn btn-mini btn-success'>Run</button>
-      <span id="jvm_status"></span>
+      
+      <div class="btn-group m-2" role="group" aria-label="Execution Control Buttons">
+          <button class='btn btn-success java-eval-button' type="button">Run and Grade</button>
+        
+          <div class="btn-group" role="group">
+            <button id="java-execution-control" type="button" class="btn btn-success dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              
+            </button>
+            <div class="dropdown-menu" aria-labelledby="java-execution-control">
+              <button class='btn btn-mini btn-success java-run-button'>Run without grading</button>
+            </div>
+          </div>
       </div>
-      <div id='console'></div>
+      
+      <div class="spinner-loader java-working-spinner" role="status" style="display: inline-block;"><span class="sr-only">Loading...</span></div>
+      <span class="java-status"></span>
+      <span class="java-clock"></span>
+      </div>
       <!-- ko if: submission -->
-        <div data-bind="codemirror: {value: submission().code}" style="width: 100%; height: 300px"></div><br>
-        <!-- /ko -->
+        <div data-bind="codemirror: {value: submission().code, lineNumbers: true, matchBrackets: true, mode: 'text/x-java'}" style="width: 100%; height: 300px; border: 1px solid black;"></div><br>
+      <!-- /ko -->
+      <div class="row mb-2">
+        <div class="col-md-7">
+            <h6>Console (stdout)</h6>
+            <div class='java-console' style="min-height: 300px"></div>
+        </div>
+        <div class="col-md-5">
+            <h6>Instructor Feedback</h6>
+            <div class="java-feedback" style="min-height: 300px; padding: 4px"></div>
+        </div>
+      </div>
 </div>
 `
 

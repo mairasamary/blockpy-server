@@ -8,6 +8,8 @@
     "@types/codemirror": "0.0.103",
     "@types/highlightjs": "^10.1.0",
     "@types/select2": "^4.0.53",
+    "async": "^3.2.4",
+    "browserfs": "^1.4.3",
     "doppiojvm": "^0.5.0",
     "filepond": "^4.30.4",
     "filepond-plugin-file-poster": "^2.5.1",
@@ -49,6 +51,7 @@
     "prepublish": "run-s --silent clean"
   },
   "devDependencies": {
+    "@types/async": "^3.2.16",
     "@types/bootstrap": "^5.0.1",
     "@types/jasmine": "^3.6.2",
     "@types/jquery": "^3.5.5",

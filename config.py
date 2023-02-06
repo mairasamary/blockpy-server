@@ -31,6 +31,7 @@ class Config(object):
     ROOT_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
     STATIC_DIRECTORY = os.path.join(ROOT_DIRECTORY, 'static')
     UPLOADS_DIR = os.path.join(STATIC_DIRECTORY, 'uploads')
+    REPORT_DIR = os.path.join(STATIC_DIRECTORY, 'reports')
     # TODO: Pretty sure a lot of this logging is messed up - need to fix it.
     BLOCKPY_LOG_DIR = os.path.join(ROOT_DIRECTORY, 'logs')
     TIMING_LOG_DIR = os.path.join(ROOT_DIRECTORY, 'logs', 'timing')
@@ -89,6 +90,7 @@ class Config(object):
     SECURITY_DEFAULT_REMEMBER_ME = True
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
+    COMPARE50_EXECUTABLE = secrets.get("COMPARE50_EXECUTABLE")
 
 class ProductionConfig(Config):
     DEBUG = False
