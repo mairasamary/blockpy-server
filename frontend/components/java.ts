@@ -53,19 +53,22 @@ class Timer {
         this.instance = null;
         const newTime = (Date.now() - this._startTime)/1000;
         this.time(newTime);
-        $(this.where).text(Math.ceil(newTime)+" seconds");
+        $(this.where).text(Math.round(newTime)+" seconds");
     }
 
     start() {
         this.reset();
         this._startTime = Date.now();
         this.instance = setInterval(this.update.bind(this), 1000);
+        const newTime = (Date.now() - this._startTime)/1000;
+        this.time(newTime);
+        $(this.where).text(Math.round(newTime)+" seconds");
     }
     
     update() {
         const newTime = (Date.now() - this._startTime)/1000;
         this.time(newTime);
-        $(this.where).text(Math.ceil(newTime)+" seconds");
+        $(this.where).text(Math.round(newTime)+" seconds");
     }
 
 }
@@ -426,7 +429,7 @@ export class Java extends AssignmentInterface {
     saveAssignment() {
         this.saveFile("!instructions.md", this.assignment().instructions(), true, ()=>{});
         this.saveFile("!on_run.py", this.assignment().onRun(), true, ()=>{});
-        this.saveFile("!on_run.py", this.assignment().startingCode(), true, ()=>{});
+        this.saveFile("^starting_code.py", this.assignment().startingCode(), true, ()=>{});
         this.saveAssignmentSettings({
             settings: this.assignment().settings(),
             points: this.assignment().points(),
@@ -534,7 +537,7 @@ export const EDITOR_HTML = `
         <div data-bind="codemirror: {value: assignment().onRun, lineNumbers: true, matchBrackets: true, mode: 'text/x-java'}" style="width: 100%; height: 300px"></div><br>
         <button data-bind="click: ()=>resetAssignmentIfNeeded()">Reset On Run</button>
         <!-- Starting Code -->
-        <h6>Starting Student Code Code</h6>
+        <h6>Starting Student Code</h6>
         <div data-bind="codemirror: {value: assignment().startingCode, lineNumbers: true, matchBrackets: true, mode: 'text/x-java'}" style="width: 100%; height: 300px"></div><br>
         <!-- Instructions -->
         <h6>Instructions (Body)</h6>
