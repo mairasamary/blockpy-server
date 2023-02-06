@@ -9,6 +9,8 @@ import * as Doppio from 'doppiojvm';
 import {recursiveCopy} from "../utilities/doppio_utils";
 import {Assignment} from "../models/assignment";
 import {FSModule} from "browserfs/dist/node/core/FS";
+import {QuizMode} from "./quizzes/quiz";
+import {Question, subscribeToStudent} from "./quizzes/questions";
 
 interface JavaInterfaceJson extends AssignmentInterfaceJson {
 }
@@ -76,30 +78,45 @@ class Timer {
 export class Java extends AssignmentInterface {
     errorMessage: ko.Observable<string>;
     editorMode: ko.Observable<EditorMode>;
+    isDirty: ko.Observable<boolean>;
 
     persistentFs: any;
 
     subscriptions: {
-        currentAssignmentId: ko.Subscription
+        currentAssignmentId: ko.Subscription;
+        submission: ko.Subscription;
+        code: ko.Subscription;
     }
 
     executionTimer: Timer;
+
+    throttleSaving: NodeJS.Timeout | null;
+    SAVE_DELAY: number = 1000;
 
     constructor(params: JavaInterfaceJson) {
         super(params);
         this.editorMode = ko.observable(EditorMode.SUBMISSION);
         this.errorMessage = ko.observable("");
-        this.subscriptions = {currentAssignmentId: null};
+        this.subscriptions = {currentAssignmentId: null, code: null, submission: null};
         this.persistentFs = null;
+        this.isDirty = ko.observable(false);
 
         this.executionTimer = new Timer(".java-clock");
+
+        this.throttleSaving = null;
 
         this.subscriptions.currentAssignmentId = this.currentAssignmentId.subscribe((newId) => {
             this.loadJava(newId);
         }, this);
+
+        this.subscriptions.submission = this.submission.subscribe((submission) => {
+            this.subscriptions.code = <ko.Subscription>submission.code.subscribe((code) => {
+                this.saveStudentAnswer();
+            }, this);
+        }, this);
+
         this.loadJava(this.currentAssignmentId());
     }
-
 
     loadDoppio() {
         if (this.persistentFs === null) {
@@ -423,7 +440,23 @@ export class Java extends AssignmentInterface {
         let process = BrowserFS.BFSRequire('process');
         process.removeAllListeners('data');
         this.subscriptions.currentAssignmentId.dispose();
+        this.subscriptions.code.dispose();
+        this.subscriptions.submission.dispose();
         this.executionTimer.reset();
+    }
+
+    saveStudentAnswer() {
+        this.markDirty();
+        if (this.throttleSaving === null) {
+            clearTimeout(this.throttleSaving);
+        }
+        this.throttleSaving = setTimeout(() => this.finishSaveStudentAnswer(), this.SAVE_DELAY);
+    }
+
+    finishSaveStudentAnswer() {
+        this.saveFile("answer.py", this.submission().code(), false, ()=>{
+            this.markClean();
+        });
     }
 
     saveAssignment() {
@@ -436,6 +469,14 @@ export class Java extends AssignmentInterface {
             url: this.assignment().url(),
             name: this.assignment().name()
         });
+    }
+
+    markDirty() {
+        this.isDirty(true);
+    }
+
+    markClean() {
+        this.isDirty(false);
     }
 
     saveSubmissionRaw() {
@@ -614,9 +655,13 @@ export const JAVA_HTML = `
       <div class="spinner-loader java-working-spinner" role="status" style="display: inline-block;"><span class="sr-only">Loading...</span></div>
       <span class="java-status"></span>
       <span class="java-clock"></span>
+      <!-- ko if: isDirty() -->
+        <small class="alert alert-info p-1 border rounded float-right">Saving changes</small>
+      <!-- /ko -->
       </div>
       <!-- ko if: submission -->
-        <div data-bind="codemirror: {value: submission().code, lineNumbers: true, matchBrackets: true, mode: 'text/x-java'}" style="width: 100%; height: 300px; border: 1px solid black;"></div><br>
+        <div data-bind="codemirror: {value: submission().code, lineNumbers: true, 
+        matchBrackets: true, mode: 'text/x-java'}" style="width: 100%; height: 300px; border: 1px solid black;"></div><br>
       <!-- /ko -->
       <div class="row mb-2">
         <div class="col-md-7">
