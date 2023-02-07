@@ -41,9 +41,9 @@ bundles = {
         # D3
         'libs/d3/d3.6.3.1.min.js',
         # Doppio
-        #"libs/doppio/js/base64.js",
-        #"libs/doppio/js/util.js",
-        #"libs/doppio/js/websock.js",
+        "libs/doppio/js/base64.js",
+        "libs/doppio/js/util.js",
+        "libs/doppio/js/websock.js",
         "libs/doppio/js/browserfs.min.js",
         "libs/doppio/js/doppio.js",
         # Output
