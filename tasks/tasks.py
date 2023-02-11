@@ -79,9 +79,9 @@ def check_similarity(user_id, assignment_id, exclude_courses, target_course, pas
 
         report.update_progress(message="Run the compare50 program on them")
         command = " ".join([app.config['COMPARE50_EXECUTABLE'],
-                            os.path.join(directory, "target"),
-                            "-a", os.path.join(directory, "archived"),
-                            "-d", os.path.join(directory, "distribution"),
+                            os.path.join(directory, "target", "*.py"),
+                            "-a", os.path.join(directory, "archived", "*.py"),
+                            "-d", os.path.join(directory, "distribution", "*.py"),
                             "-p", passes if isinstance(passes, str) else " ".join(passes),
                             #"-n", str(number_of_matches),
                             "--verbose",
