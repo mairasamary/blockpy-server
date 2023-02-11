@@ -66,7 +66,7 @@ def check_similarity(user_id, assignment_id, exclude_courses, target_course, pas
         report.update_progress(message="Writing out all the files to the disk in a folder")
         directory = report.get_report_folder()
         ensure_dirs(directory)
-        for folder in ["archived", "target", "distribution", "output"]:
+        for folder in ["archived", "target", "distribution"]:
             ensure_dirs(os.path.join(directory, folder))
         for folder, submissions in [("archived", archived), ("target", target)]:
             for submission in submissions:
