@@ -7,7 +7,7 @@ import flask_security
 from flask import Blueprint, request, Response, jsonify, abort, g, url_for, send_from_directory
 
 from main import app
-from controllers.helpers import get_course_id, get_user, check_resource_exists, require_request_parameters
+from controllers.helpers import get_course_id, get_user, check_resource_exists, require_request_parameters, maybe_int
 from models.assignment import Assignment
 from models.assignment_group import AssignmentGroup
 from models.course import Course
@@ -78,6 +78,8 @@ def report_static(report_id, path):
 @blueprint_api.route('/check_similarity/<assignment_id>/<course_id>', methods=['GET'])
 def check_similarity(assignment_id, course_id):
     user, user_id = get_user()
+    assignment_id = maybe_int(assignment_id)
+    course_id = maybe_int(course_id)
     task = tasks.check_similarity(user_id, assignment_id, [], course_id, "structure text exact", True, 50)
     location = url_for('api.task_status', task_id=task.id)
     return f"<html><head></head><body><a href='{location}'>{location}</a></body></html>", 202, {'Location': location}
