@@ -75,7 +75,7 @@ def check_similarity(user_id, assignment_id, exclude_courses, target_course, pas
                     out.write(submission.code)
         with open(os.path.join(directory, "distribution", "starting_code.py"), 'w') as out:
             out.write(assignment.starting_code)
-        error_path = open(os.path.join(directory, f"error_log.txt"), 'w')
+        error_path = open(os.path.join(directory, f"error_log.txt"), 'wb')
 
         report.update_progress(message="Run the compare50 program on them")
         command = " ".join([app.config['COMPARE50_EXECUTABLE'],
@@ -88,10 +88,12 @@ def check_similarity(user_id, assignment_id, exclude_courses, target_course, pas
                             "-o", os.path.join(directory, "output")
                             ])
         try:
-            p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=error_path, shell=True, encoding='utf-8')
+            p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=error_path, shell=True)
             out, err = p.communicate()
             if out.strip():
                 report.update_progress(message=out)
+            error_path.write(out)
+            error_path.write(err)
         except Exception as e:
             report.error("Task Error: " + str(e))
         finally:
