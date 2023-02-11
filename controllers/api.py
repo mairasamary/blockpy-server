@@ -61,6 +61,9 @@ def report(report_id):
     user, user_id = get_user()
     report: Report = Report.by_id(report_id)
     # TODO: Check permissions
+
+    if report.owner_id != user_id:
+        return abort(401, "User does not own report.")
     return send_from_directory(report.get_report_folder(), report.result)
 
 
