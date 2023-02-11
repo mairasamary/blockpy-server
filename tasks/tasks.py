@@ -84,14 +84,14 @@ def check_similarity(user_id, assignment_id, exclude_courses, target_course, pas
                             "-d", os.path.join(directory, "distribution"),
                             "-p", passes if isinstance(passes, str) else " ".join(passes),
                             #"-n", str(number_of_matches),
+                            "--verbose",
                             "-o", os.path.join(directory, "output")
                             ])
         try:
             p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=error_path, shell=True, encoding='utf-8')
             out, err = p.communicate()
-            for line in out.split('\n'):
-                if line:
-                    report.update_progress(message=line)
+            if out.strip():
+                report.update_progress(message=out)
         except Exception as e:
             report.error("Task Error: " + str(e))
         finally:

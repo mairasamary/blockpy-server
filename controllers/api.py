@@ -74,8 +74,8 @@ def report_static(report_id, path):
     return send_from_directory(report.get_report_folder(), path)
 
 
-@blueprint_api.route('/check_similarity/<assignment_id>/<course_id>/', methods=['GET'])
-@blueprint_api.route('/check_similarity/<assignment_id>/<course_id>', methods=['GET'])
+@blueprint_api.route('/check_similarity/<assignment_id:int>/<course_id:int>/', methods=['GET'])
+@blueprint_api.route('/check_similarity/<assignment_id:int>/<course_id:int>', methods=['GET'])
 def check_similarity(assignment_id, course_id):
     user, user_id = get_user()
     task = tasks.check_similarity(user_id, assignment_id, [], course_id, "structure text exact", True, 50)
