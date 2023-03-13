@@ -471,7 +471,8 @@ def update_submission():
         error = "Generic LTI Failure - perhaps not logged into LTI session?"
         success = False
         total_score = None
-        post_params = create_grade_post(submission, lis_result_sourcedid, assignment_group_id, user_id, course_id, False)
+        post_params = create_grade_post(submission, lis_result_sourcedid, assignment_group_id, submission.user.id,
+                                        submission.course_id, False)
         try:
             success, total_score = lti_post_grade(g.lti, *post_params)
         except LTIPostMessageException as e:
