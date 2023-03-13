@@ -65,7 +65,7 @@ def update_grading_status():
         error = str(e)
     if success:
         make_log_entry(submission.assignment_id, submission.assignment_version,
-                       submission.course_id, user_id, "X-Submission.LMS", "answer.py", message=str(score))
+                       submission.course_id, user_id, "X-Submission.LMS", "answer.py", message=str(total_score))
         return ajax_success({"submitted": True, "new_status": "FullyGraded"})
     else:
         submission.update_grading_status(GradingStatuses.FAILED)
