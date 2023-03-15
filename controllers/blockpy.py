@@ -362,6 +362,7 @@ def view_submissions(course_id, user_id, assignment_group_id, ):
     #                   course_id, user_id, "X-View.Submission", "answer.py",
     #                   category="group",
     #                   message=json.dumps({"viewer": viewer_id}))
+    print(is_grader, viewer, course_id)
     return render_template("reports/group.html", embed=embed,
                            referer=referer,
                            points_total=points_total, points_possible=points_possible,

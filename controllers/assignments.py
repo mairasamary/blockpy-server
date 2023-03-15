@@ -43,9 +43,9 @@ blueprint_assignments = Blueprint('assignments', __name__, url_prefix='/assignme
 @blueprint_assignments.route('/load', methods=['GET', 'POST'])
 def load():
     if request.args.get('grade_mode', False) == "group":
-        course_id = request.args.get('course_id')
-        user_id = request.args.get('graded_user_id')
-        assignment_group_id = request.args.get('assignment_group_id')
+        course_id = maybe_int(request.args.get('course_id'))
+        user_id = maybe_int(request.args.get('graded_user_id'))
+        assignment_group_id = maybe_int(request.args.get('assignment_group_id'))
         return blockpy.view_submissions(course_id, user_id, assignment_group_id)
     if request.args.get('grade_mode', False) == "single":
         return blockpy.view_submission()

@@ -1,6 +1,10 @@
+{% set hiding = assignment.hidden or assignment.get_setting('hide_submission', False) %}
+
 <div xml:lang="en">
     <h2 id='{{ assignment.slug() }}'>Reading {{ assignment.name }}</h2>
+{% if is_grader or not hiding %}
     <a href="{{ url_for('assignments.load_reading', path=assignment.url, embed=True) }}" target="_blank">View reading</a>
+{% endif %}
 
     <div>Submission Status: {{ submission.submission_status }}</div>
     <div>Grading Status: {{ submission.grading_status }}</div>
