@@ -7,6 +7,7 @@
     <div>Score Status: {{ submission.full_status() }}</div>
     <div>Date Created: {{ submission.date_created }}</div>
     <div>Date Modified: {{ submission.date_modified }}</div>
+{% if is_grader or not hiding %}
     <div>Full Submission: <a href="{{ url_for('blockpy.load_assignment',
                             assignment_id=submission.assignment_id,
                             user_id=submission.user_id,
@@ -15,8 +16,7 @@
                             embed=True) }}">download</a></div>
     <div>History: <a href="{{ url_for('blockpy.browse_history', assignment_id=submission.assignment_id,
         user_id=submission.user_id, course_id=submission.course_id) }}">view</a></div>
-
-    {% if (is_grader or not hiding) and submission.code %}
+{% if submission.code %}
     <div id="reviewable-code-area-{{ submission.id }}">Submitted code:<br>
         {{ submission.code|highlight_python_code|safe }}
         {% if submission.extra_files %}
@@ -28,4 +28,5 @@
     </div>
 
     {% endif %}
+{% endif %}
 </div>
