@@ -69,6 +69,13 @@ def inject_code_part(existing_code, new_code, part_id):
     return "\n".join(new_body)
 
 
+DEFAULT_FILENAME = 'answer.py'
+DEFAULT_FILENAMES_BY_TYPE = {
+    'java': 'answer.java',
+    'quiz': 'answer.json'
+}
+
+
 class Submission(Base):
     code = Column(Text(), default="")
     extra_files = Column(Text(), default="")
@@ -127,8 +134,9 @@ class Submission(Base):
                 extra_files = {f['filename']: f['contents'] for f in extra_files}
         except json.JSONDecodeError:
             extra_files = {}
+        filename = DEFAULT_FILENAMES_BY_TYPE.get(self.assignment.type, DEFAULT_FILENAME)
         files = {
-            'answer.py': self.code,
+            filename: self.code,
             '_grade.json': json.dumps({
                 'score': self.score/100,
                 'correct': self.correct,
@@ -140,7 +148,7 @@ class Submission(Base):
                 'user_id': self.user_id,
                 'assignment_version': self.assignment_version,
                 'version': self.version,
-                'files': ['answer.py']+[f[0] for f in extra_files]
+                'files': [filename]+[f[0] for f in extra_files]
             }),
             **extra_files
         }
