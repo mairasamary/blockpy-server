@@ -88,6 +88,11 @@ export class Java extends AssignmentInterface {
         code: ko.Subscription;
     }
 
+    handlers: {
+        stdout: any;
+        stderr: any;
+    }
+
     executionTimer: Timer;
 
     throttleSaving: NodeJS.Timeout | null;
@@ -95,11 +100,14 @@ export class Java extends AssignmentInterface {
 
     constructor(params: JavaInterfaceJson) {
         super(params);
+        console.log(this);
         this.editorMode = ko.observable(EditorMode.SUBMISSION);
         this.errorMessage = ko.observable("");
         this.subscriptions = {currentAssignmentId: null, code: null, submission: null};
         this.persistentFs = null;
         this.isDirty = ko.observable(false);
+
+        this.handlers = {stdout: null, stderr: null};
 
         this.executionTimer = new Timer(".java-clock");
 
@@ -110,6 +118,10 @@ export class Java extends AssignmentInterface {
         }, this);
 
         this.subscriptions.submission = this.submission.subscribe((submission) => {
+            console.log("Submission changed!");
+            if (this.subscriptions.code) {
+                this.subscriptions.code.dispose();
+            }
             this.subscriptions.code = <ko.Subscription>submission.code.subscribe((code) => {
                 this.saveStudentAnswer();
             }, this);
@@ -121,16 +133,18 @@ export class Java extends AssignmentInterface {
     loadDoppio() {
         if (this.persistentFs === null) {
             this.constructPersistantFs((_fs: any) => {
-            this.persistentFs = _fs;
-            BrowserFS.initialize(_fs);
-            this.setupJavaHome(this.persistentFs, () => {
-                this.setupFileSystem(this.persistentFs,  () => {
-                    $('.java-progress-bar-container').fadeOut('fast', () => {
-                        this.startEditor();
+                this.persistentFs = _fs;
+                BrowserFS.initialize(_fs);
+                this.setupJavaHome(this.persistentFs, () => {
+                    this.setupFileSystem(this.persistentFs,  () => {
+                        $('.java-progress-bar-container').fadeOut('fast', () => {
+                            this.startEditor();
+                        });
                     });
                 });
             });
-        });
+        } else {
+            this.startEditor();
         }
     }
 
@@ -144,9 +158,11 @@ export class Java extends AssignmentInterface {
     }
 
     startEditor() {
+        console.log("Starting Editor");
         let fs = BrowserFS.BFSRequire('fs');
         let process = BrowserFS.BFSRequire('process');
         let consoleJQuery = $('.java-console');
+        consoleJQuery.empty();
         process.chdir('/home');
         let shell = {
             stdout: (text: string)=> {
@@ -158,9 +174,14 @@ export class Java extends AssignmentInterface {
                 consoleJQuery.append(`<div style="color: red;">${text}</div>`);
             }
         };
-        //process.removeAllListeners('data');
-        process.stdout.on('data', function (data) { return shell.stdout(data.toString()); });
-        process.stderr.on('data', function (data) { return shell.stderr(data.toString()); });
+        process.stdout.removeAllListeners('data');
+        process.stderr.removeAllListeners('data');
+        this.handlers.stdout = (data: any) => shell.stdout(data.toString());
+        this.handlers.stderr = (data: any) => shell.stderr(data.toString());
+        process.stdout.on('data', this.handlers.stdout);
+        process.stderr.on('data', this.handlers.stderr);
+
+        // Wipe out existing files
         ["/home/Instructor", "/home/Student"].forEach((path) => {
             fs.exists(path, (exists: boolean) => {
                 if (exists) {
@@ -168,14 +189,15 @@ export class Java extends AssignmentInterface {
                 }
             })
         })
-        shell.stdout("Ready to run!");
 
+        shell.stdout("Ready to run!");
         this.updateStatus("Ready", false);
 
-        $(".java-eval-button").on('click', () => {
-            this.evaluateInstructorCode(fs, process, consoleJQuery);
-        });
-        $(".java-run-button").on('click', () => {
+        // $(".java-eval-button").on('click', () => {
+        //     this.evaluateInstructorCode(fs, process, consoleJQuery);
+        // });
+        $(".java-run-button").off('click.run');
+        $(".java-run-button").on('click.run', () => {
             this.runStudentCode(fs, process, consoleJQuery);
         });
     }
@@ -235,45 +257,48 @@ export class Java extends AssignmentInterface {
     }
 
     runStudentCode(fs: FSModule, process: NodeJS.Process, consoleJQuery: JQuery<HTMLElement>) {
-        consoleJQuery.html("");
+        consoleJQuery.html("Compiling...");
         this.updateStatus("Saving, ");
         this.executionTimer.start();
-        this.updateFeedback("Compiling and executing your code on its own!");
-        fs.writeFile("/home/Student.java", this.submission().code(), "utf-8", () => {
-            this.updateStatus("Compiling, ");
-            Doppio.VM.CLI(
-              ['classes.util.Javac', '/home/Student.java'],
-            {
-              doppioHomePath: '/home', launcherName: "javac"
-            }, (exitCode) => {
-              if (exitCode === 0) {
-                  this.updateStatus("Executing, ");
+        this.updateFeedback("Compiling and executing your code!");
+        fs.unlink("/home/Student.class", () => {
+            fs.writeFile("/home/Student.java", this.submission().code(), "utf-8", () => {
+                this.updateStatus("Compiling, ");
                 Doppio.VM.CLI(
-                  ['Student'],
+                  ['classes.util.Javac', '/home/Student.java'],
                 {
-                  doppioHomePath: '/home', launcherName: "java"
+                  doppioHomePath: '/home', launcherName: "javac"
                 }, (exitCode) => {
                   if (exitCode === 0) {
-                      this.updateStatus("Finished in", false);
-                      this.executionTimer.stop();
-                    // Class finished executing successfully.
+                      this.updateStatus("Executing, ");
+                    Doppio.VM.CLI(
+                      ['Student'],
+                    {
+                      doppioHomePath: '/home', launcherName: "java"
+                    }, (exitCode) => {
+                      if (exitCode === 0) {
+                          this.updateStatus("Finished in", false);
+                          this.executionTimer.stop();
+                        // Class finished executing successfully.
+                      } else {
+                          this.updateStatus("Execution Failed after", false);
+                          this.executionTimer.stop();
+                        // Execution failed. :(
+                      }
+                    }, (jvmObject) => {
+                    });
                   } else {
-                      this.updateStatus("Execution Failed after", false);
+                      this.updateStatus("Compilation Failed after", false);
                       this.executionTimer.stop();
                     // Execution failed. :(
                   }
-                }, (jvmObject) => {
-                });
-              } else {
-                  this.updateStatus("Compilation Failed after", false);
-                  this.executionTimer.stop();
-                // Execution failed. :(
-              }
-            }, function(jvmObject) {});
+                }, function(jvmObject) {});
+            });
         });
     }
 
     setupFileSystem(persistentFs: any, cb: any) {
+        console.log("Setting up file system");
         var root = new BrowserFS.FileSystem.MountableFileSystem();
         BrowserFS.initialize(root);
         const fs = BrowserFS.BFSRequire("fs");
@@ -313,6 +338,7 @@ export class Java extends AssignmentInterface {
     }
 
     setupJavaHome(persistentFs: any, cb: any) {
+        console.log("Setting up Java Home");
         const progressBarText = $('.java-progress-bar span');
         const progressBar = $('.java-progress-bar');
         var fs = BrowserFS.BFSRequire('fs');
@@ -640,7 +666,7 @@ export const JAVA_HTML = `
       <button id='close_btn' style="display: none" class='btn btn-mini btn-primary'>Close Without Saving</button>-->
       
       <div class="btn-group m-2" role="group" aria-label="Execution Control Buttons">
-          <button class='btn btn-success java-eval-button' type="button">Run and Grade</button>
+          <!--<button class='btn btn-success java-eval-button' type="button">Run and Grade</button>
         
           <div class="btn-group" role="group">
             <button id="java-execution-control" type="button" class="btn btn-success dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -649,7 +675,8 @@ export const JAVA_HTML = `
             <div class="dropdown-menu" aria-labelledby="java-execution-control">
               <button class='btn btn-mini btn-success java-run-button'>Run without grading</button>
             </div>
-          </div>
+          </div>-->
+          <button class='btn btn-mini btn-success java-run-button'>Run</button>
       </div>
       
       <div class="spinner-loader java-working-spinner" role="status" style="display: inline-block;"><span class="sr-only">Loading...</span></div>

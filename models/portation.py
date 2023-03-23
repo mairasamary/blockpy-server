@@ -179,7 +179,7 @@ def export_zip(assignments=None, submissions=None, users=None):
                 path += user_paths[submission.user_id]+'/'
                 path += filename
                 dumped[path] = contents
-    print(list(dumped.keys()))
+    #print(list(dumped.keys()))
     zip_buffer = io.BytesIO()
     with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
         for file_name, data in dumped.items():

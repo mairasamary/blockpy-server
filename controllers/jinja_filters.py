@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 
 from natsort import natsorted
 
-from utilities import highlight_python_code
+from utilities import highlight_python_code, highlight_java_code
 from flask import request
 from werkzeug.urls import url_encode
 from markdown import Markdown
@@ -126,6 +126,7 @@ def setup_jinja_filters(app):
     app.jinja_env.filters['natsorted'] = natsorted
     app.jinja_env.filters['get_setting'] = get_setting
     app.jinja_env.filters['highlight_python_code'] = highlight_python_code
+    app.jinja_env.filters['highlight_java_code'] = highlight_java_code
     app.jinja_env.filters['to_friendly_date'] = to_friendly_date
     app.jinja_env.filters['from_friendly_date'] = from_friendly_date
     app.jinja_env.filters['modify_query'] = modify_query

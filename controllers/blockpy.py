@@ -457,6 +457,8 @@ def update_submission():
         assignment_group_id = submission.assignment_group_id
     # TODO: Document that we currently only pass back grade if it changed
     # TODO: If failure on previous submission grading, then retry
+    if not submission.assignment.is_allowed(request.remote_addr) and not user.is_grader(submission.course_id):
+        return ajax_failure("Your IP address is not allowed and you are not a grader in its course.")
     if was_changed or force_update:
         submission.save_block_image(image)
         if g.lti is None:

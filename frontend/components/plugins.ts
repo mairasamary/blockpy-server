@@ -28,10 +28,12 @@ ko.bindingHandlers.codemirror = {
         let options = ko.unwrap(valueAccessor());
         element.editor = CodeMirror(element, ko.toJS(options));
         element.editor.on('change', function (cm: any) {
-            if (!options.readOnly) {
-                options.value(cm.getValue());
+            const latestOptions = ko.unwrap(valueAccessor());
+            if (!latestOptions.readOnly) {
+                latestOptions.value(cm.getValue());
             }
         });
+        element.editor.setValue(options.value());
 
         ko.utils.domNodeDisposal.addDisposeCallback(element, function () {
             let wrapper = element.editor.getWrapperElement();
