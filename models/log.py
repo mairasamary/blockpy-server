@@ -4,9 +4,9 @@ import time
 import json
 from datetime import datetime, timedelta
 
-
 from sqlalchemy import Column, String, Integer, ForeignKey, Text, func, JSON, Index, and_
 
+from models.course import Course
 from models.assignment import Assignment
 from models.models import Base, db, datetime_to_string
 from models.user import User
@@ -91,7 +91,7 @@ class Log(Base):
         db.session.add(log)
         db.session.commit()
         # Single-file logging
-        #logging.getLogger('Events').info(log.for_file())
+        # logging.getLogger('Events').info(log.for_file())
         return log
 
     def __str__(self):
@@ -106,7 +106,6 @@ class Log(Base):
                 .filter(Log.category != "Success")
                 .group_by(Log.subject_id)
                 .all())
-
 
     @staticmethod
     def get_logs_for_user_course(course_id, user_id):
@@ -137,9 +136,11 @@ class Log(Base):
 
     @staticmethod
     def remove_by_assignment(assignment_id):
-        (db.session.query(Log)
-                .filter(Log.assignment_id == assignment_id)
-                .delete())
+        # Force query planner to use the first column of index
+        course_subquery = db.session.query(Course.id).subquery()
+        (db.session.query(Log).filter(Log.assignment_id == assignment_id,
+                                      Log.course_id.in_(course_subquery))
+         .delete(synchronize_session='fetch'))
 
     @staticmethod
     def get_history(course_id, assignment_id, user_id, page_offset=None, page_limit=None, as_json=True):
@@ -181,7 +182,7 @@ class Log(Base):
                                     Log.assignment_id == recent_submissions.c.assignment_id,
                                     Log.subject_id == recent_submissions.c.user_id))
                 .filter(Log.date_modified >= start_time)
-                 ).all()
+                ).all()
         return [log.encode_json() for log in logs]
 
     def for_file(self):
