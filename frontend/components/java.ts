@@ -79,6 +79,7 @@ export class Java extends AssignmentInterface {
     errorMessage: ko.Observable<string>;
     editorMode: ko.Observable<EditorMode>;
     isDirty: ko.Observable<boolean>;
+    isExecuting: ko.Observable<boolean>;
 
     persistentFs: any;
 
@@ -106,6 +107,7 @@ export class Java extends AssignmentInterface {
         this.subscriptions = {currentAssignmentId: null, code: null, submission: null};
         this.persistentFs = null;
         this.isDirty = ko.observable(false);
+        this.isExecuting = ko.observable(false);
 
         this.handlers = {stdout: null, stderr: null};
 
@@ -159,6 +161,7 @@ export class Java extends AssignmentInterface {
 
     startEditor() {
         console.log("Starting Editor");
+        this.isExecuting(false);
         let fs = BrowserFS.BFSRequire('fs');
         let process = BrowserFS.BFSRequire('process');
         let consoleJQuery = $('.java-console');
@@ -257,10 +260,11 @@ export class Java extends AssignmentInterface {
     }
 
     runStudentCode(fs: FSModule, process: NodeJS.Process, consoleJQuery: JQuery<HTMLElement>) {
-        consoleJQuery.html("Compiling...");
+        consoleJQuery.html("$> Compiling and executing: Student.java");
         this.updateStatus("Saving, ");
         this.executionTimer.start();
         this.updateFeedback("Compiling and executing your code!");
+        this.isExecuting(true);
         fs.unlink("/home/Student.class", () => {
             fs.writeFile("/home/Student.java", this.submission().code(), "utf-8", () => {
                 this.updateStatus("Compiling, ");
@@ -279,10 +283,12 @@ export class Java extends AssignmentInterface {
                       if (exitCode === 0) {
                           this.updateStatus("Finished in", false);
                           this.executionTimer.stop();
+                          this.isExecuting(false);
                         // Class finished executing successfully.
                       } else {
                           this.updateStatus("Execution Failed after", false);
                           this.executionTimer.stop();
+                          this.isExecuting(false);
                         // Execution failed. :(
                       }
                     }, (jvmObject) => {
@@ -290,6 +296,7 @@ export class Java extends AssignmentInterface {
                   } else {
                       this.updateStatus("Compilation Failed after", false);
                       this.executionTimer.stop();
+                      this.isExecuting(false);
                     // Execution failed. :(
                   }
                 }, function(jvmObject) {});
@@ -600,9 +607,9 @@ export const EDITOR_HTML = `
     <div data-bind="if: editorMode() === 'FORM'">
         <button data-bind="click: saveAssignment" class="btn btn-info">Save Assignment Changes</button><br>
         <!-- On Run -->
-        <h6>Instructor Feedback (On Run) Code</h6>
+        <!--<h6>Instructor Feedback (On Run) Code</h6>
         <div data-bind="codemirror: {value: assignment().onRun, lineNumbers: true, matchBrackets: true, mode: 'text/x-java'}" style="width: 100%; height: 300px"></div><br>
-        <button data-bind="click: ()=>resetAssignmentIfNeeded()">Reset On Run</button>
+        <button data-bind="click: ()=>resetAssignmentIfNeeded()">Reset On Run</button>-->
         <!-- Starting Code -->
         <h6>Starting Student Code</h6>
         <div data-bind="codemirror: {value: assignment().startingCode, lineNumbers: true, matchBrackets: true, mode: 'text/x-java'}" style="width: 100%; height: 300px"></div><br>
@@ -676,7 +683,7 @@ export const JAVA_HTML = `
               <button class='btn btn-mini btn-success java-run-button'>Run without grading</button>
             </div>
           </div>-->
-          <button class='btn btn-mini btn-success java-run-button'>Run</button>
+          <button class='btn btn-mini btn-success java-run-button' data-bind="disable: isExecuting">Run</button>
       </div>
       
       <div class="spinner-loader java-working-spinner" role="status" style="display: inline-block;"><span class="sr-only">Loading...</span></div>
@@ -691,14 +698,14 @@ export const JAVA_HTML = `
         matchBrackets: true, mode: 'text/x-java'}" style="width: 100%; height: 300px; border: 1px solid black;"></div><br>
       <!-- /ko -->
       <div class="row mb-2">
-        <div class="col-md-7">
+        <div class="col-md-12">
             <h6>Console (stdout)</h6>
             <div class='java-console' style="min-height: 300px"></div>
         </div>
-        <div class="col-md-5">
+        <!--<div class="col-md-5">
             <h6>Instructor Feedback</h6>
             <div class="java-feedback" style="min-height: 300px; padding: 4px"></div>
-        </div>
+        </div>-->
       </div>
 </div>
 `
