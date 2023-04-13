@@ -138,6 +138,8 @@ class Log(Base):
     def remove_by_assignment(assignment_id):
         # Force query planner to use the first column of index
         course_subquery = db.session.query(Course.id).subquery()
+        #print(db.session.query(Log).filter(Log.assignment_id == assignment_id,
+        #                              Log.course_id.in_(course_subquery)))
         (db.session.query(Log).filter(Log.assignment_id == assignment_id,
                                       Log.course_id.in_(course_subquery))
          .delete(synchronize_session='fetch'))

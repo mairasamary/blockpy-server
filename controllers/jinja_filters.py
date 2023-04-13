@@ -94,7 +94,7 @@ def make_readonly_quiz_body(question, feedback, student, check, is_grader):
             elif 'correct_exact' in check:
                 correct = value in check.get('correct_exact', {}).get(key, [])
             elif 'correct_regex' in check:
-                correct = any(re.match(reg, student) for reg in check.get('correct_regex', {}).get(key))
+                correct = any(re.match(reg, student) for reg in check.get('correct_regex', {}).get(key, ""))
             text = re.sub(rf"(?<!\\)(\[{key}\])(?!\()",
                           f"<span class='mdq mdq-{correct if is_grader else 'unknown'}'>{value}</span>",
                           text)
