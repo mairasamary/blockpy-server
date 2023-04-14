@@ -51,7 +51,8 @@ export const INSTRUCTIONS_BAR_HTML = (position: string) => `
             <span>Quiz In Progress!</span><br>
             <!--<button data-bind="click: saveSubmission">SAVE</button><br>-->
             <div class="text-center">
-                <button data-bind="click: submit" class="btn btn-success">Submit answer</button><br>
+                <button data-bind="click: submit, disable: isDirty"
+                        class="btn btn-success">Submit answer</button><br>
             </div>
         <!-- /ko -->
         <!-- ko case: 'COMPLETED' -->
