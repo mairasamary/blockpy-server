@@ -421,3 +421,13 @@ def make_log_entry(assignment_id, assignment_version, course_id, user_id,
     return Log.new(assignment_id, assignment_version, course_id, user_id,
                    event_type, file_path, category, label, message, timestamp, timezone)
 
+
+def compare_string_equality(submitted, expected) -> bool:
+    if not submitted and bool(expected):
+        return False
+    submitted = str(submitted).strip()
+    if isinstance(expected, str):
+        return submitted == expected
+    else:
+        # Assume list of possible answers
+        return submitted in expected

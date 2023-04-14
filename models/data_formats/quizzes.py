@@ -4,6 +4,8 @@ from pprint import pprint
 import sys
 import json
 
+from controllers.helpers import compare_string_equality
+
 
 class QuizResult:
     score: float
@@ -127,8 +129,11 @@ def check_quiz_question(question, check, student) -> (float, bool, list):
     #elif question.get('type') == 'numerical_question':
     #    pass
     elif question.get('type') == 'fill_in_multiple_blanks_question':
-        if 'correct_exact' in check:
-            corrects = [student.get(blank_id) in answer
+        if 'correct' in check:
+            corrects = [compare_string_equality(student.get(blank_id, ""), answer)
+                        for blank_id, answer in check.get('correct', {}).items()]
+        elif 'correct_exact' in check:
+            corrects = [compare_string_equality(student.get(blank_id, ""), answer)
                         for blank_id, answer in check.get('correct_exact', {}).items()]
         elif 'correct_regex' in check:
             corrects = [any(re.match(reg, student.get(blank_id)) for reg in answer)
@@ -140,6 +145,7 @@ def check_quiz_question(question, check, student) -> (float, bool, list):
     elif question.get('type') in ('text_only_question', 'essay_question'):
         return 1, True, "Correct"
     return None
+
 
 
 def convert_quiz_question(question) -> (dict, dict):

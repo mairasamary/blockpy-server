@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 
 from natsort import natsorted
 
+from controllers.helpers import compare_string_equality
 from utilities import highlight_python_code, highlight_java_code
 from flask import request
 from werkzeug.urls import url_encode
@@ -92,7 +93,7 @@ def make_readonly_quiz_body(question, feedback, student, check, is_grader):
             if 'correct' in check:
                 correct = check.get('correct', {}).get(key) == value
             elif 'correct_exact' in check:
-                correct = value in check.get('correct_exact', {}).get(key, [])
+                correct = compare_string_equality(value, check.get('correct_exact', {}).get(key, []))
             elif 'correct_regex' in check:
                 correct = any(re.match(str(reg), value) for reg in check.get('correct_regex', {}).get(key, ""))
             text = re.sub(rf"(?<!\\)(\[{key}\])(?!\()",
