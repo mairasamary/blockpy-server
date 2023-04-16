@@ -75,11 +75,24 @@ class Timer {
 
 }
 
+function pad(num: number) {return ("0" + num).slice(-2);}
+
+export function formatClock() {
+    const now = new Date();
+    const time = `${now.getHours() % 12 || 12}:${pad(now.getMinutes())} `;
+    return time + (now.getHours()>=12 ? 'PM': 'AM');
+}
+
+const FIND_PUBLIC_CLASS = /^\s*public\s+(?:class|interface)\s+([^\n\s]*)/gm;
+
 export class Java extends AssignmentInterface {
     errorMessage: ko.Observable<string>;
     editorMode: ko.Observable<EditorMode>;
     isDirty: ko.Observable<boolean>;
     isExecuting: ko.Observable<boolean>;
+    currentTime: ko.Observable<string>;
+    filename: ko.PureComputed<string[]>;
+    runningFilename: ko.PureComputed<string>;
 
     persistentFs: any;
 
@@ -94,24 +107,33 @@ export class Java extends AssignmentInterface {
         stderr: any;
     }
 
+    createdFiles: string[];
+
     executionTimer: Timer;
 
+    timeClock: NodeJS.Timeout | null;
     throttleSaving: NodeJS.Timeout | null;
     SAVE_DELAY: number = 1000;
 
     constructor(params: JavaInterfaceJson) {
         super(params);
-        console.log(this);
         this.editorMode = ko.observable(EditorMode.SUBMISSION);
         this.errorMessage = ko.observable("");
-        this.subscriptions = {currentAssignmentId: null, code: null, submission: null};
+        this.subscriptions = { currentAssignmentId: null, code: null, submission: null };
         this.persistentFs = null;
         this.isDirty = ko.observable(false);
         this.isExecuting = ko.observable(false);
+        this.currentTime = ko.observable(formatClock());
+
+        this.createdFiles = [];
 
         this.handlers = {stdout: null, stderr: null};
 
         this.executionTimer = new Timer(".java-clock");
+
+        this.timeClock = setInterval(()=>{
+            this.currentTime(formatClock());
+        }, 3000);
 
         this.throttleSaving = null;
 
@@ -120,7 +142,6 @@ export class Java extends AssignmentInterface {
         }, this);
 
         this.subscriptions.submission = this.submission.subscribe((submission) => {
-            console.log("Submission changed!");
             if (this.subscriptions.code) {
                 this.subscriptions.code.dispose();
             }
@@ -128,6 +149,25 @@ export class Java extends AssignmentInterface {
                 this.saveStudentAnswer();
             }, this);
         }, this);
+
+        this.filename = ko.pureComputed(function () {
+            if (this.submission()) {
+                const code = this.submission().code();
+                const matcher = RegExp(FIND_PUBLIC_CLASS);
+                let match = matcher.exec(code);
+                let classes = [];
+                while (match != null) {
+                    classes.push(match[1]);
+                    match = matcher.exec(code);
+                }
+                return classes;
+            } else {
+                return [];
+            }
+        }, this);
+        this.runningFilename = ko.pureComputed(
+            () => this.filename().length > 0 ? this.filename()[0] : "Student",
+            this);
 
         this.loadJava(this.currentAssignmentId());
     }
@@ -260,23 +300,28 @@ export class Java extends AssignmentInterface {
     }
 
     runStudentCode(fs: FSModule, process: NodeJS.Process, consoleJQuery: JQuery<HTMLElement>) {
-        consoleJQuery.html("$> Compiling and executing: Student.java");
+        consoleJQuery.html(`$> Compiling and executing: ${this.runningFilename()}.java`);
         this.updateStatus("Saving, ");
         this.executionTimer.start();
         this.updateFeedback("Compiling and executing your code!");
         this.isExecuting(true);
-        fs.unlink("/home/Student.class", () => {
-            fs.writeFile("/home/Student.java", this.submission().code(), "utf-8", () => {
+        let oldClassFile = this.runningFilename();
+        if (this.createdFiles.length > 0) {
+            oldClassFile = this.createdFiles[0];
+        }
+        fs.unlink(`/home/${oldClassFile}.class`, () => {
+            fs.writeFile(`/home/${this.runningFilename()}.java`, this.submission().code(), "utf-8", () => {
                 this.updateStatus("Compiling, ");
                 Doppio.VM.CLI(
-                  ['classes.util.Javac', '/home/Student.java'],
+                  ['classes.util.Javac', `/home/${this.runningFilename()}.java`],
                 {
                   doppioHomePath: '/home', launcherName: "javac"
                 }, (exitCode) => {
                   if (exitCode === 0) {
                       this.updateStatus("Executing, ");
+                      this.createdFiles.push(this.runningFilename());
                     Doppio.VM.CLI(
-                      ['Student'],
+                      [this.runningFilename()],
                     {
                       doppioHomePath: '/home', launcherName: "java"
                     }, (exitCode) => {
@@ -476,6 +521,7 @@ export class Java extends AssignmentInterface {
         this.subscriptions.code.dispose();
         this.subscriptions.submission.dispose();
         this.executionTimer.reset();
+        clearInterval(this.timeClock);
     }
 
     saveStudentAnswer() {
@@ -689,6 +735,7 @@ export const JAVA_HTML = `
       <div class="spinner-loader java-working-spinner" role="status" style="display: inline-block;"><span class="sr-only">Loading...</span></div>
       <span class="java-status"></span>
       <span class="java-clock"></span>
+      <span class="time-clock float-right" data-bind="text: currentTime"></span>
       <!-- ko if: isDirty() -->
         <small class="alert alert-info p-1 border rounded float-right">Saving changes</small>
       <!-- /ko -->
@@ -700,6 +747,15 @@ export const JAVA_HTML = `
       <div class="row mb-2">
         <div class="col-md-12">
             <h6>Console (stdout)</h6>
+            <!-- ko if: filename().length === 0 -->
+                <span class="alert alert-warning">No public class found (there must be at least one)</span>
+            <!-- /ko -->
+            <!-- ko if: filename().length === 1 -->
+                <code class="found-filename" data-bind="text: filename()[0]+'.java'"></code>
+            <!-- /ko -->
+            <!-- ko if: filename().length > 1 -->
+                <span class="alert alert-warning">Multiple public classes found (there can be only one)</span>
+            <!-- /ko -->
             <div class='java-console' style="min-height: 300px"></div>
         </div>
         <!--<div class="col-md-5">
