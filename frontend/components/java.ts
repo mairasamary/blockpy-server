@@ -539,9 +539,19 @@ export class Java extends AssignmentInterface {
     }
 
     saveAssignment() {
-        this.saveFile("!instructions.md", this.assignment().instructions(), true, ()=>{});
-        this.saveFile("!on_run.py", this.assignment().onRun(), true, ()=>{});
-        this.saveFile("^starting_code.py", this.assignment().startingCode(), true, ()=>{});
+        const anyError = (e: any, textStatus: string, errorThrown: any) => {
+            console.error("Failed to load (HTTP LEVEL)", e, textStatus, errorThrown);
+            this.errorMessage("Save Assignment: Failed to load (HTTP LEVEL)" + e);
+        };
+        const anyReturn = (data: any) => {
+            if (!data.success) {
+                console.error("Failed to save assignment", data);
+                this.errorMessage("Save Assignment: Failed to save (Logic LEVEL)" + JSON.stringify(data));
+            }
+        }
+        this.saveFile("!instructions.md", this.assignment().instructions(), true, anyReturn, anyError);
+        this.saveFile("!on_run.py", this.assignment().onRun(), true, anyReturn, anyError);
+        this.saveFile("^starting_code.py", this.assignment().startingCode(), true, anyReturn, anyError);
         this.saveAssignmentSettings({
             settings: this.assignment().settings(),
             points: this.assignment().points(),
@@ -560,6 +570,12 @@ export class Java extends AssignmentInterface {
 
     saveSubmissionRaw() {
         this.saveFile("answer.py", this.submission().code(), true, ()=>{});
+    }
+
+    resetStudent() {
+        if (confirm("Are you sure you want to reset your code to the starter code? You may not be able to get it back!")) {
+            this.submission().code(this.assignment().startingCode());
+        }
     }
 
     submit(points: number, feedback: string, callback: any) {
@@ -736,6 +752,7 @@ export const JAVA_HTML = `
       <span class="java-status"></span>
       <span class="java-clock"></span>
       <span class="time-clock float-right" data-bind="text: currentTime"></span>
+      <button class="btn btn-mini btn-xs btn-outline-secondary code-reset float-right mr-3" data-bind="click: resetStudent">Reset Code</button>
       <!-- ko if: isDirty() -->
         <small class="alert alert-info p-1 border rounded float-right">Saving changes</small>
       <!-- /ko -->
