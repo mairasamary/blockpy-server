@@ -116,8 +116,11 @@ def check_quiz_question(question, check, student) -> (float, bool, list):
         return sum(corrects) / len(corrects) if corrects else 0, all(corrects), feedback
     elif question.get('type') in ('short_answer_question', 'numerical_question'):
         wrong_any = check.get('wrong_any', "Incorrect")
-        if 'correct_exact' in check:
-            correct = student in check['correct_exact']
+        if 'correct' in check:
+            correct = compare_string_equality(student, check['correct'])
+            feedback = check.get('feedback', {}).get(student, wrong_any)
+        elif 'correct_exact' in check:
+            correct = compare_string_equality(student, check['correct_exact'])
             feedback = check.get('feedback', {}).get(student, wrong_any)
         elif 'correct_regex' in check:
             correct = any(re.match(reg, student) for reg in check['correct_regex'])
