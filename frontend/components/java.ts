@@ -94,6 +94,9 @@ export class Java extends AssignmentInterface {
     filename: ko.PureComputed<string[]>;
     runningFilename: ko.PureComputed<string>;
 
+    latestOutput: string[];
+    latestErrors: string[];
+
     persistentFs: any;
 
     subscriptions: {
@@ -126,6 +129,8 @@ export class Java extends AssignmentInterface {
         this.currentTime = ko.observable(formatClock());
 
         this.createdFiles = [];
+        this.latestOutput = [];
+        this.latestErrors = [];
 
         this.handlers = {stdout: null, stderr: null};
 
@@ -200,7 +205,7 @@ export class Java extends AssignmentInterface {
     }
 
     startEditor() {
-        console.log("Starting Editor");
+        console.log("Starting Editor", this.persistentFs);
         this.isExecuting(false);
         let fs = BrowserFS.BFSRequire('fs');
         let process = BrowserFS.BFSRequire('process');
@@ -211,10 +216,12 @@ export class Java extends AssignmentInterface {
             stdout: (text: string)=> {
                 console.log(text);
                 consoleJQuery.append(`<div style="color: white;">${text}</div>`);
+                this.latestOutput.push(text);
             },
             stderr: (text: string) => {
                 console.error(text);
                 consoleJQuery.append(`<div style="color: red;">${text}</div>`);
+                this.latestErrors.push(text);
             }
         };
         process.stdout.removeAllListeners('data');
@@ -299,7 +306,20 @@ export class Java extends AssignmentInterface {
         });
     }
 
+    logExecution(eventType = "Run.Program") {
+        this.logEvent(eventType, "java", "run",
+                JSON.stringify({
+                    "runningFilename": this.runningFilename(),
+                    "code": this.submission().code(),
+                    "output": this.latestOutput,
+                    "errors": this.latestErrors,
+                    "timer": this.executionTimer.time()
+                }, null, 2), this.assignment().url(), () => {});
+    }
+
     runStudentCode(fs: FSModule, process: NodeJS.Process, consoleJQuery: JQuery<HTMLElement>) {
+        this.latestOutput = [];
+        this.latestErrors = [];
         consoleJQuery.html(`$> Compiling and executing: ${this.runningFilename()}.java`);
         this.updateStatus("Saving, ");
         this.executionTimer.start();
@@ -309,6 +329,12 @@ export class Java extends AssignmentInterface {
         if (this.createdFiles.length > 0) {
             oldClassFile = this.createdFiles[0];
         }
+        this.logEvent("Compile", "java", "compile",
+                JSON.stringify({
+                    "oldClassFile": oldClassFile,
+                    "runningFilename": this.runningFilename(),
+                    "code": this.submission().code()
+                }, null, 2), this.assignment().url(), () => {});
         fs.unlink(`/home/${oldClassFile}.class`, () => {
             fs.writeFile(`/home/${this.runningFilename()}.java`, this.submission().code(), "utf-8", () => {
                 this.updateStatus("Compiling, ");
@@ -329,11 +355,13 @@ export class Java extends AssignmentInterface {
                           this.updateStatus("Finished in", false);
                           this.executionTimer.stop();
                           this.isExecuting(false);
+                          this.logExecution();
                         // Class finished executing successfully.
                       } else {
                           this.updateStatus("Execution Failed after", false);
                           this.executionTimer.stop();
                           this.isExecuting(false);
+                          this.logExecution();
                         // Execution failed. :(
                       }
                     }, (jvmObject) => {
@@ -342,6 +370,7 @@ export class Java extends AssignmentInterface {
                       this.updateStatus("Compilation Failed after", false);
                       this.executionTimer.stop();
                       this.isExecuting(false);
+                      this.logExecution("Compile.Error");
                     // Execution failed. :(
                   }
                 }, function(jvmObject) {});
@@ -573,8 +602,53 @@ export class Java extends AssignmentInterface {
     }
 
     resetStudent() {
-        if (confirm("Are you sure you want to reset your code to the starter code? You may not be able to get it back!")) {
+        if (confirm("Are you sure you want to reset your code to the starter code? You will lose your current code, and you may not be able to get it back!")) {
             this.submission().code(this.assignment().startingCode());
+            this.logEvent("X-File.Reset", "java", "code_reset",
+                JSON.stringify({
+                    "code": this.assignment().startingCode()
+                }), this.assignment().url(), () => {})
+        }
+    }
+
+    reloadConsole() {
+        if (confirm("Are you sure you want to reload your console? This will not affect your code at all. It will take a few seconds to reload the console. You may need to reload the page aftewards!")) {
+            this.persistentFs.store.db.close();
+            const requestDeleteDoppio = indexedDB.deleteDatabase("doppio-cache");
+            requestDeleteDoppio.onsuccess =  () => {
+                const requestDeleteBrowserFS = indexedDB.deleteDatabase("__browserfs_test__");
+                requestDeleteBrowserFS.onsuccess =  () => {
+                    this.persistentFs = null;
+                    $('.java-progress-bar-container').show();
+                    this.loadDoppio();
+                    this.logEvent("X-System.Reset", "java", "console_reload",
+                        JSON.stringify({}), this.assignment().url(), () => {})
+                };
+                requestDeleteBrowserFS.onerror = (e: any) => {
+                    alert("Couldn't delete BrowserFS. Report this error please!" + e);
+                    console.error("Error BFS Delete", e);
+                    this.logEvent("X-System.Reset.Error", "java", "console_reload_error",
+                        JSON.stringify({"reason": "BFS Error"}), this.assignment().url(), () => {})
+                };
+                requestDeleteBrowserFS.onblocked = (e: any) => {
+                    alert("Reload BFS was blocked. Report this error please!" + e);
+                    console.error("Blocked BFS Delete", e);
+                    this.logEvent("X-System.Reset.Error", "java", "console_reload_error",
+                        JSON.stringify({"reason": "BFS Blocked"}), this.assignment().url(), () => {})
+                };
+            };
+            requestDeleteDoppio.onerror = (e: any) => {
+                alert("Couldn't delete Doppio. Report this error please!"+e);
+                console.error("Error Doppio Delete", e);
+                this.logEvent("X-System.Reset.Error", "java", "console_reload_error",
+                        JSON.stringify({"reason": "Doppio Error"}), this.assignment().url(), () => {})
+            };
+            requestDeleteDoppio.onblocked = (e: any) => {
+                alert("Reloading Doppio was blocked. Report this error please!"+e);
+                console.error("Blocked Doppio Delete", e);
+                this.logEvent("X-System.Reset.Error", "java", "console_reload_error",
+                        JSON.stringify({"reason": "Doppio Blocked"}), this.assignment().url(), () => {})
+            };
         }
     }
 
@@ -763,7 +837,9 @@ export const JAVA_HTML = `
       <!-- /ko -->
       <div class="row mb-2">
         <div class="col-md-12">
+            <button class="btn btn-mini btn-xs btn-outline-secondary system-reload float-right mr-3" data-bind="click: reloadConsole">Reload Console</button>
             <h6>Console (stdout)</h6>
+            
             <!-- ko if: filename().length === 0 -->
                 <span class="alert alert-warning">No public class found (there must be at least one)</span>
             <!-- /ko -->
