@@ -142,13 +142,15 @@ def assignments(course_id):
     groups = AssignmentGroup.query.all()
     course_groups = Course.get_all_groups()
     editable_courses = g.user.get_editable_courses()
+    course = Course.by_id(course_id)
 
     return render_template('courses/assignments.html',
                            assignments=assignments,
                            groups=groups,
                            editable_courses=editable_courses,
                            course_groups=course_groups,
-                           course_id=course_id)
+                           course_id=course_id,
+                           course=course)
 
 @courses.route('/users/', methods=['GET'])
 @courses.route('/users', methods=['GET'])

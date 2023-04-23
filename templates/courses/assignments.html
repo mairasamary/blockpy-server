@@ -2,7 +2,7 @@
 {% import 'helpers/navigation.html' as navigation %}
 
 {% block title %}
-Courses: Assignments
+Assignments for {{ course.name }}
 {% endblock %}
 
 {% block statusbar %}
@@ -472,6 +472,7 @@ div.overlay {
 {% block body %}
 
     <h1>Manage Assignments</h1>
+    <strong>{{ course.name }}</strong> (<code>{{  course.url }}</code>)
     {{ navigation.navigate_course() }}
 
 <div class="modal fade" id="assignment-create" tabindex="-1" role="dialog" aria-labelledby="assignment-create-label">
