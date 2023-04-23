@@ -48,7 +48,10 @@ def setup_logging(app):
             'huey': {
                 'level': "INFO",
                 "handlers": ["taskHandler"]
-            }
+            },
+            #'sqlalchemy.engine': {
+            #    'level': "INFO"
+            #}
             #'pylti': {
             #    'level': 'DEBUG',
             #    'handlers': []
