@@ -173,6 +173,8 @@ class Assignment(Base):
     @staticmethod
     def remove(assignment_id):
         # TODO: Clear anyone's Fork that is me
+        # TODO: Clear assignment tag membership
+        # TODO: Clear submission sample
         models.AssignmentGroupMembership.query.filter_by(assignment_id=assignment_id).delete()
         models.Submission.remove_by_assignment(assignment_id)
         models.Log.remove_by_assignment(assignment_id)
