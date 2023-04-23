@@ -5,7 +5,7 @@ from flask import Flask, redirect, url_for, session, request, jsonify, g
 
 from controllers.helpers import (require_request_parameters, require_course_instructor, login_required,
                                  check_resource_exists, get_select_menu_link, get_course_id, get_user, ajax_success,
-                                 maybe_int, require_course_grader)
+                                 maybe_int, require_course_grader, make_log_entry)
 
 from models.assignment import Assignment
 from models.assignment_group import AssignmentGroup
@@ -175,9 +175,10 @@ def edit_security_settings():
     require_course_grader(g.user, assignment_group.course_id)
     # Perform action
     if request.method == 'POST':
+        assignments = assignment_group.get_assignments()
         if ip_ranges is not None:
             message = []
-            for assignment in assignment_group.get_assignments():
+            for assignment in assignments:
                 is_instructor =g.user.is_instructor(assignment.course_id)
                 # Update protected_ip_ranges
                 if is_instructor:
@@ -193,6 +194,17 @@ def edit_security_settings():
                 if g.user.is_instructor(assignment.course_id):
                     if assignment.update_setting("passcode", passcode):
                         message.append(f"{assignment.name} passcode to <code>{passcode}</code>")
+                # Record a log of this
+                make_log_entry(assignment.id, assignment.version,
+                               assignment.course_id, g.user.id,
+                               "X-Instructor.Settings.Edit", "assignment_settings.blockpy",
+                               message=json.dumps({
+                                   "is_instructor": is_instructor,
+                                   "old_ranges": old_ranges,
+                                   "ip_ranges": ip_ranges,
+                                   "protected_ip_ranges": protected_ip_ranges,
+                                   "passcode": passcode
+                               }))
             if message:
                 flash("Updating:<br>" + "<br>".join(message))
             else:
