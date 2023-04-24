@@ -20,6 +20,7 @@ from models.log import Log
 from models.models import Base, db, ensure_dirs, optional_encoded_field, datetime_to_string
 from models.review import Review
 from models.statuses import GradingStatuses, SubmissionStatuses
+from models.user import User
 
 
 def build_extra_starting_files(extra_starting_files):
@@ -148,7 +149,8 @@ class Submission(Base):
                 'user_id': self.user_id,
                 'assignment_version': self.assignment_version,
                 'version': self.version,
-                'files': [filename]+[f[0] for f in extra_files]
+                'files': [filename]+[f[0] for f in extra_files],
+                'roles': [role.name for role, user in User.get_user_role(self.course_id, self.user_id)]
             }),
             **extra_files
         }
