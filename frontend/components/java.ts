@@ -352,12 +352,14 @@ export class Java extends AssignmentInterface {
                       doppioHomePath: '/home', launcherName: "java"
                     }, (exitCode) => {
                       if (exitCode === 0) {
+                          $("#abort-command").hide();
                           this.updateStatus("Finished in", false);
                           this.executionTimer.stop();
                           this.isExecuting(false);
                           this.logExecution();
                         // Class finished executing successfully.
                       } else {
+                          $("#abort-command").hide();
                           this.updateStatus("Execution Failed after", false);
                           this.executionTimer.stop();
                           this.isExecuting(false);
@@ -365,15 +367,27 @@ export class Java extends AssignmentInterface {
                         // Execution failed. :(
                       }
                     }, (jvmObject) => {
+                          console.log(jvmObject);
+                          $("#abort-command").show().on('click', ()=>{
+                              jvmObject.halt(1);
+                              $("#abort-command").hide();
+                          });
                     });
                   } else {
+                      $("#abort-command").hide();
                       this.updateStatus("Compilation Failed after", false);
                       this.executionTimer.stop();
                       this.isExecuting(false);
                       this.logExecution("Compile.Error");
                     // Execution failed. :(
                   }
-                }, function(jvmObject) {});
+                }, function(jvmObject) {
+                      console.log(jvmObject);
+                      $("#abort-command").show().on('click', ()=>{
+                          jvmObject.halt(1);
+                          $("#abort-command").hide();
+                      });
+                    });
             });
         });
     }
@@ -613,6 +627,7 @@ export class Java extends AssignmentInterface {
 
     reloadConsole() {
         if (confirm("Are you sure you want to reload your console? This will not affect your code at all. It will take a few seconds to reload the console. You may need to reload the page aftewards!")) {
+            window.stop();
             this.persistentFs.store.db.close();
             const requestDeleteDoppio = indexedDB.deleteDatabase("doppio-cache");
             requestDeleteDoppio.onsuccess =  () => {
@@ -838,6 +853,7 @@ export const JAVA_HTML = `
       <div class="row mb-2">
         <div class="col-md-12">
             <button class="btn btn-mini btn-xs btn-outline-secondary system-reload float-right mr-3" data-bind="click: reloadConsole">Reload Console</button>
+            <button class="btn btn-mini btn-xs btn-outline-secondary float-right mr-3" style="display: none;" id="abort-command">Stop Execution</button>
             <h6>Console (stdout)</h6>
             
             <!-- ko if: filename().length === 0 -->
