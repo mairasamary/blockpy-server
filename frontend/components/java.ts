@@ -83,7 +83,7 @@ export function formatClock() {
     return time + (now.getHours()>=12 ? 'PM': 'AM');
 }
 
-const FIND_PUBLIC_CLASS = /^\s*public\s+(?:class|interface)\s+([^\n\s]*)/gm;
+const FIND_PUBLIC_CLASS = /^\s*public\s+(?:class|interface)\s+([^\n\s\{]+)/gm;
 
 export class Java extends AssignmentInterface {
     errorMessage: ko.Observable<string>;
