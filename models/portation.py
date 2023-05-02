@@ -17,6 +17,8 @@ from typing import Type, Union
 from natsort import natsorted
 from werkzeug.utils import secure_filename
 
+import pdfkit
+
 from models.assignment import Assignment
 from models.assignment_group import AssignmentGroup
 from models.assignment_group_membership import AssignmentGroupMembership
@@ -170,7 +172,7 @@ def export_zip(assignments=None, submissions=None, users=None):
         for user in users:
             user_paths[user.id] = secure_filename(user.name())
             user_names.append(user.name())
-    dumped['users.txt'] = "\n".join(user_names)
+    dumped['users.txt'] = "\n".join(sorted(set(user_names)))
     if submissions:
         for submission in submissions:
             files = submission.encode_human()
@@ -180,6 +182,43 @@ def export_zip(assignments=None, submissions=None, users=None):
                 path += filename
                 dumped[path] = contents
     #print(list(dumped.keys()))
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+        for file_name, data in dumped.items():
+            zip_file.writestr(file_name, data)
+    return zip_buffer.getvalue()
+
+
+# noinspection PyTypeHints
+def export_pdf_zip(assignments=None, submissions=None, users=None, jinja_environment=None):
+    dumped = {}
+    assignment_paths = {}
+    if assignments:
+        for assignment in assignments:
+            assignment_paths[assignment.id] = assignment.get_filename(extension='')
+            dumped[assignment.get_filename(extension='.md')] = json.dumps(assignment.encode_json())
+    user_paths = {}
+    user_names = []
+    if users:
+        for user in users:
+            user_paths[user.id] = secure_filename(user.name())
+            user_names.append(user.name())
+    dumped['users.txt'] = "\n".join(sorted(set(user_names)))
+    # Start PDF
+    pdfs = {}
+    # Add submissions to the PDF
+    if submissions:
+        template = jinja_environment.from_string("""
+                        <strong>Student Name: {{ submission.user.name() }}</strong><br>
+                        {{ submission.code|highlight_java_code|safe }}
+                        <div style = "display:block; clear:both; page-break-after:always;"></div>""")
+        for submission in submissions:
+            assignment_filename = submission.assignment.get_filename(".pdf")
+            if assignment_filename not in pdfs:
+                pdfs[assignment_filename] = []
+            pdfs[assignment_filename].append(template.render(submission=submission))
+    for pdf_name, pdf in pdfs.items():
+        dumped[pdf_name] = pdfkit.from_string("\n".join(pdf))
     zip_buffer = io.BytesIO()
     with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
         for file_name, data in dumped.items():

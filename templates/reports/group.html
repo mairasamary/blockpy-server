@@ -44,8 +44,15 @@
         {% endif %}
     {% endif %}
     </p>
-<div>Status: {{ points_total }}/{{ points_possible }} problems</div>
-<div>Score: {{ score*100 }}%</div>
+
+    <div>
+        {% if is_grader or not any_hidden %}
+        <div>Overall Status: {{ points_total }}/{{ points_possible }} problems</div>
+        <div>Total Score: {{ score*100 }}%</div>
+        {% else %}
+            <div>Total Status/Score Hidden in this view because you are not a grader.</div>
+        {% endif  %}
+    </div>
 <div>Contents:
     <ol>
         {% for assignment, submission in group %}

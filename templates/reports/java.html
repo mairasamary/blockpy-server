@@ -10,13 +10,15 @@
 </div>
 <hr>
 
+{%  include "reports//reviewing_interface.html" with context %}
+
     <div>Date Created: {{ submission.date_created }}</div>
     <div>Date Modified: {{ submission.date_modified }}</div>
 
     {% if is_grader or not hiding %}
     <div>Submission Status: {{ submission.submission_status }}</div>
     <div>Grading Status: {{ submission.grading_status }}</div>
-    <div>Score Status: {{ submission.full_status() }}</div>
+    <div>Score Status: {{ submission.full_status(not is_grader) }}</div>
     <div>Full Submission: <a href="{{ url_for('blockpy.load_assignment',
                             assignment_id=submission.assignment_id,
                             user_id=submission.user_id,
@@ -37,6 +39,8 @@
             {% endfor %}
         {% endif %}
     </div>
+
+
 
     {% endif %}
 </div>

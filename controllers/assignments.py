@@ -7,7 +7,7 @@ from werkzeug.utils import secure_filename
 
 from models.assignment_group_membership import AssignmentGroupMembership
 from models.data_formats.progsnap2 import dump_progsnap
-from models.portation import export_bundle, import_bundle, export_zip
+from models.portation import export_bundle, import_bundle, export_zip, export_pdf_zip
 
 try:
     from urllib.parse import quote as url_quote
@@ -397,6 +397,8 @@ def export_submissions():
     assignment = Assignment.by_id(assignment_id)
     course_id = get_course_id(True)
     user, user_id = get_user()
+    # File format of results: {"pdf", "code"}
+    format = request.values.get("format", "code")
     # Verify exists
     check_resource_exists(assignment, "Assignment", assignment_id)
     # Verify permissions
@@ -407,8 +409,12 @@ def export_submissions():
     suas = Submission.by_assignment(assignment_id, course_id)
     submissions = [sua[0] for sua in suas]
     users = [sua[1] for sua in suas]
-    bundle = export_zip(assignments=[assignment], submissions=submissions,
-                        users=users)
+    if format == "pdf":
+        bundle = export_pdf_zip(assignments=[assignment], submissions=submissions, users=users,
+                                jinja_environment=app.jinja_env)
+    else:
+        bundle = export_zip(assignments=[assignment], submissions=submissions,
+                            users=users)
     filename = assignment.get_filename(extension='.zip')
     return Response(bundle, mimetype='application/zip',
                     headers={'Content-Disposition': 'attachment;filename={}'.format(filename)})

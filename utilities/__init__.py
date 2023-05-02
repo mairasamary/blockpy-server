@@ -12,6 +12,7 @@ def highlight_python_code(code, linenos=True, prestyles=''):
                               )
     return highlight(code, PythonLexer(), formatter)
 
+
 def highlight_java_code(code, linenos=True, prestyles=''):
     formatter = HtmlFormatter(linenos=linenos, noclasses=True,
                               lineanchors="code-lineno",

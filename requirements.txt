@@ -31,3 +31,4 @@ gunicorn
 redis
 huey
 compare50
+pdfkit

@@ -157,8 +157,8 @@ class AssignmentGroup(Base):
             return url_for('assignments.load', assignment_group_url=self.url, _external=True, embed=menu == 'embed')
         return url_for('assignments.load', assignment_group_id=self.id, _external=True, embed=menu == 'embed')
 
-    def get_filename(self):
+    def get_filename(self, extension=".json"):
         if self.url:
-            return secure_filename(self.url) + ".json"
+            return secure_filename(self.url) + extension
         else:
-            return secure_filename(self.name) + ".json"
+            return secure_filename(self.name) + extension

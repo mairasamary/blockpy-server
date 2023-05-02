@@ -362,9 +362,10 @@ def view_submissions(course_id, user_id, assignment_group_id, ):
     #                   course_id, user_id, "X-View.Submission", "answer.py",
     #                   category="group",
     #                   message=json.dumps({"viewer": viewer_id}))
-    print(is_grader, viewer, course_id)
+    any_hidden = any(assignment.hidden or assignment.get_setting('hide_submission', False)
+                     for assignment in assignments)
     return render_template("reports/group.html", embed=embed,
-                           referer=referer,
+                           referer=referer, any_hidden=any_hidden,
                            points_total=points_total, points_possible=points_possible,
                            score=score, tags=tags, is_grader=is_grader,
                            assignment_group=group,
@@ -458,7 +459,10 @@ def update_submission():
     # TODO: Document that we currently only pass back grade if it changed
     # TODO: If failure on previous submission grading, then retry
     if not submission.assignment.is_allowed(request.remote_addr) and not user.is_grader(submission.course_id):
-        return ajax_failure("Your IP address is not allowed and you are not a grader in its course.")
+        reason = f"Your ({user.id}) IP address ({request.remote_addr}) is not allowed and you are not a grader in this course ({submission.course_id})."
+        make_log_entry(submission.assignment_id, submission.assignment_version,
+                       course_id, user_id, "X-Quiz.Grade.Failure", "answer.py", message=reason)
+        return ajax_failure(reason)
     if was_changed or force_update:
         submission.save_block_image(image)
         if g.lti is None:
