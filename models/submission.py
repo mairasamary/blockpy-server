@@ -253,12 +253,11 @@ class Submission(Base):
             return "Incomplete"
 
     def full_score(self):
+        possible = self.assignment.get_points()
         if self.assignment.reviewed:
             review_score = self.get_reviewed_scores()
-            return (self.score + review_score) / 100.0
-        possible = self.assignment.get_points()
+            return ((self.score + review_score) / 100.0) * possible
         return (float(self.correct) or self.score / 100.0) * possible
-
 
     def get_reviewed_scores(self):
         reviews = Review.query.filter_by(submission_id=self.id).all()
@@ -266,7 +265,6 @@ class Submission(Base):
         for review in reviews:
             total += review.get_actual_score()
         return total
-
 
     @staticmethod
     def from_assignment(assignment, user_id, course_id, assignment_group_id=None):
