@@ -495,14 +495,17 @@ def submissions_filter(course_id):
         submissions = [all_subs.get(student.id, (None, student, None))
                        for student in students]
     assignments_by_group = {}
+    group_headers = {}
     for row in grouped_assignments:
         group_name = row.AssignmentGroup.name if row.AssignmentGroup is not None else None
         assignments_by_group.setdefault(group_name, []).append(row.Assignment)
+        group_headers[row.Assignment] = row.AssignmentGroup
     # Horrifying hack to move Ungrouped elements to end
     assignments_by_group[None] = assignments_by_group.pop(None, None)
     return render_template('courses/submissions_filter.html',
                            course_id=course_id,
                            assignments_by_group=assignments_by_group,
+                           group_headers=group_headers,
                            students=students,
                            submissions=submissions,
                            criteria=criteria,

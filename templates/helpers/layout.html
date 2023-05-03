@@ -345,6 +345,7 @@
             $(`#h-${submissionId}-end`).toggle(showHide);
         }
         function regrade(element, submission_id, hard) {
+            const firstChild = element.firstElementChild;
             let url = "{{ url_for('grading.update_grading_status') }}?submission_id="+submission_id;
             if (hard) {
                 url = "{{ url_for('blockpy.update_submission') }}?submission_id="+submission_id;
@@ -353,23 +354,25 @@
             url = "{{ url_for('blockpy.update_submission') }}?submission_id="+submission_id;
             {% endif %}
             //console.log(this, element, submission_id);
-            element.style.backgroundColor = 'white';
+            firstChild.style.backgroundColor = 'white';
+            firstChild.style.color = null;
             fetch(url, {method: 'POST'}).then((response) => {
                 return response.json()
             }).then(response => {
                 if (response.success) {
-                    element.className = "green-check-mark";
-                    element.innerHTML = "&#10004;";
+                    firstChild.className = "green-check-mark";
+                    firstChild.innerHTML = "&#10004;";
                 } else {
-                    element.className = "red-x";
-                    element.innerHTML = "&#10060;"
+                    firstChild.className = "red-x";
+                    firstChild.innerHTML = "&#10060;"
                     console.error(response);
-                    alert(response.message);
+                    alert(response.message instanceof String ? response.message : JSON.stringify(response.message));
                 }
-                element.style.backgroundColor = 'transparent';
-            }).catch(() => {
-                element.style.backgroundColor = 'red';
-                console.error(arguments);
+                firstChild.style.backgroundColor = 'transparent';
+            }).catch((error) => {
+                firstChild.style.backgroundColor = 'red';
+                console.error(error, arguments);
+                alert(error instanceof String ? error : JSON.stringify(error));
             }).finally(() => {
             });
         }

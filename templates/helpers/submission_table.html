@@ -1,31 +1,62 @@
+<style>
+    #submission-table thead tr {
+        cursor: pointer;
+    }
+</style>
 {% if is_instructor %}
 {% if criteria=="assignment" %}
     <a href="{{ url_for("assignments.export_submissions",
             assignment_id=search_key,
-            course_id=course_id) }}" target="_blank">Download all submissions for assignment</a><br>
+            course_id=course_id) }}" target="_blank"
+        class="btn btn-outline-secondary mt-2">Bulk download all submissions for assignment</a><br>
     <a href="{{  url_for("assignments.load",
                         assignment_id=search_key, course_id=course_id) }}"
-       target="_blank">Open assignment</a>
+       target="_blank" class="btn btn-outline-secondary mt-2 mb-2 ">Open assignment</a>
 {% else %}
     <a href="{{ url_for("blockpy.load_history",
             user_id=search_key,
-            course_id=course_id) }}" target="_blank">Download all events</a>
+            course_id=course_id) }}" target="_blank"
+     class="btn btn-outline-secondary mt-2 mb-2 ">Bulk download all events</a>
 {% endif %}
 {% endif %}
-<table class="table table-condensed table-hover table-striped table-bordered">
+<table class="table table-condensed table-hover table-striped table-bordered" id="submission-table">
 <caption>Student's submissions for course's assignments.</caption>
+<thead class="thead-dark">
+    <tr>
+        {% if criteria!="assignment" %}<th>Assignment</th>{%endif %}
+        {% if criteria!="student" %}
+            <th>Student</th>
+            <th>Role</th>
+        {%endif %}
+        <th>Correct/Score</th>
+        <th>Submission Status</th>
+        <th>Grading Status</th>
+        <th data-type="number">Edits</th>
+        <th>Created</th>
+        <th>Last Edited</th>
+        <th>Actions</th>
+    </tr>
+</thead>
+
 <tbody>
-<tr>
-    {% if criteria!="assignment" %}<th>Assignment</th>{%endif %}
-    {% if criteria!="student" %}<th>Student</th>{%endif %}
-    <th>Correct</th>
-    <th>Submission</th>
-    <th>Grading</th>
-    <th>Actions</th>
-    <th>Touches</th>
-    <th>Last Edited</th>
-</tr>
+
 {% for submission in submissions %}
+
+     {% if criteria!="assignment" and group_headers and (loop.first or (not loop.first and group_headers[submission[2]] != group_headers[loop.previtem[2]])) %}
+         <tr class="table-secondary table-groups">
+             <td colspan="7"><strong>Group: {{ group_headers[submission[2]].name }}</strong></td>
+            <td>
+                {% if submission[0] != None and submission[0].assignment_group_id != None %}
+                <a href="{{ url_for('blockpy.view_submissions',
+                                    assignment_group_id=submission[0].assignment_group_id,
+                                    user_id=submission[1].id,
+                                    course_id=course_id,
+                                    embed=True) }}"
+                         class="btn btn-primary btn-sm" target="_blank">View Group</a>
+                {% endif %}
+            </td>
+         </tr>
+    {% endif %}
 
     <!-- Row Color based on Assignment status -->
 <tr
@@ -35,19 +66,28 @@
         elif (submission[0].score is defined and submission[0].score|round(1) > 0)
     %}table-warning{% endif %}'>
 
+    <!-- Assignment Mode -->
     {% if criteria!="assignment" %}
     <td>
         <a href="{{  url_for("courses.submissions_filter",
                         criteria="assignment", search_key=submission[2].id, course_id=course_id) }}"
        ><i class="fas fa-eye"></i></a> {{ submission[2].title() }}
-    </td>{%endif %}
+    </td>
+    {%endif %}
+
+    <!-- Student Mode -->
     {% if criteria!="student" %}
         <td>
             <a href="{{  url_for("courses.submissions_filter",
                         criteria="student", search_key=submission[1].id, course_id=course_id) }}"
             ><i class="fas fa-eye"></i></a>
             {{ submission[1].name() }}
-    </td>{%endif %}
+        </td>
+        <td>
+            {{ submission[1].get_course_roles(course_id)|map(attribute='name')|map('title')|join(', ') }}
+        </td>
+    {%endif %}
+
     <td>
         {% if submission[0].correct%}Yes{% else %}No{% endif %}
         {% if submission[0].score is defined %}
@@ -57,7 +97,7 @@
     <td>
         {{ submission[0].submission_status }}</td>
     <td>
-        <span onclick="regrade(this, {{ submission[0].id }})" style="cursor: pointer">
+        <span>
         {% if submission[0].grading_status == "FullyGraded" %}
             <span class="green-check-mark">&#10004;</span>
         {% elif submission[0].grading_status == 'Failed' %}
@@ -70,30 +110,6 @@
         </span>
         {{ submission[0].grading_status }}
     </td>
-    <td>{% if submission[0] != None -%}
-    <a href="{{ url_for('blockpy.view_submission', submission_id=submission[0].id, embed=True) }}"
-        target="_blank">View</a>
-    {% if submission[0] != None and submission[0].assignment_group_id != None %}
-        , <a href="{{ url_for('blockpy.view_submissions',
-                        assignment_group_id=submission[0].assignment_group_id,
-                        user_id=submission[1].id,
-                        course_id=course_id,
-                        embed=True) }}"
-        target="_blank">Group</a>
-    {% endif %}
-    {% if is_instructor %},
-    <a href="{{ url_for('blockpy.load_assignment',
-                        assignment_id=submission[2].id,
-                        user_id=submission[1].id,
-                        course_id=course_id,
-                        force_download=True,
-                        embed=True) }}"
-        target="_blank">Download</a>,
-    <a href="{{ url_for('assignments.transfer_course',
-                        submission_id=submission[0].id) }}"
-        target="_blank">Copy to Course</a>,
-    {%- endif %}
-    {%- endif %}</td>
     <td>
         <span onclick="estimateDuration(this, {{ submission[0].id }})" style="cursor: pointer">
         {{ submission[0].version or "0"}}
@@ -101,14 +117,165 @@
     </td>
 
     <td>
-        <span title="{{ submission[0].date_modified }}" id="h-{{ submission[0].id }}-start" onclick="switchVisible({{ submission[0].id }}, true)" style="cursor: pointer">
-            {{ submission[0].date_modified|date_description }}
-        </span>
-        <span title="{{ submission[0].date_created }}" style="display:none; cursor: pointer"  id="h-{{ submission[0].id }}-end" onclick="switchVisible({{ submission[0].id }}, false)">
+        <span title="{{ submission[0].date_created }}">
             {{ submission[0].date_created|date_description }}
         </span>
+    </td>
+    <td>
+        <span title="{{ submission[0].date_modified }}">
+            {{ submission[0].date_modified|date_description }}
+        </span>
+    </td>
+
+    <td>
+        {% if submission[0] != None -%}
+
+        <div class="btn-group">
+            <a href="{{ url_for('blockpy.view_submission', submission_id=submission[0].id, embed=True) }}"
+                target="_blank"  class="btn btn-primary btn-sm"
+            >View</a>
+            <!-- Dropdown -->
+            <button type="button" class="btn btn-primary dropdown-toggle btn-sm" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <span class="caret"></span>
+                <span class="sr-only">Toggle Dropdown</span>
+            </button>
+            <!-- Extended buttons -->
+            <div class="dropdown-menu dropdown-menu-right">
+                {% if submission[0] != None and submission[0].assignment_group_id != None %}
+                    <a href="{{ url_for('blockpy.view_submissions',
+                                    assignment_group_id=submission[0].assignment_group_id,
+                                    user_id=submission[1].id,
+                                    course_id=course_id,
+                                    embed=True) }}"
+                         class="dropdown-item" target="_blank">View Group</a>
+                {% endif %}
+                {% if is_instructor %}
+                    <!---------------------------------------------------------------------->
+                    <a href="{{ url_for('blockpy.load_assignment',
+                                        assignment_id=submission[2].id,
+                                        user_id=submission[1].id,
+                                        course_id=course_id,
+                                        force_download=True,
+                                        embed=True) }}"
+                        target="_blank" class="dropdown-item">Download Submission</a>
+                    <!---------------------------------------------------------------------->
+                    <a href="{{ url_for('blockpy.browse_history', assignment_id=submission[0].assignment_id,
+        user_id=submission[0].user_id, course_id=course_id) }}" target="_blank" class="dropdown-item">History Log</a>
+                    <!---------------------------------------------------------------------->
+                    <a href="{{ url_for('assignments.transfer_course', submission_id=submission[0].id) }}"
+                        target="_blank" class="dropdown-item">Copy to Course</a>
+                    <!---------------------------------------------------------------------->
+                    <button class="dropdown-item" type="button" onclick="regrade(this, {{ submission[0].id }})"
+                            style="cursor: pointer"
+                    >{% if submission[0].grading_status == "FullyGraded" %}
+                        <span class="green-check-mark">&#10004;</span>
+                    {% elif submission[0].grading_status == 'Failed' %}
+                        <span class="red-x">&#10060;</span>
+                    {% elif submission[0].grading_status == 'Pending' %}
+                        <span style="color: transparent"></span>
+                    {% else %}
+                        <span style="color: transparent"></span>
+                    {% endif %} Regrade</button>
+                    <button class="dropdown-item" type="button" onclick="regrade(this, {{ submission[0].id }}, true)"
+                            style="cursor: pointer"
+                    >{% if submission[0].grading_status == "FullyGraded" %}
+                        <span class="green-check-mark">&#10004;</span>
+                    {% elif submission[0].grading_status == 'Failed' %}
+                        <span class="red-x">&#10060;</span>
+                    {% elif submission[0].grading_status == 'Pending' %}
+                        <span style="color: transparent"></span>
+                    {% else %}
+                        <span style="color: transparent"></span>
+                    {% endif %} Regrade and Sync with LMS</button>
+                    <!---------------------------------------------------------------------->
+                {%- endif %}
+
+
+            </div>
+        </div>
+    {%- endif %}
     </td>
 </tr>
 {% endfor %}
 </tbody>
 </table>
+
+<script>
+    const table = document.getElementById('submission-table');
+
+    const headers = table.querySelectorAll('th');
+    [].forEach.call(headers, (header, index) => {
+        header.addEventListener('click', ()=> {
+            sortColumn(index);
+        })
+    });
+
+    // Query all rows
+    const tableBody = table.querySelector('tbody');
+    let rows = tableBody.querySelectorAll('tr');
+
+    const directions = Array.from(headers).map(() => "");
+
+    const sortColumn = function (index) {
+        // Remove old rows
+        tableBody.querySelectorAll(".table-groups").forEach(e => e.remove());
+
+        // Clone the rows
+        rows = tableBody.querySelectorAll('tr');
+        const newRows = Array.from(rows);
+
+        // Get the current direction
+        const direction = directions[index] || 'asc';
+        // A factor based on the direction
+        const multiplier = (direction === 'asc') ? 1 : -1;
+
+        // Sort rows by the content of cells
+        newRows.sort((rowA, rowB) => {
+            // Get the content of cells
+            const cellA = rowA.querySelectorAll('td')[index].innerText;
+            const cellB = rowB.querySelectorAll('td')[index].innerText;
+
+            // Transform the content of cells
+            const a = transform(index, cellA);
+            const b = transform(index, cellB);
+
+            return multiplier * (a > b ? 1 : (a < b) ? -1 : 0);
+        });
+
+        // Remove old rows
+        [].forEach.call(rows, function (row) {
+            tableBody.removeChild(row);
+        });
+
+        // Append new row
+        newRows.forEach(function (newRow) {
+            tableBody.appendChild(newRow);
+        });
+
+        // Reverse the direction
+        directions[index] = direction === 'asc' ? 'desc' : 'asc';
+
+        const lastSorted = table.querySelector("#last-sorted");
+        if (lastSorted) {
+            lastSorted.remove();
+        }
+        const newIcon = document.createElement("i");
+        newIcon.classList = "ml-2 fas fa-arrow-" + (direction === 'asc' ? 'up' : 'down');
+        newIcon.id = "last-sorted";
+        headers[index].appendChild(newIcon);
+    };
+
+    // Transform the content of given cell in given column
+    const transform = function (index, content) {
+        // Get the data type of column
+        const type = headers[index].getAttribute('data-type');
+        switch (type) {
+            case 'number':
+                return parseFloat(content);
+            case 'string':
+            default:
+                return content;
+        }
+    };
+
+</script>
