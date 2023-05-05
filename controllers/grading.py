@@ -170,6 +170,7 @@ class ReviewAPI(MethodView):
         new_review = Review.new(review_data)
         return ajax_success(dict(review=new_review.encode_json()))
 
+
     def put(self, review_id):
         user, user_id = get_user()
         review = Review.by_id(review_id)

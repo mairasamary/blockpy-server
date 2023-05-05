@@ -105,7 +105,11 @@ class Review(Base):
 
     def get_actual_score(self):
         if self.score is not None:
-            return self.score
+            if isinstance(self.score, str):
+                score = self.score.replace("%", "")
+                return float(score)
+            else:
+                return self.score
         elif self.forked_id is None:
             return 0
         else:

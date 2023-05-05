@@ -10,7 +10,7 @@ import {Server} from "./server";
 export function explainGradingStatus(status: GradingStatus) {
     switch (status.toLowerCase()) {
         case GradingStatus.FULLY_GRADED.toLowerCase():
-           return "Student's submission is currently graded and visible to them. Use this button to hide and make further changes to their feedback.";
+           return "Student's submission is currently graded and visible to them (unless the assignment is hidden in the LMS). Use this button to hide and make further changes to their feedback.";
        case GradingStatus.PENDING_MANUAL.toLowerCase(): case GradingStatus.PENDING.toLowerCase():
            return "Student's submission is currently hidden while the instructor adds more feedback. Use this button to release the feedback to the student and update their grade in Canvas.";
        case GradingStatus.FAILED.toLowerCase():
@@ -807,6 +807,7 @@ export const INDIVIDUAL_REVIEW_EDITOR_TEMPLATE = `
     <div class="form-inline mb-2">
         <label class="mr-2" for="iret-score">Score Modifier:</label>
         <input data-bind="value: review.score" class="form-control form-control-sm" id="iret-score" size="5"/>
+        <span class="ml-2">/100</span>
         <!-- ko if: (review.score() == null || review.score() === '') && (getScore() != null && getScore() !== '') -->
         <span class="ml-2">(Modifier blank, will use <code data-bind="text: getScore"></code>)</span>
         <!-- /ko -->
