@@ -108,10 +108,19 @@ def mass_close_assignment():
             changed.append(student.id)
     return ajax_success({'new_status': new_submission_status, "students": changed})
 
+
 def fix_nullables(review_data):
     for nullable in ['score', 'tag_id', 'forked_id', 'submission_id']:
         if nullable not in review_data or review_data[nullable] in (None, '', 'null'):
             review_data[nullable] = None
+
+
+def normalize_score(score: str) -> float:
+    try:
+        score = score.replace("%", "")
+        return float(score)
+    except:
+        return score
 
 
 class ReviewAPI(MethodView):
@@ -157,6 +166,7 @@ class ReviewAPI(MethodView):
         review_data['submission_version'] = submission.version
         review_data['assignment_version'] = submission.assignment_version
         fix_nullables(review_data)
+        review_data['score'] = normalize_score(review_data['score'])
         new_review = Review.new(review_data)
         return ajax_success(dict(review=new_review.encode_json()))
 
@@ -170,6 +180,7 @@ class ReviewAPI(MethodView):
         review_data = request.json.copy()
         del review_data['id']
         fix_nullables(review_data)
+        review_data['score'] = normalize_score(review_data['score'])
         review_data['author_id'] = user_id
         edited_review = review.edit(review_data)
         return ajax_success(dict(review=edited_review.encode_json()))
