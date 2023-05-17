@@ -111,7 +111,7 @@ def mass_close_assignment():
     return ajax_success({'new_status': new_submission_status, "students": changed})
 
 
-def get_request_list(name: str, default=None, element_conversion=int) -> list[int]:
+def get_request_list(name: str, default=None, element_conversion=int):
     if name in request.values:
         values = request.values.get(name).split(",")
         converted = []
