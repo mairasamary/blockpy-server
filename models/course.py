@@ -96,10 +96,16 @@ class Course(Base):
                 db.session.delete(r)
         db.session.commit()
 
-    def get_users(self):
-        return (db.session.query(models.Role, models.User)
-                .filter(models.Role.course_id == self.id)
-                .filter(models.Role.user_id == models.User.id).all())
+    def get_users(self, roles=None):
+        if roles is None:
+            return (db.session.query(models.Role, models.User)
+                    .filter(models.Role.course_id == self.id)
+                    .filter(models.Role.user_id == models.User.id).all())
+        else:
+            return (db.session.query(models.Role, models.User)
+                    .filter(models.Role.course_id == self.id)
+                    .filter(models.Role.user_id == models.User.id)
+                    .filter(models.Role.name.in_(roles)).all())
 
     def get_students(self):
         return [x[1] for x in (db.session.query(models.Role, models.User)
@@ -315,3 +321,16 @@ class Course(Base):
                              .all())
         course_textbooks.extend(associated_textbooks)
         return course_textbooks
+
+    def get_filtered_submissions(self, assignment_ids, assignment_group_ids, student_ids, role_names):
+        subs = models.Submission.query.filter(models.Submission.course_id==self.id)
+        if assignment_ids:
+            subs = subs.filter(models.Submission.assignment_id.in_(assignment_ids))
+        if assignment_group_ids:
+            subs = subs.filter(models.Submission.assignment_group_id.in_(assignment_group_ids))
+        if student_ids:
+            subs = subs.filter(models.Submission.user_id.in_(student_ids))
+        if role_names:
+            user_ids = [user.id for role, user in self.get_users(role_names)]
+            subs = subs.filter(models.Submission.user_id.in_(user_ids))
+        return subs

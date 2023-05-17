@@ -1,6 +1,8 @@
 from datetime import datetime
 import os
+import csv
 import json
+import io
 from pprint import pprint
 from typing import Tuple
 
@@ -8,7 +10,7 @@ from flask.views import MethodView
 from slugify import slugify
 from natsort import natsorted
 
-from flask import Blueprint, url_for, session, request, jsonify, g, render_template, redirect
+from flask import Blueprint, url_for, session, request, jsonify, g, render_template, redirect, make_response
 
 from controllers.blockpy import lti_post_grade
 from controllers.pylti.common import LTIPostMessageException
@@ -17,7 +19,7 @@ from main import app
 
 from models.review import Review
 from models.submission import Submission, GradingStatuses
-
+from models.course import Course
 
 from controllers.helpers import (normalize_url,
                                  ensure_dirs, ajax_failure, parse_assignment_load, require_request_parameters,
@@ -108,6 +110,87 @@ def mass_close_assignment():
             changed.append(student.id)
     return ajax_success({'new_status': new_submission_status, "students": changed})
 
+
+def get_request_list(name: str, default=None, element_conversion=int) -> list[int]:
+    if name in request.values:
+        values = request.values.get(name).split(",")
+        converted = []
+        for value in values:
+            try:
+                if element_conversion:
+                    converted.append(element_conversion(value))
+                else:
+                    converted.append(value)
+            except ValueError:
+                ajax_failure(f"Invalid value for {name}: {value}")
+        return converted
+    if default is None:
+        return []
+    return default
+
+@blueprint_grading.route('/get_grading_spreadsheet/', methods=['GET', 'POST'])
+@blueprint_grading.route('/get_grading_spreadsheet', methods=['GET', 'POST'])
+@login_required
+def get_grading_spreadsheet():
+    course_ids = get_request_list('course_ids')
+    assignment_ids = get_request_list('assignment_ids')
+    assignment_group_ids = get_request_list('assignment_group_ids')
+    student_ids = get_request_list('student_ids')
+    role_names = get_request_list('role_names', element_conversion=str)
+    user, user_id = get_user()
+    # Verify existence and permissions of courses
+    courses = {}
+    for course_id in course_ids:
+        course = Course.by_id(course_id)
+        check_resource_exists(course, "Course", course_id)
+        if not user.is_grader(course_id):
+            return ajax_failure(f"You are not a grader in the course {course_id}.")
+        courses[course_id] = course
+    # Get data
+    submissions = [submission for course in courses.values()
+                   for submission in course.get_filtered_submissions(assignment_ids=assignment_ids,
+                                                      assignment_group_ids=assignment_group_ids,
+                                                      student_ids=student_ids,
+                                                      role_names=role_names)]
+    # Create spreadsheet
+    with io.StringIO() as f:
+        cw = csv.writer(f)
+        cw.writerows([["Course", "Group", "Assignment", "Student", "Role", "Email",
+                      "Correct", "Raw Score", "Full Score", "Reviews", "Status", "Submission Status", "Grading Status",
+                        "Edit Count", "Date Created", "Date Modified", "Extra Files",
+                      "Course ID", "Group ID", "Assignment ID", "Course ID",
+                       "Assignment Type",
+                      ]])
+        cw.writerows([[submission.course.name, submission.assignment_group.name, submission.assignment.name, submission.user.name(),
+                       ",".join([role.name for role, user in User.get_user_role(submission.course_id, submission.user_id)]),
+                       submission.user.email,
+                       submission.correct, submission.score, submission.full_score(), len(submission.get_reviews()),
+                       submission.full_status(False), submission.submission_status, submission.grading_status,
+                        submission.version, submission.date_created, submission.date_modified, submission.extra_files,
+                       submission.course_id, submission.assignment_group_id, submission.assignment_id, submission.user_id,
+                       submission.assignment.type
+                       ]
+                      for submission in submissions])
+        output = make_response(f.getvalue())
+        filename = make_grading_spreadsheet_filename(course_ids, assignment_ids, assignment_group_ids, student_ids, role_names)
+        output.headers["Content-Disposition"] = f"attachment; filename={filename}.csv"
+        output.headers["Content-type"] = "text/csv"
+        return output
+
+
+def make_grading_spreadsheet_filename(course_ids, assignment_ids, assignment_group_ids, student_ids, role_names):
+    parts = []
+    if course_ids:
+        parts.append(f"c{'-'.join([str(course_id) for course_id in course_ids])}")
+    if assignment_ids:
+        parts.append(f"a{'-'.join([str(assignment_id) for assignment_id in assignment_ids])}")
+    if assignment_group_ids:
+        parts.append(f"g{'-'.join([str(assignment_group_id) for assignment_group_id in assignment_group_ids])}")
+    if student_ids:
+        parts.append(f"s{'-'.join([str(student_id) for student_id in student_ids])}")
+    if role_names:
+        parts.append(f"r{'-'.join([role_name for role_name in role_names])}")
+    return f"grading_spreadsheet_{'_'.join(parts)}.csv"
 
 def fix_nullables(review_data):
     for nullable in ['score', 'tag_id', 'forked_id', 'submission_id']:

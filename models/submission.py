@@ -135,7 +135,10 @@ class Submission(Base):
                 extra_files = {f['filename']: f['contents'] for f in extra_files}
         except json.JSONDecodeError:
             extra_files = {}
-        filename = DEFAULT_FILENAMES_BY_TYPE.get(self.assignment.type, DEFAULT_FILENAME)
+        if self.assignment:
+            filename = DEFAULT_FILENAMES_BY_TYPE.get(self.assignment.type, DEFAULT_FILENAME)
+        else:
+            filename = DEFAULT_FILENAME
         files = {
             filename: self.code,
             '_grade.json': json.dumps({
