@@ -158,7 +158,7 @@ def get_grading_spreadsheet():
         cw.writerows([["Course", "Group", "Assignment", "Student", "Role", "Email",
                       "Correct", "Raw Score", "Full Score", "Reviews", "Status", "Submission Status", "Grading Status",
                         "Edit Count", "Date Created", "Date Modified", "Extra Files",
-                      "Course ID", "Group ID", "Assignment ID", "Course ID",
+                      "Course ID", "Group ID", "Assignment ID", "User ID",
                        "Assignment Type",
                       ]])
         cw.writerows([[submission.course.name, submission.assignment_group.name, submission.assignment.name, submission.user.name(),
