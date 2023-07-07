@@ -129,7 +129,7 @@ def export_progsnap2(output, course_id, assignment_group_ids=None, exclude=None,
         print("Starting off progsnap2 dump")
     if partition is not None:
         users, user_roles = get_course_users(course_id, None)
-        users = list(users.values())
+        users = list(sorted(users.values(), key=lambda user: user.last_name))
         letters = [user.last_name[0].upper() for user in users]
         if log:
             print(len(letters), "users found:", letters)
