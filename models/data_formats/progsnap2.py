@@ -221,7 +221,10 @@ def get_course_users(course_id, user_ids):
             role_users = User.get_user_role(course_id, user_id)
             if not role_users:
                 continue
-            user = role_users[0][1]
+            try:
+                user = role_users[0][1]
+            except IndexError:
+                continue
             users[user.id] = user
             user_roles[user.id] = {role.name for role, user in role_users}
     else:
@@ -266,7 +269,7 @@ def generate_link_subjects(zip_file, course_id, user_ids):
 
 LINK_ASSIGNMENT_HEADERS = ["AssignmentId", "X-Version",
                             "X-Name", "X-URL", "X-Instructions",
-                            "X-Reviewed", "X-Hidden", "X-Settings",
+                            "X-Reviewed", "X-Hidden", "X-Settings", "X-Type",
                             "X-Code.OnRun", "X-Code.OnChange", "X-Code.OnEval",
                             "X-Code.Starting", "X-Code.ExtraInstructor", "X-Code.ExtraStarting",
                             "X-Forked.Id", "X-Forked.Version",
@@ -319,7 +322,7 @@ def generate_link_assignments(zip_file, course_id, assignment_group_ids, user_id
             assignment_writer.writerow([
                 assignment.id, assignment.version,
                 assignment.name, assignment.url, assignment.instructions,
-                assignment.reviewed, assignment.hidden, assignment.settings,
+                assignment.reviewed, assignment.hidden, assignment.settings, assignment.type,
                 assignment.on_run, assignment.on_change, assignment.on_eval,
                 assignment.starting_code, assignment.extra_instructor_files, assignment.extra_starting_files,
                 assignment.forked_id, assignment.forked_version,

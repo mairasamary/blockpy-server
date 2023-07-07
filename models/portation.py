@@ -25,7 +25,7 @@ from models.assignment_group_membership import AssignmentGroupMembership
 from models.course import Course
 import models
 
-from models.data_formats.progsnap2 import dump_progsnap
+from models.data_formats.progsnap2 import dump_progsnap, get_course_users
 import models.data_formats.progsnap2ite as progsnap2ite
 
 from main import app
@@ -124,7 +124,20 @@ def export_bundle(**kwargs):
     return dumped
 
 
-def export_progsnap2(output, course_id, assignment_group_ids=None, exclude=None, log=False, format='csv', overwrite=False):
+def export_progsnap2(output, course_id, assignment_group_ids=None, exclude=None, log=False, format='csv', overwrite=False, partition=None):
+    if partition is not None:
+        users, user_roles = get_course_users(course_id, None)
+        users = list(users.values())
+        letters = [user.last_name[0].upper() for user in users]
+        letter_breaks = list(sorted(set(letters[::len(letters)//(1+partition)][1:])))
+        user_id_groups = {}
+        for letter_break in letter_breaks:
+            while users and users[0].last_name[0].upper() <= letter_break:
+                user_id_groups.setdefault(letter_break, []).append(users.pop(0).id)
+        if log:
+            print({g: len(u) for g, u in user_id_groups.items()})
+    else:
+        user_id_groups = {"": None}
     if format == 'csv':
         output_zip = output+".zip"
         # Start filling it up
@@ -137,20 +150,21 @@ def export_progsnap2(output, course_id, assignment_group_ids=None, exclude=None,
             if log:
                 print("Files completed. Writing to disk.")
     else:
-        if log:
-            print("Starting")
-        output_db = output + '.db'
-        if overwrite:
-            if os.path.exists(output_db):
-                if log:
-                    print("Removing old file:", output_db)
-                os.remove(output_db)
-                time.sleep(1)
-        for progress in progsnap2ite.dump(output_db, course_id, assignment_group_ids, None, exclude):
+        for partition_group, user_ids in user_id_groups.items():
             if log:
-                print("Completed", progress)
-        if log:
-            print("Files completed. Writing to disk.")
+                print("Starting", partition_group)
+            output_db = f"{output}_{partition_group}.db" if partition_group else f"{output}.db"
+            if overwrite:
+                if os.path.exists(output_db):
+                    if log:
+                        print("Removing old file:", output_db)
+                    os.remove(output_db)
+                    time.sleep(1)
+            for progress in progsnap2ite.dump(output_db, course_id, assignment_group_ids, user_ids, exclude):
+                if log:
+                    print("Completed", progress)
+            if log:
+                print("Files completed. Writing to disk.")
 
 
 def export_peml():

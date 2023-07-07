@@ -253,10 +253,11 @@ class ExportProgSnap(Command):
         Option("--exclude", '-e', dest="exclude", default=None),
         Option('--format', '-f', dest='format', default='csv', choices=['csv', 'sqlite'],
                help="csv is zipped csv, sqlite is a SQLite db"),
-        Option('--overwrite', '-w', dest='overwrite', default=False, action="store_true")
+        Option('--overwrite', '-w', dest='overwrite', default=False, action="store_true"),
+        Option("--partition", '-p', dest="partition", default=None, help="How many user partitions to make", type=int),
     )
 
-    def run(self, output, log_for_course, groups, exclude, format, overwrite, **kwargs):
+    def run(self, output, log_for_course, groups, exclude, format, overwrite, partition, **kwargs):
         from models.portation import export_progsnap2
         if groups is not None:
             output = output + "_{}".format(groups.replace(",", "_"))
@@ -264,7 +265,8 @@ class ExportProgSnap(Command):
         if exclude is not None:
             output = output + "_x{}".format(exclude.replace(",", "_"))
             exclude = [int(g) for g in exclude.split(",")]
-        export_progsnap2(output.format(log_for_course), log_for_course, groups, exclude=exclude, log=True, format=format, overwrite=overwrite)
+
+        export_progsnap2(output.format(log_for_course), log_for_course, groups, exclude=exclude, log=True, format=format, overwrite=overwrite, partition=partition)
 
 
 class ClearOldAnonymousUsers(Command):

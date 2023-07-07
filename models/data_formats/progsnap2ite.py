@@ -170,7 +170,7 @@ def generate_link_assignments(cursor, connection, course_id, assignment_group_id
                        [
                             assignment.id, assignment.version,
                             assignment.name, assignment.url, assignment.instructions,
-                            assignment.reviewed, assignment.hidden, assignment.settings,
+                            assignment.reviewed, assignment.hidden, assignment.settings, assignment.type,
                             assignment.on_run, assignment.on_change, assignment.on_eval,
                             assignment.starting_code, assignment.extra_instructor_files, assignment.extra_starting_files,
                             assignment.forked_id, assignment.forked_version,
