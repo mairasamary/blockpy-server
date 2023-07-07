@@ -132,8 +132,10 @@ def export_progsnap2(output, course_id, assignment_group_ids=None, exclude=None,
         users = list(users.values())
         letters = [user.last_name[0].upper() for user in users]
         if log:
-            print(len(letters), "users found")
-        letter_breaks = list(sorted(set(letters[::len(letters)//(1+partition)][1:])))
+            print(len(letters), "users found:", letters)
+        letter_breaks = list(sorted(set(letters[::len(letters)//(1+partition)])))[1:]
+        if log:
+            print(len(letter_breaks), "partitions", letter_breaks)
         user_id_groups = {}
         for letter_break in letter_breaks:
             while users and users[0].last_name[0].upper() <= letter_break:
