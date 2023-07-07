@@ -125,10 +125,14 @@ def export_bundle(**kwargs):
 
 
 def export_progsnap2(output, course_id, assignment_group_ids=None, exclude=None, log=False, format='csv', overwrite=False, partition=None):
+    if log:
+        print("Starting off progsnap2 dump")
     if partition is not None:
         users, user_roles = get_course_users(course_id, None)
         users = list(users.values())
         letters = [user.last_name[0].upper() for user in users]
+        if log:
+            print(len(letters), "users found")
         letter_breaks = list(sorted(set(letters[::len(letters)//(1+partition)][1:])))
         user_id_groups = {}
         for letter_break in letter_breaks:

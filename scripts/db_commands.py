@@ -265,7 +265,6 @@ class ExportProgSnap(Command):
         if exclude is not None:
             output = output + "_x{}".format(exclude.replace(",", "_"))
             exclude = [int(g) for g in exclude.split(",")]
-
         export_progsnap2(output.format(log_for_course), log_for_course, groups, exclude=exclude, log=True, format=format, overwrite=overwrite, partition=partition)
 
 
