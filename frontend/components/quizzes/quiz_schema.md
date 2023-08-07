@@ -2,6 +2,9 @@ This document captures the schema of the quizzes.
 
 Quizzes have two parts - the instructions and the feedback. Both parts have the `questions` field which maps to an object with Question IDs as the keys. The instructions have the stuff we present to students, and the feedback has the logic for checking their answer.
 
+Examples:
+* This file has two examples, one with all the question types and one with a big old question pool: https://gist.github.com/acbart/7b4b617d99a792c912b3f5fc88e18c8b
+
 ## Instructions JSON
 
 The first file is the instructions, which has the settings, and the actual questions to show the user.
