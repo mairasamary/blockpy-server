@@ -474,7 +474,6 @@ export const READER_HTML = `
                     class="dropdown-item"></a>
             </div>
         </div>
-        <!-- /ko -->
         <video data-bind="if: video().length" controls width="640" height="480"
             style="display: block; margin-left: auto; margin-right: auto;"
             crossorigin="anonymous" preload="metadata" class="reader-video-display">
@@ -482,6 +481,7 @@ export const READER_HTML = `
             <track data-bind="attr: { src: video().slice(0, -3) + 'vtt'}"
                 default kind="captions" srclang="en" label="English">
         </video>
+        <!-- /ko -->
         <iframe style="width: 640px; height: 480px; margin-left: 10%"
             width="300" height="150" allowfullscreen="allowfullscreen"
             webkitallowfullscreen="webkitallowfullscreen"
