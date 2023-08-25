@@ -21,15 +21,19 @@ import {AssignmentInterface, AssignmentInterfaceJson, EditorMode} from "./assign
 // TODO: Mark as success on load
 
 export const LOG_TIME_RATE = 30000;
+export const VIDEO_EVENTS = "pause playing seeked ended loadeddata error ratechange waiting";
 
 interface ReaderInterfaceJson extends AssignmentInterfaceJson {
     asPreamble: boolean
 }
 
 export class Reader extends AssignmentInterface {
-    logTimer: NodeJS.Timeout
-    logCount: number
-    ytPlayer: any
+    logTimer: NodeJS.Timeout;
+    logCount: number;
+    videoLogger: any;
+    video: ko.Observable<string>;
+    videoOptions: ko.Observable<Record<string, string>>;
+    ytPlayer: any;
     youtube: ko.Observable<string>;
     youtubeOptions: ko.Observable<Record<string, string>>;
     header: ko.Observable<string>;
@@ -55,6 +59,8 @@ export class Reader extends AssignmentInterface {
         this.logCount = 0;
         this.youtubeOptions = ko.observable<Record<string, string>>({});
         this.youtube = ko.observable<string>("");
+        this.videoOptions = ko.observable<Record<string, string>>({});
+        this.video = ko.observable<string>("");
         this.header = ko.observable<string>("");
         this.slides = ko.observable<string>("");
         this.summary = ko.observable<string>("");
@@ -113,6 +119,11 @@ export class Reader extends AssignmentInterface {
         this.rememberVoiceChoice(voice);
     }
 
+    setVoiceVideo(voice: string, voiceUrl: string) {
+        this.video(voiceUrl);
+        this.rememberVoiceChoice(voice);
+    }
+
     getBestVoice(options: Record<string, string>) {
         let previouslyChosenVoices = localStorage.getItem(this.LS_CURRENT_VOICE_CHOICES_KEY);
         const defaultVoice = Object.values(options)[0] || "";
@@ -163,6 +174,13 @@ export class Reader extends AssignmentInterface {
             this.youtubeOptions({});
             this.youtube(settings.youtube || "");
         }
+        if (settings.video instanceof Object) {
+            this.videoOptions(settings.video);
+            this.video(this.getBestVoice(settings.video));
+        } else {
+            this.videoOptions({});
+            this.video(settings.video || "");
+        }
         console.log(settings);
         if ('popout' in settings) {
             this.allowPopout(settings.popout);
@@ -177,12 +195,20 @@ export class Reader extends AssignmentInterface {
     }
 
     logWatching(event: any) {
-        if (this.assignment() && this.youtube()) {
-            this.logEvent("Resource.View", "reading", "watch",
-                JSON.stringify({
-                    "event": event.data,
-                    "time": this.ytPlayer.getCurrentTime()
-                }), this.assignment().url(), () => {})
+        if (this.assignment()) {
+            if (this.video().length) {
+                this.logEvent("Resource.View", "reading", "watch",
+                    JSON.stringify({
+                        "event": event.type,
+                        "time": event.currentTarget.currentTime
+                    }), this.assignment().url(), () => {})
+            } else if (this.youtube()) {
+                this.logEvent("Resource.View", "reading", "watch",
+                    JSON.stringify({
+                        "event": event.data,
+                        "time": this.ytPlayer.getCurrentTime()
+                    }), this.assignment().url(), () => {})
+            }
         }
     }
 
@@ -194,9 +220,25 @@ export class Reader extends AssignmentInterface {
             this.ytPlayer.destroy();
             this.ytPlayer = null;
         }
+        if (this.videoLogger) {
+            this.videoLogger.off(VIDEO_EVENTS);
+        }
     }
 
     registerWatcher() {
+        if (this.youtube() && !this.video()) {
+            this.registerYoutubeWatcher();
+        } else {
+            this.registerVideoWatcher();
+        }
+    }
+
+    registerVideoWatcher() {
+        this.videoLogger = $(".reader-video-display");
+        this.videoLogger.on(VIDEO_EVENTS, this.logWatching.bind(this));
+    }
+
+    registerYoutubeWatcher() {
         //let youtubes = $("iframe[src^='https://www.youtube.com']");
         // XTODO: Map it over any youtube videos
         //let url = youtubes.attr("src");
@@ -405,6 +447,7 @@ export const READER_HTML = `
     <div  style="background: #FBFAF7" class="pt-4">
         <h3 data-bind="text: header(), hidden: !header().length" class="p-1"></h3>
         <div data-bind="text: summary(), hidden: !summary().length" class="p-1"></div>
+        <!-- ko if: youtube().length && !video().length -->
         <div style="float: right" class="btn-group" role="group" data-bind="if: Object.keys(youtubeOptions()).length > 1">
             <button id="blockpy-reader-video-voice-choice" type="button" class="btn btn-outline-secondary dropdown-toggle"
                     data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">                    
@@ -417,6 +460,28 @@ export const READER_HTML = `
                     class="dropdown-item"></a>
             </div>
         </div>
+        <!-- /ko -->
+        <!-- ko if: video().length -->
+        <div style="float: right" class="btn-group" role="group" data-bind="if: Object.keys(videoOptions()).length > 1">
+            <button id="blockpy-reader-video-voice-choice" type="button" class="btn btn-outline-secondary dropdown-toggle"
+                    data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">                    
+            </button>
+            <div class="dropdown-menu" aria-labelledby="blockpy-reader-video-voice-choice"
+                data-bind="foreach: Object.keys(videoOptions())"">
+                <a href="" data-bind="text : $data,
+                                      click: ()=>$parent.setVoiceVideo($data, $parent.videoOptions()[$data]),
+                                      css: {active: $parent.videoOptions()[$data] === $parent.video()}"
+                    class="dropdown-item"></a>
+            </div>
+        </div>
+        <!-- /ko -->
+        <video data-bind="if: video().length" controls width="640" height="480"
+            style="display: block; margin-left: auto; margin-right: auto;"
+            crossorigin="anonymous" preload="metadata" class="reader-video-display">
+            <source data-bind="attr: { src: video() + '#t=1' }" type="video/mp4" >
+            <track data-bind="attr: { src: video().slice(0, -3) + 'vtt'}"
+                default kind="captions" srclang="en" label="English">
+        </video>
         <iframe style="width: 640px; height: 480px; margin-left: 10%"
             width="300" height="150" allowfullscreen="allowfullscreen"
             webkitallowfullscreen="webkitallowfullscreen"
@@ -424,7 +489,7 @@ export const READER_HTML = `
             id="reader-youtube-video"
             data-bind="attr: {title: assignment().name(),
                               src: 'https://www.youtube.com/embed/'+youtube()+'?feature=oembed&rel=0&enablejsapi=1'},
-                       hidden: !youtube().length">
+                       hidden: !youtube().length || video().length">
         </iframe>
         <div data-bind="markdowned: {value: assignment().instructions(), assignment: assignment, submission: submission}"
             class="p-4"></div>
