@@ -50,12 +50,13 @@ export class Reader extends AssignmentInterface {
 
     subscriptions: {
         currentAssignmentId: ko.Subscription,
-        windowPositioning: (event: Event) => void
+        windowPositioning: (event: Event) => void,
+        videoUrl: ko.Subscription
     }
 
     constructor(params: ReaderInterfaceJson) {
         super(params);
-        this.subscriptions = {currentAssignmentId: null, windowPositioning: null};
+        this.subscriptions = {currentAssignmentId: null, windowPositioning: null, videoUrl: null};
         this.logCount = 0;
         this.youtubeOptions = ko.observable<Record<string, string>>({});
         this.youtube = ko.observable<string>("");
@@ -77,6 +78,13 @@ export class Reader extends AssignmentInterface {
 
         this.subscriptions.windowPositioning = this.getWindowPositioning.bind(this)
         window.addEventListener('message', this.subscriptions.windowPositioning);
+        this.subscriptions.videoUrl = this.video.subscribe((newUrl) => {
+            $(".reader-video-display").attr("src", newUrl + "#t=1");
+            $(".reader-video-display track").attr("src", newUrl.slice(0, -3) + "vtt");
+            /*<source data-bind="attr: { src: video() + '#t=1' }" type="video/mp4" >
+            <track data-bind="attr: { src: video().slice(0, -3) + 'vtt'}"
+                default kind="captions" srclang="en" label="English">*/
+        });
     }
 
     loadReading(assignmentId: number) {
