@@ -103,12 +103,20 @@
                 }
             }
 
-            var state = localStorage.getItem("blockpy_assignmentSelectorExpanded") === "true";
+            var hasLocalStorage;
+            try {
+                localStorage;
+                hasLocalStorage = true;
+            } catch (exception) {
+                hasLocalStorage = false;
+            }
+
+            var state = hasLocalStorage && localStorage.getItem("blockpy_assignmentSelectorExpanded") === "true";
             setAssignmentSelectorExpansion(state);
             $(".completion-box").click(function () {
-                state = !(localStorage.getItem("blockpy_assignmentSelectorExpanded") === "true");
+                state = !(hasLocalStorage && localStorage.getItem("blockpy_assignmentSelectorExpanded") === "true");
                 setAssignmentSelectorExpansion(state);
-                localStorage.setItem("blockpy_assignmentSelectorExpanded", (state).toString());
+                hasLocalStorage && localStorage.setItem("blockpy_assignmentSelectorExpanded", (state).toString());
             });
         }
 
@@ -182,14 +190,13 @@
                     <button type="button" class='btn btn-outline-secondary btn-sm assignment-selector-last'>
                         Last <span class="fas fa-step-forward" aria-hidden="true"></span>
                     </button>
+                    <span class="float-right text-muted assignment-selector-clock"
+                          title="Estimate time spent (click to get total time spent across all sessions)">0:00</span>
                 </div>
             </div>
         </div>
     </div>
     {% for assignment, submission in sorted_group %}
     {% endfor %}
-    <script>
-        test = $(".assignment-selector-div").html();
-    </script>
 
 {% endmacro %}

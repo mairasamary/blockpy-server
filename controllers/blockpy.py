@@ -226,6 +226,10 @@ def save_student_file(filename, course_id, user):
     submission_id = request.values.get("submission_id")
     code = request.values.get("code")
     part_id = request.values.get("part_id")
+    if submission_id == '':
+        return ajax_failure(
+            "No submission ID was provided."
+        )
     submission = Submission.query.get(submission_id)
     # Verify exists
     check_resource_exists(submission, "Submission", submission_id)
@@ -1074,3 +1078,47 @@ def estimate_duration():
     if not user.is_grader(submission.course_id) and user_id != submission.user_id:
         return ajax_failure("Only graders or the assignment owner can see their submission duration estimate.")
     return ajax_success({'duration': submission.estimate_duration()})
+
+
+@blueprint_blockpy.route('/estimate_group_duration/', methods=['GET', 'POST'])
+@blueprint_blockpy.route('/estimate_group_duration', methods=['GET', 'POST'])
+@require_request_parameters("assignment_group_id", "course_id")
+def estimate_group_duration():
+    # Get parameters
+    assignment_group_id = maybe_int(request.values.get('assignment_group_id'))
+    course_id = maybe_int(request.values.get('course_id'))
+    user, user_id = get_user()
+    # Get resources
+    assignment_group = AssignmentGroup.by_id(assignment_group_id)
+    check_resource_exists(assignment_group, "AssignmentGroup", assignment_group_id)
+    assignments = assignment_group.get_assignments()
+    submissions = [assignment.load(user_id, course_id=course_id) for assignment in assignments]
+    # Verify user is a grader
+    total_duration = 0
+    for submission in submissions:
+        if not user.is_grader(submission.course_id) and user_id != submission.user_id:
+            return ajax_failure("Only graders or the assignment owner can see their submission duration estimate.")
+        total_duration += submission.estimate_duration()
+    return ajax_success({'duration': total_duration})
+
+
+@blueprint_blockpy.route('/openai/', methods=['GET', 'POST'])
+@blueprint_blockpy.route('/openai', methods=['GET', 'POST'])
+@require_request_parameters("submission_id")
+def openai():
+    # Get parameters
+    submission_id = maybe_int(request.values.get('submission_id'))
+    user, user_id = get_user()
+    # Get resources
+    submission = Submission.by_id(submission_id)
+    check_resource_exists(submission, "Submission", submission_id)
+    # Check permissions
+    if submission.user_id != user_id and not user.is_grader(submission.course_id):
+        return ajax_failure("This is not your submission and you are not a grader in its course.")
+    # Actually proxy the call
+    try:
+        pass
+    except Exception as e:
+        pass
+    # Log the call in the database
+    return "HEY LISTEN"

@@ -504,6 +504,7 @@ def submissions_filter(course_id):
     assignments_by_group[None] = assignments_by_group.pop(None, None)
     return render_template('courses/submissions_filter.html',
                            course_id=course_id,
+                           course=course,
                            assignments_by_group=assignments_by_group,
                            group_headers=group_headers,
                            students=students,

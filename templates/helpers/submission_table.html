@@ -11,7 +11,9 @@
         class="btn btn-outline-secondary mt-2">Bulk download all submissions for assignment</a><br>
     <a href="{{  url_for("assignments.load",
                         assignment_id=search_key, course_id=course_id) }}"
-       target="_blank" class="btn btn-outline-secondary mt-2 mb-2 ">Open assignment</a>
+       target="_blank" class="btn btn-outline-secondary mt-2 mb-2 ">Open assignment</a><br>
+    <input type="checkbox" name="show-only-learners" id="show-only-learners" />
+    <label for="show-only-learners">Show only learners</label>
 {% else %}
     <a href="{{ url_for("blockpy.load_history",
             user_id=search_key,
@@ -59,13 +61,13 @@
     {% endif %}
 
     <!-- Row Color based on Assignment status -->
+    {% set roles_list = submission[1].get_course_roles(course_id)|map(attribute='name')|map('title')|join(', ') %}
 <tr
     class='{%
         if submission[0].correct or (submission[0].score is defined and submission[0].score|round(1) >= 100) or submission[2].type == 'reading'
     %}table-success{%
         elif (submission[0].score is defined and submission[0].score|round(1) > 0)
-    %}table-warning{% endif %}'>
-
+    %}table-warning{% endif %} {{ 'non-learner-row' if 'Learner' not in roles_list else ''  }}'>
     <!-- Assignment Mode -->
     {% if criteria!="assignment" %}
     <td>
@@ -83,8 +85,9 @@
             ><i class="fas fa-eye"></i></a>
             {{ submission[1].name() }}
         </td>
+
         <td>
-            {{ submission[1].get_course_roles(course_id)|map(attribute='name')|map('title')|join(', ') }}
+            {{ roles_list }}
         </td>
     {%endif %}
 
@@ -201,6 +204,16 @@
 </table>
 
 <script>
+    $(function() {
+        $("#show-only-learners").change(function() {
+            if (this.checked) {
+                $(".non-learner-row").hide();
+            } else {
+                $(".non-learner-row").show();
+            }
+        }).change();
+    });
+
     const table = document.getElementById('submission-table');
 
     const headers = table.querySelectorAll('th');

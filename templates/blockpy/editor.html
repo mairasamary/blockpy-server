@@ -19,6 +19,8 @@
 
     <span class='delete-on-load'>Loading! Please wait. If this doesn't load, and you are using Safari, then please stop using Safari!</span>
 
+    <script>window.ltiLoadedCorrectly = true;</script>
+
     {% if lti %}
     <script>
     function checkCookies() {
@@ -29,8 +31,67 @@
         }
         return cookieEnabled;
     }
+    window.ltiLoadedCorrectly = checkCookies();
     if (!checkCookies()) {
-        alert("Cookies appear to be disabled. You might need to disable an ad-blocker, adjust your security settings, or use a different browser (we recommend Chrome).");
+        // alert
+        console.error("Cookies appear to be disabled. You might need to disable an ad-blocker, adjust your security settings, or use a different browser (we recommend Chrome).");
+
+        let platformOIDCLoginURL = "instructure.com";
+        window.addEventListener('message', function (event) {
+            // This isn't a message we're expecting
+            if (typeof event.data !== "object"){
+                return;
+            }
+
+            // Validate it's the response type you expect
+            if (event.data.subject !== "lti.put_data.response") {
+                return;
+            }
+
+            // Validate the message id matches the id you sent
+            if (event.data.message_id !== messageId) {
+                // this is not the response you're looking for
+                return;
+            }
+
+            // Validate that the event's origin is the same as the derived platform origin
+            if (event.origin !== platformOrigin) {
+                return;
+            }
+
+            // handle errors
+            if (event.data.error){
+                // handle errors
+                console.log(event.data.error.code)
+                console.log(event.data.error.message)
+                return;
+            }
+
+            // It's the response we expected
+            // The state and nonce values were successfully stored, redirect to Platform
+            console.log(platformOIDCLoginURL);
+        });
+
+        let platformOrigin = new URL(platformOIDCLoginURL).origin;
+        let frameName = getQueryParam("lti_storage_target");
+        console.log("++++", frameName);
+        let parent = window.parent || window.opener;
+        let targetFrame = frameName === "_parent" ? parent : parent.frames[frameName];
+
+        targetFrame.postMessage({
+                "subject": "lti.put_data",
+                "message_id": messageId,
+                "key": "state_<state_id>",
+                "value": "<state_id>"
+              } , platformOrigin )
+
+
+        targetFrame.postMessage({
+                "subject": "lti.put_data",
+                "message_id": messageId,
+                "key": "nonce_<nonce_value>",
+                "value": "<nonce_value>"
+              } , platformOrigin )
     }
     </script>
     {% endif %}
@@ -118,6 +179,7 @@
             'uploadFile': {{ url_for('blockpy.upload_file')|tojson }},
             'updateSubmission': {{ url_for('blockpy.update_submission')|tojson }},
             'updateSubmissionStatus': {{ url_for('blockpy.update_submission_status')|tojson }},
+            "openaiProxy": {{ url_for('blockpy.openai')|tojson }},
             {%- endif %}
         };
         window.$blockPyUserData = {
@@ -128,6 +190,8 @@
             "user.role": {{ role|tojson }},
             "user.course_id": {{ course_id|tojson }},
         };
+
+
 
         $(document).ready(function () {
             // Load in Quiz interface
@@ -284,8 +348,57 @@
 
             // window.parent.postMessage(JSON.stringify({subject: "lti.fetchWindowSize"}), "*")
             // window.addEventListener('message', function(event) { console.log(JSON.parse(event.data)); })
+
+
         });
     </script>
     <script src="https://www.youtube.com/iframe_api"></script>
+
+    <script>
+        //test = $(".assignment-selector-div").html();
+        window.ACTIVITY_GET_DURATION = () => {
+            return $.get({{ url_for('blockpy.estimate_group_duration', assignment_group_id=assignment_group_id, course_id=course_id)|tojson }}).then((result) => {
+                return result.duration;
+            });
+        };
+        const pageStartTime = Date.now();
+        let activityDuration = 0;
+        let clockMode = 'session';
+        function refreshClock() {
+            if (clockMode != 'loading') {
+                const duration = Math.floor((Date.now() - pageStartTime)/1000 + activityDuration);
+                const hours = Math.floor(duration/60/60);
+                let minutes = Math.floor(duration/60 % 60);
+                minutes = minutes < 10 ? "0"+minutes : minutes;
+                $(".assignment-selector-clock").html(`${hours}:${minutes}`);
+            } else {
+                $(".assignment-selector-clock").html(`(Getting Total)`);
+            }
+        };
+        $(function() {
+            setInterval(refreshClock, 10000);
+            $(".assignment-selector-clock").click(() => {
+                if (clockMode == 'session') {
+                    if (typeof window.ACTIVITY_GET_DURATION !== 'undefined') {
+                        clockMode = 'loading';
+                        window.ACTIVITY_GET_DURATION().done((result) => {
+                            activityDuration = result;
+                            clockMode = 'activity';
+                        }).catch((err) => {
+                            console.error(err);
+                            clockMode = 'session';
+                            activityDuration = 0;
+                        }).always(() => {
+                            refreshClock();
+                        });
+                    }
+                } else {
+                    activityDuration = 0;
+                    clockMode = 'session';
+                }
+                refreshClock();
+            })
+        });
+    </script>
 
 {% endblock %}

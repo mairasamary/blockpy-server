@@ -503,8 +503,8 @@ class Submission(Base):
         total = 0
         last_progress = None
         for log in reversed(logs[:-1]):
-            if log.event_type == 'Resource.View' and log.category == 'reading' :
-                if log.label=='read':
+            if log.event_type == 'Resource.View' and log.category == 'reading':
+                if log.label == 'read':
                     data = json.loads(log.message)
                     if last_progress == data['progress']:
                         continue

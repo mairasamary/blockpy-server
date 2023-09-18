@@ -7,7 +7,7 @@ flask-script
 flask-mail
 flask-wtf
 flask-assets
-flask-migrate
+flask-migrate==2.7.0
 markdown
 jinja2~=2.11.2
 wtforms~=2.3.3
@@ -32,3 +32,6 @@ redis
 huey
 compare50
 pdfkit
+
+MarkupSafe==2.0.1
+pytz

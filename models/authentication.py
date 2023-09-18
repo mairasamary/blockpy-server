@@ -2,6 +2,7 @@ from sqlalchemy import Column, String, Integer, ForeignKey
 
 from models.models import Base, db
 
+# TODO: Make the index a part of the code model
 
 class Authentication(Base):
     type = Column(String(80))

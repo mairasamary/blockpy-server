@@ -63,7 +63,22 @@ ko.bindingHandlers.jsoneditor = {
             modes: ['tree', 'code', 'text'] as JSONEditorMode[],
             mode: 'code' as JSONEditorMode
         };
-        element.editor = new JSONEditor(element, options, JSON.parse(initialValue.value() || "{}"));
+        let jsonValue,
+            jsonParsed = false,
+            rawValue = initialValue.value() || "{}";
+        try {
+            jsonValue = JSON.parse(rawValue);
+            jsonParsed = true;
+        } catch (error) {
+            console.error(error);
+            alert("Error parsing JSON for editor: "+error);
+        }
+        element.editor = new JSONEditor(element, options);
+        if (jsonParsed) {
+            element.editor.set(jsonValue);
+        } else {
+            element.editor.setText(rawValue);
+        }
 
         ko.utils.domNodeDisposal.addDisposeCallback(element, function () {
             element.editor.destroy();
