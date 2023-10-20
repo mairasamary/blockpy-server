@@ -61,7 +61,7 @@
     {% endif %}
 
     <!-- Row Color based on Assignment status -->
-    {% set roles_list = submission[1].get_course_roles(course_id)|map(attribute='name')|map('title')|join(', ') %}
+    {% set roles_list = submission[1].get_course_roles(course_id)|map(attribute='name')|map('title')|join(', ') if submission[1] != None else "" %}
 <tr
     class='{%
         if submission[0].correct or (submission[0].score is defined and submission[0].score|round(1) >= 100) or submission[2].type == 'reading'
