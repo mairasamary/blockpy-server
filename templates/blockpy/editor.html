@@ -361,7 +361,7 @@
                 return result.duration;
             });
         };
-        const pageStartTime = {{ session_start_time|tojson }} || Date.now();
+        const pageStartTime = {{ (session_start_time or 0)|tojson }} || Date.now();
         let activityDuration = 0;
         let clockMode = 'session';
         function refreshClock() {
