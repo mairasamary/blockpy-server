@@ -495,6 +495,15 @@ class Submission(Base):
     def get_logs(self):
         pass
 
+    def get_session_start_time(self):
+        first_session = Log.query.filter_by(course_id=self.course_id, assignment_id=self.assignment_id,
+                            subject_id=self.user_id,event_type='Session.Start').order_by(Log.date_created.asc()).first()
+        if not first_session:
+            return None
+        time = first_session.date_created
+        offset = time.astimezone().utcoffset()
+        return int(round(1000*(time + offset).timestamp()))
+
     def estimate_duration(self, inactivity_threshold=5):
         logs = Log.get_history(self.course_id, self.assignment_id, self.user_id, as_json=False)
         if not logs:

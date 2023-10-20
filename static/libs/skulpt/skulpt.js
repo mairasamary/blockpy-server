@@ -19805,7 +19805,8 @@ const BaseException = Sk.abstr.buildNativeClass("BaseException", {
         this.args = new Sk.builtin.tuple(arg ? [arg] : []);
         // if we have tb args then it's an internal call indicating the pre instantiated traceback
         // we should probably change this at some point because this only happens with SyntaxErrors
-        this.traceback = tb.length >= 2 ? [{ filename: tb[0] || "<unknown>", lineno: tb[1] }] : [];
+        this.traceback = tb.length >= 2 ? [{ filename: tb[0] || "<unknown>", text: tb[1], lineno: tb[2] }] : [];
+        this._full_traceback = tb;
         this.feedback = Sk.builtin.none.none$;
         this.__cause__ = Sk.builtin.none.none$;
         this.__context__ = Sk.builtin.none.none$;
@@ -20065,6 +20066,7 @@ const SyntaxError = complexExtends(
     "SyntaxError",
     "Invalid syntax.",
     function init(args, kws) {
+        // TODO: this doesn't actually get called any more??
         BaseExc_init.call(this, args, kws);
         if (args.length >= 1) {
             this.$msg = args[0];
@@ -20073,11 +20075,33 @@ const SyntaxError = complexExtends(
             const info = new Sk.builtin.tuple(args[1]).v;
             this.$filename = info[0];
             this.$lineno = info[1];
-            this.$offset = info[2];
+            //console.debug(this, info);
+            // if info[2] is an array, then we break it up
+            if (Array.isArray(info[2].v)) {
+                if (Array.isArray(info[2].v[0].v)) {
+                    // Nested array?
+                    this.$offset = info[2].v[0].v[1];
+                    this.$end_lineno = info[2].v[1].v[0];
+                    this.$end_offset = info[2].v[1].v[1];
+                } else {
+                    // Flat array
+                    this.$offset = info[2].v[1];
+                    this.$end_lineno = info[2].v[2];
+                    this.$end_offset = info[2].v[3];
+                }
+            } else {
+                this.$offset = info[2];
+                this.$end_lineno = info[1];
+                this.$end_offset = info[2];
+            }
+            /*this.$offset = info[2].v[0].v[1];
+            this.$end_lineno = info[2].v[1].v[0];
+            this.$end_offset = info[2].v[1].v[1];*/
             this.$text = info[3];
+            // TODO: acbart this just makes the traceback work for now, not actually getting the data yet
         }
     },
-    ["msg", "filename", "lineno", "offset", "text" /*"print_file_and_line"*/],
+    ["msg", "filename", "text", "lineno", "offset", "end_lineno", "end_offset" /*"print_file_and_line"*/],
     function str() {
         return BaseExc_str.call(this);
     }
@@ -27584,15 +27608,18 @@ Parser.prototype.addtoken = function (type, value, context) {
             //print("WAA");
             this.pop();
             if (this.stack.length === 0) {
-                throw new Sk.builtin.SyntaxError("too much input", this.filename, "", context);
+                throw new Sk.builtin.SyntaxError("too much input", this.filename, ...flatten_context(context));
             }
         } else {
             // no transition
-            errline = context[0][0];
-            throw new Sk.builtin.SyntaxError("bad input", this.filename, errline, context);
+            throw new Sk.builtin.SyntaxError("bad input", this.filename, ...flatten_context(context));
         }
     }
 };
+
+function flatten_context(context) {
+    return [context[2], context[0][0], context[0][1], context[1][0], context[1][1]];
+}
 
 // turn a token into a label
 Parser.prototype.classify = function (type, value, context) {
@@ -27624,7 +27651,7 @@ Parser.prototype.classify = function (type, value, context) {
             }
         }
 
-        throw new Sk.builtin.SyntaxError("bad token " + descr, this.filename, context[0][0], context);
+        throw new Sk.builtin.SyntaxError("bad token " + descr, this.filename, ...flatten_context(context));
     }
     return ilabel;
 };
@@ -27796,7 +27823,7 @@ Sk.parse = function parse(filename, input) {
     }, filename);
 
     if (!endmarker_seen) {
-        throw new Sk.builtin.SyntaxError("incomplete input", this.filename, "", [0, 0, totalLines]);
+        throw new Sk.builtin.SyntaxError("incomplete input", this.filename, "", 0, 0, totalLines, 0);
     }
 
     /**
@@ -35959,7 +35986,7 @@ function _tokenize(readline, encoding, yield_, filename) {
         if (contstr) {                       // continued string
             if (!line) {
                 //throw new TokenError("EOF in multi-line string", strstart);
-                throw new TokenError("EOF in multi-line string", filename, spos[0], [spos, epos]);
+                throw new TokenError("EOF in multi-line string", filename, last_line, ...spos, ...epos);
             }
             endprog.lastIndex = 0;
             var endmatch = endprog.exec(line);
@@ -36036,7 +36063,7 @@ function _tokenize(readline, encoding, yield_, filename) {
         } else {                                  // continued statement
             if (!line) {
                 //throw new TokenError("EOF in multi-line statement", [lnum, 0]);
-                throw new TokenError("EOF in multi-line statement", filename, spos[0], [spos, epos]);
+                throw new TokenError("EOF in multi-line statement", filename, last_line, ...spos, ...epos);
             }
             continued = 0;
         }
@@ -37146,8 +37173,8 @@ function check_special_type_attr(type, value, pyName) {
 var Sk = {}; // jshint ignore:line
 
 Sk.build = {
-    githash: "d6d903c07909c0cbc38ec443638aabcf7e14dad8",
-    date: "2023-06-21T02:26:42.507Z"
+    githash: "7a6b8b5042a767a2f94b6908811c386e71b06541",
+    date: "2023-10-19T23:59:57.598Z"
 };
 
 /**

@@ -252,6 +252,8 @@ def parse_assignment_load(assignment_id_or_url=None):
         # Check for any IP locked assignments
         for assignment in assignments:
             if not assignment.is_allowed(request.remote_addr):
+                make_log_entry(assignment.id, assignment.version, course_id, user_id, "X-Access.Denied",
+                               message=str(request.remote_addr))
                 return abort(403,
                              "You cannot access this assignment from your current location: " + request.remote_addr)
     # Check passcode
@@ -261,6 +263,8 @@ def parse_assignment_load(assignment_id_or_url=None):
             passcode_protected = True
     # Combine the submissions and assignments
     group = list(zip(assignments, submissions))
+    # Get session start time
+    session_start_time = None if not submissions else submissions[0].get_session_start_time()
     # Okay we've got everything
     return dict(group=group,
                 assignment_group=assignment_group,
@@ -273,6 +277,7 @@ def parse_assignment_load(assignment_id_or_url=None):
                 role=role,
                 course_id=course_id,
                 embed=embed,
+                session_start_time=session_start_time,
                 passcode_protected=passcode_protected)
 
 

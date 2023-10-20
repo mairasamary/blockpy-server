@@ -361,21 +361,34 @@
                 return result.duration;
             });
         };
-        const pageStartTime = Date.now();
+        const pageStartTime = {{ session_start_time|tojson }} || Date.now();
         let activityDuration = 0;
         let clockMode = 'session';
         function refreshClock() {
             if (clockMode != 'loading') {
                 const duration = Math.floor((Date.now() - pageStartTime)/1000 + activityDuration);
                 const hours = Math.floor(duration/60/60);
-                let minutes = Math.floor(duration/60 % 60);
-                minutes = minutes < 10 ? "0"+minutes : minutes;
-                $(".assignment-selector-clock").html(`${hours}:${minutes}`);
+                let oMinutes = Math.floor(duration/60 % 60);
+                let minutes = oMinutes < 10 ? "0"+oMinutes : oMinutes;
+                if (hours >= 99) {
+                    $(".assignment-selector-clock").html(`99+ hours spent`);
+                } else if (hours < 1) {
+                    if (oMinutes < 1) {
+                        $(".assignment-selector-clock").html(`(Just started)`);
+                    } else if (oMinutes === 1) {
+                        $(".assignment-selector-clock").html(`~${oMinutes} minute spent`);
+                    } else {
+                        $(".assignment-selector-clock").html(`~${oMinutes} minutes spent`);
+                    }
+                } else {
+                    $(".assignment-selector-clock").html(`~${hours}:${minutes} hours spent`);
+                }
             } else {
                 $(".assignment-selector-clock").html(`(Getting Total)`);
             }
         };
         $(function() {
+            refreshClock();
             setInterval(refreshClock, 10000);
             $(".assignment-selector-clock").click(() => {
                 if (clockMode == 'session') {
