@@ -20299,10 +20299,12 @@ Sk.builtin.traceback = function (trace) {
 
     this.trace = trace;
 
-    this.tb_lineno = new Sk.builtin.int_(trace.lineno);
+    const lineno = Array.isArray(trace.lineno) ? trace.lineno[2] : trace.lineno || -1;
+
+    this.tb_lineno = new Sk.builtin.int_(lineno);
     // TODO: Hack, you know this isn't right
     this.tb_frame = new Sk.builtin.frame(trace);
-    this.tb_source = new Sk.builtin.str(trace.source);
+    this.tb_source = new Sk.builtin.str(trace.source || "(Missing Source Code)");
 
     //tb_frame, tb_lasti, tb_lineno, tb_next
 
@@ -36053,7 +36055,7 @@ function _tokenize(readline, encoding, yield_, filename) {
                 if (!contains(indents, column)) {
                     throw new IndentationError(
                         "unindent does not match any outer indentation level",
-                        filename, spos[0], [spos, epos]); //["<tokenize>", lnum, pos, line]);
+                        filename, spos[0], ...spos, ...epos); //["<tokenize>", lnum, pos, line]);
                 }
 
                 indents = indents.slice(0, -1);
@@ -37174,7 +37176,7 @@ var Sk = {}; // jshint ignore:line
 
 Sk.build = {
     githash: "7a6b8b5042a767a2f94b6908811c386e71b06541",
-    date: "2023-10-19T23:59:57.598Z"
+    date: "2023-10-23T14:51:16.524Z"
 };
 
 /**
