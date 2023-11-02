@@ -34,7 +34,7 @@ export function explainGradingStatus(status: GradingStatus) {
        case GradingStatus.FAILED.toLowerCase():
            return "Something went wrong during the grading upload. Check your internet connection, make sure you have recently opened the BlockPy dashboard, and try again.<br>";
        case GradingStatus.NOT_READY.toLowerCase():
-           return "The student has not yet requested any feedback on this assignment.<br>";
+           return "<strong>Student's submission is currently hidden while you add more feedback</strong>. They might still be working on the assignment.<br>Use this button to release the feedback to the student and update their grade in Canvas.<br>";
     }
 }
 
