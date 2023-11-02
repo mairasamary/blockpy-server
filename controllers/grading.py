@@ -59,8 +59,9 @@ def update_grading_status():
     if not g.lti:
         return ajax_success({"submitted": False, "new_status": "FullyGraded", "new_status_human": submission.human_grading_status()})
     error = "Generic LTI Failure - perhaps not logged into LTI session?"
+    post_params = create_grade_post(submission, None, assignment_group_id, submission.user_id, submission.course_id,
+                                    True)
     try:
-        post_params = create_grade_post(submission, None, assignment_group_id, submission.user_id, submission.course_id, True)
         success, total_score = lti_post_grade(g.lti, *post_params)
     except LTIPostMessageException as e:
         success = False

@@ -294,7 +294,7 @@ class LTI:
                                self.response_url, xml)
             if not ret:
                 log.error("Post Message Failed")
-                raise LTIPostMessageException("Post Message Failed")
+                raise LTIPostMessageException(f"Post Message Failed to {self.response_url} with XML: {xml}")
             return True
 
         return False
