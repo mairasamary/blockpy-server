@@ -10,9 +10,9 @@ import {Server} from "./server";
 function closeSubmissionStatus(status: SubmissionStatus) {
     switch (status.toLowerCase()) {
         case SubmissionStatus.COMPLETED.toLowerCase(): case SubmissionStatus.SUBMITTED.toLowerCase():
-            return "This assignment is closed, so the student cannot edit the assignment further.<br>Use the button below to reopen the assignment.<br>";
+            return "This assignment is closed, so the student cannot edit the assignment further.<br>Use this button to reopen the assignment.<br>";
         default:
-            return "This assignment is currently OPEN for the student to edit.<br>Use the button below to close the assignment.<br>";
+            return "This assignment is currently OPEN for the student to edit.<br>Use this button to close the assignment.<br>";
     }
 }
 
