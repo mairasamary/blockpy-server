@@ -246,6 +246,10 @@ class Submission(Base):
         elif self.assignment.reviewed:
             if self.grading_status == "PendingManual":
                 return "Pending review"
+            elif self.grading_status == "FullyGraded":
+                return f"Graded ({int(round(100*self.full_score()))}%)"
+            elif self.submission_status == 'inProgress':
+                return "Grade in progress"
             else:
                 return self.submission_status
         elif self.score >= 100:
@@ -254,6 +258,34 @@ class Submission(Base):
             return "Incomplete ({}%)".format(self.score)
         else:
             return "Incomplete"
+
+    def human_submission_status(self):
+        if self.submission_status == SubmissionStatuses.COMPLETED:
+            return "Submission completed"
+        elif self.submission_status == SubmissionStatuses.SUBMITTED:
+            return "Submitted"
+        elif self.submission_status == SubmissionStatuses.IN_PROGRESS:
+            return "Submission in progress"
+        elif self.submission_status == SubmissionStatuses.STARTED:
+            return "Submission started"
+        elif self.submission_status == SubmissionStatuses.INITIALIZED:
+            return "Submission initialized but not yet started"
+        else:
+            return "Unknown submission status"
+
+    def human_grading_status(self):
+        if self.grading_status == GradingStatuses.FULLY_GRADED:
+            return "Fully Graded"
+        elif self.grading_status == GradingStatuses.PENDING:
+            return "Automatic grade still pending"
+        elif self.grading_status == GradingStatuses.PENDING_MANUAL:
+            return "Human grading in progress"
+        elif self.grading_status == GradingStatuses.FAILED:
+            return "Grade failed to transfer to LMS"
+        elif self.grading_status == GradingStatuses.NOT_READY:
+            return "Not yet graded"
+        else:
+            return "Unknown grading status"
 
     def full_score(self):
         possible = self.assignment.get_points()

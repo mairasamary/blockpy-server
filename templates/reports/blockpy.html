@@ -2,12 +2,14 @@
 
 {% set hiding = assignment.hidden or assignment.get_setting('hide_submission', False) %}
 
-<div>
-    {% if is_grader or not hiding %}
-    {{ assignment.instructions|safe }}
-    {% endif  %}
+{% if is_grader or not hiding %}
+<div class="module mb-2 m-2">
+ <a class="read-more collapsed" data-toggle="collapse" href="#collapse-instructions-{{ assignment.slug() }}" role="button"></a>
+  <div class="collapse" id="collapse-instructions-{{ assignment.slug() }}" aria-expanded="false">
+    {{ assignment.instructions|markdown|safe }}
+  </div>
 </div>
-<hr>
+{% endif  %}
 
 {% if assignment.reviewed %}
     <script type='text/javascript'>
@@ -66,7 +68,7 @@
             reviews: reviews.concat(metaReviews),
             tags: tags
         });
-        console.log({server, submission, assignment, reviews, metaReviews, tags});
+        //console.log({server, submission, assignment, reviews, metaReviews, tags});
         let editModel = {
             server: server,
             reviewInterfaces: ko.observableArray([]),
@@ -90,39 +92,77 @@
 {% endif %}
 
 <div class="col-md-12">
-<div>Submission Status: {{ submission.submission_status }}</div>
-<div>Grading Status: {{ submission.grading_status }}</div>
-<div>Score Status: {{ submission.full_status() }}</div>
-<div>Date Created: {{ submission.date_created }}</div>
-<div>Date Modified: {{ submission.date_modified }}</div>
-<!-- TODO: Use the LTI information to build the proper URL
-<div>Open in Canvas: <a href='' target='_blank'>View</a></div>
-<div>Instructor Link: <a href='' target='_blank'>View</a></div>
--->
-<div>Edits: {{ submission.version }}</div>
-{% if is_grader %}
-<div>Full Submission: <a href="{{ url_for('blockpy.load_assignment',
-                        assignment_id=submission.assignment_id,
-                        user_id=submission.user_id,
-                        course_id=submission.course_id,
-                        force_download=True,
-                        embed=True) }}">download</a></div>
-{% endif %}
-{% if not hiding %}
-<div>Load Read-only Mode:
+
+{% if is_grader or not hiding %}
+<div class="col-xl-6 col-md-12 mb-2">
 <form method="post" target="_blank" action="{{ url_for("blockpy.load_readonly", embed=True) }}"
     style="display:inline">
     <input type="hidden" name="assignment_data" value="{{
         assignment|make_readonly_form(submission, is_grader)
     }}">
     <button type="submit" class="btn btn-sm btn-outline-secondary"
->Open</button>
-</form> <small>(read-only mode will not affect your grade at all!)</small></div>
+>Load Read-only Mode</button>
+</form> Opening assignment in read-only mode will not affect your grade at all.
+</div>
 {% endif %}
-{% if is_grader or not hiding %}
-<div>History: <a href="{{ url_for('blockpy.browse_history', assignment_id=submission.assignment_id,
-        user_id=submission.user_id, course_id=submission.course_id, embed=True) }}">view</a></div>
+
+{% if is_grader %}
+<div class="col-xl-6 col-md-12 mb-2">
+    <a href="{{ url_for('blockpy.load_assignment',
+                        assignment_id=submission.assignment_id,
+                        user_id=submission.user_id,
+                        course_id=submission.course_id,
+                        force_download=True,
+                        embed=True) }}"
+                        class="btn btn-sm btn-outline-secondary">Download Full Submission</a>
+                        Provides a JSON representation of this submission.
+</div>
+
+<div class="col-xl-6 col-md-12 mb-2">
+    <a href="{{ url_for('blockpy.browse_history', assignment_id=submission.assignment_id,
+            user_id=submission.user_id, course_id=submission.course_id, embed=True) }}"
+            type="button" class="btn btn-sm btn-outline-secondary"
+            >View History
+            {% if is_grader %}
+            <span class="badge badge-secondary">{{ submission.version }} edits</span>
+            {% endif %}
+            </a> Shows all events registered for this problem.
+</div>
 {% endif %}
+
+<table class="table table-sm table-bordered table-condensed table-striped table-hover">
+<thead>
+    <tr>
+        <th>Submission</th>
+        <th>Grading</th>
+        <th>Score</th>
+        <th>Created</th>
+        <th>Last Edited</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+    <td id="summary-submission-status-{{ submission.id }}">{{ submission.human_submission_status() }}</td>
+    <td id="summary-grading-status-{{ submission.id }}">{{ submission.human_grading_status() }}</td>
+    <td id="summary-score-status-{{ submission.id }}">{{ submission.full_status() }}</td>
+    <td>{{ submission.date_created| date_description }}</td>
+    <td>{{ submission.date_modified| date_description }}</td>
+</tr>
+</tbody>
+</table>
+
+<!-- TODO: Use the LTI information to build the proper URL
+<div>Open in Canvas: <a href='' target='_blank'>View</a></div>
+<div>Instructor Link: <a href='' target='_blank'>View</a></div>
+-->
+
+
+
+
+
+</div>
+<div class="col-md-12">
+
 <!--<div>Estimated Duration: {{ (submission.version/10.0)|round(2) }} minutes</div>-->
 
 {% if is_grader or not hiding %}

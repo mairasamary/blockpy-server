@@ -52,12 +52,12 @@ def update_grading_status():
         return ajax_failure("This is not your submission and you are not a grader in its course.")
     submission.update_grading_status(new_grading_status)
     if submission.grading_status != GradingStatuses.FULLY_GRADED:
-        return ajax_success({'new_status': new_grading_status})
+        return ajax_success({'new_status': new_grading_status, "new_status_human": submission.human_grading_status()})
     # Do action
     if assignment_group_id is None:
         assignment_group_id = submission.assignment_group_id
     if not g.lti:
-        return ajax_success({"submitted": False, "new_status": "FullyGraded"})
+        return ajax_success({"submitted": False, "new_status": "FullyGraded", "new_status_human": submission.human_grading_status()})
     error = "Generic LTI Failure - perhaps not logged into LTI session?"
     try:
         post_params = create_grade_post(submission, None, assignment_group_id, submission.user_id, submission.course_id, True)
@@ -68,12 +68,12 @@ def update_grading_status():
     if success:
         make_log_entry(submission.assignment_id, submission.assignment_version,
                        submission.course_id, user_id, "X-Submission.LMS", "answer.py", message=str(total_score))
-        return ajax_success({"submitted": True, "new_status": "FullyGraded"})
+        return ajax_success({"submitted": True, "new_status": "FullyGraded", "new_status_human": submission.human_grading_status()})
     else:
         submission.update_grading_status(GradingStatuses.FAILED)
         make_log_entry(submission.assignment_id, submission.assignment_version,
                        submission.course_id, user_id, "X-Submission.LMS.Failure", "answer.py", message=error)
-        return ajax_failure({"submitted": False, "message": error, "new_status": "Failed"})
+        return ajax_failure({"submitted": False, "message": error, "new_status": "Failed", "new_status_human": submission.human_grading_status()})
 
 
 @blueprint_grading.route('/update_submission_status', methods=['POST'])
@@ -88,7 +88,7 @@ def update_submission_status():
     if not user.is_grader(submission.course_id):
         return ajax_failure("You are not a grader in this submission's course.")
     submission.update_submission_status(new_submission_status)
-    return ajax_success({'new_status': new_submission_status})
+    return ajax_success({'new_status': new_submission_status, 'new_status_human': submission.human_submission_status()})
 
 
 @blueprint_grading.route('/mass_close_assignment', methods=['GET', 'POST'])
