@@ -138,7 +138,7 @@ def get_grading_spreadsheet():
     assignment_group_ids = get_request_list('assignment_group_ids')
     student_ids = get_request_list('student_ids')
     role_names = get_request_list('role_names', element_conversion=str)
-    estimate_time_spent = maybe_bool(request.values.get('estimate_time_spent', False))
+    estimate_time_spent = maybe_bool(request.values.get('estimate_time_spent'))
     user, user_id = get_user()
     # Verify existence and permissions of courses
     courses = {}
