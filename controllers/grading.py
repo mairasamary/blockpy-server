@@ -138,6 +138,7 @@ def get_grading_spreadsheet():
     assignment_group_ids = get_request_list('assignment_group_ids')
     student_ids = get_request_list('student_ids')
     role_names = get_request_list('role_names', element_conversion=str)
+    estimate_time_spent = maybe_bool(request.values.get('estimate_time_spent', False))
     user, user_id = get_user()
     # Verify existence and permissions of courses
     courses = {}
@@ -158,16 +159,18 @@ def get_grading_spreadsheet():
         cw = csv.writer(f)
         cw.writerows([["Course", "Group", "Assignment", "Student", "Role", "Email",
                       "Correct", "Raw Score", "Full Score", "Reviews", "Status", "Submission Status", "Grading Status",
-                        "Edit Count", "Date Created", "Date Modified", "Extra Files",
+                      "Edit Count", "Estimated Time Spent", "Date Created", "Date Modified", "Date Started", "Extra Files",
                       "Course ID", "Group ID", "Assignment ID", "User ID",
-                       "Assignment Type",
+                      "Assignment Type",
                       ]])
         cw.writerows([[submission.course.name, submission.assignment_group.name, submission.assignment.name, submission.user.name(),
                        ",".join([role.name for role, user in User.get_user_role(submission.course_id, submission.user_id)]),
                        submission.user.email,
                        submission.correct, submission.score, submission.full_score(), len(submission.get_reviews()),
                        submission.full_status(False), submission.submission_status, submission.grading_status,
-                        submission.version, submission.date_created, submission.date_modified, submission.extra_files,
+                       submission.version, submission.estimate_duration() if estimate_time_spent else "",
+                       submission.date_created, submission.date_modified, submission.get_session_start_time() or "",
+                       submission.extra_files,
                        submission.course_id, submission.assignment_group_id, submission.assignment_id, submission.user_id,
                        submission.assignment.type
                        ]
