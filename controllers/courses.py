@@ -692,14 +692,14 @@ def list_grading_failures():
                            is_instructor=is_grader)
 
 
-def bulk_assignment_editor_setup():
+def bulk_assignment_editor_setup(all_submitted=False):
     course_id = get_course_id()
     user, user_id = get_user()
     # Load Resources
     course: Course = Course.by_id(course_id)
     # Check Resource Exists
     check_resource_exists(course, "Course", course_id)
-    grouped_assignments = natsorted(course.get_assignments_grouped(),
+    grouped_assignments = natsorted(course.get_assignments_grouped() if not all_submitted else course.get_submitted_assignments_grouped(),
                                     key=lambda r: (r.AssignmentGroup.name if r.AssignmentGroup is not None else "",
                                                    r.Assignment.name))
     # assignments = [a.Assignment for a in grouped_assignments]
@@ -873,7 +873,7 @@ def pages(course_id_or_url):
 @courses.route('/check_similar/', methods=['GET', 'POST'])
 @login_required
 def check_similar():
-    user, user_id, course, course_id, groups = bulk_assignment_editor_setup()
+    user, user_id, course, course_id, groups = bulk_assignment_editor_setup(all_submitted=True)
     if request.method == 'POST':
         assignment_id = maybe_int(request.form.get('assignment_id'))
         if not assignment_id:
