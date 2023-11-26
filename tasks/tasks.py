@@ -217,7 +217,11 @@ def check_similarity_simple(user_id, assignment_id, exclude_courses, target_cour
             (t, o) for t in interesting_targets for o in (included + archived)
         ]
         rings = SimilarityRings()
-        for left, right in all_possible_pairs:
+        total = len(all_possible_pairs)
+        report.update_progress(message=f"Running comparisons using thefuzz: 0/{total}")
+        for progress, (left, right) in enumerate(all_possible_pairs):
+            if left == right:
+                continue
             if not left.code.strip() or not right.code.strip():
                 continue
             if len(left.code) < minimum_file_length or len(right.code) < minimum_file_length:
@@ -226,6 +230,8 @@ def check_similarity_simple(user_id, assignment_id, exclude_courses, target_cour
             # Check that they actually changed the starter file
             if similarity_score > other_student_threshold:
                 rings.add_to_rings(left, right, similarity_score)
+            if progress % 100 == 0:
+                report.update_progress(message=f"Running comparisons using thefuzz: {progress}/{total}")
 
         report.update_progress(message="Writing out the final report")
         directory = report.get_report_folder()
