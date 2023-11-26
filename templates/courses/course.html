@@ -48,6 +48,7 @@ function renameCourse() {
     <a href="{{ url_for('courses.watch_events', course_id=course.id) }}" class='btn btn-outline-secondary'>Watch Submissions</a> New-style review and grade all student submissions<br><br>
     <a href="{{ url_for('courses.submissions_grid', course_id=course.id) }}" class='btn btn-outline-secondary'>View Grid</a> See all your students' assignment submissions' status in a big table.<br><br>
     <a href="{{ url_for('courses.list_grading_failures', course_id=course.id) }}" class='btn btn-outline-secondary'>List Grading Failures</a> Review any students' submissions that triggered an error on the way to Canvas.<br><br>
+    <a href="{{ url_for('courses.check_similar', course_id=course.id) }}" class='btn btn-outline-secondary'>Check for Similar Submissions</a> Review all students' submissions for similarity with other submissions (across all courses).<br><br>
     <h3>Your Assignments</h3>
     <a href="{{ url_for('courses.view_assignments', course_id=course.id) }}" class='btn btn-outline-secondary'>View Assignments as Student</a> View all the available assignments for this course as if you were a student.<br><br>
     <a href="{{ url_for('courses.submissions_user', course_id=course.id, owner_id=g.user.id) }}" class='btn btn-outline-secondary'>View Your Submissions as Student</a> View your submissions as if you were a student<br><br>

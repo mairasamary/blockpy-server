@@ -260,6 +260,8 @@ class Submission(Base):
             return "Incomplete"
 
     def human_submission_status(self):
+        if self.assignment.type == 'quiz':
+            pass
         if self.submission_status == SubmissionStatuses.COMPLETED:
             return "Submission completed"
         elif self.submission_status == SubmissionStatuses.SUBMITTED:

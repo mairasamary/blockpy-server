@@ -90,6 +90,14 @@ class Report(Base):
                 .filter(Report.owner_id == user_id)
                 .all())
 
+    @classmethod
+    def by_course(cls, course_id, kind = None):
+        query = db.session.query(Report).filter(Report.course_id == course_id)
+        if kind is not None:
+            query = query.filter(Report.task == kind)
+        query = query.order_by(Report.date_created.desc())
+        return query.all()
+
     def __str__(self):
         return f'<Report {self.id} for {self.task}: {self.parameters}>'
 

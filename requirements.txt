@@ -32,6 +32,6 @@ redis
 huey
 compare50
 pdfkit
-
+thefuzz
 MarkupSafe==2.0.1
 pytz

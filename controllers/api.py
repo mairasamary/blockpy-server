@@ -88,6 +88,26 @@ def check_similarity(assignment_id, course_id):
     return f"<html><head></head><body><a href='{location}'>{location}</a></body></html>", 202, {'Location': location}
 
 
+@blueprint_api.route('/check_similarity_simple/<assignment_id>/<course_id>/', methods=['GET'])
+@blueprint_api.route('/check_similarity_simple/<assignment_id>/<course_id>', methods=['GET'])
+def check_similarity_simple(assignment_id, course_id):
+    other_student_threshold = maybe_int(request.args.get('other_student_threshold', 95))
+    starter_change_threshold = maybe_int(request.args.get('starter_change_threshold', 95))
+    minimum_file_length = maybe_int(request.args.get('minimum_file_length', 100))
+    exclude_courses = [maybe_int(c) for c in request.args.get('exclude_courses', '').split(',')
+                       if maybe_int(c) is not None]
+    user, user_id = get_user()
+    assignment_id = maybe_int(assignment_id)
+    course_id = maybe_int(course_id)
+    task = tasks.check_similarity_simple(user_id, assignment_id, exclude_courses, course_id,
+                                         other_student_threshold=other_student_threshold,
+                                         starter_change_threshold=starter_change_threshold,
+                                         minimum_file_length=minimum_file_length)
+    location = url_for('api.task_status', task_id=task.id)
+    #return f"<html><head></head><body><a href='{location}'>{location}</a></body></html>", 202, {'Location': location}
+    return jsonify({"task_id": task.id, "status_url": location})
+
+
 def load_api_user():
     email = request.json.get('email')
     password = request.json.get('password')

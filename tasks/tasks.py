@@ -3,6 +3,8 @@ import time
 import json
 import os
 import subprocess
+import difflib
+from itertools import combinations
 
 from controllers.helpers import make_log_entry, ensure_dirs
 from controllers.pylti.common import LTIPostMessageException
@@ -14,6 +16,9 @@ from models.assignment import Assignment
 from models.submission import Submission
 from models.submission import Submission
 from models.statuses import GradingStatuses
+from tasks.similarity_report import make_report
+
+from thefuzz import fuzz
 
 
 @huey.task(context=True)
@@ -143,3 +148,90 @@ def queue_lti_post_grade(json_lti, post_params,
                 report.error("Task Error: " + str(error))
                 attempts -= 1
     return False
+
+
+class SimilarityRings:
+    def __init__(self):
+        self.rings = []
+        self.suspects = set()
+
+    def add_to_rings(self, s1, s2, sim):
+        for possible in self.rings:
+            if s1 in possible or s2 in possible:
+                if s1 in possible:
+                    possible[s1].append((s2, sim))
+                else:
+                    possible[s1] = [(s2, sim)]
+                if s2 in possible:
+                    possible[s2].append((s1, sim))
+                else:
+                    possible[s2] = [(s1, sim)]
+                return
+        else:
+            self.rings.append({
+                s1: [(s2, sim)],
+                s2: [(s1, sim)]
+            })
+        self.suspects.add(s1)
+        self.suspects.add(s2)
+
+
+@huey.task(context=True)
+def check_similarity_simple(user_id, assignment_id, exclude_courses, target_course,
+                            other_student_threshold=95, starter_change_threshold=95,
+                            minimum_file_length=100,
+                            task=None):
+    """
+
+    :param assignment_id:
+    :param exclude_courses:
+    :return:
+    """
+    report = Report.new('check_similarity_simple', json.dumps(
+        dict(assignment_id=assignment_id, exclude_courses=exclude_courses, target_course=target_course,
+             other_student_threshold=other_student_threshold, starter_change_threshold=starter_change_threshold,
+             minimum_file_length=minimum_file_length)
+    ), owner_id=user_id, course_id=target_course, assignment_id=assignment_id)
+
+    with app.app_context():
+        report.start()
+
+        report.update_progress(message="Getting all the submissions relevant to the assignment.")
+        assignment: Assignment = Assignment.by_id(assignment_id)
+        # TODO: Check that the assignment exists
+        # TODO: Check permissions
+        submissions = Submission.all_by_assignment(assignment_id)
+
+        report.update_progress(
+            message="Grouping them as excluded, archived, or normal depending on exclude_courses and target_courses")
+        included = [submission for submission in submissions if submission.course_id not in exclude_courses
+                    and fuzz.ratio(assignment.starting_code, submission.code) < starter_change_threshold]
+        archived = [submission for submission in included if submission.course_id != target_course
+                    and fuzz.ratio(assignment.starting_code, submission.code) < starter_change_threshold]
+        target = [submission for submission in included if submission.course_id == target_course]
+        interesting_targets = [submission for submission in target
+                               if fuzz.ratio(assignment.starting_code, submission.code) < starter_change_threshold]
+
+        report.update_progress(message="Running comparisons using thefuzz")
+        all_possible_pairs = list(combinations(interesting_targets, 2)) + [
+            (t, o) for t in interesting_targets for o in (included + archived)
+        ]
+        rings = SimilarityRings()
+        for left, right in all_possible_pairs:
+            if not left.code.strip() or not right.code.strip():
+                continue
+            if len(left.code) < minimum_file_length or len(right.code) < minimum_file_length:
+                continue
+            similarity_score = fuzz.ratio(left.code, right.code)
+            # Check that they actually changed the starter file
+            if similarity_score > other_student_threshold:
+                rings.add_to_rings(left, right, similarity_score)
+
+        report.update_progress(message="Writing out the final report")
+        directory = report.get_report_folder()
+        ensure_dirs(directory)
+        index_file = make_report(directory, rings.rings)
+
+        report.finish(result="index.html",
+                      message=f"Task finished. Checked {len(all_possible_pairs)} pairs ({len(target)} submissions in this course), found {len(rings.rings)} rings and {len(rings.suspects)} suspects.")
+        return index_file

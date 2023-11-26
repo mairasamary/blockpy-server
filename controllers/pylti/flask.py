@@ -284,8 +284,8 @@ class LTI:
         else:
             lis_result_sourcedid = endpoint
         # # edX devbox fix
-        score = float(grade)
-        if 0 <= score <= 1.0:
+        score = float(grade) if grade is not None else None
+        if score is None or 0 <= score <= 1.0:
             xml = generate_request_xml(
                 message_identifier_id, operation, lis_result_sourcedid,
                 score, message, url, needs_review, when_submitted_at=when_submitted_at,

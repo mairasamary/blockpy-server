@@ -21,6 +21,7 @@ from models.course import Course
 
 from models.models import db
 from models.log import Log
+from models.statuses import SubmissionStatuses
 from models.submission import Submission, GradingStatuses
 from models.assignment import Assignment
 from models.assignment_group import AssignmentGroup
@@ -530,6 +531,21 @@ def update_submission_status():
         return ajax_failure("This is not your submission and you are not a grader in its course.")
     # Do action
     success = submission.update_submission_status(status)
+    """
+    # TODO: Make it submit to canvas without a score
+    if submission.assignment.reviewed:
+        lis_result_sourcedid = request.values.get('lis_result_sourcedid')
+        assignment_group_id = maybe_int(request.values.get('assignment_group_id'))
+        score, *rest = create_grade_post(submission, lis_result_sourcedid, assignment_group_id, submission.user.id,
+                                        submission.course_id, True)
+        if submission.grading_status != GradingStatuses.FULLY_GRADED:
+            score = None
+        try:
+            success, total_score = lti_post_grade(g.lti, *(score, *rest))
+        except LTIPostMessageException as e:
+            error = str(e)
+            print(error)
+    """
     make_log_entry(submission.assignment_id, submission.assignment_version,
                    course_id, user_id, "Submit", "answer.py", category=status, message=str(success))
     return ajax_success({"success": success})

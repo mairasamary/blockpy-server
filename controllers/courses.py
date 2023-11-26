@@ -28,6 +28,8 @@ from models.course import Course
 from models.role import Role
 from models.submission import Submission
 from models.assignment import Assignment
+from models.report import Report
+from tasks import tasks
 
 courses = Blueprint('courses', __name__, url_prefix='/courses')
 
@@ -372,7 +374,8 @@ def change_role():
 
 
 def grader_dashboard(user, course_id):
-    pending_review = Submission.by_pending_review(course_id)
+    pending_review = [(s, u, a) for (s, u, a) in Submission.by_pending_review(course_id)
+                      if u.is_student(course_id)]
     users = {user.email: user.encode_json() for _, user, _ in pending_review}
     is_instructor = user.is_instructor(course_id)
     course = Course.by_id(course_id)
@@ -864,3 +867,32 @@ def pages(course_id_or_url):
         groups[a.AssignmentGroup].append(a.Assignment)
     # All ready
     return render_template('courses/textbook.html', course_id=course.id, course=course, groups=groups)
+
+
+@courses.route('/check_similar', methods=['GET', 'POST'])
+@courses.route('/check_similar/', methods=['GET', 'POST'])
+@login_required
+def check_similar():
+    user, user_id, course, course_id, groups = bulk_assignment_editor_setup()
+    if request.method == 'POST':
+        assignment_id = maybe_int(request.form.get('assignment_id'))
+        if not assignment_id:
+            flash("No assignment selected")
+            return redirect(request.url)
+        other_student_threshold = maybe_int(request.form.get('other_student_threshold', 95))
+        starter_change_threshold = maybe_int(request.form.get('starter_change_threshold', 95))
+        minimum_file_length = maybe_int(request.form.get('minimum_file_length', 100))
+        exclude_courses = [maybe_int(c) for c in request.form.get('exclude_courses', '').split(',')
+                           if maybe_int(c) is not None]
+        task = tasks.check_similarity_simple(user_id, assignment_id, exclude_courses, course_id,
+                                             other_student_threshold=other_student_threshold,
+                                             starter_change_threshold=starter_change_threshold,
+                                             minimum_file_length=minimum_file_length)
+        flash(f"Started a new similarity check, which may not appear until you reload the page: {task}")
+        return redirect(request.url)
+    existing_reports = Report.by_course(course_id, "check_similarity_simple")
+    return render_template('assignments/similarity.html',
+                           course_id=course_id,
+                           course=course,
+                           groups=groups,
+                           existing_reports=existing_reports)
