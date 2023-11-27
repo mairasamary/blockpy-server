@@ -3,6 +3,7 @@ import time
 import json
 import os
 import subprocess
+import csv
 import difflib
 from itertools import combinations
 
@@ -14,7 +15,7 @@ from models.log import Log
 from models.report import Report
 from models.assignment import Assignment
 from models.submission import Submission
-from models.submission import Submission
+from models.course import Course
 from models.statuses import GradingStatuses
 from tasks.similarity_report import make_report
 
@@ -241,3 +242,139 @@ def check_similarity_simple(user_id, assignment_id, exclude_courses, target_cour
         report.finish(result="index.html",
                       message=f"Task finished. Checked {len(all_possible_pairs)} pairs ({len(target)} submissions in this course), found {len(rings.rings)} rings and {len(rings.suspects)} suspects.")
         return index_file
+
+
+@huey.task(context=True)
+def make_red_flag_report(user_id, target_course, short_threshold, characters_per_second_threshold, max_backstep_threshold, task=None):
+    """
+
+    :param target_course:
+    :return:
+    """
+    report = Report.new('make_red_flag_report', json.dumps(
+        dict(target_course=target_course, version=1, short_threshold=short_threshold,
+             characters_per_second_threshold=characters_per_second_threshold, max_backstep_threshold=max_backstep_threshold)
+    ), owner_id=user_id, course_id=target_course)
+
+    with app.app_context():
+        report.start()
+
+        report.update_progress(message="Getting all the learners in the course.")
+        course = Course.by_id(target_course)
+        students = course.get_users(roles=['learner'])
+
+        directory = report.get_report_folder()
+        ensure_dirs(directory)
+
+        report.update_progress(message=f"Making report for each student: 0/{len(students)}")
+        reports = {}
+        for progress, (role, student) in enumerate(students):
+            submissions = course.get_users_submitted_assignments_grouped(student.id)
+            reports[student] = []
+            for (submission, assignment, assignment_group) in submissions:
+                history = submission.get_logs()
+                filename = f"{directory}/{assignment.id}_{student.id}.json"
+                reports[student].append(dict(
+                    assignment_id=assignment.id,
+                    duration_until_success=duration_until_success(history, filename, short_threshold=short_threshold),
+                    copy_paste_additions=copy_paste_additions(history, characters_per_second_threshold=characters_per_second_threshold),
+                    working_at_end=working_at_end(history, max_backstep_threshold)
+                ))
+            if progress % 100 == 0:
+                report.update_progress(message=f"Making report for each student: {progress}/{len(students)}")
+
+        report.update_progress(message="Writing out the final report")
+        with open(os.path.join(directory, "red_flags.csv"), 'w', newline="") as out:
+            csv_out = csv.writer(out)
+            csv_out.writerow(["Student", "Email", "Assignment", "Duration Until Success", "Copy Paste Additions", "Working at End"])
+            for student, reports in reports.items():
+                for r in reports:
+                    csv_out.writerow([student.name(), student.id,
+                                      r['assignment_id'], r['duration_until_success'],
+                                      r['copy_paste_additions'], r['working_at_end']])
+
+        report.finish(result="red_flags.csv",
+                      message=f"Task finished. Checked {len(students)} students in this course.")
+        return "red_flags.csv"
+
+
+def duration_until_success(history, filename, short_threshold=10):
+    started = False
+    start_time = None
+    end_time = None
+    for log in history:
+        if not started and log.event_type == 'Session.Start':
+            started = True
+            start_time = log.date_created
+        elif log.event_type.lower() == 'intervention' and log.category.lower() == 'complete':
+            end_time = log.date_created
+            break
+    if not start_time or not end_time:
+        return None
+    return (end_time - start_time).total_seconds() < short_threshold
+
+def copy_paste_additions(history, characters_per_second_threshold=30):
+    # Find the difference between consecutive edits in terms of additive edit distance (non negative length change)
+    started = False
+    start_time = None
+    end_time = None
+    previous_code, previous_time = "", None
+    for log in history:
+        if not started and log.event_type == 'Session.Start':
+            started = True
+            start_time = log.date_created
+        elif log.event_type.lower() == 'intervention' and log.category.lower() == 'complete':
+            end_time = log.date_created
+            break
+        elif log.event_type in ('File.Edit', 'File.Create'):
+            code = log.message
+            if previous_time is not None:
+                diff = difflib.ndiff(previous_code, code)
+                additions = sum(1 for d in diff if d[0] == '+')
+                duration = min(5, max(1, abs((log.date_created - previous_time).total_seconds())))
+                if additions / duration > characters_per_second_threshold:
+                    return True
+            previous_code, previous_time = code, log.date_created
+    if not start_time or not end_time:
+        return None
+    return False
+
+def working_at_end(history, max_backstep_threshold=5):
+    # Find a series of edits between the last begin session and the last success where only the last n characters
+    # change at each time step, for the most part
+    started = False
+    start_time = None
+    end_time = None
+    previous_code, previous_time = "", None
+    additions = []
+    for log in history:
+        if not started and log.event_type == 'Session.Start':
+            started = True
+            start_time = log.date_created
+        elif log.event_type.lower() == 'intervention' and log.category.lower() == 'complete':
+            end_time = log.date_created
+            break
+        elif log.event_type in ('File.Edit', 'File.Create'):
+            code = log.message
+            if previous_time is not None:
+                diff = difflib.ndiff(previous_code, code)
+                additions.extend(position for position, d in enumerate(diff) if d[0] == '+')
+            previous_code, previous_time = code, log.date_created
+
+    if not start_time or not end_time:
+        return None
+    # If additions is mostly monotonic, then it's probably just typing at the end
+    return mostly_monotonic(additions, max_backstep_threshold)
+
+def mostly_monotonic(additions, max_backsteps):
+    """
+    Returns whether the sequence of numbers is mostly linearly increasing
+    :param additions:
+    :return:
+    """
+    backsteps = 0
+    for i, previous in zip(additions[:-1], additions[1:]):
+        if previous > i:
+            backsteps += 1
+    return backsteps < max_backsteps
+

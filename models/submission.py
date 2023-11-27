@@ -527,7 +527,8 @@ class Submission(Base):
         return attempt_count
 
     def get_logs(self):
-        pass
+        return Log.query.filter_by(course_id=self.course_id, assignment_id=self.assignment_id, subject_id=self.user_id).order_by(
+            Log.date_created.asc()).all()
 
     def get_session_start_time(self):
         first_session = Log.query.filter_by(course_id=self.course_id, assignment_id=self.assignment_id,
