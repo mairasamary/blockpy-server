@@ -5,7 +5,7 @@ import os
 import subprocess
 import csv
 import difflib
-from itertools import combinations
+from itertools import combinations, zip_longest
 
 from controllers.helpers import make_log_entry, ensure_dirs
 from controllers.pylti.common import LTIPostMessageException
@@ -280,8 +280,7 @@ def make_red_flag_report(user_id, target_course, short_threshold, characters_per
                     copy_paste_additions=copy_paste_additions(history, characters_per_second_threshold=characters_per_second_threshold),
                     working_at_end=working_at_end(history, max_backstep_threshold)
                 ))
-            if progress % 100 == 0:
-                report.update_progress(message=f"Making report for each student: {progress}/{len(students)}")
+            report.update_progress(message=f"Making report for each student: {progress}/{len(students)}")
 
         report.update_progress(message="Writing out the final report")
         with open(os.path.join(directory, "red_flags.csv"), 'w', newline="") as out:
@@ -357,8 +356,8 @@ def working_at_end(history, max_backstep_threshold=5):
         elif log.event_type in ('File.Edit', 'File.Create'):
             code = log.message
             if previous_time is not None:
-                diff = difflib.ndiff(previous_code, code)
-                additions.extend(position for position, d in enumerate(diff) if d[0] == '+')
+                #diff = difflib.ndiff(previous_code, code)
+                additions.extend(diff_positions(previous_code, code))
             previous_code, previous_time = code, log.date_created
 
     if not start_time or not end_time:
@@ -373,8 +372,12 @@ def mostly_monotonic(additions, max_backsteps):
     :return:
     """
     backsteps = 0
-    for i, previous in zip(additions[:-1], additions[1:]):
+    for previous, i in zip(additions[:-1], additions[1:]):
         if previous > i:
             backsteps += 1
     return backsteps < max_backsteps
 
+def diff_positions(a, b):
+    for i, (x, y) in enumerate(zip_longest(a, b, fillvalue="")):
+        if x != y:
+            yield i
