@@ -139,22 +139,39 @@ class Submission(Base):
             filename = DEFAULT_FILENAMES_BY_TYPE.get(self.assignment.type, DEFAULT_FILENAME)
         else:
             filename = DEFAULT_FILENAME
+        _grade_data = {
+            'score': self.score/100,
+            'correct': self.correct,
+            'submission_status': self.submission_status,
+            'grading_status': self.grading_status,
+            'assignment_id': self.assignment_id,
+            'id': self.id,
+            'course_id': self.course_id,
+            'user_id': self.user_id,
+            'assignment_version': self.assignment_version,
+            'version': self.version,
+            'files': [filename]+[f[0] for f in extra_files],
+            'roles': [role.name for role, user in User.get_user_role(self.course_id, self.user_id)],
+            'date_created': datetime_to_string(self.date_created),
+            'date_modified': datetime_to_string(self.date_modified),
+        }
+        if self.user:
+            _grade_data['user'] = {
+                'email': self.user.email,
+                'name': self.user.name(),
+                'id': self.user.id,
+                'first_name': self.user.first_name,
+                'last_name': self.user.last_name,
+            }
+        if self.course:
+            _grade_data['course'] = {
+                'name': self.course.name,
+                'id': self.course.id,
+                'url': self.course.url,
+            }
         files = {
             filename: self.code,
-            '_grade.json': json.dumps({
-                'score': self.score/100,
-                'correct': self.correct,
-                'submission_status': self.submission_status,
-                'grading_status': self.grading_status,
-                'assignment_id': self.assignment_id,
-                'id': self.id,
-                'course_id': self.course_id,
-                'user_id': self.user_id,
-                'assignment_version': self.assignment_version,
-                'version': self.version,
-                'files': [filename]+[f[0] for f in extra_files],
-                'roles': [role.name for role, user in User.get_user_role(self.course_id, self.user_id)]
-            }),
+            '_grade.json': json.dumps(_grade_data),
             **extra_files
         }
         return files
