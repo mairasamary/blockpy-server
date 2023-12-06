@@ -98,7 +98,7 @@
         {% endif %}
     </td>
     <td>
-        {{ submission[0].submission_status }}</td>
+        {{ submission[0].human_submission_status() if submission[0] else "" }}</td>
     <td>
         <span>
         {% if submission[0].grading_status == "FullyGraded" %}
@@ -111,7 +111,7 @@
             <span style="color: transparent">.</span>
         {% endif %}
         </span>
-        {{ submission[0].grading_status }}
+        {{ submission[0].human_grading_status() if submission[0] else "" }}
     </td>
     <td>
         <span onclick="estimateDuration(this, {{ submission[0].id }})" style="cursor: pointer">

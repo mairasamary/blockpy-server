@@ -278,7 +278,9 @@ class Submission(Base):
 
     def human_submission_status(self):
         if self.assignment.type == 'quiz':
-            pass
+            attempting, attempt = self.get_quiz_status()
+            if attempting:
+                return f"Quiz in progress (Attempt {1+attempt})"
         if self.submission_status == SubmissionStatuses.COMPLETED:
             return "Submission completed"
         elif self.submission_status == SubmissionStatuses.SUBMITTED:
@@ -293,10 +295,14 @@ class Submission(Base):
             return "Unknown submission status"
 
     def human_grading_status(self):
+        if self.assignment.type == 'quiz':
+            attempting, attempt = self.get_quiz_status()
+            if not attempting and self.grading_status == GradingStatuses.PENDING:
+                return f"Quiz graded"
         if self.grading_status == GradingStatuses.FULLY_GRADED:
             return "Fully Graded"
         elif self.grading_status == GradingStatuses.PENDING:
-            return "Automatic grade still pending"
+            return "Pending (maybe done)"
         elif self.grading_status == GradingStatuses.PENDING_MANUAL:
             return "Human grading in progress"
         elif self.grading_status == GradingStatuses.FAILED:
@@ -542,6 +548,15 @@ class Submission(Base):
                 db.session.commit()
             # And return the information
         return attempt_count
+
+    def get_quiz_status(self):
+        if self.assignment.type == "quiz":
+            # Try parsing both as JSON - report errors
+            student_ready, student = try_parse_file(self.code or "{}", "Student Submission")
+            if student_ready:
+                attempt = student.get('attempt', {})
+                return attempt.get('attempting', False), attempt.get('count', 0)
+        return False, 0
 
     def get_logs(self):
         return Log.query.filter_by(course_id=self.course_id, assignment_id=self.assignment_id, subject_id=self.user_id).order_by(
