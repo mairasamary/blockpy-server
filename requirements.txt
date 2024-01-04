@@ -35,3 +35,4 @@ pdfkit
 thefuzz
 MarkupSafe==2.0.1
 pytz
+edit_distance

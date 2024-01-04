@@ -34,6 +34,7 @@ export interface QuizzerJson {
 }
 
 
+export type QuizEditorMode = EditorMode | "QUIZ_EDITOR";
 
 export class Quizzer extends AssignmentInterface {
     quiz: ko.Observable<Quiz>;
@@ -42,7 +43,7 @@ export class Quizzer extends AssignmentInterface {
     currentQuestion: ko.Observable<Question>;
     isReadOnly: ko.PureComputed<boolean>;
 
-    editorMode: ko.Observable<EditorMode>;
+    editorMode: ko.Observable<QuizEditorMode>;
     asStudent: ko.Observable<boolean>;
     isDirty: ko.Observable<boolean>;
 

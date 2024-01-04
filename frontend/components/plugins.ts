@@ -210,7 +210,7 @@ ko.bindingHandlers.markdowned = {
     },
     update: function (element, valueAccessor, allBindings, viewModel, bindingContext) {
         let code = ko.unwrap(valueAccessor());
-        console.log(code);
+        //console.log(code);
         element.innerHTML = md.render(code.value, code.assignment && code.assignment() ? {
             downloadUrl: (link: string) => window["$URL_ROOT"] + `blockpy/download_file?placement=assignment&directory=${code.assignment().id}&filename=${link}`
         } : {downloadUrl: (link: string) => link});
