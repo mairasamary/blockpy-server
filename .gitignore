@@ -1,18 +1,26 @@
+# Prevent committing server-side files
 kennel.sock
 
+# The per-installation config for flask
+instance/
+
+# Frontend
 node_modules/
 
+# Virtual environment
 venv/
+venv_old/
 env/
 
+# Certain static files
 static/.webassets-cache/
 static/gen/
 static/uploads/
 static/canvas/
 static/reports/
 
+# Databases, logs, etc.
 database/
-tests/
 logs/
 log/
 queued_logs/
