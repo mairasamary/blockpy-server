@@ -126,7 +126,7 @@ def queue_lti_post_grade(json_lti, post_params,
             error = f"General retry failure. There are {attempts} left."
             report.start()
             try:
-                lti = LTI.from_json(json_lti)
+                lti = LTI(use_session=json_lti)
                 lti.session['lis_outcome_service_url'] = lis_outcome_service_url
                 lti.session['lis_result_sourcedid'] = lis_result_sourcedid
                 lti.post_grade(total_score, view_url, endpoint=lis_result_sourcedid, url=True,

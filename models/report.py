@@ -4,17 +4,15 @@ from collections import OrderedDict
 import time
 import json
 from datetime import datetime, timedelta
-from main import app
 
+from flask import current_app
 from sqlalchemy import Column, String, DateTime, Integer, ForeignKey, Text, func, JSON, Index, and_
 
-from models.assignment import Assignment
-from models.models import Base, db, datetime_to_string
+from common.dates import datetime_to_string
+from models.generics.models import db, ma
+from models.generics.base import Base
 from sqlalchemy.orm import relationship
-from models.user import User
-from models import models
 from models.statuses import ReportStatus
-
 
 
 class Report(Base):
@@ -147,4 +145,9 @@ class Report(Base):
         return self
 
     def get_report_folder(self):
-        return os.path.join(app.config['REPORT_DIR'], str(self.id))
+        return os.path.join(current_app.config['REPORT_DIR'], str(self.id))
+
+class ReportSchema(ma.SQLAlchemyAutoSchema):
+    class Meta:
+        model = Report
+        include_fk = True

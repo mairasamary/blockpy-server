@@ -17,11 +17,11 @@
 
 {% block body %}
 
-    <span class='delete-on-load'>Loading! Please wait. If this doesn't load, and you are using Safari, then please stop using Safari!</span>
+    <span class='delete-on-load'>
+        Loading! Please wait. If this doesn't load, and you are using Safari, then please stop using Safari!
+        <a target="_blank" href="{{ url_for('blockpy.load_assignment', assignment_id=current_assignment_id, course_id=course_id, assignment_group_id=assignment_group_id, embed=embed, read_only=read_only) }}">Click here to try again</a>.
+    </span>
 
-    <script>window.ltiLoadedCorrectly = true;</script>
-
-    {% if lti %}
     <script>
     function checkCookies() {
         let cookieEnabled = navigator.cookieEnabled;
@@ -31,12 +31,51 @@
         }
         return cookieEnabled;
     }
+    function getParameterByName(name, url = window.location.href) {
+        name = name.replace(/[\[\]]/g, '\\$&');
+        var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)'),
+            results = regex.exec(url);
+        if (!results) return null;
+        if (!results[2]) return '';
+        return decodeURIComponent(results[2].replace(/\+/g, ' '));
+    }
+    function generateUUID() { // Public Domain/MIT
+        var d = new Date().getTime();//Timestamp
+        var d2 = ((typeof performance !== 'undefined') && performance.now && (performance.now()*1000)) || 0;//Time in microseconds since page-load or 0 if unsupported
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            var r = Math.random() * 16;//random number between 0 and 16
+            if(d > 0){//Use timestamp until depleted
+                r = (d + r)%16 | 0;
+                d = Math.floor(d/16);
+            } else {//Use microseconds since page-load if supported
+                r = (d2 + r)%16 | 0;
+                d2 = Math.floor(d2/16);
+            }
+            return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+        });
+    }
+
     window.ltiLoadedCorrectly = checkCookies();
     if (!checkCookies()) {
         // alert
-        console.error("Cookies appear to be disabled. You might need to disable an ad-blocker, adjust your security settings, or use a different browser (we recommend Chrome).");
+        console.error("Cookies appear to be disabled. We will attempt to load without cookies. " +
+            "You might need to disable an ad-blocker, adjust your security settings, or use a different browser (we recommend Chrome).");
 
-        let platformOIDCLoginURL = "instructure.com";
+        // These variables will be used eventually, but right now (Jan 4, 2024), it's still expecting '*' to be the origin
+        /*let platformOIDCLoginURL = "sso.canvaslms.com";
+        let platformOrigin = new URL(platformOIDCLoginURL).origin;
+        let frameName = getParameterByName("lti_storage_target");
+        console.log("++++", frameName);
+        let parent = window.parent || window.opener;
+        let targetFrame = frameName === "_parent" ? parent : parent.frames[frameName];*/
+        let targetFrame = window.parent;
+        let platformOrigin = '*';
+        let messageId = generateUUID();
+        let stateId = generateUUID();
+
+        // First try to see if we can get the state and nonce values from the platform
+        // If we can't, then we'll need to generate new ones and store them.
+
         window.addEventListener('message', function (event) {
             // This isn't a message we're expecting
             if (typeof event.data !== "object"){
@@ -69,19 +108,15 @@
 
             // It's the response we expected
             // The state and nonce values were successfully stored, redirect to Platform
-            console.log(platformOIDCLoginURL);
+            console.log("Success! State and nonce values were stored.");
         });
 
-        let platformOrigin = new URL(platformOIDCLoginURL).origin;
-        let frameName = getQueryParam("lti_storage_target");
-        console.log("++++", frameName);
-        let parent = window.parent || window.opener;
-        let targetFrame = frameName === "_parent" ? parent : parent.frames[frameName];
+
 
         targetFrame.postMessage({
                 "subject": "lti.put_data",
                 "message_id": messageId,
-                "key": "state_<state_id>",
+                "key": "blockpy_<state_id>",
                 "value": "<state_id>"
               } , platformOrigin )
 
@@ -94,7 +129,6 @@
               } , platformOrigin )
     }
     </script>
-    {% endif %}
 
     {% if group and group|length > 1 %}
         {{ assignment_group_header(group, current_assignment_id, embed, 'blockpy.load') }}

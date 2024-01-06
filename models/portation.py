@@ -19,17 +19,14 @@ from werkzeug.utils import secure_filename
 
 import pdfkit
 
+from models.generics.models import db
 from models.assignment import Assignment
 from models.assignment_group import AssignmentGroup
 from models.assignment_group_membership import AssignmentGroupMembership
 from models.course import Course
-import models
 
 from models.data_formats.progsnap2 import dump_progsnap, get_course_users
 import models.data_formats.progsnap2ite as progsnap2ite
-
-from main import app
-from models.models import db, AssignmentGroup
 
 CATEGORY_MODELS = {
     'courses': Course,

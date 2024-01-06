@@ -1,9 +1,6 @@
 import re
 
-from models.models import db
-from models.user import User
-from models.role import Role
-from main import app
+from models import db, User, Role
 
 from flask_security import SQLAlchemyUserDatastore, Security
 from flask_security.forms import ConfirmRegisterForm
@@ -72,7 +69,16 @@ class ExtendedConfirmRegisterForm(ConfirmRegisterForm):
     # proof = StringField('Instructor Proof (e.g., your university website)')
 
 
-# User registration, etc.
-user_datastore = SQLAlchemyUserDatastore(db, User, Role)
-security = Security(app, user_datastore, confirm_register_form=ExtendedConfirmRegisterForm,
-                    register_form=ExtendedConfirmRegisterForm)
+def setup_security(app):
+    # User registration, etc.
+    user_datastore = SQLAlchemyUserDatastore(db, User, Role)
+    security = Security(app, user_datastore,
+                        confirm_register_form=ExtendedConfirmRegisterForm,
+                        register_form=ExtendedConfirmRegisterForm)
+    app.user_datastore = user_datastore
+    # TODO: Decide if the following is necessary:
+    # flask_wtf.CSRFProtect(app)
+    # https://flask-security-too.readthedocs.io/en/stable/spa.html
+    # Might interfere with the LTI stuff?
+
+    return security

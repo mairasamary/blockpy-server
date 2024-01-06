@@ -6,15 +6,15 @@ import random
 import flask_security
 from flask import Blueprint, request, Response, jsonify, abort, g, url_for, send_from_directory
 
-from main import app
-from controllers.helpers import get_course_id, get_user, check_resource_exists, require_request_parameters, maybe_int
+from flask import current_app
+from controllers.auth import get_user
+from controllers.helpers import get_course_id, check_resource_exists, require_request_parameters, maybe_int
 from models.assignment import Assignment
 from models.assignment_group import AssignmentGroup
 from models.course import Course
 from models.report import Report
 from models.portation import export_bundle, import_bundle
 from models.user import User
-from main import huey
 from huey.exceptions import TaskException
 from tasks import tasks
 
@@ -38,7 +38,7 @@ def long_task(course_id, user_id):
 @blueprint_api.route('/task_status/<task_id>')
 def task_status(task_id):
     try:
-        task = huey.result(task_id)
+        task = current_app.huey.result(task_id)
     except TaskException as e:
         return jsonify({"status": "Error", "message": str(e)})
 

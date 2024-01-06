@@ -1,47 +1,82 @@
 # Built-ins
 import json
+import os
 
 # Flask
 from flask import Flask
+from flask_debugtoolbar import DebugToolbarExtension
+from flask_jwt_extended import JWTManager
 
-with open('settings/secrets.json') as secrets_file:
-    secrets = json.load(secrets_file)
 
-VERSION = '0.1.0'
-app = Flask(__name__)
-app.config['TEMPLATES_AUTO_RELOAD'] = True
+def create_app(test_config=None) -> Flask:
+    """
+    Per the App Factory pattern, this creates a new instance of the BlockPy app.
+    :param test_config: 'testing' for unit tests, or a specific config object.
+    :return: a new instance of the BlockPy app.
+    """
+    # create and configure the app
+    app = Flask('blockpy', instance_relative_config=True, static_folder=None)
+    # load the test config if passed in
+    if test_config is not None:
+        if test_config == 'testing':
+            app.config.from_object('config.TestConfig')
+        else:
+            app.config.from_mapping(test_config)
+    elif app.config['DEBUG']:
+        app.config.from_object('config.DevelopmentConfig')
+    else:
+        app.config.from_object('config.ProductionConfig')
+    app.config.from_pyfile('configuration.py')
 
-if secrets['PRODUCTION']:
-    app.config.from_object('config.ProductionConfig')
-else:
-    app.config.from_object('config.TestingConfig')
+    # Additional settings being overridden here
+    app.config['TEMPLATES_AUTO_RELOAD'] = True
 
-if app.config['PROFILE_RUNTIME']:
-    from werkzeug.middleware.profiler import ProfilerMiddleware
-    app.wsgi_app = ProfilerMiddleware(app.wsgi_app, stream=None,
-                                      profile_dir=app.config['TIMING_LOG_DIR'],
-                                      filename_format='{method}.{path}.{elapsed:.0f}ms.{time:.0f}.pstat')
+    # Turn on profiler if necessary
+    if app.config['PROFILE_RUNTIME']:
+        from werkzeug.middleware.profiler import ProfilerMiddleware
+        app.wsgi_app = ProfilerMiddleware(app.wsgi_app, stream=None,
+                                          profile_dir=app.config['TIMING_LOG_DIR'],
+                                          filename_format='{method}.{path}.{elapsed:.0f}ms.{time:.0f}.pstat')
 
-# Tasks
-from tasks.setup import setup_tasks
-task_queue_style = app.config['TASK_QUEUE_STYLE']
-task_db_uri = app.config['TASK_DB_URI']
-task_db_settings = app.config['TASK_DB_SETTINGS']
-huey = setup_tasks(task_queue_style, task_db_uri, task_db_settings)
+    # Ensure the instance folder exists
+    try:
+        os.makedirs(app.instance_path)
+    except OSError:
+        pass
 
-# Modify Jinja2
-from controllers.jinja_filters import setup_jinja_filters
-setup_jinja_filters(app)
+    # Load up the database
+    # TODO: Finish init_database
+    from models import init_database
+    init_database(app)
 
-# Logging
-from controllers.interaction_logger import setup_logging
-setup_logging(app)
+    from tasks.setup import setup_tasks
+    huey = setup_tasks(app.config['TASK_QUEUE_STYLE'],
+                       app.config['TASK_DB_URI'],
+                       app.config['TASK_DB_SETTINGS'])
+    app.huey = huey
 
-# Assets
-from controllers.assets import assets
+    # Turn on Debug Toolbar
+    DebugToolbarExtension(app)
 
-# Email
-from flask_mail import Mail
-mail = Mail(app)
+    # Set Up JWT
+    jwt = JWTManager(app)
 
-import controllers
+    # Modify Jinja2
+    from controllers.jinja_filters import setup_jinja_filters
+    setup_jinja_filters(app)
+
+    # Logging
+    from controllers.interaction_logger import setup_logging
+    setup_logging(app)
+
+    # Email
+    from flask_mail import Mail
+    mail = Mail(app)
+
+    # Set up all the endpoints
+    with app.app_context():
+        # TODO: Finish create_blueprints
+        from controllers import create_blueprints
+        create_blueprints(app)
+
+    return app

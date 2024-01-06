@@ -1,8 +1,10 @@
 from flask import Blueprint, url_for, session, request, jsonify, g, render_template, redirect, Response, \
     send_from_directory
-from controllers.helpers import (normalize_url,
-                                 ensure_dirs, ajax_failure, parse_assignment_load, require_request_parameters,
-                                 get_course_id, maybe_int, get_user, check_resource_exists, ajax_success,
+from common.urls import normalize_url
+from common.filesystem import ensure_dirs
+from controllers.auth import get_user
+from controllers.helpers import (ajax_failure, parse_assignment_load, require_request_parameters,
+                                 get_course_id, maybe_int, check_resource_exists, ajax_success,
                                  login_required, require_course_instructor, require_course_grader, maybe_bool,
                                  make_log_entry)
 from models.assignment_group import AssignmentGroup
@@ -55,6 +57,7 @@ def create_grade_post(submission, lis_result_sourcedid, assignment_group_id, use
     lis_result_sourcedid = submission.endpoint if lis_result_sourcedid is None else lis_result_sourcedid
     if 'lis_outcome_service_url' not in session or use_course_service_url:
         course = Course.by_id(course_id)
+        # TODO: Should this be changed?
         if course.endpoint:
             lis_outcome_service_url = course.endpoint
         else:

@@ -1,7 +1,9 @@
 from flask_security import RoleMixin
 from sqlalchemy import Column, String, Integer, ForeignKey, DateTime
 
-from models.models import Base, db
+import models
+from models.generics.models import db, ma
+from models.generics.base import Base
 
 
 class Invite(Base, RoleMixin):
@@ -27,3 +29,8 @@ class Invite(Base, RoleMixin):
     @staticmethod
     def by_course(course_id):
         return Invite.query.filter_by(course_id=course_id).all()
+
+class InviteSchema(ma.SQLAlchemyAutoSchema):
+    class Meta:
+        model = Invite
+        include_fk = True

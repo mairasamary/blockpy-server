@@ -9,29 +9,30 @@ from slugify import slugify
 from natsort import natsorted
 
 from flask import Blueprint, url_for, session, request, jsonify, g, render_template, redirect, Response, \
-    send_from_directory
+    send_from_directory, current_app
 from werkzeug.utils import secure_filename
 
 from controllers.jinja_filters import to_iso_time
 from controllers.pylti.common import LTIPostMessageException
 from controllers.pylti.post_grade import get_groups_submissions, calculate_submissions_score, create_grade_post
-from main import app
 from models.assignment_tag import AssignmentTag
 from models.course import Course
 
-from models.models import db
+from models import db
 from models.log import Log
 from models.statuses import SubmissionStatuses
 from models.submission import Submission, GradingStatuses
 from models.assignment import Assignment
 from models.assignment_group import AssignmentGroup
 
-from controllers.helpers import (normalize_url,
-                                 ensure_dirs, ajax_failure, parse_assignment_load, require_request_parameters,
-                                 get_course_id, maybe_int, get_user, check_resource_exists, ajax_success,
+from common.urls import normalize_url
+from common.filesystem import ensure_dirs
+from controllers.auth import get_user
+from controllers.helpers import (ajax_failure, parse_assignment_load, require_request_parameters,
+                                 get_course_id, maybe_int, check_resource_exists, ajax_success,
                                  login_required, require_course_instructor, require_course_grader, maybe_bool,
                                  make_log_entry)
-from utilities import highlight_python_code
+from common.highlighters import highlight_python_code
 from tasks.tasks import queue_lti_post_grade
 from models.user import User
 
@@ -40,7 +41,7 @@ blueprint_blockpy = Blueprint('blockpy', __name__, url_prefix='/blockpy')
 
 @blueprint_blockpy.route('/static/<path:path>', methods=['GET', 'POST'])
 def blockpy_static(path):
-    return app.send_static_file(path)
+    return current_app.send_static_file(path)
 
 
 @blueprint_blockpy.route('/load_submission/', methods=['GET', 'POST'])
@@ -238,10 +239,10 @@ def save_student_file(filename, course_id, user):
     if submission.user_id != user.id:
         require_course_grader(user, submission.course_id)
     # Validate the maximum file size
-    if app.config["MAXIMUM_CODE_SIZE"] < len(code):
+    if current_app.config["MAXIMUM_CODE_SIZE"] < len(code):
         return ajax_failure(
             "Maximum size of code exceeded. Current limit is {}, you uploaded {} characters.".format(
-                app.config["MAXIMUM_CODE_SIZE"], len(code)
+                current_app.config["MAXIMUM_CODE_SIZE"], len(code)
             ))
     # Perform update
     # TODO: What if submission's assignment version conflicts with current assignments' version?
@@ -572,15 +573,15 @@ def upload_file():
         return ajax_failure("No placement, directory, filename, contents given!")
     if placement not in ("global", "course", "assignment", "submission", "user"):
         return ajax_failure(f"Invalid placement: {placement!r}")
-    files_folder = os.path.join(app.config['UPLOADS_DIR'], 'files', placement)
+    files_folder = os.path.join(current_app.config['UPLOADS_DIR'], 'files', placement)
     # Check file size
     contents.seek(0, os.SEEK_END)
     file_length = contents.tell()
     contents.seek(0, 0)
-    if app.config["MAXIMUM_CODE_SIZE"] < file_length:
+    if current_app.config["MAXIMUM_CODE_SIZE"] < file_length:
         return ajax_failure(
             "Maximum size of file exceeded. Current limit is {}, you uploaded {} characters.".format(
-                app.config["MAXIMUM_CODE_SIZE"], file_length
+                current_app.config["MAXIMUM_CODE_SIZE"], file_length
             ))
     # Global file
     if placement == "global" and not user.is_admin():
@@ -625,7 +626,7 @@ def upload_file():
                 os.remove(file_path)
                 return jsonify(success=True, ip=request.remote_addr)
             except Exception as e:
-                app.logger.info(f"Could not delete file {file_path} because: {e}")
+                current_app.logger.info(f"Could not delete file {file_path} because: {e}")
                 return ajax_failure(f"Could not delete the file!")
     else:
         try:
@@ -666,7 +667,7 @@ def download_file():
     file_path = "/".join((files_folder, secure_filename(directory), filename))
     suggest_download = any(filename.endswith(extension) for extension in SUGGEST_DOWNLOAD_EXTENSIONS)
     response = send_from_directory(
-        app.static_folder, file_path, attachment_filename=filename, as_attachment=suggest_download
+        current_app.static_folder, file_path, attachment_filename=filename, as_attachment=suggest_download
     )
     response.headers['x-filename'] = filename
     return response
@@ -700,7 +701,7 @@ def list_files():
     for name, placement, directory in placements:
         if only_placements and placement not in only_placements:
             continue
-        files_folder = os.path.join(app.config['UPLOADS_DIR'], 'files', placement, str(directory))
+        files_folder = os.path.join(current_app.config['UPLOADS_DIR'], 'files', placement, str(directory))
         if os.path.exists(files_folder):
             for filename in os.listdir(files_folder):
                 if name not in file_lists:
@@ -748,7 +749,7 @@ def get_submission_image():
         require_course_grader(user, submission.course_id)
     # Do action
     print(relative_image_path)
-    return app.send_static_file(relative_image_path)
+    return current_app.send_static_file(relative_image_path)
 
 
 @blueprint_blockpy.route('/get_image/', methods=['GET', 'POST'])
@@ -766,7 +767,7 @@ def get_image():
     if submission.user_id != user_id and not user.is_grader(submission.course_id):
         return ajax_failure("This is not your submission and you are not a grader in its course.")
     # Do action
-    return app.send_static_file(relative_image_path)
+    return current_app.send_static_file(relative_image_path)
 
 
 @blueprint_blockpy.route('/save_assignment/', methods=['GET', 'POST'])
@@ -925,7 +926,7 @@ def watch():
 
 @blueprint_blockpy.route('/images/<path:path>', methods=['GET', 'POST'])
 def assignments_static_images(path):
-    return app.send_static_file('images/' + path)
+    return current_app.send_static_file('images/' + path)
 
 
 @blueprint_blockpy.route('/load_assignment_give_feedback/', methods=['GET', 'POST'])

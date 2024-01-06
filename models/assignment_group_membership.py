@@ -4,8 +4,10 @@ from sqlalchemy import (event, Integer, Date, ForeignKey, Column, Table,
 
 from models.assignment import Assignment
 from models.assignment_group import AssignmentGroup
-from models.models import db, Base, datetime_to_string, string_to_datetime
-from models import models
+from models.generics.models import db, ma
+from models.generics.base import Base
+from common.dates import datetime_to_string, string_to_datetime
+import models
 
 
 class AssignmentGroupMembership(Base):
@@ -82,3 +84,9 @@ class AssignmentGroupMembership(Base):
             membership.position = position
         db.session.commit()
         return membership
+
+
+class AssignmentGroupMembershipSchema(ma.SQLAlchemyAutoSchema):
+    class Meta:
+        model = AssignmentGroupMembership
+        include_fk = True

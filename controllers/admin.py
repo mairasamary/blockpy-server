@@ -8,15 +8,11 @@ import os.path as op
 from flask_admin import Admin, BaseView, expose, form
 from flask_admin.contrib.sqla import ModelView
 from flask_admin.contrib.fileadmin import FileAdmin
-from flask import g, Blueprint, request, url_for, render_template, Response
+from flask import g, Blueprint, request, url_for, render_template, Response, current_app
 from flask_admin.contrib.sqla.ajax import QueryAjaxModelLoader
-from jinja2 import Markup
+from markupsafe import Markup
 
-# Import runestone
-from main import app
-from controllers.helpers import admin_required
-from models.models import (db, AssignmentGroupMembership)
-from models.review import Review
+from models import db
 from models.user import User
 from models.course import Course
 from models.role import Role
@@ -24,12 +20,13 @@ from models.authentication import Authentication
 from models.log import Log
 from models.submission import Submission
 from models.sample_submission import SampleSubmission
+from models.review import Review
 from models.assignment import Assignment
 from models.assignment_group import AssignmentGroup
+from models.assignment_group_membership import AssignmentGroupMembership
 from models.assignment_tag import AssignmentTag
 from models.report import Report
-
-admin = Admin(app)
+from models.invite import Invite
 
 
 def make_ajax_fields(*fields):
@@ -227,7 +224,7 @@ class AssignmentView(RegularView):
         'sample_submissions': make_ajax_fields('id'),
     }
     form_excluded_columns = ('user',)
-    #form_columns = ('id', 'date_modified')
+    # form_columns = ('id', 'date_modified')
     column_filters = ('id', 'name', 'on_run', 'course_id', 'url', 'instructions', 'reviewed', 'hidden', 'public')
     column_formatters = {'name': _render_assignment_name,
                          # 'type': _render_assignment_type,
@@ -286,6 +283,7 @@ class AssignmentGroupMembershipView(RegularView):
         'assignment_group': make_ajax_fields('name', 'url', 'id')
     }
 
+
 class AssignmentTagView(RegularView):
     can_export = True
     column_list = ('id', 'date_modified',
@@ -330,6 +328,12 @@ class AuthenticationView(ModelIdView):
     }
 
 
+class InviteView(ModelIdView):
+    form_ajax_refs = {
+        'user': make_ajax_fields('first_name', 'last_name', 'email', 'id')
+    }
+
+
 class ReportView(ModelIdView):
     column_filters = ('id',
                       'task', 'status', 'attempt', 'result', 'progress', 'message',
@@ -345,11 +349,11 @@ class ReportView(ModelIdView):
     column_searchable_list = ('task', 'status', 'message', 'parameters')
     column_formatters = {'parameters': _render_code}
     column_list = ('id',
-                            'task', 'status', 'attempt', 'result', 'progress', 'message',
-                            'date_created', 'date_started', 'date_modified', 'date_finished',
-                            'parameters', 'visibility',
-                            'owner', 'assignment', 'course',
-                            )
+                   'task', 'status', 'attempt', 'result', 'progress', 'message',
+                   'date_created', 'date_started', 'date_modified', 'date_finished',
+                   'parameters', 'visibility',
+                   'owner', 'assignment', 'course',
+                   )
 
 
 class SubmissionView(RegularView):
@@ -375,19 +379,25 @@ class SubmissionView(RegularView):
     }
 
 
-admin.add_view(UserView(User, db.session, category='Tables'))
-admin.add_view(CourseView(Course, db.session, category='Tables'))
-admin.add_view(SubmissionView(Submission, db.session, category='Tables'))
-admin.add_view(SampleSubmissionView(SampleSubmission, db.session, category='Tables'))
-admin.add_view(AssignmentView(Assignment, db.session, category='Tables'))
-admin.add_view(AssignmentGroupView(AssignmentGroup, db.session, category='Tables'))
-admin.add_view(AssignmentGroupMembershipView(AssignmentGroupMembership, db.session, category='Tables'))
-admin.add_view(AssignmentTagView(AssignmentTag, db.session, category='Tables'))
-admin.add_view(AuthenticationView(Authentication, db.session, category='Tables'))
-admin.add_view(RoleView(Role, db.session, category='Tables'))
-admin.add_view(LogView(Log, db.session, category='Tables'))
-admin.add_view(ReviewView(Review, db.session, category='Tables'))
-admin.add_view(ReportView(Report, db.session, category='Tables'))
+def setup_admin(app):
+    admin = Admin(app)
+    admin.add_view(UserView(User, db.session, category='Tables'))
+    admin.add_view(CourseView(Course, db.session, category='Tables'))
+    admin.add_view(SubmissionView(Submission, db.session, category='Tables'))
+    admin.add_view(SampleSubmissionView(SampleSubmission, db.session, category='Tables'))
+    admin.add_view(AssignmentView(Assignment, db.session, category='Tables'))
+    admin.add_view(AssignmentGroupView(AssignmentGroup, db.session, category='Tables'))
+    admin.add_view(AssignmentGroupMembershipView(AssignmentGroupMembership, db.session, category='Tables'))
+    admin.add_view(AssignmentTagView(AssignmentTag, db.session, category='Tables'))
+    admin.add_view(AuthenticationView(Authentication, db.session, category='Tables'))
+    admin.add_view(RoleView(Role, db.session, category='Tables'))
+    admin.add_view(LogView(Log, db.session, category='Tables'))
+    admin.add_view(ReviewView(Review, db.session, category='Tables'))
+    admin.add_view(ReportView(Report, db.session, category='Tables'))
+    admin.add_view(InviteView(Invite, db.session, category='Tables'))
 
-# admin.add_view(FileAdmin(app.config['BLOCKPY_LOG_DIR'], base_url='/admin/code_logs/', name='Disk Logs'))
-admin.add_view(FileAdmin(app.config['UPLOADS_DIR'], '', name='File Uploads'))
+    # admin.add_view(FileAdmin(app.config['BLOCKPY_LOG_DIR'], base_url='/admin/code_logs/', name='Disk Logs'))
+    admin.add_view(FileAdmin(app.config['UPLOADS_DIR'], '', name='File Uploads'))
+    admin.add_view(FileAdmin(app.config['REPORTS_DIR'], '', name='Reports'))
+    admin.add_view(FileAdmin(app.config['REPORTS_DIR'], '', name='Reports'))
+    return admin

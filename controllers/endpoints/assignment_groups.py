@@ -3,8 +3,9 @@ import json
 from flask import Blueprint, send_from_directory, Response, render_template, flash
 from flask import Flask, redirect, url_for, session, request, jsonify, g
 
+from controllers.auth import get_user
 from controllers.helpers import (require_request_parameters, require_course_instructor, login_required,
-                                 check_resource_exists, get_select_menu_link, get_course_id, get_user, ajax_success,
+                                 check_resource_exists, get_select_menu_link, get_course_id, ajax_success,
                                  maybe_int, require_course_grader, make_log_entry)
 
 from models.assignment import Assignment

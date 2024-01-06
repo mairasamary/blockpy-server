@@ -9,19 +9,17 @@ from wtforms import IntegerField, BooleanField, StringField, SubmitField, Select
 
 from flask import Blueprint, send_from_directory
 from flask import Flask, redirect, url_for, session, request, jsonify, g, \
-    make_response, Response, render_template, flash, abort
+    make_response, Response, render_template, flash, abort, current_app
 
-from controllers.helpers import (strip_tags,
-                                 get_lti_property, require_request_parameters, login_required,
+from common.highlighters import strip_tags
+from controllers.auth import get_user
+from controllers.helpers import (get_lti_property, require_request_parameters, login_required,
                                  require_course_instructor, require_course_grader, get_select_menu_link,
-                                 check_resource_exists, get_course_id, get_user, ajax_success, ajax_failure, maybe_int,
+                                 check_resource_exists, get_course_id, ajax_success, ajax_failure, maybe_int,
                                  maybe_bool)
-from controllers.security import user_datastore
-
-from main import app
 from models.data_formats.report import make_report
 from models.log import Log
-from models.models import db, AssignmentGroup
+from models import db, AssignmentGroup
 from models.portation import export_bundle
 from models.user import User
 from models.course import Course
@@ -314,10 +312,10 @@ def add_users(course_id):
                 first_name, last_name, new_email = new_email.split('|', maxsplit=2)
             new_user = User.find_student(email=new_email.strip())
             if new_user is None:
-                new_user = user_datastore.create_user(first_name=first_name,
-                                                      last_name=last_name,
-                                                      email=new_email,
-                                                      confirmed_at=datetime.now())
+                new_user = current_app.user_datastore.create_user(first_name=first_name,
+                                                                  last_name=last_name,
+                                                                  email=new_email,
+                                                                  confirmed_at=datetime.now())
                 newly_created.append(new_user)
             new_role = add_form.role.data
             if new_role == 'student' and not new_user.is_student(course_id):
@@ -432,7 +430,7 @@ def config():
     """
     return render_template('courses/config.html',
                            xml_content=render_template('courses/config.xml',
-                                                       version=app.config['SITE_VERSION']))
+                                                       version=current_app.config['SITE_VERSION']))
     # return Response(render_template('courses/config.xml',
     #                                version=app.config['SITE_VERSION']),
     #                mimetype='text/xml')

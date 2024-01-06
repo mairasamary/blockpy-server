@@ -7,18 +7,22 @@ import re
 import base64
 from typing import Union
 
-from flask import url_for
+from flask import url_for, current_app
 from sqlalchemy import Column, Text, Integer, Boolean, ForeignKey, Index, func, String, or_
 from sqlalchemy.orm import relationship
 from werkzeug.utils import secure_filename
 
-from main import app
-from models import models
+
+import models
 from models.assignment import Assignment
-from models.data_formats.quizzes import process_quiz_str, QuizResult, try_parse_file
 from models.log import Log
-from models.models import Base, db, ensure_dirs, optional_encoded_field, datetime_to_string
+from models.generics.models import db, ma
+from models.generics.base import EnhancedBase
+from common.dates import datetime_to_string
+from common.databases import optional_encoded_field
+from common.filesystem import ensure_dirs
 from models.review import Review
+from models.data_formats.quizzes import process_quiz_str, QuizResult, try_parse_file
 from models.statuses import GradingStatuses, SubmissionStatuses
 from models.user import User
 
@@ -77,7 +81,7 @@ DEFAULT_FILENAMES_BY_TYPE = {
 }
 
 
-class Submission(Base):
+class Submission(EnhancedBase):
     code = Column(Text(), default="")
     extra_files = Column(Text(), default="")
     url = Column(Text(), default="")
@@ -459,7 +463,7 @@ class Submission(Base):
         return self.get_image('submission_blocks', 'blockpy.get_submission_image')
 
     def get_image(self, directory, endpoint='blockpy.get_image'):
-        sub_blocks_folder = os.path.join(app.config['UPLOADS_DIR'], directory)
+        sub_blocks_folder = os.path.join(current_app.config['UPLOADS_DIR'], directory)
         image_path = os.path.join(sub_blocks_folder, str(self.id) + '.png')
         if os.path.exists(image_path):
             return url_for(endpoint, submission_id=self.id, directory=directory, _external=True)
@@ -470,7 +474,7 @@ class Submission(Base):
 
     def save_image(self, directory, data, endpoint='blockpy.get_image'):
         directory = secure_filename(directory)
-        sub_folder = os.path.join(app.config['UPLOADS_DIR'], directory)
+        sub_folder = os.path.join(current_app.config['UPLOADS_DIR'], directory)
         image_path = os.path.join(sub_folder, str(self.id) + '.png')
         if data != "":
             converted_image = base64.b64decode(data[22:])
@@ -481,7 +485,7 @@ class Submission(Base):
             try:
                 os.remove(image_path)
             except Exception as e:
-                app.logger.info("Could not delete because:" + str(e))
+                current_app.logger.info("Could not delete because:" + str(e))
         return None
 
     def log_code(self, course_id, extension='.py', timestamp=''):
@@ -493,7 +497,7 @@ class Submission(Base):
                              course_id,
                              self.user_id, body=self.code, timestamp=timestamp)
 
-        directory = os.path.join(app.config['BLOCKPY_LOG_DIR'],
+        directory = os.path.join(current_app.config['BLOCKPY_LOG_DIR'],
                                  str(self.assignment_id),
                                  str(self.user_id))
 
@@ -616,3 +620,8 @@ class Submission(Base):
         self.version += 1
         db.session.commit()
         return self
+
+class SubmissionSchema(ma.SQLAlchemyAutoSchema):
+    class Meta:
+        model = Submission
+        include_fk = True

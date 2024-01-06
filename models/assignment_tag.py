@@ -1,8 +1,10 @@
 from sqlalchemy import Column, String, Integer, ForeignKey, func, Text, Table
 
-from models import models
-from models.models import Base, datetime_to_string, string_to_datetime, db, optional_encoded_field
-
+import models
+from models.generics.models import db, ma
+from models.generics.base import Base
+from common.dates import datetime_to_string, string_to_datetime
+from common.databases import optional_encoded_field
 
 class AssignmentTag(Base):
     __tablename__ = 'assignment_tag'
@@ -83,3 +85,8 @@ class AssignmentTag(Base):
                           AssignmentTag.level,
                           AssignmentTag.name)
                 .all())
+
+class AssignmentTagSchema(ma.SQLAlchemyAutoSchema):
+    class Meta:
+        model = AssignmentTag
+        include_fk = True

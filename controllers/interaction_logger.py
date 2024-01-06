@@ -70,7 +70,7 @@ def setup_logging(app):
             }
         }
     }
-    if app.config['IS_PRODUCTION']:
+    if app.config['ROTATE_LOGS']:
         logging_configuration['handlers']['errorHandler']['class'] = 'logging.handlers.TimedRotatingFileHandler'
         logging_configuration['handlers']['errorHandler']['when'] = 'D'
 

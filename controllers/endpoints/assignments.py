@@ -15,20 +15,19 @@ except:
     from urllib import quote as url_quote
 
 from flask import (Blueprint, g, session, render_template, url_for, request, jsonify, abort, make_response,
-                   flash, redirect, Response)
+                   flash, redirect, Response, current_app)
 
-from controllers.helpers import (strip_tags,
-                                 get_lti_property, require_request_parameters, login_required,
+from common.highlighters import strip_tags
+from controllers.auth import get_user
+from controllers.helpers import (get_lti_property, require_request_parameters, login_required,
                                  require_course_instructor, get_select_menu_link,
-                                 check_resource_exists, parse_assignment_load, get_course_id, get_user, ajax_success,
+                                 check_resource_exists, parse_assignment_load, get_course_id, ajax_success,
                                  ajax_failure, maybe_int, maybe_bool)
 
-from main import app
+import controllers.endpoints.maze as maze
+import controllers.endpoints.blockpy as blockpy
 
-import controllers.maze as maze
-import controllers.blockpy as blockpy
-
-from models.models import (db)
+from models import db
 from models.user import User
 from models.course import Course
 from models.assignment import Assignment
@@ -264,7 +263,8 @@ def move_course():
 @blueprint_assignments.route('/select', methods=['GET', 'POST'])
 @blueprint_assignments.route('/select/', methods=['GET', 'POST'])
 def select(menu='select'):
-    """ Let's the user select from a list of assignments.
+    """
+    Let's the user select from a list of assignments.
     """
     # Store current user_id and context_id
     assignments = Assignment.get_available()
@@ -385,7 +385,7 @@ def bulk_upload():
 
 @blueprint_assignments.route('/images/<path:path>', methods=['GET', 'POST'])
 def assignments_static_images(path):
-    return app.send_static_file('images/' + path)
+    return current_app.send_static_file('images/' + path)
 
 
 @blueprint_assignments.route('/export_submissions/', methods=['GET', 'POST'])
@@ -411,7 +411,7 @@ def export_submissions():
     users = [sua[1] for sua in suas]
     if format == "pdf":
         bundle = export_pdf_zip(assignments=[assignment], submissions=submissions, users=users,
-                                jinja_environment=app.jinja_env)
+                                jinja_environment=current_app.jinja_env)
     else:
         bundle = export_zip(assignments=[assignment], submissions=submissions,
                             users=users)

@@ -2,8 +2,9 @@ from flask_security import UserMixin
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, func
 from werkzeug.utils import secure_filename
 
-from models import models
-from models.models import Base, relationship, db
+import models
+from models.generics.models import db, ma
+from models.generics.base import Base
 
 
 class User(Base, UserMixin):
@@ -11,7 +12,9 @@ class User(Base, UserMixin):
     id = Column(Integer(), primary_key=True)
     first_name = Column(String(255))
     last_name = Column(String(255))
+
     email = Column(String(255))
+
     proof = Column(String(255), default='')
     password = Column(String(255))
     active = Column(Boolean())
@@ -19,14 +22,19 @@ class User(Base, UserMixin):
     confirmed_at = Column(DateTime())
 
     # Foreign key relationships
-    roles = relationship("Role", backref='user', lazy='dynamic')
-    authentications = relationship("Authentication", backref='user', lazy='dynamic')
-    assignments = relationship("Assignment", backref='user', lazy='dynamic')
+    roles = db.relationship("Role", backref='user', lazy='dynamic')
+    authentications = db.relationship("Authentication", backref='user', lazy='dynamic')
+    assignments = db.relationship("Assignment", backref='user', lazy='dynamic')
 
-    STAFF_ROLES = ["urn:lti:role:ims/lis/teachingassistant",
-                   "instructor", "contentdeveloper", "teachingassistant",
-                   "urn:lti:role:ims/lis/instructor",
-                   "urn:lti:role:ims/lis/contentdeveloper"]
+    # TODO: Finish roles
+    LEARNER_ROLES = ['learner']
+    INSTRUCTOR_ROLES = ['instructor', "urn:lti:role:ims/lis/instructor"]
+    TA_ROLES = ['teachingassistant', 'urn:lti:role:ims/lis/teachingassistant']
+    SYS_ROLES = ['urn:lti:sysrole:ims/lis/none']
+    GRADER_ROLES = INSTRUCTOR_ROLES + TA_ROLES + SYS_ROLES
+    DEVELOPER_ROLES = ["contentdeveloper", "urn:lti:role:ims/lis/contentdeveloper"]
+    ADMIN_ROLES = ['admin']
+    STAFF_ROLES = GRADER_ROLES + DEVELOPER_ROLES
 
     def encode_json(self, use_owner=True):
         return {
@@ -127,10 +135,8 @@ class User(Base, UserMixin):
                             if role.course_id == course_id}
         else:
             role_strings = {role.name.lower() for role in self.roles.all()}
-        return ('instructor' in role_strings or
-                'urn:lti:sysrole:ims/lis/none' in role_strings or
-                'urn:lti:role:ims/lis/teachingassistant' in role_strings or
-                'teachingassistant' in role_strings)
+
+        return any(grader_role in role_strings for grader_role in self.GRADER_ROLES)
 
     def is_student(self, course_id=None):
         if course_id is not None:
@@ -219,3 +225,9 @@ class User(Base, UserMixin):
         else:
             return lti.user
 
+
+class UserSchema(ma.SQLAlchemyAutoSchema):
+    class Meta:
+        model = User
+        include_fk = True
+        #load_instance = True

@@ -1,21 +1,33 @@
-from sqlalchemy import Column, String, Integer, ForeignKey, Text, or_
-from werkzeug.utils import secure_filename
 import json
 
-from models import models
-from models.models import Base, datetime_to_string, string_to_datetime, db
+from sqlalchemy import Column, String, Integer, ForeignKey, Text, or_, Boolean
+from marshmallow import fields
+from werkzeug.utils import secure_filename
+
+import models
+from models.generics.models import db, ma
+from models.generics.base import EnhancedBase
+from common.dates import datetime_to_string, string_to_datetime
 from models.statuses import GradingStatuses
 
 
-class Course(Base):
+class CourseSettingsSchema(ma.Schema):
+    enforce_dates = fields.Boolean(default=False)
+
+
+class Course(EnhancedBase):
+    SERVICES = ['native', 'lti']
+    VISIBILITIES = ['private', 'public']
+    LOG_LEVELS = ['nothing', 'everything', 'errors']
+
     name = Column(String(255))
     url = Column(String(255), default=None, nullable=True)
     owner_id = Column(Integer(), ForeignKey('user.id'))
-    SERVICES = ['native', 'lti']
+
     service = Column(String(80), default="native")
     external_id = Column(String(255), default="")
     endpoint = Column(Text(), default="")
-    VISIBILITIES = ['private', 'public']
+
     visibility = Column(String(80), default="private")
     term = Column(String(255), default="")
     settings = Column(Text(), default="")
@@ -39,8 +51,8 @@ class Course(Base):
                 'date_modified': datetime_to_string(self.date_modified),
                 'date_created': datetime_to_string(self.date_created)}
 
-    SCHEMA_V1_IGNORE_COLUMNS = Base.SCHEMA_V1_IGNORE_COLUMNS + ('owner_id__email',)
-    SCHEMA_V2_IGNORE_COLUMNS = Base.SCHEMA_V2_IGNORE_COLUMNS + ('owner_id__email',)
+    SCHEMA_V1_IGNORE_COLUMNS = EnhancedBase.SCHEMA_V1_IGNORE_COLUMNS + ('owner_id__email',)
+    SCHEMA_V2_IGNORE_COLUMNS = EnhancedBase.SCHEMA_V2_IGNORE_COLUMNS + ('owner_id__email',)
     SCHEMA_V3_IGNORE_COLUMNS = SCHEMA_V2_IGNORE_COLUMNS
 
 
@@ -263,6 +275,10 @@ class Course(Base):
                                          user_id=user_id,
                                          endpoint=endpoint)
         else:
+            # Update endpoint if it changes
+            if endpoint != "" and lti_course.endpoint != endpoint:
+                lti_course.endpoint = endpoint
+                db.session.commit()
             return lti_course
 
     def grading_grid(self):
@@ -334,3 +350,8 @@ class Course(Base):
             user_ids = [user.id for role, user in self.get_users(role_names)]
             subs = subs.filter(models.Submission.user_id.in_(user_ids))
         return subs
+
+class CourseSchema(ma.SQLAlchemyAutoSchema):
+    class Meta:
+        model = Course
+        include_fk = True

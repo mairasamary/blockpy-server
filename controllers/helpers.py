@@ -1,25 +1,12 @@
 # Built-in imports
-import re
-import os
 from urllib.parse import quote as url_quote
 from functools import wraps
 
-from html.parser import HTMLParser
-
-from urllib.parse import unquote_plus, urlparse, parse_qsl, quote_plus, urlencode
-
-# Pygments, for reporting nicely formatted Python snippets
-
 # Flask imports
-from flask import g, request, redirect, url_for, make_response
+from flask import g, request, redirect, url_for, make_response, current_app
 from flask import flash, session, jsonify, abort
-import flask_security
 
-from controllers.pylti.flask import LTI, LTIException
-
-from main import app
-
-from models.user import User
+from common.maybe import maybe_bool, maybe_int
 from models.course import Course
 from models.assignment import Assignment
 from models.assignment_group import AssignmentGroup
@@ -56,8 +43,8 @@ def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if g.user is None:
-            if app.config['PREFERRED_LOGIN']:
-                return redirect(app.config['PREFERRED_LOGIN'])
+            if current_app.config['PREFERRED_LOGIN']:
+                return redirect(current_app.config['PREFERRED_LOGIN'])
             else:
                 return redirect(url_for('security.login', next=request.url))
         return f(*args, **kwargs)
@@ -131,34 +118,7 @@ def parse_lookup_code():
     except ValueError:
         message = "I didn't understand the lookup code: " + lookup
         abort(make_response(jsonify(success=False, message=message), 400))
-        return None
     return assignment_group_id
-
-
-def maybe_int(value):
-    try:
-        return int(value)
-    except ValueError:
-        return None
-    except TypeError:
-        return None
-
-
-def maybe_float(value):
-    try:
-        return float(value)
-    except ValueError:
-        return None
-    except TypeError:
-        return None
-
-
-def maybe_bool(value):
-    if value is None:
-        return False
-    elif value.lower() == "true":
-        return True
-    return False
 
 
 SINGLE_ARG_HACK_PARAMS = (('embed', maybe_bool),
@@ -281,25 +241,8 @@ def parse_assignment_load(assignment_id_or_url=None):
                 passcode_protected=passcode_protected)
 
 
-class MLStripper(HTMLParser):
-    def __init__(self):
-        self.reset()
-        self.fed = []
-
-    def handle_data(self, d):
-        self.fed.append(d)
-
-    def get_data(self):
-        return ''.join(self.fed)
-
-
-def strip_tags(html):
-    s = MLStripper()
-    s.feed(html)
-    return s.get_data()
-
-
 def get_lti_property(property_name, default_value=None):
+    # TODO: Deprecate this!
     if property_name in request.form:
         return request.form[property_name]
     elif property_name in session:
@@ -323,39 +266,6 @@ def get_course_id(okay_if_failure=False):
     return course_id
 
 
-class UnknownUser:
-    def __bool__(self):
-        return False
-
-    def __init__(self):
-        self.id = None
-
-    def is_grader(self, *args):
-        return False
-
-    def is_instructor(self, *args):
-        return False
-
-    def in_course(self, course_id):
-        return False
-
-    def encode_json(self):
-        return {"id": None}
-
-
-UNKNOWN_USER = UnknownUser()
-
-
-def get_user():
-    """
-
-    :return: models.user.User
-    """
-    if 'user' in g and g.user:
-        return g.user, g.user.id
-    return UNKNOWN_USER, None
-
-
 def get_assignment_id(f):
     @wraps(f)
     def decorated_function(course_id, *args, **kwargs):
@@ -373,26 +283,6 @@ def get_assignment_id(f):
         return f(*args, course_id=course_id, **kwargs)
 
     return decorated_function
-
-
-def normalize_url(url):
-    url = re.sub(r'http://', r'', url)
-    url = re.sub(r'https://', r'', url)
-    url = re.sub(r'file://', r'', url)
-    parts = urlparse(url, scheme='')
-    _query = urlencode(sorted(set(parse_qsl(parts.query))))
-    _path = unquote_plus(parts.path)
-    parts = parts._replace(query=_query, path=_path, scheme='', fragment='')
-    url = "/".join((parts.netloc, _path, _query))
-    return quote_plus(url)
-
-
-def ensure_dirs(path):
-    try:
-        os.makedirs(path)
-    except OSError as e:
-        if not os.path.isdir(path):
-            app.logger.warning(e.args + (path,))
 
 
 def get_select_menu_link(id, title, is_embedded, is_group):

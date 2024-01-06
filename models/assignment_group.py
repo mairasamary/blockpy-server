@@ -1,14 +1,18 @@
+from typing import List
+
 from flask import url_for
 from sqlalchemy import Column, String, Integer, ForeignKey, func
 from natsort import natsorted
 from werkzeug.utils import secure_filename
 
-from models import models
-from models.models import Base, datetime_to_string, string_to_datetime, db, make_copy
-from typing import List
+import models
+from models.generics.models import db, ma
+from models.generics.base import EnhancedBase
+from common.dates import datetime_to_string
+from common.databases import make_copy
 
 
-class AssignmentGroup(Base):
+class AssignmentGroup(EnhancedBase):
     __tablename__ = 'assignment_group'
     name = Column(String(255), default="Untitled")
     url = Column(String(255), nullable=True)
@@ -42,8 +46,8 @@ class AssignmentGroup(Base):
                 'date_modified': datetime_to_string(self.date_modified),
                 'date_created': datetime_to_string(self.date_created)}
 
-    SCHEMA_V1_IGNORE_COLUMNS = Base.SCHEMA_V1_IGNORE_COLUMNS + ('owner_id__email',)
-    SCHEMA_V2_IGNORE_COLUMNS = Base.SCHEMA_V2_IGNORE_COLUMNS + ('owner_id__email',)
+    SCHEMA_V1_IGNORE_COLUMNS = EnhancedBase.SCHEMA_V1_IGNORE_COLUMNS + ('owner_id__email',)
+    SCHEMA_V2_IGNORE_COLUMNS = EnhancedBase.SCHEMA_V2_IGNORE_COLUMNS + ('owner_id__email',)
 
     @staticmethod
     def new(owner_id, course_id, name="Untitled Group", url=None):
@@ -162,3 +166,8 @@ class AssignmentGroup(Base):
             return secure_filename(self.url) + extension
         else:
             return secure_filename(self.name) + extension
+
+class GroupSchema(ma.SQLAlchemyAutoSchema):
+    class Meta:
+        model = AssignmentGroup
+        include_fk = True

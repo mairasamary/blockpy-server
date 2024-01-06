@@ -3,15 +3,15 @@ import time
 
 import base64
 
-from flask import url_for
+from flask import url_for, current_app
 from sqlalchemy import Column, Text, Integer, Boolean, ForeignKey, Index, func, String
 
-from main import app
-from models import models
-from models.models import Base, db, ensure_dirs
+import models
+from models.generics.models import db, ma
+from models.generics.base import VersionedBase
 
 
-class Review(Base):
+class Review(VersionedBase):
     comment = Column(Text(), default="")
     location = Column(Text(), default="")
     generic = Column(Boolean(), default=False)
@@ -119,3 +119,7 @@ class Review(Base):
             else:
                 return forked.get_actual_score()
 
+class ReviewSchema(ma.SQLAlchemyAutoSchema):
+    class Meta:
+        model = Review
+        include_fk = True

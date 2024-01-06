@@ -6,12 +6,13 @@ from datetime import datetime, timedelta
 
 from sqlalchemy import Column, String, Integer, ForeignKey, Text, func, JSON, Index, and_
 
+import models
+from models.generics.models import db, ma
+from models.generics.base import Base
+from common.dates import datetime_to_string, string_to_datetime
+from models.user import User
 from models.course import Course
 from models.assignment import Assignment
-from models.models import Base, db, datetime_to_string
-from models.user import User
-from models import models
-
 
 class Log(Base):
     # Identification
@@ -202,3 +203,7 @@ class Log(Base):
             json.dumps(self.client_timestamp),
             json.dumps(self.client_timezone)
         ))
+class LogSchema(ma.SQLAlchemyAutoSchema):
+    class Meta:
+        model = Log
+        include_fk = True

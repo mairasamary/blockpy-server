@@ -5,9 +5,9 @@ from datetime import datetime, timedelta
 from natsort import natsorted
 
 from controllers.helpers import compare_string_equality
-from utilities import highlight_python_code, highlight_java_code
+from common.highlighters import highlight_python_code, highlight_java_code
 from flask import request
-from werkzeug.urls import url_encode
+from werkzeug import url_encode
 from markdown import Markdown
 
 
@@ -35,16 +35,19 @@ def to_iso_time(date):
     date = (date - date.astimezone().utcoffset())
     return date.strftime("%Y%m%dT%H%M%S.%fZ")
 
+
 def date_description(date):
     if not date:
         return "Never"
     date = (date + date.astimezone().utcoffset())
     is_today = date > datetime.now().replace(hour=0, minute=0)
     if is_today:
-        return "Today, " +date.strftime("%I:%M") + date.strftime("%p").lower()
+        return "Today, " + date.strftime("%I:%M") + date.strftime("%p").lower()
     return date.strftime("%B %d %Y, %I:%M") + date.strftime("%p").lower()
 
+
 FRIENDLY_DATE_FORMAT = "%B %d %Y, %I%M %p"
+
 
 def to_friendly_date(date):
     return date.strftime(FRIENDLY_DATE_FORMAT)
@@ -61,6 +64,7 @@ def modify_query(new_values):
         args[key] = value
 
     return '{}?{}'.format(request.path, url_encode(args))
+
 
 def make_readonly_form(assignment, submission, is_grader):
     data = {
@@ -83,7 +87,8 @@ def make_readonly_form(assignment, submission, is_grader):
     data['submission']['submission_status'] = "inProgress"
     return json.dumps(data)
 
-#export const matchKeyInBrackets = (key: string) => new RegExp(`(?<!\\\))(\\[${key}\\])(?!\\()`);
+
+# export const matchKeyInBrackets = (key: string) => new RegExp(`(?<!\\\))(\\[${key}\\])(?!\\()`);
 
 
 def make_readonly_quiz_body(question, feedback, student, check, is_grader):
@@ -118,6 +123,7 @@ def check_quiz_answer(question, feedback, student, check, is_grader, part=None):
             return any(re.match(reg, student) for reg in check['correct_regex'])
         else:
             return False
+
 
 def setup_jinja_filters(app):
     app.jinja_env.filters['markdown'] = Markdown(extensions=['fenced_code']).convert

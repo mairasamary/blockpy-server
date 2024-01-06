@@ -10,23 +10,23 @@ from flask.views import MethodView
 from slugify import slugify
 from natsort import natsorted
 
-from flask import Blueprint, url_for, session, request, jsonify, g, render_template, redirect, make_response
+from flask import Blueprint, url_for, session, request, jsonify, g, render_template, redirect, make_response, current_app
 
-from controllers.blockpy import lti_post_grade
+from controllers.endpoints.blockpy import lti_post_grade
 from controllers.pylti.common import LTIPostMessageException
 from controllers.pylti.post_grade import create_grade_post
-from main import app
 
 from models.review import Review
 from models.submission import Submission, GradingStatuses
 from models.course import Course
 
-from controllers.helpers import (normalize_url,
-                                 ensure_dirs, ajax_failure, parse_assignment_load, require_request_parameters,
-                                 get_course_id, maybe_int, get_user, check_resource_exists, ajax_success,
+from common.urls import normalize_url
+from common.filesystem import ensure_dirs
+from controllers.auth import get_user
+from controllers.helpers import (ajax_failure, parse_assignment_load, require_request_parameters,
+                                 get_course_id, maybe_int, check_resource_exists, ajax_success,
                                  login_required, require_course_instructor, require_course_grader, maybe_bool,
                                  make_log_entry)
-from utilities import highlight_python_code
 from models.user import User
 
 blueprint_grading = Blueprint('grading', __name__, url_prefix='/grading')
@@ -34,7 +34,7 @@ blueprint_grading = Blueprint('grading', __name__, url_prefix='/grading')
 
 @blueprint_grading.route('/static/<path:path>', methods=['GET', 'POST'])
 def grading_static(path):
-    return app.send_static_file(path)
+    return current_app.send_static_file(path)
 
 
 @blueprint_grading.route('/update_grading_status', methods=['POST'])

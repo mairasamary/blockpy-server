@@ -1,10 +1,13 @@
 from sqlalchemy import Column, String, Integer, ForeignKey, func, Text, Table, Boolean
 
-from models import models
-from models.models import Base, datetime_to_string, string_to_datetime, db, optional_encoded_field
+import models
+from models.generics.models import db, ma
+from models.generics.base import VersionedBase
+from common.dates import datetime_to_string, string_to_datetime
+from common.databases import optional_encoded_field
 
 
-class SampleSubmission(Base):
+class SampleSubmission(VersionedBase):
     __tablename__ = 'sample_submission'
     name = Column(String(255), default="Blank Submission")
     status = Column(String(255), default='unknown')
@@ -82,3 +85,8 @@ class SampleSubmission(Base):
         return (SampleSubmission.query.filter_by(assignment_id=assignment_id)
                 .order_by(SampleSubmission.name)
                 .all())
+
+class SampleSubmissionSchema(ma.SQLAlchemyAutoSchema):
+    class Meta:
+        model = SampleSubmission
+        include_fk = True
