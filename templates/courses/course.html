@@ -96,6 +96,7 @@ function renameCourse() {
     <div class="instructor-only-tools p-2">
     <small>Instructor Tools (not visible to students or TAs)</small><br>
     <div class="ml-4">
+    <a href="{{ url_for('courses.edit', course_id=course.id) }}" class='btn btn-outline-secondary'>Edit Settings</a> Edit top-level course settings (visiblity, url, name, etc.).<br><br>
     <strong>Settings:</strong>
     <ul>
     <li>Course name: <code>{{ course.name }}</code> <button onclick="renameCourse()" class='btn btn-outline-secondary btn-sm' title="Rename this course to something else.">Rename Course</button></li>

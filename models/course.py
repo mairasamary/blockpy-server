@@ -7,7 +7,7 @@ from werkzeug.utils import secure_filename
 
 import models
 from models.generics.models import db, ma
-from models.generics.base import EnhancedBase, Base
+from models.generics.base import EnhancedBase, Base, VersionedBase
 from common.dates import datetime_to_string, string_to_datetime
 from models.statuses import GradingStatuses
 
@@ -26,7 +26,7 @@ class CourseVisibility:
     VALID_CHOICES = (PUBLIC, PRIVATE, ARCHIVED)
 
 
-class Course(EnhancedBase):
+class Course(Base):
     __tablename__ = "course"
     SERVICES = ['native', 'lti']
     LOG_LEVELS = ['nothing', 'everything', 'errors']
@@ -261,6 +261,23 @@ class Course(EnhancedBase):
         db.session.commit()
         return course
 
+    def edit(self, name=None, url=None, visibility=None, term=None):
+        modified = False
+        if name is not None:
+            self.name = name
+            modified = True
+        if url is not None:
+            self.url = url
+            modified = True
+        if visibility is not None:
+            self.visibility = visibility
+            modified = True
+        if term is not None:
+            self.term = term
+            modified = True
+        db.session.commit()
+        return modified
+
     @staticmethod
     def new(name, owner_id, visibility, term, url):
         if visibility and visibility.lower() in CourseVisibility.VALID_CHOICES:
@@ -444,3 +461,7 @@ class Course(EnhancedBase):
             "Report": self.reports
         }
         return resources
+
+    @staticmethod
+    def check_url_is_unique(course_url, course_id):
+        return Course.query.filter_by(url=course_url).filter(Course.id != course_id).first() is None

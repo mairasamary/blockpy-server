@@ -5,7 +5,7 @@ import json
 from natsort import natsorted
 
 from flask_wtf import Form
-from wtforms import IntegerField, BooleanField, StringField, SubmitField, SelectField, TextAreaField
+from wtforms import IntegerField, BooleanField, StringField, SubmitField, SelectField, TextAreaField, HiddenField
 
 from flask import Blueprint, send_from_directory
 from flask import Flask, redirect, url_for, session, request, jsonify, g, \
@@ -43,11 +43,16 @@ class AddCourseForm(Form):
     submit = SubmitField("Add new course")
 
 
+class EditCourseForm(AddCourseForm):
+    id = HiddenField("id", description="The ID of the course, used to identify it in the database.")
+    submit = SubmitField("Edit course")
+
 @courses.route('/add', methods=['GET', 'POST'])
 @courses.route('/add/', methods=['GET', 'POST'])
 @login_required
 def add():
-    """ Create a new assignment with the given information
+    """
+    Create a new course with the given information
     """
     add_form = AddCourseForm(request.form)
     if request.method == 'POST':
@@ -62,6 +67,47 @@ def add():
         else:
             flash('Course not created; Non-unique URL perhaps?')
     return render_template('courses/add.html', add_form=add_form)
+
+
+@courses.route('/edit/<course_id>', methods=['GET', 'POST'])
+@courses.route('/edit/<course_id>/', methods=['GET', 'POST'])
+@login_required
+def edit(course_id):
+    """
+    Edit an existing course.
+    """
+    user, user_id = get_user()
+    if not user.in_course(course_id):
+        flash(f"You are not in {course_id}")
+        return redirect(url_for('courses.index'))
+    course = Course.by_id(course_id)
+    if user.is_instructor(course_id):
+        flash(f"You are not an instructor in course: {course_id}")
+        return redirect(url_for("courses.index"))
+
+    edit_form = EditCourseForm(request.form, obj=course)
+    if request.method == 'POST':
+        course_id = edit_form.id.data
+        course = Course.by_id(course_id)
+        # Verify exists
+        check_resource_exists(course, "Course", course_id)
+        # Verify permissions
+        require_course_instructor(g.user, course_id)
+        check_course_unlocked(course)
+        # Edit the course
+        course_url = edit_form.url.data
+        if not Course.check_url_is_unique(course_url, course_id):
+            flash('Course not edited; URLs must be unique.')
+        else:
+            modified = course.edit(name=edit_form.name.data,
+                                   visibility=edit_form.visibility.data,
+                                   term=edit_form.term.data,
+                                   url=edit_form.url.data)
+            if modified:
+                flash('Course settings updated')
+            else:
+                flash('No modifications were made')
+    return render_template('courses/edit.html', edit_form=edit_form, course=course, course_id=course_id)
 
 
 @courses.route('/remove/', methods=['GET', 'POST'])
