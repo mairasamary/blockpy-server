@@ -352,6 +352,8 @@ class Course(EnhancedBase):
     def get_setting(self, key, default_value):
         try:
             result = json.loads(self.settings)
+            if not isinstance(result, dict):
+                return default_value
             return result.get(key, default_value)
         except json.JSONDecodeError:
             return default_value
@@ -359,7 +361,10 @@ class Course(EnhancedBase):
     def get_all_settings(self):
         try:
             result = json.loads(self.settings)
-            return result
+            if isinstance(result, dict):
+                return result
+            else:
+                return {}
         except json.JSONDecodeError:
             return {}
 
