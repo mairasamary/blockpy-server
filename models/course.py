@@ -209,7 +209,7 @@ class Course(EnhancedBase):
                         or_(models.AssignmentGroup.course_id == self.id,
                             models.AssignmentGroup.course_id == models.Assignment.course_id,
                             models.AssignmentGroup.id.is_(None)))
-                .order_by(models.Assignment.name, models.AssignmentGroupMembership.position)
+                .order_by(models.Assignment.name) #, models.AssignmentGroupMembership.position)
                 .distinct())
 
     def get_submissions(self):
