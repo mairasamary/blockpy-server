@@ -355,7 +355,7 @@ class Course(EnhancedBase):
             if not isinstance(result, dict):
                 return default_value
             return result.get(key, default_value)
-        except json.JSONDecodeError:
+        except (TypeError, json.JSONDecodeError) as e:
             return default_value
 
     def get_all_settings(self):
@@ -365,13 +365,13 @@ class Course(EnhancedBase):
                 return result
             else:
                 return {}
-        except json.JSONDecodeError:
+        except (TypeError, json.JSONDecodeError) as e:
             return {}
 
     def set_setting(self, key, value, user):
         try:
             result = json.loads(self.settings)
-        except json.JSONDecodeError:
+        except (TypeError, json.JSONDecodeError) as e:
             if self.settings:
                 self.log_action_by_user("set_setting", user,
                                         "Failed to parse settings (resetting):\n"+self.settings)
