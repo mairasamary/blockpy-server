@@ -30,7 +30,7 @@ RELATIVE_SOURCE_FILES = {
 
 
 @cli.command("update_sources")
-@click.option('--directory', '-d', default=None)
+@click.option('--directory', '-d', 'source_directory', default=None)
 def update_sources(source_directory):
     if source_directory is None:
         source_directory = current_app.config['BLOCKPY_SOURCE_DIR']
