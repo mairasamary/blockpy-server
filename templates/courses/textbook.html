@@ -10,24 +10,6 @@ Textbook: {{ course.name }}
 
 {% block extrahead %}
 
-<script type='text/javascript'>
-
-    function getLocalStorage(key, defaultValue) {
-        try {
-            let value = localStorage.getItem(key);
-            if (value === null) {
-                return defaultValue;
-            } else {
-                return value;
-            }
-        } catch (e) {
-            return defaultValue;
-        }
-    }
-
-</script>
-
-
 {% endblock %}
 
 {% block body %}

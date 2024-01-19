@@ -24,7 +24,7 @@ Dashboard
     const GRADING_LOCAL_STORAGE_ITEM_USERSETS = "Grading-Usersets";
     function UserSetModel() {
         // TODO: Refactor this to do the appropriate thing
-        let sets = localStorage.getItem(GRADING_LOCAL_STORAGE_ITEM_USERSETS);
+        let sets = getLocalStorage(GRADING_LOCAL_STORAGE_ITEM_USERSETS);
         if (sets === null) {
             sets = [{"name": "All students", "default": true, "emails": ""}];
         } else {
@@ -43,7 +43,7 @@ Dashboard
             this.editorVisible(true);
         }.bind(this);
         this.saveSet = function() {
-            localStorage.setItem(GRADING_LOCAL_STORAGE_ITEM_USERSETS,
+            setLocalStorage(GRADING_LOCAL_STORAGE_ITEM_USERSETS,
                 JSON.stringify(this.sets().map(function(set) {return {
                     "name": set.name(),
                     "default": set.default(),

@@ -12,19 +12,6 @@ Watch Events
 
 <script type='text/javascript'>
 
-    function getLocalStorage(key, defaultValue) {
-        try {
-            let value = localStorage.getItem(key);
-            if (value === null) {
-                return defaultValue;
-            } else {
-                return value;
-            }
-        } catch (e) {
-            return defaultValue;
-        }
-    }
-
     $(function() {
         let loggedInUser = {{ user.encode_json()|tojson }};
         let userIds = {{  request.values.get('user_ids')|tojson }} || getLocalStorage("BLOCKPY_SERVER_USERIDS", "");

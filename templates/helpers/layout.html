@@ -380,6 +380,39 @@
         {% endblock %}
     </style>
 
+    <script>
+    function checkCookies() {
+        let cookieEnabled = navigator.cookieEnabled;
+        if (!cookieEnabled){
+            document.cookie = "testcookie";
+            cookieEnabled = document.cookie.indexOf("testcookie")!==-1;
+        }
+        return cookieEnabled;
+    }
+    
+    function getLocalStorage(key, defaultValue) {
+        if (defaultValue === undefined) {
+            defaultValue = null;
+        }
+        try {
+            let value = localStorage.getItem(key);
+            if (value === null) {
+                return defaultValue;
+            } else {
+                return value;
+            }
+        } catch (e) {
+            return defaultValue;
+        }
+    }
+    
+    function setLocalStorage(key, value) {
+        try {
+            localStorage.setItem(key, value);
+        } catch (e) {}
+    }
+    </script>
+
     {% block extrahead %}
     {% endblock %}
 
@@ -399,14 +432,7 @@
     </script>
 
     <script>
-        function checkCookies() {
-            let cookieEnabled = navigator.cookieEnabled;
-            if (!cookieEnabled){
-                document.cookie = "testcookie";
-                cookieEnabled = document.cookie.indexOf("testcookie")!==-1;
-            }
-            return cookieEnabled;
-        }
+        
 
         function switchVisible(submissionId, showHide) {
             $(`#h-${submissionId}-start`).toggle(!showHide);
