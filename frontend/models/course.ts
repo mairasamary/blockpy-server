@@ -68,7 +68,9 @@ export class Course extends Model<CourseJson> {
         } catch (e) {
             return false;
         }
-        return settings.pinned === true;
+        if (settings != null) {
+            return settings.pinned === true;
+        }
     }
 
     setSetting(key: string, value: any) {
