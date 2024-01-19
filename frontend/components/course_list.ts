@@ -38,7 +38,7 @@ export class CourseListInterface {
     _sorter(left: Course, right: Course): number {
         let sortMethod = this.sortMethod();
         if (left.isPinned() || right.isPinned()) {
-            return +right.isPinned() - +left.isPinned();
+            return (+right.isPinned()||0) - (+left.isPinned()||0);
         }
         if (sortMethod === "date_created_desc") {
             return left.dateCreated() === right.dateCreated() ? 0
