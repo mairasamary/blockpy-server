@@ -144,6 +144,16 @@
                 mainModel.pageId(id);
                 document.title = name + " - " + {{ assignment.title()|tojson }} + " - BlockPy Textbook";
             }
+            
+            window.$blockPyUserData = {
+                "user.id": {{  user_id|tojson }},
+                {% if user %}
+                "user.name": {{ user.name()|tojson }},
+                {% endif %}
+                "user.role": {{ role|tojson }},
+                "user.course_id": {{ course_id|tojson }},
+                "access_token": window.accessToken,
+            };
 
             // Load in BlockPy interface
             editor = new blockpy.BlockPy({
@@ -180,6 +190,7 @@
                     "user.group_id": {{ assignment_group_id|tojson }},
                     'callback.success': markCorrect,
                 {% endif %}
+                "access_token": window.accessToken,
 
                 {% if role in ("owner", "grader") %}
                     "display.instructor": true,
