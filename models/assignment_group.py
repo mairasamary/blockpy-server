@@ -1,31 +1,34 @@
 from typing import List
 
 from flask import url_for
+from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import Column, String, Integer, ForeignKey, func
 from natsort import natsorted
 from werkzeug.utils import secure_filename
 
 import models
 from models.generics.models import db, ma
-from models.generics.base import EnhancedBase
+from models.generics.base import EnhancedBase, Base
 from common.dates import datetime_to_string
 from common.databases import make_copy
 
 
 class AssignmentGroup(EnhancedBase):
     __tablename__ = 'assignment_group'
-    name = Column(String(255), default="Untitled")
-    url = Column(String(255), nullable=True)
-    forked_id = Column(Integer(), ForeignKey('assignment_group.id'), nullable=True)
-    forked_version = Column(Integer(), nullable=True)
-    owner_id = Column(Integer(), ForeignKey('user.id'))
-    course_id = Column(Integer(), ForeignKey('course.id'))
-    position = Column(Integer(), default=0)
-    version = Column(Integer(), default=0)
+    name: Mapped[str] = mapped_column(String(255), default="Untitled")
+    url: Mapped[str] = mapped_column(String(255), nullable=True)
+    forked_id: Mapped[int] = mapped_column(Integer(), ForeignKey('assignment_group.id'), nullable=True)
+    forked_version: Mapped[int] = mapped_column(Integer(), nullable=True)
+    owner_id: Mapped[int] = mapped_column(Integer(), ForeignKey('user.id'))
+    course_id: Mapped[int] = mapped_column(Integer(), ForeignKey('course.id'))
+    position: Mapped[int] = mapped_column(Integer(), default=0)
+    version: Mapped[int] = mapped_column(Integer(), default=0)
 
-    forked = db.relationship("AssignmentGroup")
-    owner = db.relationship("User")
-    course = db.relationship("Course")
+    forked: Mapped["AssignmentGroup"] = db.relationship("AssignmentGroup", remote_side="AssignmentGroup.id")
+    owner: Mapped["User"] = db.relationship(back_populates="assignment_groups")
+    course: Mapped["Course"] = db.relationship(back_populates="assignment_groups")
+    memberships: Mapped[list["AssignmentGroupMembership"]] = db.relationship(back_populates="assignment_group")
+    submissions: Mapped[list["Submission"]] = db.relationship(back_populates="assignment_group")
 
     def __str__(self):
         return '<Group {} in {} ({})>'.format(self.name, self.course_id, self.url)
@@ -167,7 +170,12 @@ class AssignmentGroup(EnhancedBase):
         else:
             return secure_filename(self.name) + extension
 
-class GroupSchema(ma.SQLAlchemyAutoSchema):
-    class Meta:
-        model = AssignmentGroup
-        include_fk = True
+    def find_all_linked_resources(self) -> dict[str, list[Base]]:
+        # Get any assignments that are forked from this one
+        forked = AssignmentGroup.query.filter_by(forked_id=self.id).all()
+        resources = {
+            "AssignmentGroup": forked,
+            "Submission": self.submissions,
+            "Memberships": self.memberships
+        }
+        return resources

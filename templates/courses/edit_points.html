@@ -13,11 +13,15 @@ Edit Assignment Points
 <script type='text/javascript'>
 
     function getLocalStorage(key, defaultValue) {
-        let value = localStorage.getItem(key);
-        if (value === null) {
+        try {
+            let value = localStorage.getItem(key);
+            if (value === null) {
+                return defaultValue;
+            } else {
+                return value;
+            }
+        } catch (e) {
             return defaultValue;
-        } else {
-            return value;
         }
     }
 
@@ -27,7 +31,13 @@ Edit Assignment Points
 {% block body %}
 
     <h1>Edit Assignment Points</h1>
-    {{ navigation.navigate_course() }}
+    {{ navigation.navigate_course(course_id) }}
+
+    <p>
+        This page allows you to edit the points for each assignment.
+        You should only edit this page if you know what you are doing and trying
+        to adjust the point values of assignments.
+    </p>
 
 
     <form action="" method=post>

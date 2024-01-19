@@ -48,7 +48,7 @@ class RegularView(ModelView):
 class UserView(RegularView):
     def _list_roles(view, context, model, name):
         display_roles = []
-        for role in model.roles.all():
+        for role in model.roles:
             if role.course_id is None:
                 display_roles.append(f"{role.name} in all courses")
                 continue
@@ -329,9 +329,10 @@ class AuthenticationView(ModelIdView):
 
 
 class InviteView(ModelIdView):
-    form_ajax_refs = {
-        'user': make_ajax_fields('first_name', 'last_name', 'email', 'id')
-    }
+    pass
+    #form_ajax_refs = {
+    #    'user': make_ajax_fields('first_name', 'last_name', 'email', 'id')
+    #}
 
 
 class ReportView(ModelIdView):
@@ -397,7 +398,8 @@ def setup_admin(app):
     admin.add_view(InviteView(Invite, db.session, category='Tables'))
 
     # admin.add_view(FileAdmin(app.config['BLOCKPY_LOG_DIR'], base_url='/admin/code_logs/', name='Disk Logs'))
+    # TODO: Add redis console
     admin.add_view(FileAdmin(app.config['UPLOADS_DIR'], '', name='File Uploads'))
-    admin.add_view(FileAdmin(app.config['REPORTS_DIR'], '', name='Reports'))
-    admin.add_view(FileAdmin(app.config['REPORTS_DIR'], '', name='Reports'))
+    # TODO: Figure out how to make multiple fileadmin work
+    #admin.add_view(FileAdmin(app.config['REPORT_DIR'], '', name='Reports'))
     return admin

@@ -1,38 +1,58 @@
 import json
 
+from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import Column, String, Integer, ForeignKey, Text, or_, Boolean
 from marshmallow import fields
 from werkzeug.utils import secure_filename
 
 import models
 from models.generics.models import db, ma
-from models.generics.base import EnhancedBase
+from models.generics.base import EnhancedBase, Base
 from common.dates import datetime_to_string, string_to_datetime
 from models.statuses import GradingStatuses
 
 
 class CourseSettingsSchema(ma.Schema):
     enforce_dates = fields.Boolean(default=False)
+    textbooks = fields.List(fields.String(default=""))
+    pinned = fields.Boolean(default=False)
+
+
+class CourseVisibility:
+    PUBLIC = 'public'
+    PRIVATE = 'private'
+    ARCHIVED = 'archived'
+
+    VALID_CHOICES = (PUBLIC, PRIVATE, ARCHIVED)
 
 
 class Course(EnhancedBase):
+    __tablename__ = "course"
     SERVICES = ['native', 'lti']
-    VISIBILITIES = ['private', 'public']
     LOG_LEVELS = ['nothing', 'everything', 'errors']
 
-    name = Column(String(255))
-    url = Column(String(255), default=None, nullable=True)
-    owner_id = Column(Integer(), ForeignKey('user.id'))
+    name: Mapped[str] = mapped_column(String(255))
+    url: Mapped[str] = mapped_column(String(255), default=None, nullable=True)
+    owner_id: Mapped[int] = mapped_column(ForeignKey('user.id'))
 
-    service = Column(String(80), default="native")
-    external_id = Column(String(255), default="")
-    endpoint = Column(Text(), default="")
+    service: Mapped[str] = mapped_column(String(80), default="native")
+    external_id: Mapped[str] = mapped_column(String(255), default="")
+    endpoint: Mapped[str] = mapped_column(Text(), default="")
 
-    visibility = Column(String(80), default="private")
-    term = Column(String(255), default="")
-    settings = Column(Text(), default="")
+    visibility: Mapped[str] = mapped_column(String(80), default=CourseVisibility.PRIVATE)
+    term: Mapped[str] = mapped_column(String(255), default="")
+    settings: Mapped[str] = mapped_column(Text(), default="")
+    locked: Mapped[bool] = mapped_column(Boolean(), default=False, nullable=False)
 
-    owner = db.relationship("User")
+    owner: Mapped["User"] = db.relationship(back_populates="courses")
+    roles: Mapped[list["Role"]] = db.relationship(back_populates="course")
+    assignments: Mapped[list["Assignment"]] = db.relationship(back_populates="course")
+    assignment_groups: Mapped[list["AssignmentGroup"]] = db.relationship(back_populates="course")
+    tags: Mapped[list["AssignmentTag"]] = db.relationship(back_populates="course")
+    logs: Mapped[list["Log"]] = db.relationship(back_populates="course")
+    submissions: Mapped[list["Submission"]] = db.relationship(back_populates="course")
+    invites: Mapped[list["Invite"]] = db.relationship(back_populates="course")
+    reports: Mapped[list["Report"]] = db.relationship(back_populates="course")
 
     def encode_json(self):
         user = models.User.query.get(self.owner_id)
@@ -90,7 +110,7 @@ class Course(EnhancedBase):
 
     @staticmethod
     def get_public():
-        return Course.query.filter_by(visibility='public').all()
+        return Course.query.filter_by(visibility=CourseVisibility.PUBLIC).all()
 
     @staticmethod
     def remove(course_id, remove_linked=False):
@@ -107,6 +127,15 @@ class Course(EnhancedBase):
             for r in models.Role.by_course(course_id):
                 db.session.delete(r)
         db.session.commit()
+
+    @staticmethod
+    def change_course_visibility(course_id, visibility):
+        course = Course.query.filter_by(id=course_id).first()
+        if course and visibility and visibility.lower() in CourseVisibility.VALID_CHOICES:
+            course.visibility = visibility.lower()
+            db.session.commit()
+            return True
+        return False
 
     def get_users(self, roles=None):
         if roles is None:
@@ -231,10 +260,10 @@ class Course(EnhancedBase):
 
     @staticmethod
     def new(name, owner_id, visibility, term, url):
-        if visibility == 'public':
-            visibility = 'public'
+        if visibility and visibility.lower() in CourseVisibility.VALID_CHOICES:
+            visibility = visibility.lower()
         else:
-            visibility = 'private'
+            visibility = CourseVisibility.PRIVATE
         if url:
             existing_course = Course.by_url(url)
             if existing_course:
@@ -308,7 +337,7 @@ class Course(EnhancedBase):
     def make_default_assignment(self, default_assignment_url):
         new_assignment = models.Assignment(name="Default Scratchpad", url=default_assignment_url,
                                            type="blockpy", instructions="You may write whatever you want here. It will not be graded.",
-                                           reviewed=False, hidden=False, public=self.visibility == 'public',
+                                           reviewed=False, hidden=False, public=self.visibility == CourseVisibility.PUBLIC,
                                            settings='{"disable_feedback": true}', owner_id=self.owner_id, course_id=self.id, )
         db.session.add(new_assignment)
         db.session.commit()
@@ -327,16 +356,59 @@ class Course(EnhancedBase):
         except json.JSONDecodeError:
             return default_value
 
+    def get_all_settings(self):
+        try:
+            result = json.loads(self.settings)
+            return result
+        except json.JSONDecodeError:
+            return {}
+
+    def set_setting(self, key, value, user):
+        try:
+            result = json.loads(self.settings)
+        except json.JSONDecodeError:
+            if self.settings:
+                self.log_action_by_user("set_setting", user,
+                                        "Failed to parse settings (resetting):\n"+self.settings)
+            result = {}
+        result[key] = value
+        self.settings = json.dumps(result)
+        db.session.commit()
+        return True
+
+    def log_action_by_user(self, action, user, message: str=""):
+        log = models.Log(course_id=self.id, user_id=user.id,
+                         event_type='X-Blockpy.Action', category='Course',
+                         action=action, message=message)
+        db.session.add(log)
+        db.session.commit()
+
     def get_textbooks(self):
         textbook_urls = self.get_setting('textbooks', [])
         associated_textbooks = (db.session.query(models.Assignment)
                                 .filter(models.Assignment.url.in_(textbook_urls))
                                 .all())
-        course_textbooks =  (db.session.query(models.Assignment)
+        course_textbooks = (db.session.query(models.Assignment)
                              .filter(models.Assignment.course_id == self.id, models.Assignment.type == 'textbook')
                              .all())
         course_textbooks.extend(associated_textbooks)
         return course_textbooks
+
+    def do_textbook_action(self, action, textbook_url, user_id) -> str:
+        if action == 'add':
+            textbook_urls = self.get_setting('textbooks', [])
+            textbook_urls.append(textbook_url)
+            self.set_setting('textbooks', textbook_urls, user_id)
+            return f"Added textbook '{textbook_url}' to course '{self.url}'"
+        if action == 'remove':
+            textbook_urls = self.get_setting('textbooks', [])
+            if textbook_url in textbook_urls:
+                textbook_urls.remove(textbook_url)
+                self.set_setting('textbooks', textbook_urls, user_id)
+                return f"Removed textbook '{textbook_url}' from course '{self.url}'"
+            else:
+                return f"Textbook '{textbook_url}' not found in course '{self.url}'"
+        return f"Invalid action '{action}' for textbook '{textbook_url}'. No action taken."
 
     def get_filtered_submissions(self, assignment_ids, assignment_group_ids, student_ids, role_names):
         subs = models.Submission.query.filter(models.Submission.course_id==self.id)
@@ -351,7 +423,16 @@ class Course(EnhancedBase):
             subs = subs.filter(models.Submission.user_id.in_(user_ids))
         return subs
 
-class CourseSchema(ma.SQLAlchemyAutoSchema):
-    class Meta:
-        model = Course
-        include_fk = True
+    def find_all_linked_resources(self) -> dict[str, list[Base]]:
+        # Get any assignments that are forked from this one
+        resources = {
+            "Role": self.roles,
+            "Assignment": self.assignments,
+            "AssignmentGroup": self.assignment_groups,
+            "AssignmentTag": self.tags,
+            "Log": self.logs,
+            "Submission": self.submissions,
+            "Invite": self.invites,
+            "Report": self.reports
+        }
+        return resources

@@ -36,18 +36,24 @@ def get_bundles(app):
             'libs/codemirror/markdown.js',
             'libs/codemirror/python.js',
             'libs/codemirror/java.js',
+            'libs/codemirror/javascript.js',
             'libs/codemirror/shell.js',
             'libs/codemirror/yaml-frontmatter.js',
             # Filepond
             'libs/filepond/filepond.min.js',
             # D3
             'libs/d3/d3.6.3.1.min.js',
+            # Contodo
+            'libs/contodo/contodo.iife.min.js',
+            # TypeScript definitions
+            'libs/typescript/raw_kettle_compiler_dts.js',
             # Doppio
-            "libs/doppio/js/base64.js",
-            "libs/doppio/js/util.js",
-            "libs/doppio/js/websock.js",
-            "libs/doppio/js/browserfs.min.js",
-            "libs/doppio/js/doppio.js",
+            # TODO: Make this more conditional
+            #"libs/doppio/js/base64.js",
+            #"libs/doppio/js/util.js",
+            #"libs/doppio/js/websock.js",
+            #"libs/doppio/js/browserfs.min.js",
+            #"libs/doppio/js/doppio.js",
             # Output
             output='gen/libs.js'
         ),

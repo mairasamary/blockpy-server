@@ -20,7 +20,7 @@ from .common import (
     LTIException,
     LTIRoleException,
     LTINotInSessionException,
-    LTIPostMessageException
+    LTIPostMessageException, parse_read_result
 )
 
 
@@ -197,6 +197,7 @@ class LTI:
         log.debug(params)
 
         log.debug('verify_request?')
+        #print(self._consumers(), url, method, headers, params)
         try:
             verify_request_common(self._consumers(), url, method, headers, params)
             log.debug('verify_request success')
@@ -229,12 +230,13 @@ class LTI:
         if endpoint is None:
             endpoint = self.lis_result_sourcedid
         xml = generate_request_xml(message_identifier_id, operation, endpoint)
-        ret = post_message(self._consumers(), self.key,
-                           self.response_url, xml)
-        if not ret:
+        successful, full_result = post_message(self._consumers(), self.key,
+                                        self.response_url, xml)
+
+        if not successful:
             log.error("Post Message Failed")
-            raise LTIPostMessageException(f"Post Message Failed to {self.response_url} with XML: {xml}")
-        return ret
+            raise LTIPostMessageException(f"Post Message Failed to {self.response_url} with result: {full_result}")
+        return parse_read_result(full_result)
 
     def post_grade(self, grade, message='', endpoint=None, url=False,
                    needs_review=False, when_submitted_at: str = None,
@@ -259,11 +261,11 @@ class LTI:
                 message_identifier_id, operation, lis_result_sourcedid,
                 score, message, url, needs_review, when_submitted_at=when_submitted_at,
                 overwrite_human_grades=overwrite_human_grades)
-            ret = post_message(self._consumers(), self.key,
-                               self.response_url, xml)
-            if not ret:
+            successful, full_result = post_message(self._consumers(), self.key,
+                                            self.response_url, xml)
+            if not successful:
                 log.error("Post Message Failed")
-                raise LTIPostMessageException(f"Post Message Failed to {self.response_url} with XML: {xml}")
+                raise LTIPostMessageException(f"Post Message Failed to {self.response_url} with result: {full_result}")
             return True
 
         return False

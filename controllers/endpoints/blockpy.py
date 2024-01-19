@@ -9,11 +9,12 @@ from slugify import slugify
 from natsort import natsorted
 
 from flask import Blueprint, url_for, session, request, jsonify, g, render_template, redirect, Response, \
-    send_from_directory, current_app
+    send_from_directory, current_app, make_response
 from werkzeug.utils import secure_filename
 
 from controllers.jinja_filters import to_iso_time
 from controllers.pylti.common import LTIPostMessageException
+from controllers.pylti.flask import LTI
 from controllers.pylti.post_grade import get_groups_submissions, calculate_submissions_score, create_grade_post
 from models.assignment_tag import AssignmentTag
 from models.course import Course
@@ -27,7 +28,7 @@ from models.assignment_group import AssignmentGroup
 
 from common.urls import normalize_url
 from common.filesystem import ensure_dirs
-from controllers.auth import get_user
+from controllers.auth import get_user, get_consumer_secrets
 from controllers.helpers import (ajax_failure, parse_assignment_load, require_request_parameters,
                                  get_course_id, maybe_int, check_resource_exists, ajax_success,
                                  login_required, require_course_instructor, require_course_grader, maybe_bool,
@@ -139,7 +140,7 @@ def load_editor(editor_information):
     :param editor_information:
     :return:
     '''
-    quiz_questions, readings, textbooks, javas = [], [], [], []
+    quiz_questions, readings, textbooks, javas, kettles = [], [], [], [], []
     for assignment in editor_information.get('assignments', []):
         if assignment.type == 'quiz':
             quiz_questions.append(assignment.id)
@@ -149,11 +150,21 @@ def load_editor(editor_information):
             textbooks.append(assignment.id)
         elif assignment.type == 'java':
             javas.append(assignment.id)
-    return render_template('blockpy/editor.html', ip=request.remote_addr,
+        elif assignment.type in ('typescript', 'kettle'):
+            kettles.append(assignment.id)
+    response = make_response(render_template('blockpy/editor.html', ip=request.remote_addr,
                            quiz_questions=quiz_questions, readings=readings,
-                           textbooks=textbooks, javas=javas,
-                           **editor_information)
+                           textbooks=textbooks, javas=javas, kettles=kettles,
+                           **editor_information))
+    return response
 
+
+@blueprint_blockpy.route('/serve_kettle_iframe/', methods=['GET', 'POST'])
+@blueprint_blockpy.route('/serve_kettle_iframe', methods=['GET', 'POST'])
+def serve_kettle_iframe():
+    response = make_response(render_template('blockpy/kettle_iframe.html'))
+    response.headers.set('Content-Security-Policy', "sandbox allow-scripts")
+    return response
 
 @blueprint_blockpy.route('/load_assignment/', methods=['GET', 'POST'])
 @blueprint_blockpy.route('/load_assignment', methods=['GET', 'POST'])
@@ -407,17 +418,29 @@ def view_submission():
                            user_id=submission.user_id, course_id=submission.course_id)
 
 
-def lti_post_grade(lti, total_score, view_url, lis_result_sourcedid, lis_outcome_service_url, reviewed):
+class TransmissionStatuses:
+    SUCCESS = "success"
+    FAILURE = "failure"
+    UNCHANGED = "unchanged"
+    # TBD if needed
+    QUEUED = "queued"
+    UNKNOWN = "unknown"
+
+
+def lti_post_grade(lti, total_score, view_url, lis_result_sourcedid, lis_outcome_service_url, reviewed,
+                   send_even_if_equal=False):
     session['lis_outcome_service_url'] = lis_outcome_service_url
-    session['lis_result_sourcedid'] = lis_result_sourcedid
     if lis_result_sourcedid and lti:
+        existing_grade = lti.get_grade(endpoint=lis_result_sourcedid)
+        if existing_grade == total_score and not send_even_if_equal:
+            return TransmissionStatuses.UNCHANGED, total_score
         lti.post_grade(total_score, view_url, endpoint=lis_result_sourcedid, url=True,
                        needs_review=reviewed,
                        # Seems to give the wrong time? Need to find a better source than "date_modified" anyway
                        #when_submitted_at=to_iso_time(submission.date_modified)
                        )
-        return True, total_score
-    return False, total_score
+        return TransmissionStatuses.SUCCESS, total_score
+    return TransmissionStatuses.FAILURE, total_score
 
 
 @blueprint_blockpy.route('/update_submission/', methods=['GET', 'POST'])
@@ -426,7 +449,6 @@ def lti_post_grade(lti, total_score, view_url, lis_result_sourcedid, lis_outcome
 def update_submission():
     # Get parameters
     submission_id = maybe_int(request.values.get("submission_id"))
-    lis_result_sourcedid = request.values.get('lis_result_sourcedid')
     assignment_group_id = maybe_int(request.values.get('assignment_group_id'))
     score = float(request.values.get('score', '0'))
     correct = maybe_bool(request.values.get("correct"))
@@ -471,28 +493,32 @@ def update_submission():
         return ajax_failure(reason)
     if was_changed or force_update:
         submission.save_block_image(image)
-        if g.lti is None:
-            return ajax_success({"submitted": False, "changed": was_changed, "correct": correct,
-                                 "feedbacks": feedbacks, 'submission_status': submission.submission_status,
-                                 "grading_status": submission.grading_status,
-                                 "message": "LTI is not present, no submission to LMS possible."})
+        if 'lti' not in g or g.lti is None:
+            g.lti = LTI(get_consumer_secrets(current_app))
+            #return ajax_success({"submitted": False, "changed": was_changed, "correct": correct,
+            #                     "feedbacks": feedbacks, 'submission_status': submission.submission_status,
+            #                     "grading_status": submission.grading_status,
+            #                     "message": "LTI is not present, no submission to LMS possible."})
         if submission.user.is_grader(course_id):
             return ajax_success({"submitted": False, "changed": was_changed, "correct": correct,
                                  "feedbacks": feedbacks, 'submission_status': submission.submission_status,
                                  "grading_status": submission.grading_status,
                                  "message": "Submission user is grader, cannot submit to LMS."})
         error = "Generic LTI Failure - perhaps not logged into LTI session?"
-        success = False
+        transmission_status = TransmissionStatuses.QUEUED
         total_score = None
-        post_params = create_grade_post(submission, lis_result_sourcedid, assignment_group_id, submission.user.id,
+        post_params = create_grade_post(submission, submission.endpoint, assignment_group_id, submission.user.id,
                                         submission.course_id, False)
         try:
-            success, total_score = lti_post_grade(g.lti, *post_params)
+            transmission_status, total_score = lti_post_grade(g.lti, *post_params)
         except LTIPostMessageException as e:
             error = str(e)
-        if success:
+        if transmission_status == TransmissionStatuses.SUCCESS:
             make_log_entry(submission.assignment_id, submission.assignment_version,
                            course_id, user_id, "X-Submission.LMS", "answer.py", message=f"{total_score}|{score}")
+        elif transmission_status == TransmissionStatuses.UNCHANGED:
+            make_log_entry(submission.assignment_id, submission.assignment_version,
+                           course_id, user_id, "X-Unchanged.LMS", "answer.py", message=f"{total_score}|{score}")
         else:
             submission.update_grading_status(GradingStatuses.FAILED)
             log_params = {'assignment_id': submission.assignment_id,
@@ -667,7 +693,7 @@ def download_file():
     file_path = "/".join((files_folder, secure_filename(directory), filename))
     suggest_download = any(filename.endswith(extension) for extension in SUGGEST_DOWNLOAD_EXTENSIONS)
     response = send_from_directory(
-        current_app.static_folder, file_path, attachment_filename=filename, as_attachment=suggest_download
+        current_app.static_folder, file_path, download_name=filename, as_attachment=suggest_download
     )
     response.headers['x-filename'] = filename
     return response
@@ -748,7 +774,7 @@ def get_submission_image():
     if submission.user_id != user_id:
         require_course_grader(user, submission.course_id)
     # Do action
-    print(relative_image_path)
+    #print(relative_image_path)
     return current_app.send_static_file(relative_image_path)
 
 

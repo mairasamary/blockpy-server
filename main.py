@@ -15,7 +15,8 @@ def create_app(test_config=None) -> Flask:
     :return: a new instance of the BlockPy app.
     """
     # create and configure the app
-    app = Flask('blockpy', instance_relative_config=True, static_folder=None)
+    app = Flask('blockpy', instance_relative_config=True, static_folder='static')
+                #static_url_path='/static')
     # load the test config if passed in
     if test_config is not None:
         if test_config == 'testing':
@@ -25,6 +26,7 @@ def create_app(test_config=None) -> Flask:
     elif app.config['DEBUG']:
         app.config.from_object('config.DevelopmentConfig')
     else:
+        print("Loading Production!")
         app.config.from_object('config.ProductionConfig')
     app.config.from_pyfile('configuration.py')
 
@@ -61,21 +63,22 @@ def create_app(test_config=None) -> Flask:
     # Set Up JWT
     jwt = JWTManager(app)
 
-    # Modify Jinja2
-    from controllers.jinja_filters import setup_jinja_filters
-    setup_jinja_filters(app)
-
-    # Logging
-    from controllers.interaction_logger import setup_logging
-    setup_logging(app)
-
     # Email
     from flask_mail import Mail
     mail = Mail(app)
 
     # Set up all the endpoints
     with app.app_context():
-        # TODO: Finish create_blueprints
+
+        # Modify Jinja2
+        from controllers.jinja_filters import setup_jinja_filters
+        setup_jinja_filters(app)
+
+        # Logging
+        from controllers.interaction_logger import setup_logging
+        setup_logging(app)
+
+        # Load up all the controllers
         from controllers import create_blueprints
         create_blueprints(app)
 

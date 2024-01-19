@@ -2,9 +2,11 @@
 The base model that all other models inherit from
 """
 import json
+from datetime import datetime
 from typing import Tuple, Dict, Optional
 
 from sqlalchemy import (Integer, Column, DateTime, func)
+from sqlalchemy.orm import mapped_column, Mapped
 from sqlalchemy.ext.declarative import declared_attr
 
 from common.dates import string_to_datetime, datetime_to_pretty_string
@@ -19,10 +21,10 @@ class Base(db.Model):
     # No one should instantiate this directly
     __abstract__ = True
 
-    id = Column(Integer(), primary_key=True, autoincrement=True)
-    date_created = Column(DateTime, default=func.current_timestamp())
-    date_modified = Column(DateTime, default=func.current_timestamp(),
-                           onupdate=func.current_timestamp())
+    id: Mapped[int] = mapped_column(Integer(), primary_key=True, autoincrement=True)
+    date_created: Mapped[datetime] = mapped_column(DateTime, default=func.current_timestamp())
+    date_modified: Mapped[datetime] = mapped_column(DateTime, default=func.current_timestamp(),
+                                                    onupdate=func.current_timestamp())
 
     SCHEMA_V1_IGNORE_COLUMNS = ('id', 'date_modified')
     SCHEMA_V2_IGNORE_COLUMNS = SCHEMA_V1_IGNORE_COLUMNS
@@ -90,8 +92,12 @@ class Base(db.Model):
             return None
         return cls.query.get(pk_id)
 
+    def find_all_linked_resources(self) -> dict[str, list["Base"]]:
+        return {}
+
 
 class VersionedBase(Base):
+    __abstract__ = True
 
     def edit(self, updates: dict, update_version: bool = True) -> bool:
         """
@@ -115,6 +121,7 @@ class VersionedBase(Base):
 
 
 class EnhancedBase(VersionedBase):
+    __abstract__ = True
 
     @classmethod
     def decode_json(cls, data: dict, **kwargs) -> 'EnhancedBase':
@@ -179,3 +186,48 @@ class EnhancedBase(VersionedBase):
         if url is None:
             return None
         return cls.query.filter_by(url=url).first()
+
+
+def find_all_linked_resources(resources: list[Base]) -> dict[str, list[Base]]:
+    """
+    Given a list of resources, find all linked resources.
+    :param resources: A list of resources
+    :return: A dictionary of resources
+    """
+    unseen_resources = list(resources)
+    seen_resources = set(resources)
+    resource_graph: dict[str, list[Base]] = {}
+    while unseen_resources:
+        resource = unseen_resources.pop()
+        # Visit this node
+        seen_resources.add(resource)
+        # Visit all links
+        for category, linked_resources in resource.find_all_linked_resources().items():
+            for linked_resource in linked_resources:
+                if linked_resource not in seen_resources:
+                    unseen_resources.append(linked_resource)
+                    if category not in resource_graph:
+                        resource_graph[category] = []
+                    # Put it at the start, to make sure forked assignments are processed first
+                    resource_graph[category].insert(0, linked_resource)
+    # All done!
+    return resource_graph
+
+
+SAFE_DELETE_ORDER = [
+    "Log",
+    "Report",
+    "AssignmentTagMembership",
+    "AssignmentTag",
+    "Review",
+    "SampleSubmission",
+    "Submission",
+    "AssignmentGroupMembership",
+    "AssignmentGroup",
+    "Assignment",
+    "Role",
+    "Invite",
+    "Course",
+    "Authentication",
+    "User",
+]

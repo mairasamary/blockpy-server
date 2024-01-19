@@ -11,6 +11,8 @@ def datetime_to_string(a_datetime: datetime) -> str:
     :param a_datetime: A datetime object
     :return: The string representation
     """
+    if a_datetime is None:
+        return ""
     return a_datetime.isoformat() + 'Z'
 
 
@@ -37,3 +39,9 @@ def datetime_to_pretty_string(a_datetime: datetime) -> str:
     :return: String representation of the datetime.
     """
     return a_datetime.strftime("%I:%M%p on %a %d, %b %Y").replace(" 0", " ")
+
+
+def from_canvas_isotime(a_datetime: str) -> datetime:
+    if a_datetime and a_datetime[0] != '$':
+        return datetime.fromisoformat(a_datetime)
+    return None

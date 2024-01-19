@@ -26,6 +26,7 @@ from controllers.helpers import (get_lti_property, require_request_parameters, l
 
 import controllers.endpoints.maze as maze
 import controllers.endpoints.blockpy as blockpy
+import controllers.endpoints.courses as course_endpoints
 
 from models import db
 from models.user import User
@@ -36,18 +37,27 @@ from models.submission import Submission
 
 blueprint_assignments = Blueprint('assignments', __name__, url_prefix='/assignments')
 
-
 @blueprint_assignments.route('/', methods=['GET', 'POST'])
 @blueprint_assignments.route('/load/', methods=['GET', 'POST'])
 @blueprint_assignments.route('/load', methods=['GET', 'POST'])
 def load():
-    if request.args.get('grade_mode', False) == "group":
+    grade_mode = request.args.get('grade_mode', False)
+    if grade_mode == 'dashboard':
+        # TODO: Should this be an allowlist?
+        return course_endpoints.dashboard()
+    if grade_mode == 'textbook':
+        return load_textbook(request.args.get('assignment_url', ''))
+    if grade_mode == "group":
         course_id = maybe_int(request.args.get('course_id'))
         user_id = maybe_int(request.args.get('graded_user_id'))
         assignment_group_id = maybe_int(request.args.get('assignment_group_id'))
         return blockpy.view_submissions(course_id, user_id, assignment_group_id)
-    if request.args.get('grade_mode', False) == "single":
+    if grade_mode == "single":
         return blockpy.view_submission()
+    if grade_mode == 'filter':
+        return course_endpoints.submissions_filter(request.args.get('course_id'))
+    if grade_mode == 'watch':
+        return course_endpoints.watch_events()
     editor_information = parse_assignment_load()
 
     # Use the proper template

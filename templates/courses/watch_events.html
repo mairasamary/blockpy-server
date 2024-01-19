@@ -13,11 +13,15 @@ Watch Events
 <script type='text/javascript'>
 
     function getLocalStorage(key, defaultValue) {
-        let value = localStorage.getItem(key);
-        if (value === null) {
+        try {
+            let value = localStorage.getItem(key);
+            if (value === null) {
+                return defaultValue;
+            } else {
+                return value;
+            }
+        } catch (e) {
             return defaultValue;
-        } else {
-            return value;
         }
     }
 
@@ -44,7 +48,7 @@ Watch Events
 {% block body %}
 
     <h1>Watch Events</h1>
-    {{ navigation.navigate_course() }}
+    {{ navigation.navigate_course(course_id) }}
 
     <watcher params="server: server, courseId: pageCourseId, assignmentIds: assignmentIds, userIds: userIds"></watcher>
 

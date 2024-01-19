@@ -4,6 +4,7 @@ import time
 import json
 from datetime import datetime, timedelta
 
+from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import Column, String, Integer, ForeignKey, Text, func, JSON, Index, and_
 
 import models
@@ -15,24 +16,25 @@ from models.course import Course
 from models.assignment import Assignment
 
 class Log(Base):
+    __tablename__ = "log"
     # Identification
-    assignment_id = Column(Integer(), ForeignKey('assignment.id'))
-    assignment_version = Column(Integer())
-    course_id = Column(Integer(), ForeignKey('course.id'))
-    subject_id = Column(Integer(), ForeignKey('user.id'))
+    assignment_id: Mapped[int] = mapped_column(Integer(), ForeignKey('assignment.id'))
+    assignment_version: Mapped[int] = mapped_column(Integer())
+    course_id: Mapped[int] = mapped_column(Integer(), ForeignKey('course.id'))
+    subject_id: Mapped[int] = mapped_column(Integer(), ForeignKey('user.id'))
     # Actual event data
-    event_type = Column(String(255))
-    file_path = Column(String(255), default="", nullable=True)
-    category = Column(String(255), default="")
-    label = Column(String(255), default="")
+    event_type: Mapped[str] = mapped_column(String(255))
+    file_path: Mapped[str] = mapped_column(String(255), default="", nullable=True)
+    category: Mapped[str] = mapped_column(String(255), default="")
+    label: Mapped[str] = mapped_column(String(255), default="")
     # Message will be JSON encoded data
-    message = Column(Text(), default="")
-    client_timestamp = Column(String(255), default="")
-    client_timezone = Column(String(255), default="")
+    message: Mapped[str] = mapped_column(Text(), default="")
+    client_timestamp: Mapped[str] = mapped_column(String(255), default="")
+    client_timezone: Mapped[str] = mapped_column(String(255), default="")
 
-    assignment = db.relationship("Assignment")
-    subject = db.relationship("User")
-    course = db.relationship("Course")
+    assignment: Mapped["Assignment"] = db.relationship(back_populates="logs")
+    subject: Mapped["User"] = db.relationship(back_populates="logs")
+    course: Mapped["Course"] = db.relationship(back_populates="logs")
 
     __table_args__ = (Index('log_index', "course_id", "assignment_id", "subject_id"),)
 
@@ -203,7 +205,4 @@ class Log(Base):
             json.dumps(self.client_timestamp),
             json.dumps(self.client_timezone)
         ))
-class LogSchema(ma.SQLAlchemyAutoSchema):
-    class Meta:
-        model = Log
-        include_fk = True
+

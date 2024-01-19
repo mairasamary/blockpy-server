@@ -6,6 +6,7 @@ from functools import wraps
 from flask import g, request, redirect, url_for, make_response, current_app
 from flask import flash, session, jsonify, abort
 
+from common.dates import from_canvas_isotime
 from common.maybe import maybe_bool, maybe_int
 from models.course import Course
 from models.assignment import Assignment
@@ -70,6 +71,20 @@ def require_course_grader(user, course_id, allow_fork=False):
         message = 'You are not a grader (course ID {}).'.format(course_id)
         abort(make_response(jsonify(success=False, message=message, forkable=False), 200))
         return False
+    return True
+
+
+def require_admin(user):
+    if not user.is_admin():
+        message = "You are not an administrator."
+        abort(make_response(jsonify(success=False, message=message), 200))
+    return True
+
+
+def check_course_unlocked(course):
+    if course.locked:
+        message = "This course is locked. Please unlock the course before editing."
+        abort(make_response(jsonify(success=False, message=message), 200))
     return True
 
 
@@ -169,6 +184,8 @@ def parse_assignment_load(assignment_id_or_url=None):
         course_id = int(g.course.id) if 'course' in g and g.course else None
     # LTI submission URL
     new_submission_url = request.form.get('lis_result_sourcedid', None)
+    new_due_date = from_canvas_isotime(request.form.get('custom_canvas_assignment_dueat', None))
+    new_lock_date = from_canvas_isotime(request.form.get('custom_canvas_assignment_lockat', None))
     # Embedded?
     embed = request.values.get('embed', 'false').lower() == 'true'
     # Get group
@@ -204,7 +221,8 @@ def parse_assignment_load(assignment_id_or_url=None):
     if user_id is None or course_id is None:
         submissions = []
     else:
-        submissions = [assignment.load_or_new_submission(user_id, course_id, new_submission_url, assignment_group_id)
+        submissions = [assignment.load_or_new_submission(user_id, course_id, new_submission_url, assignment_group_id,
+                                                         new_due_date, new_lock_date)
                        for assignment in assignments]
     # Determine the users' role in relation to this information
     role = user.determine_role(assignments, submissions) if user else "anonymous"
@@ -317,12 +335,4 @@ def make_log_entry(assignment_id, assignment_version, course_id, user_id,
                    event_type, file_path, category, label, message, timestamp, timezone)
 
 
-def compare_string_equality(submitted, expected) -> bool:
-    if not submitted and bool(expected):
-        return False
-    submitted = str(submitted).strip()
-    if isinstance(expected, str):
-        return submitted == expected
-    else:
-        # Assume list of possible answers
-        return submitted in expected
+

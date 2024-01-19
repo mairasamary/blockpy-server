@@ -27,6 +27,7 @@ ko.bindingHandlers.codemirror = {
     init: function (element, valueAccessor) {
         let options = ko.unwrap(valueAccessor());
         element.editor = CodeMirror(element, ko.toJS(options));
+        console.log(element.editor);
         element.editor.on('change', function (cm: any) {
             const latestOptions = ko.unwrap(valueAccessor());
             if (!latestOptions.readOnly) {
@@ -34,6 +35,14 @@ ko.bindingHandlers.codemirror = {
             }
         });
         element.editor.setValue(options.value());
+
+        if (options.noOverwrite) {
+            element.editor.setOption("extraKeys", {
+                Insert: (cm: CodeMirror.Editor) => {
+                    cm.toggleOverwrite(false);
+                }
+            })
+        }
 
         ko.utils.domNodeDisposal.addDisposeCallback(element, function () {
             let wrapper = element.editor.getWrapperElement();

@@ -12,8 +12,11 @@ Variables:
 import uuid
 import traceback
 import json
+from functools import wraps
 
 from flask import current_app, g, jsonify, make_response, request, abort
+from werkzeug.datastructures import ImmutableMultiDict
+from werkzeug.wrappers import Request
 from flask_jwt_extended import create_access_token, get_jwt_identity, verify_jwt_in_request, \
     set_access_cookies, get_jwt
 from flask_jwt_extended.jwt_manager import ExpiredSignatureError
@@ -33,7 +36,26 @@ from models.user import User
 from models.course import Course
 
 
+def move_token_to_header(func):
+    """
+    Decorator to move the access_token from the body to the header.
+    This is necessary for POST bodies made via forms, which can have a token in the body
+    but have no mechanism to move the token to the header (which is one of the locations
+    that Flask-JWT-Extended looks for the token, unlike the form body).
+    """
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        if 'access_token' in request.form:
+            # Can't modify the header directly, have to make a copy
+            modified_headers = dict(request.headers)
+            modified_headers['Authorization'] = "Bearer " + request.form['access_token']
+            request.headers = ImmutableMultiDict(modified_headers)
+        return func(*args, **kwargs)
+    return wrapper
+
+
 @current_app.before_request
+@move_token_to_header
 def login_user_if_able():
     """
     This is the main function for handling login. It checks several possible ways that the user
@@ -84,15 +106,19 @@ def login_user_if_able():
     if is_lti_launch_request(request):
         return try_lti_login_initial()
     # If a stored LTI session was provided, we can try that instead
-    if is_stored_lti_launch_request(request):
-        return try_lti_login_stored()
-    # If Flask-security logged them in, we don't need a JWT
-    if current_user.is_authenticated:
+    # Deprecated: This is not a good idea, most likely, so not doing it unless critical.
+    # if is_stored_lti_launch_request(request):
+    #     return try_lti_login_stored()
+    # If Flask-security logged them in as a non-anonymous user, we don't need a JWT
+    if current_user.is_authenticated and not current_user.anonymous:
         return load_logged_in_user()
     # Try to get the user from the JWT (cookie, header, or querystring)
     if try_jwt_login():
         return
-    # If all else fails, we have an anonymous user
+    # Check if they are already logged in as an anonymous user:
+    if current_user.is_authenticated:
+        return load_logged_in_user()
+    # If all else fails, we have to create an anonymous user
     return make_user_anonymous()
 
 
@@ -103,9 +129,11 @@ def get_consumer_secrets(app=None):
     if app is None:
         app = current_app
     return {
-        "secret": app.config.get('CONSUMER_KEY_SECRET', ""),
-        "cert": app.config.get('CONSUMER_KEY_PEM_FILE', ""),
-        "certkey": app.config.get('CONSUMER_KEY_CERT', ""),
+        app.config.get("CONSUMER_KEY"): {
+            "secret": app.config.get('CONSUMER_KEY_SECRET', ""),
+            "cert": app.config.get('CONSUMER_KEY_PEM_FILE', ""),
+            "certkey": app.config.get('CONSUMER_KEY_CERT', ""),
+        }
     }
 
 
@@ -119,7 +147,7 @@ def load_logged_in_user():
     if session.get(LTI_SESSION_KEY, False):
         g.lti = LTI(get_consumer_secrets())
     if 'lti_course_id' in session and g.user:
-        g.course = Course.by_id(session['lti_course'])
+        g.course = Course.by_id(session['lti_course_id'])
         g.roles = g.user.get_course_roles(g.course.id)
     else:
         g.course = None
@@ -132,24 +160,7 @@ def get_user() -> (User, int):
     """
     if 'user' in g and g.user:
         return g.user, g.user.id
-    abort(401, message="User not logged in, operation cannot be completed")
-
-
-def create_user_token() -> dict:
-    """
-    Creates a JWT token for the current user.
-    """
-    return create_access_token(g.user.id, additional_claims={
-        'is_lti_active': True,
-        'course_id': g.course.id,
-        'roles': g.roles,
-        # LTI Restore Data
-        'url': request.url,
-        'method': request.method,
-        # TODO: Check if headers are too big, and whether we need to remove some
-        'headers': json.dumps(request.headers),
-        'params': json.dumps(request.form.to_dict())
-    })
+    abort(401, "User not logged in, operation cannot be completed")
 
 
 def try_lti_login_initial():
@@ -163,13 +174,14 @@ def try_lti_login_initial():
 def load_lti_user():
     """
     Looks for whether we need to create a new user/course/roles, or create them from the newly provided data.
+    This is assumed to happen at the end of an LTI launch.
 
     Some fields may be out of date, so if they are found in the request form, they will be updated.
     Those fields will not be updated if they are found in the session.
     :return:
     """
     # 1) check whether the user needs to be updated
-    old_user = g.user
+    old_user = g.user if 'user' in g else None
     g.user = User.from_lti("canvas",
                            session["pylti_user_id"],
                            session.get("lis_person_contact_email_primary", ""),
@@ -189,8 +201,29 @@ def load_lti_user():
     g.user.update_roles(g.roles, g.course.id)
     # 4) Generally update the LTI status
     session['is_lti_active'] = True
+    # Keep track of the chosen oauth_consumer_key
+    g.oauth_consumer_key = request.form.get('oauth_consumer_key', "")
     # 5) If the user changed, then log them in again
     handle_login_change(old_user)
+
+
+def create_user_token() -> dict:
+    """
+    Creates a JWT token for the current user.
+    """
+    return create_access_token(g.user.id, additional_claims={
+        'is_lti_active': True,
+        'course_id': g.course.id,
+        'roles': g.roles,
+        'oauth_consumer_key': g.oauth_consumer_key,
+        # LTI Restore Data
+        # Deprecated: This is probably not a good idea, so not doing this.
+        # 'url': request.url,
+        # 'method': request.method,
+        # If these get too big, I found that gzip/zlib compression works well
+        # 'headers': json.dumps(dict(request.headers.items())),
+        # 'params': json.dumps(request.form.to_dict())
+    })
 
 
 def handle_login_change(old_user):
@@ -205,12 +238,13 @@ def load_jwt_user(user_id, claims):
     """
     Loads the user from the JWT token, and updates the LTI session data.
     """
-    old_user = g.user
+    old_user = g.user if 'user' in g else None
     g.user = User.by_id(user_id)
     g.course = Course.by_id(claims['course_id'])
     g.roles = claims['roles']
     session['lti_course_id'] = g.course.id
     session['is_lti_active'] = True
+    session['oauth_consumer_key'] = g.oauth_consumer_key = claims['oauth_consumer_key']
     handle_login_change(old_user)
 
 
@@ -234,26 +268,34 @@ def is_stored_lti_launch_request(request) -> bool:
 
 
 def try_jwt_login():
+    # Patch cookie into header if found on the form body
     try:
         verify_jwt_in_request()
         user_id = get_jwt_identity()
         load_jwt_user(user_id, get_jwt())
+        g.access_token = create_user_token()
         return True
     # TODO: Handle expiration more intelligently, letting the user know that they need to refresh
-    except (NoAuthorizationError, ExpiredSignatureError):
+    except NoAuthorizationError as e:
         return False
+    except ExpiredSignatureError as e:
+        abort(401, "JWT token expired, please refresh page")
 
 
 def try_lti_login_stored():
+    """ Deprecated backup strategy for "restoring" an LTI login from the access token. """
     try:
         verify_jwt_in_request()
         user_id = get_jwt_identity()
         g.lti = LTI(get_consumer_secrets(), use_request=get_jwt())
         load_jwt_user(user_id, get_jwt())
+        g.access_token = create_user_token()
         return True
     # TODO: Handle expiration more intelligently, letting the user know that they need to refresh
-    except (NoAuthorizationError, ExpiredSignatureError):
+    except NoAuthorizationError as e:
         return False
+    except ExpiredSignatureError as e:
+        abort(401, "JWT token expired, please refresh page")
 
 
 """

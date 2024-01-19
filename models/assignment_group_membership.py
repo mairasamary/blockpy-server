@@ -1,3 +1,4 @@
+from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import (event, Integer, Date, ForeignKey, Column, Table,
                         String, Boolean, DateTime, Text, ForeignKeyConstraint,
                         cast, func, and_, or_, Index)
@@ -12,12 +13,12 @@ import models
 
 class AssignmentGroupMembership(Base):
     __tablename__ = 'assignment_group_membership'
-    assignment_group_id = Column(Integer(), ForeignKey('assignment_group.id'))
-    assignment_id = Column(Integer(), ForeignKey('assignment.id'))
-    position = Column(Integer())
+    assignment_group_id: Mapped[int] = mapped_column(Integer(), ForeignKey('assignment_group.id'))
+    assignment_id: Mapped[int] = mapped_column(Integer(), ForeignKey('assignment.id'))
+    position: Mapped[int] = mapped_column(Integer())
 
-    assignment_group = db.relationship("AssignmentGroup")
-    assignment = db.relationship("Assignment")
+    assignment_group: Mapped[list["AssignmentGroup"]] = db.relationship(back_populates="memberships")
+    assignment: Mapped[list["Assignment"]] = db.relationship(back_populates="memberships")
 
     SCHEMA_V1_IGNORE_COLUMNS = Base.SCHEMA_V1_IGNORE_COLUMNS + ("assignment_group_url",
                                                                 "assignment_url", "course_id")
@@ -85,8 +86,6 @@ class AssignmentGroupMembership(Base):
         db.session.commit()
         return membership
 
-
-class AssignmentGroupMembershipSchema(ma.SQLAlchemyAutoSchema):
-    class Meta:
-        model = AssignmentGroupMembership
-        include_fk = True
+    def find_all_linked_resources(self) -> dict[str, list[Base]]:
+        resources = {}
+        return resources

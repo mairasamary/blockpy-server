@@ -4,33 +4,35 @@ import time
 import base64
 
 from flask import url_for, current_app
+from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import Column, Text, Integer, Boolean, ForeignKey, Index, func, String
 
 import models
 from models.generics.models import db, ma
-from models.generics.base import VersionedBase
+from models.generics.base import VersionedBase, Base
 
 
 class Review(VersionedBase):
-    comment = Column(Text(), default="")
-    location = Column(Text(), default="")
-    generic = Column(Boolean(), default=False)
-    tag_id = Column(Integer(), ForeignKey('assignment_tag.id'), nullable=True)
+    __tablename__ = "review"
+    comment: Mapped[str] = mapped_column(Text(), default="")
+    location: Mapped[str] = mapped_column(Text(), default="")
+    generic: Mapped[bool] = mapped_column(Boolean(), default=False)
+    tag_id: Mapped[int] = mapped_column(Integer(), ForeignKey('assignment_tag.id'), nullable=True)
     # Should be treated as out of X/100
-    score = Column(Integer(), nullable=True)
+    score: Mapped[int] = mapped_column(Integer(), nullable=True)
     # Tracking
-    submission_id = Column(Integer(), ForeignKey('submission.id'), nullable=True)
-    author_id = Column(Integer(), ForeignKey('user.id'))
-    assignment_version = Column(Integer(), default=0)
-    submission_version = Column(Integer(), default=0)
-    version = Column(Integer(), default=0)
-    forked_id = Column(Integer(), ForeignKey('review.id'), nullable=True)
-    forked_version = Column(Integer(), nullable=True)
+    submission_id: Mapped[int] = mapped_column(Integer(), ForeignKey('submission.id'), nullable=True)
+    author_id: Mapped[int] = mapped_column(Integer(), ForeignKey('user.id'))
+    assignment_version: Mapped[int] = mapped_column(Integer(), default=0)
+    submission_version: Mapped[int] = mapped_column(Integer(), default=0)
+    version: Mapped[int] = mapped_column(Integer(), default=0)
+    forked_id: Mapped[int] = mapped_column(Integer(), ForeignKey('review.id'), nullable=True)
+    forked_version: Mapped[int] = mapped_column(Integer(), nullable=True)
 
-    tag = db.relationship("AssignmentTag")
-    submission = db.relationship("Submission")
-    author = db.relationship("User")
-    forked = db.relationship("Review")
+    tag: Mapped["AssignmentTag"] = db.relationship(back_populates="reviews")
+    submission: Mapped["Submission"] = db.relationship(back_populates="reviews")
+    author: Mapped["User"] = db.relationship(back_populates="reviews")
+    forked: Mapped["Review"] = db.relationship("Review", remote_side="Review.id")
 
     def __str__(self):
         return "<Review {} for {}>".format(self.id, self.submission_id)
@@ -119,7 +121,10 @@ class Review(VersionedBase):
             else:
                 return forked.get_actual_score()
 
-class ReviewSchema(ma.SQLAlchemyAutoSchema):
-    class Meta:
-        model = Review
-        include_fk = True
+    def find_all_linked_resources(self) -> dict[str, list[Base]]:
+        # Get any assignments that are forked from this one
+        forked = Review.query.filter_by(forked_id=self.id).all()
+        resources = {
+            "Review": forked,
+        }
+        return resources

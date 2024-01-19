@@ -1,16 +1,20 @@
-from flask_security import RoleMixin
+from flask_security.models.fsqla_v3 import FsRoleMixin as RoleMixin
+from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import Column, String, Integer, ForeignKey
 
 from models.generics.models import db, ma
 from models.generics.base import Base
 
 
-class Role(Base, RoleMixin):
-    name = Column(String(80))
-    user_id = Column(Integer(), ForeignKey('user.id'))
-    course_id = Column(Integer(), ForeignKey('course.id'), default=None)
+class Role(Base):
+    __tablename__ = "role"
+    name: Mapped[str] = mapped_column(String(80))
+    user_id: Mapped[int] = mapped_column(ForeignKey('user.id'))
+    course_id: Mapped[int] = mapped_column(ForeignKey('course.id'), default=None)
+    description: Mapped[str] = mapped_column(String(255), default=None)
 
-    course = db.relationship("Course")
+    user: Mapped["User"] = db.relationship(back_populates='roles')
+    course: Mapped["Course"] = db.relationship(back_populates='roles')
 
     NAMES = ['instructor', 'admin', 'student']
     CHOICES = [
@@ -18,6 +22,9 @@ class Role(Base, RoleMixin):
         ('instructor', 'Instructor'),
         ('teachingassistant', 'Teaching Assistant')
     ]
+
+    def get_permissions(self):
+        return set()
 
     def encode_json(self, use_owner=True):
         return {
@@ -45,8 +52,3 @@ class Role(Base, RoleMixin):
     @staticmethod
     def by_course(course_id):
         return Role.query.filter_by(course_id=course_id).all()
-
-class RoleSchema(ma.SQLAlchemyAutoSchema):
-    class Meta:
-        model = Role
-        include_fk = True

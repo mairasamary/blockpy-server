@@ -1,5 +1,6 @@
+import json
 from pygments import highlight
-from pygments.lexers import PythonLexer, JavaLexer
+from pygments.lexers import PythonLexer, JavaLexer, JavascriptLexer
 from pygments.formatters import HtmlFormatter
 from html.parser import HTMLParser
 
@@ -22,6 +23,27 @@ def highlight_java_code(code, linenos=True, prestyles=''):
                               # style='colorful'
                               )
     return highlight(code, JavaLexer(), formatter)
+
+
+def highlight_javascript_code(code, linenos=True, prestyles=''):
+    formatter = HtmlFormatter(linenos=linenos, noclasses=True,
+                              lineanchors="code-lineno",
+                              linespans="code-span",
+                              prestyles=prestyles,
+                              # style='colorful'
+                              )
+    return highlight(code, JavascriptLexer(), formatter)
+
+
+def highlight_json(value, linenos=False, prestyles=''):
+    code = json.dumps(value)
+    formatter = HtmlFormatter(linenos=linenos, noclasses=True,
+                              lineanchors="code-lineno",
+                              linespans="code-span",
+                              prestyles='margin-bottom: 0px',
+                              # style='colorful'
+                              )
+    return highlight(code, JavascriptLexer(), formatter)
 
 
 class MLStripper(HTMLParser):

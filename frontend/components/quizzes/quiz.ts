@@ -3,6 +3,7 @@ import {Assignment} from "../../models/assignment";
 import {Submission} from "../../models/submission";
 import {subsetRandomly} from "../../utilities/random";
 import {clearValue, Feedback, getDefaultValue, getValue, Question, SQUARE_BRACKETS, matchKeyInBrackets} from "./questions";
+import {STORAGE_SERVICE} from "../../utilities/safe_local_storage";
 
 export enum QuizMode {
     ATTEMPTING = "ATTEMPTING",
@@ -173,7 +174,7 @@ export class Quiz {
 
     editAssignmentBody(assignment: Assignment, question: Question, newText: string) {
         let instructions: QuizInstructions = JSON.parse(assignment.instructions()) as QuizInstructions;
-        localStorage.setItem("backup-instructions", assignment.instructions());
+        STORAGE_SERVICE.set("backup-instructions", assignment.instructions());
         fillInMissingQuizInstructionFields(instructions);
         if (instructions.questions[question.id].body !== newText) {
             instructions.questions[question.id].body = newText;

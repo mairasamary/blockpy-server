@@ -100,6 +100,7 @@
     <input type="hidden" name="assignment_data" value="{{
         assignment|make_readonly_form(submission, is_grader)
     }}">
+    <input type="hidden" name="access_token" value="{{ g.access_token }}">
     <button type="submit" class="btn btn-sm btn-outline-secondary"
 >Load Read-only Mode</button>
 </form> Opening assignment in read-only mode will not affect your grade at all.

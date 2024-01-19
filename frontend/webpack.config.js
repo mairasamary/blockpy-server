@@ -22,8 +22,9 @@ module.exports = {
         test: /\.css$/i,
         use: ["style-loader", "css-loader"],
         //exclude: /node_modules/,
-      },
+      }
     ],
+    noParse: /typescript/
   },
   devtool: 'eval-cheap-module-source-map',
   resolve: {
@@ -44,7 +45,9 @@ module.exports = {
     codemirror: 'CodeMirror',
     filepond: 'FilePond',
     browserfs: 'BrowserFS',
-    doppiojvm: "Doppio"
+    doppiojvm: "Doppio",
+    ConTodo: "ConTodo",
+    raw_kettle_compiler_dts: "RAW_D_TS_FILES"
   }/*,
   plugins: [
       new webpack.debug.ProfilingPlugin()

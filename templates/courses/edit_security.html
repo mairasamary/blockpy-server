@@ -37,7 +37,7 @@ function updateRanges() {
 {% block body %}
 
     <h1>Edit Security Settings</h1>
-    {{ navigation.navigate_course() }}
+    {{ navigation.navigate_course(course_id) }}
 
     {% with messages = get_flashed_messages() %}
         {% if messages %}
@@ -48,6 +48,13 @@ function updateRanges() {
             </div>
         {% endif %}
     {% endwith %}
+
+    <p>
+        This page allows you to edit the security for a given assignment.
+        You should only do this if you know what you are doing and have been
+        given explicit instructions to do so. Tampering with exam security
+        settings can result in academic misconduct charges.
+    </p>
 
     {% if group_name != None %}
     <p>Assignment: {{group_name}}</p>

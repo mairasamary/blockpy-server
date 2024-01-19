@@ -3,6 +3,7 @@ import {Model, ModelJson, ModelStore} from "../models/model";
 import {User, UserJson, UserStore} from "../models/user";
 import {areArraysEqualSets, pushObservableArray} from "./plugins";
 import {Assignment, AssignmentJson} from "../models/assignment";
+import {STORAGE_SERVICE} from "../utilities/safe_local_storage";
 
 // TODO: "Add all" and "Remove all" buttons for Set menu
 // TODO: If only one available, then collapse everything to just the one
@@ -162,7 +163,7 @@ export class ModelSetSelector<J extends ModelJson, T extends Model<J>> {
 
     loadFromLocalStorage(): ModelSetJson[] {
         // Need CourseID for this too
-        let sets = localStorage.getItem(this.store.getLocalStorageKey());
+        let sets = STORAGE_SERVICE.get(this.store.getLocalStorageKey());
         if (sets === null) {
             return [{name: this.getDefaultGroupSetName(), default: true, ids: []}];
         } else {
@@ -259,7 +260,7 @@ export class ModelSetSelector<J extends ModelJson, T extends Model<J>> {
 
     private saveToLocalStorage() {
         let modelSetJson = JSON.stringify(this.sets().map((m: ModelSet) => m.toJson()));
-        localStorage.setItem(this.store.getLocalStorageKey(), modelSetJson);
+        STORAGE_SERVICE.set(this.store.getLocalStorageKey(), modelSetJson);
     }
 }
 

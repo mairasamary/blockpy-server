@@ -1,49 +1,36 @@
 import os
 import json
 
-import os
-import json
 import click
 from flask.cli import FlaskGroup
+from flask_migrate import Migrate
 from flask import current_app
 
-from main import create_app
+from scripts.setup import cli
+import scripts.db_commands
 
-from flask_migrate import Migrate
-
-from scripts.db_commands import (ResetDB, PopulateDB, DisplayDB, ExportCourse,
-                                 ImportCourse, CreateDB, RemoveCourse,
-                                 DumpDB, AddTestUsersDB, AddMazeCourse,
-                                 ExportProgSnap)
-from scripts.external_commands import UpdateBlockPy
-from tasks.run import HueyWorker
+#from scripts.db_commands import (ResetDB, PopulateDB, DisplayDB, ExportCourse,
+#                                 ImportCourse, CreateDB, RemoveCourse,
+#                                DumpDB, AddTestUsersDB, AddMazeCourse,
+#                                 ExportProgSnap)
+#from scripts.external_commands import UpdateBlockPy
+#from tasks.run import HueyWorker
 
 
-def create_cli_app(info):
+@cli.command('run_huey_debug')
+def run_huey_debug():
     """
-    Create a special version of the create_app function that has an unused `info` parameter.
-    :param info:
+    Example command
     :return:
     """
-    return create_app()
+    click.echo("Run the Huey server")
+    huey = current_app.huey
+    consumer = huey.create_consumer()
+    consumer.run()
 
 
-@click.group(cls=FlaskGroup, create_app=create_cli_app)
-@click.option('--debug', is_flag=True, default=False)
-def cli(debug):
-    """
-    Create the `cli` function that will manage all the custom scripts.
-    :param debug:
-    :return:
-    """
-    if debug:
-        os.environ['FLASK_DEBUG'] = '1'
-    os.environ['FLASK_ENV'] = 'development'
 
-# Read in secrets
-with open('settings/secrets.json') as secrets_file:
-    secrets = json.load(secrets_file)
-
+"""
 # TODO: Handle Migrate stuff
 # TOOD: Handle all other commands conversion
 manager = Manager(app)
@@ -75,6 +62,7 @@ manager.add_command("db", MigrateCommand)
 
 # Task Commands
 manager.add_command("huey", HueyWorker())
+"""
 
 if __name__ == '__main__':
     cli()

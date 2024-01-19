@@ -9,8 +9,8 @@ import * as Doppio from 'doppiojvm';
 import {recursiveCopy} from "../utilities/doppio_utils";
 import {Assignment} from "../models/assignment";
 import {FSModule} from "browserfs/dist/node/core/FS";
-import {QuizMode} from "./quizzes/quiz";
-import {Question, subscribeToStudent} from "./quizzes/questions";
+import {Timer} from "../utilities/timer";
+import {formatClock, pad} from "../utilities/text";
 
 interface JavaInterfaceJson extends AssignmentInterfaceJson {
 }
@@ -28,60 +28,7 @@ const BASIC_INSTRUCTOR_CODE = `public class Instructor {
     public static native void grade(int points, String feedback);
 }`;
 
-class Timer {
-    instance: NodeJS.Timeout | null;
-    time: ko.Observable<number>;
-    _startTime: number;
-    where: string;
 
-    constructor(where: string) {
-        this.time = ko.observable(0);
-        this.instance = null;
-        this.where = where;
-    }
-
-    reset() {
-        if (this.instance != null) {
-            clearInterval(this.instance);
-        }
-        this.instance = null;
-        $(this.where).text("");
-    }
-
-    stop() {
-        if (this.instance != null) {
-            clearInterval(this.instance);
-        }
-        this.instance = null;
-        const newTime = (Date.now() - this._startTime)/1000;
-        this.time(newTime);
-        $(this.where).text(Math.round(newTime)+" seconds");
-    }
-
-    start() {
-        this.reset();
-        this._startTime = Date.now();
-        this.instance = setInterval(this.update.bind(this), 1000);
-        const newTime = (Date.now() - this._startTime)/1000;
-        this.time(newTime);
-        $(this.where).text(Math.round(newTime)+" seconds");
-    }
-    
-    update() {
-        const newTime = (Date.now() - this._startTime)/1000;
-        this.time(newTime);
-        $(this.where).text(Math.round(newTime)+" seconds");
-    }
-
-}
-
-function pad(num: number) {return ("0" + num).slice(-2);}
-
-export function formatClock() {
-    const now = new Date();
-    const time = `${now.getHours() % 12 || 12}:${pad(now.getMinutes())} `;
-    return time + (now.getHours()>=12 ? 'PM': 'AM');
-}
 
 const FIND_PUBLIC_CLASS = /^\s*public\s+(?:class|interface)\s+([^\n\s\{]+)/gm;
 

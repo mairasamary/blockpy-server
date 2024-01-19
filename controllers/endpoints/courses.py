@@ -16,7 +16,7 @@ from controllers.auth import get_user
 from controllers.helpers import (get_lti_property, require_request_parameters, login_required,
                                  require_course_instructor, require_course_grader, get_select_menu_link,
                                  check_resource_exists, get_course_id, ajax_success, ajax_failure, maybe_int,
-                                 maybe_bool)
+                                 maybe_bool, require_admin, check_course_unlocked)
 from models.data_formats.report import make_report
 from models.log import Log
 from models import db, AssignmentGroup
@@ -33,10 +33,13 @@ courses = Blueprint('courses', __name__, url_prefix='/courses')
 
 
 class AddCourseForm(Form):
-    name = StringField("Name")
-    visibility = SelectField('Visibility', choices=[('private', 'Private'), ('public', 'Public')])
+    name = StringField("Name", description="A title for the course, shown when navigating to the course on BlockPy.")
+    visibility = SelectField('Visibility',
+                             choices=[('private', 'Private'), ('public', 'Public'),
+                                      ('archived', 'Archived')],
+                             description="Public courses are visible to all users, but private courses are not visible outside of folks with roles in that course. Archived courses are concluded courses that should not be shown anymore (they can be restored). ")
     term = StringField("Term")
-    url = StringField("URL")
+    url = StringField("URL", description="A unique URL for the course. Must be different from any other URLs for other courses. I recommend using underscores.")
     submit = SubmitField("Add new course")
 
 
@@ -71,11 +74,53 @@ def remove_course():
     # Verify exists
     check_resource_exists(course, "Course", course_id)
     # Verify permissions
-    require_course_instructor(g.user, course_id)
+    require_admin(g.user)
+    check_course_unlocked(course)
     # Perform action
     Course.remove(course_id)
     flash('Course removed')
     return redirect(url_for('courses.index'))
+
+
+@courses.route('/change_course_visibility/', methods=['GET', 'POST'])
+@courses.route('/change_course_visibility', methods=['GET', 'POST'])
+@require_request_parameters('course_id', 'visibility')
+@login_required
+def change_course_visibility():
+    course_id = int(request.values.get('course_id'))
+    visibility = request.values.get('visibility')
+    course = Course.by_id(course_id)
+    # Verify exists
+    check_resource_exists(course, "Course", course_id)
+    # Verify permissions
+    require_course_instructor(g.user, course_id)
+    check_course_unlocked(course)
+    # Perform action
+    success = Course.change_course_visibility(course_id, visibility)
+    if success:
+        flash(f'Course {course.url} visibility set to f{visibility}')
+    return redirect(url_for('courses.index'))
+
+
+@courses.route('/pin_course/', methods=['GET', 'POST'])
+@courses.route('/pin_course', methods=['GET', 'POST'])
+@require_request_parameters('course_id', 'pin_status')
+@login_required
+def pin_course():
+    course_id = int(request.values.get('course_id'))
+    pin_status = maybe_bool(request.values.get('pin_status'))
+    course = Course.by_id(course_id)
+    # Verify exists
+    check_resource_exists(course, "Course", course_id)
+    # Verify permissions
+    require_course_instructor(g.user, course_id)
+    check_course_unlocked(course)
+    # Perform action
+    try:
+        course.set_setting("pinned", pin_status, g.user)
+        return ajax_success({"updatedSettings": course.settings})
+    except Exception as e:
+        return ajax_failure("Failed to set pinned status:"+str(e))
 
 
 @courses.route('/rename', methods=['GET', 'POST'])
@@ -89,6 +134,7 @@ def rename_course():
     check_resource_exists(course, "Course", course_id)
     # Verify permissions
     require_course_instructor(g.user, course_id)
+    check_course_unlocked(course)
     # Perform action
     new_name = request.values.get('name')
     Course.rename(course_id, new_name)
@@ -722,6 +768,7 @@ def edit_points():
     user, user_id, course, course_id, groups = bulk_assignment_editor_setup()
     # Perform action
     if request.method == 'POST':
+        check_course_unlocked(course)
         modified = []
         for group, assignments in groups.items():
             for assignment in assignments:
@@ -771,6 +818,7 @@ def edit_settings():
     user, user_id, course, course_id, groups = bulk_assignment_editor_setup()
     # Perform action
     if request.method == 'POST':
+        check_course_unlocked(course)
         modified = []
         for group, assignments in groups.items():
             for assignment in assignments:
@@ -798,6 +846,36 @@ def edit_settings():
                            group_assignment_map=[[group.id if group else None,
                                                   [assignment.id for assignment in assignments]]
                                                  for group, assignments in groups.items()])
+
+
+@courses.route('/edit_textbooks', methods=['GET', 'POST'])
+@courses.route('/edit_textbooks/', methods=['GET', 'POST'])
+@login_required
+def edit_textbooks():
+    user, user_id, course, course_id, groups = bulk_assignment_editor_setup()
+    current_textbooks = course.get_textbooks()
+    all_possible_textbooks = [textbook for textbook in Assignment.get_textbooks(user_id) if textbook not in current_textbooks]
+    # Perform action
+    if request.method == 'POST':
+        check_course_unlocked(course)
+        new_textbook_url = request.values.get('textbook_url', '')
+        action = request.values.get("action", "")
+        if not new_textbook_url or not action:
+            flash(f"Could not take action '{action}' on textbook '{new_textbook_url}'")
+            return redirect(request.url)
+        action_taken = course.do_textbook_action(action, new_textbook_url, user_id)
+        flash(action_taken)
+        return redirect(request.url)
+    # Result
+    else:
+        warning = ""
+        return render_template('courses/edit_textbooks.html',
+                               course_id=course_id,
+                               course=course,
+                               current_textbooks=current_textbooks,
+                               all_possible_textbooks=all_possible_textbooks,
+                               groups=groups)
+
 
 @courses.route('/get_group_submission_links', methods=['GET', 'POST'])
 @courses.route('/get_group_submission_links/', methods=['GET', 'POST'])

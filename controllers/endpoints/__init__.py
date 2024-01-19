@@ -1,8 +1,8 @@
 from flask import current_app
 import controllers.endpoints.basic
 
-from controllers.endpoints.courses import courses
-current_app.register_blueprint(courses)
+from controllers.endpoints.courses import courses as blueprint_courses
+current_app.register_blueprint(blueprint_courses)
 
 from controllers.endpoints.assignments import blueprint_assignments
 current_app.register_blueprint(blueprint_assignments)

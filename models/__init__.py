@@ -3,21 +3,28 @@ The models and database connections
 """
 from flask import Flask
 from models.generics.models import db, migrate, ma
-from models.user import User, UserSchema
-from models.course import Course, CourseSchema
-from models.role import Role, RoleSchema
-from models.assignment import Assignment, AssignmentSchema
-from models.assignment_tag import AssignmentTag, AssignmentTagSchema
-from models.assignment_tag_membership import assignment_tag_membership, AssignmentTagMembershipSchema
-from models.assignment_group import AssignmentGroup, GroupSchema
+from models.role import Role
+from models.user import User
+from models.course import Course
+from models.assignment import Assignment
+from models.assignment_tag import AssignmentTag
+from models.assignment_tag_membership import assignment_tag_membership
+from models.assignment_group import AssignmentGroup
 from models.assignment_group_membership import AssignmentGroupMembership
-from models.authentication import Authentication, AuthenticationSchema
-from models.log import Log, LogSchema
-from models.review import Review, ReviewSchema
-from models.submission import Submission, SubmissionSchema
-from models.sample_submission import SampleSubmission, SampleSubmissionSchema
-from models.invite import Invite, InviteSchema
-from models.report import Report, ReportSchema
+from models.authentication import Authentication
+from models.log import Log
+from models.review import Review
+from models.submission import Submission
+from models.sample_submission import SampleSubmission
+from models.invite import Invite
+from models.report import Report
+
+
+from models.generics.schemas import (UserSchema, RoleSchema, CourseSchema, AssignmentSchema, AssignmentTagSchema,
+                                     #AssignmentTagMembershipSchema,
+                                     GroupSchema, AssignmentGroupMembershipSchema,
+                                     AuthenticationSchema, LogSchema, ReviewSchema, SubmissionSchema,
+                                     SampleSubmissionSchema, InviteSchema, ReportSchema)
 
 
 def init_database(app: Flask) -> Flask:
@@ -28,6 +35,7 @@ def init_database(app: Flask) -> Flask:
     :return: The same (modified) Flask application
     """
     db.init_app(app)
+
     migrate.init_app(app, db)
     ma.init_app(app)
 

@@ -17,4 +17,5 @@ def create_blueprints(app):
     setup_security(app)
     import controllers.endpoints
     setup_admin(app)
+    import controllers.errors
     rebar.init_app(app)

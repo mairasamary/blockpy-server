@@ -13,11 +13,15 @@ Copy Submission to Course
 <script type='text/javascript'>
 
     function getLocalStorage(key, defaultValue) {
-        let value = localStorage.getItem(key);
-        if (value === null) {
+        try {
+            let value = localStorage.getItem(key);
+            if (value === null) {
+                return defaultValue;
+            } else {
+                return value;
+            }
+        } catch (e) {
             return defaultValue;
-        } else {
-            return value;
         }
     }
 
@@ -27,7 +31,7 @@ Copy Submission to Course
 {% block body %}
 
     <h1>Copy Submission to Course</h1>
-    {{ navigation.navigate_course() }}
+    {{ navigation.navigate_course(course_id) }}
 
     <p>
         This form will help you transfer a given submission from one course to another.

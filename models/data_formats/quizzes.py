@@ -4,7 +4,7 @@ from pprint import pprint
 import sys
 import json
 
-from controllers.helpers import compare_string_equality
+from common.text import compare_string_equality
 
 
 class QuizResult:

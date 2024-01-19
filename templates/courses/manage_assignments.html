@@ -34,7 +34,7 @@ Course: Assignments
 {% block body %}
 
     <h1>Manage Assignments</h1>
-    {{ navigation.navigate_course() }}
+    {{ navigation.navigate_course(course_id) }}
 
     <assignment-manager params="server: server,
                                 course: course,

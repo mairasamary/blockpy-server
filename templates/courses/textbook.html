@@ -13,11 +13,15 @@ Textbook: {{ course.name }}
 <script type='text/javascript'>
 
     function getLocalStorage(key, defaultValue) {
-        let value = localStorage.getItem(key);
-        if (value === null) {
+        try {
+            let value = localStorage.getItem(key);
+            if (value === null) {
+                return defaultValue;
+            } else {
+                return value;
+            }
+        } catch (e) {
             return defaultValue;
-        } else {
-            return value;
         }
     }
 
@@ -29,7 +33,7 @@ Textbook: {{ course.name }}
 {% block body %}
 
     <h1>Textbook: {{ course.name }}</h1>
-    {{ navigation.navigate_course() }}
+    {{ navigation.navigate_course(course_id) }}
 
     <div class="list-group">
     {% for group, assignments in groups.items()|selectattr(0) %}

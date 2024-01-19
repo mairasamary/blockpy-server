@@ -6,6 +6,7 @@ import json
 from datetime import datetime, timedelta
 
 from flask import current_app
+from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import Column, String, DateTime, Integer, ForeignKey, Text, func, JSON, Index, and_
 
 from common.dates import datetime_to_string
@@ -16,37 +17,38 @@ from models.statuses import ReportStatus
 
 
 class Report(Base):
+    __tablename__ = "report"
     #: Queued -> Started -> [ Finished, Error ]
-    status = Column(String(255), default=ReportStatus.QUEUED)
-    attempt = Column(Integer(), default=0)
-    result = Column(String(255), default="output.html")
-    date_started = Column(DateTime, default=None, nullable=True)
-    date_finished = Column(DateTime, default=None, nullable=True)
+    status: Mapped[str] = mapped_column(String(255), default=ReportStatus.QUEUED)
+    attempt: Mapped[int] = mapped_column(Integer(), default=0)
+    result: Mapped[str] = mapped_column(String(255), default="output.html")
+    date_started: Mapped[datetime] = mapped_column(DateTime, default=None, nullable=True)
+    date_finished: Mapped[datetime] = mapped_column(DateTime, default=None, nullable=True)
 
     #: An integer from 0 to 100 that indicates how far along things are.
-    progress = Column(Integer(), default=0)
+    progress: Mapped[int] = mapped_column(Integer(), default=0)
     #: A short string describing the current work being done, or an error
-    message = Column(String(), default="")
+    message: Mapped[str] = mapped_column(String(), default="")
 
     #: The task name (endpoint/function name) that was run to generate this report.
-    task = Column(String(), default="")
+    task: Mapped[str] = mapped_column(String(), default="")
     #: A string representation of the parameters used to generate this report. Should be sufficient
     #: for running the report again, along with the task.
-    parameters = Column(Text(), default="")
+    parameters: Mapped[str] = mapped_column(Text(), default="")
 
     #: "public", "private", "course", "assignment", "user"
-    visibility = Column(String(), default="private")
+    visibility: Mapped[str] = mapped_column(String(), default="private")
 
     #: Specific user that this Report originates from
-    owner_id = Column(Integer(), ForeignKey('user.id'), nullable=True)
+    owner_id: Mapped[int] = mapped_column(Integer(), ForeignKey('user.id'), nullable=True)
     #: Specific assignment that this Report originates from
-    assignment_id = Column(Integer(), ForeignKey('assignment.id'), nullable=True)
+    assignment_id: Mapped[int] = mapped_column(Integer(), ForeignKey('assignment.id'), nullable=True)
     #: Specific course that this Report originates from
-    course_id = Column(Integer(), ForeignKey('course.id'), nullable=True)
+    course_id: Mapped[int] = mapped_column(Integer(), ForeignKey('course.id'), nullable=True)
 
-    assignment = relationship("Assignment")
-    owner = relationship("User")
-    course = relationship("Course")
+    assignment: Mapped["Assignment"] = db.relationship(back_populates="reports")
+    owner: Mapped["User"] = db.relationship(back_populates="reports")
+    course: Mapped["Course"] = db.relationship(back_populates="reports")
 
     def encode_json(self):
         return {
@@ -146,8 +148,3 @@ class Report(Base):
 
     def get_report_folder(self):
         return os.path.join(current_app.config['REPORT_DIR'], str(self.id))
-
-class ReportSchema(ma.SQLAlchemyAutoSchema):
-    class Meta:
-        model = Report
-        include_fk = True

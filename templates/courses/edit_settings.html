@@ -13,11 +13,15 @@ Edit Assignment Settings
 <script type='text/javascript'>
 
     function getLocalStorage(key, defaultValue) {
-        let value = localStorage.getItem(key);
-        if (value === null) {
+        try {
+            let value = localStorage.getItem(key);
+            if (value === null) {
+                return defaultValue;
+            } else {
+                return value;
+            }
+        } catch (e) {
             return defaultValue;
-        } else {
-            return value;
         }
     }
 
@@ -110,7 +114,7 @@ Edit Assignment Settings
 {% block body %}
 
     <h1>Edit Settings</h1>
-    {{ navigation.navigate_course() }}
+    {{ navigation.navigate_course(course_id) }}
 
     {% with messages = get_flashed_messages() %}
         {% if messages %}
@@ -122,6 +126,10 @@ Edit Assignment Settings
         {% endif %}
     {% endwith %}
 
+    <p>
+        This page allows you to edit the settings for each assignment.
+        You should only edit this page if you know what you are doing!
+    </p>
 
     <form action="" method=post>
 

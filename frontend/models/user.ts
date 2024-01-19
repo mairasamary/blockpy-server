@@ -3,6 +3,7 @@ import {Model, ModelJson, ModelStore} from "./model";
 import {capitalize, TwoWayReadonlyMap} from "../components/plugins";
 import {ajax_get} from "../components/ajax";
 import {Server} from "../components/server";
+import {STORAGE_SERVICE} from "../utilities/safe_local_storage";
 
 export interface RoleJson extends ModelJson {
     id: number;
@@ -133,15 +134,15 @@ export class UserStore extends ModelStore<UserJson, User> {
 
     constructor(server: Server, courseId: number|null, initialIds: number[], initialData: UserJson[]) {
         super(server, courseId, initialIds, initialData);
-        this.sortMode = ko.observable(<UserDisplayMode>localStorage.getItem(`BLOCKPY_COURSE_USER_SORT_MODE`) || UserDisplayMode.FIRST_LAST);
-        this.displayMode = ko.observable(<UserDisplayMode>localStorage.getItem(`BLOCKPY_COURSE_USER_DISPLAY_MODE`) || UserDisplayMode.FIRST_LAST);
+        this.sortMode = ko.observable(<UserDisplayMode>STORAGE_SERVICE.get(`COURSE_USER_SORT_MODE`) || UserDisplayMode.FIRST_LAST);
+        this.displayMode = ko.observable(<UserDisplayMode>STORAGE_SERVICE.get(`COURSE_USER_DISPLAY_MODE`) || UserDisplayMode.FIRST_LAST);
 
         this.sortMode.subscribe(() => {
-            localStorage.setItem(`BLOCKPY_COURSE_USER_SORT_MODE`, this.sortMode());
+            STORAGE_SERVICE.set(`COURSE_USER_SORT_MODE`, this.sortMode());
             // Notify the user set selector?
         });
         this.displayMode.subscribe(() => {
-            localStorage.setItem(`BLOCKPY_COURSE_USER_DISPLAY_MODE`, this.displayMode());
+            STORAGE_SERVICE.set(`COURSE_USER_DISPLAY_MODE`, this.displayMode());
         });
         this.displayOptions = Object.values(UserDisplayMode);
     }
@@ -183,7 +184,7 @@ export class UserStore extends ModelStore<UserJson, User> {
     }
 
     getLocalStorageKey(): string {
-        return `BLOCKPY_COURSE_${this.courseId}_USERS`;
+        return `COURSE_${this.courseId}_USERS`;
     }
 
     makeEmptyInstance(id: number): User {

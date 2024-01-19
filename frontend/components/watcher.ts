@@ -22,6 +22,7 @@ import {ModelSet} from "./model_selector";
 import {launchEditor} from "./editor";
 import {Submission, SubmissionJson} from "../models/submission";
 import {Server} from "./server";
+import {STORAGE_SERVICE} from "../utilities/safe_local_storage";
 
 // TODO: Load events on page load, mode or setting
 // TODO: Prevent both All from being loaded if SxA is too big?
@@ -546,8 +547,8 @@ export class Watcher {
 
     // TODO: Get latest for just a single submission
     getLatest() {
-        localStorage.setItem("BLOCKPY_SERVER_USERIDS", this.userSet().getStored());
-        localStorage.setItem("BLOCKPY_SERVER_ASSIGNMENTIDS", this.assignmentSet().getStored());
+        STORAGE_SERVICE.set("WATCHER_USERIDS", this.userSet().getStored());
+        STORAGE_SERVICE.set("WATCHER_ASSIGNMENTIDS", this.assignmentSet().getStored());
         this.isLoading(true);
         this.hasFailed(false);
         this.setGroupingMode();

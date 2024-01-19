@@ -92,13 +92,15 @@ class DefaultConfig:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # Flask JWT Extended
+    # Need to check json/query_string for opening URLs on the page (JWT has to be passed manually)
     JWT_TOKEN_LOCATION = ["headers", "cookies", "json", "query_string"]
     JWT_COOKIE_SAMESITE = 'None'
     JWT_COOKIE_SECURE = True
 
     # Task Settings
-    TASK_DB_PASSWORD: str
     TASK_DB_URI: str
+    TASK_QUEUE_STYLE: str
+    TASK_DB_SETTINGS = dict
 
     # Logs
     ROTATE_LOGS = False
@@ -123,7 +125,7 @@ class DevelopmentConfig(DefaultConfig):
     SITE_ROOT_URL = 'localhost:5001'
     TASK_QUEUE_STYLE = 'sqlite'
     TASK_DB_URI = 'instance/tasks.db'
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///instance/main.db'
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///../instance/main.db'
 
 
 class TestConfig(DefaultConfig):

@@ -19,6 +19,8 @@
     <script type=text/javascript>
         // Use $SCRIPT_ROOT to access all URLS on the server
         window.$URL_ROOT = {{ request.url_root|tojson|safe }};
+        <!-- TODO: This needs to be able to handle missing access_token -->
+        window.accessToken = {{ (g.access_token or "")|tojson }}
     </script>
 
     {% assets "libs_js" %}
@@ -100,6 +102,10 @@
 
         .btn-sm {
             font-size: 12px;
+        }
+
+        button.btn-lg, input.btn.btn-lg, a.btn.btn-lg {
+            font-size: 16px;
         }
 
         form label {
@@ -212,6 +218,10 @@
             text-align: right;
         }
 
+        .clickable {
+            cursor: pointer;
+        }
+
         .draft-review {
             border: 1px solid lightgray;
             padding: 4px;
@@ -312,6 +322,11 @@
             content: "❌ ";
         }
 
+        .instructor-only-tools {
+            background-color: #fcf8e3;
+            border: 1px solid #faebcc;
+        }
+
 .module {
   position: relative;
   border: 1px solid lightgrey;
@@ -384,6 +399,15 @@
     </script>
 
     <script>
+        function checkCookies() {
+            let cookieEnabled = navigator.cookieEnabled;
+            if (!cookieEnabled){
+                document.cookie = "testcookie";
+                cookieEnabled = document.cookie.indexOf("testcookie")!==-1;
+            }
+            return cookieEnabled;
+        }
+
         function switchVisible(submissionId, showHide) {
             $(`#h-${submissionId}-start`).toggle(!showHide);
             $(`#h-${submissionId}-end`).toggle(showHide);
@@ -466,6 +490,39 @@
                 returntext += ' ' + levels[i][0] + ' ' + (levels[i][0] === 1 ? levels[i][1].substr(0, levels[i][1].length-1): levels[i][1]);
             };
             return returntext.trim();
+        }
+        </script>
+
+
+        <script>
+
+        function inIframe () {
+            try {
+                return window.self !== window.top;
+            } catch (e) {
+                return true;
+            }
+        }
+        function relaunchInWindow(targetUrl) {
+            if (!targetUrl) {
+                targetUrl = {{ url_for('assignments.load', _external=True,grade_mode='dashboard')|tojson }};
+            }
+            window.parent.postMessage(
+              {
+                subject: 'requestFullWindowLaunch',
+                data: {
+                  url: targetUrl,
+                  placement: 'course_navigation',
+                  launchType: 'new_window',
+
+                  launchOptions: {
+                    width: 1000,
+                    height: 800,
+                  },
+                },
+              },
+              '*'
+            )
         }
         </script>
 

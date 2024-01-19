@@ -1,282 +1,330 @@
-from flask_script import Command, Option
-from flask_security.utils import hash_password
-from models.models import db
-from main import app
 import datetime
 import random
 import os
 import json
 from pprint import pprint
 
+import click
+from flask import current_app
 
-class CreateDB(Command):
-    def run(self, **kwargs):
-        print(db.engine)
-        print(dir(db.engine))
-        db.engine.echo = True
-        r = db.create_all()
-        print(r)
+from models import db
+from models.generics.base import find_all_linked_resources, SAFE_DELETE_ORDER
+from scripts.setup import cli
 
 
-class ResetDB(Command):
+@cli.command("create_db")
+def create_db():
+    """Creates the database tables"""
+    click.echo("Creating database tables")
+    db.engine.echo = True
+    r = db.create_all()
+    click.echo(r)
+
+
+@cli.command("reset_db")
+def reset_db():
     """Drops all tables and recreates them"""
-
-    def run(self, **kwargs):
+    click.echo("This will delete all existing tables and recreate them. You will lose all existing data.")
+    if click.confirm("Do you want to continue?"):
+        click.echo("Dropping database tables")
         db.drop_all()
+        click.echo("Creating database tables")
         db.create_all()
 
 
-class AddMazeCourse(Command):
-    """Fills in predefined data into DB for Maze Game"""
+@cli.command("populate_db")
+def populate_db():
+    """ Fills in predefined data into DB """
+    from models.user import User
+    from models.course import Course
+    from models.role import Role
 
-    option_list = (
-        Option('--owner', '-o', dest='owner_id', default='1'),
-    )
+    if not click.confirm("This may delete existing data. Are you sure you want to continue?"):
+        click.echo("Aborting!")
+        return
 
-    def run(self, owner_id, **kwargs):
-        from models.user import User
-        from models.course import Course
-        from models.role import Role
-        from models.assignment import Assignment
-        from models.assignment_group import AssignmentGroup
-        from models.assignment_group_membership import AssignmentGroupMembership
+    secrets = current_app.config
 
-        owner_id = int(owner_id)
-        maze_course = Course.new('Maze Course', owner_id, 'public', '', 'maze')
+    click.echo(f"Adding Admin User: {secrets.get('ADMIN_EMAIL', 'admin')}")
+    admin = User.new_admin(secrets.get("ADMIN_EMAIL", "email@whatever.com"),
+                           secrets.get("ADMIN_FIRST_NAME", "Admin"),
+                           secrets.get("ADMIN_LAST_NAME", "User"),
+                           secrets.get("ADMIN_PASSWORD", "password"))
+    db.session.add(admin)
+    db.session.flush()
+    db.session.add(Role(name='instructor', user_id=admin.id))
+    db.session.add(Role(name='admin', user_id=admin.id))
 
-        maze_group = AssignmentGroup.new(owner_id, maze_course.id, "Maze Game")
+    click.echo("Adding default course")
+    default_course = Course(name="Default Course", owner_id=admin.id,
+                            service="native",
+                            url="default", visibility='public')
+    db.session.add(default_course)
+    db.session.flush()
+    db.session.add(Role(name='instructor', course_id=default_course.id, user_id=admin.id))
 
-        for level in range(10):
-            maze_level = Assignment.new(owner_id, maze_course.id, 'maze', level=str(1 + level))
-            db.session.add(maze_level)
-            db.session.flush()
-            membership = AssignmentGroupMembership.move_assignment(maze_level.id, maze_group.id)
-            db.session.add(membership)
-        db.session.commit()
+    db.session.commit()
+    click.echo("Populated database")
 
 
-class AddTestUsersDB(Command):
-    """Fills in predefined data into DB"""
+@cli.command("add_maze_course")
+@click.option('--owner', '-o', 'owner_id', default='1')
+def add_maze_course(owner_id):
+    from models.user import User
+    from models.course import Course
+    from models.role import Role
+    from models.assignment import Assignment
+    from models.assignment_group import AssignmentGroup
+    from models.assignment_group_membership import AssignmentGroupMembership
 
-    def run(self, **kwargs):
-        from models.user import User
-        from models.course import Course
-        from models.role import Role
-        from models.assignment_group import AssignmentGroup
-        from models.assignment_group_membership import AssignmentGroupMembership
-        from models.assignment import Assignment
+    click.echo("Adding Maze Course")
 
-        default_course = Course.query.first()
+    owner_id = int(owner_id)
+    maze_course = Course.new('Maze Course', owner_id, 'public', '', 'maze')
 
-        print("Adding Teacher")
-        teacher = User(first_name="Klaus",
-                       last_name="Bart",
-                       password=hash_password("password"),
-                       confirmed_at=datetime.datetime.now(),
-                       active=True,
-                       email="klaus@acbart.com")
-        db.session.add(teacher)
+    maze_group = AssignmentGroup.new(owner_id, maze_course.id, "Maze Game")
+
+    for level in range(10):
+        maze_level = Assignment.new(owner_id, maze_course.id, 'maze', level=str(1 + level))
+        db.session.add(maze_level)
         db.session.flush()
-        db.session.add(Role(name='instructor', course_id=default_course.id, user_id=teacher.id))
+        membership = AssignmentGroupMembership.move_assignment(maze_level.id, maze_group.id)
+        db.session.add(membership)
+    db.session.commit()
+    click.echo("Added Maze Course")
 
-        print("Adding Student")
-        student = User(first_name="Ada",
-                       last_name="Bart",
-                       password=hash_password("password"),
-                       confirmed_at=datetime.datetime.now(),
-                       active=True,
-                       email="ada@acbart.com")
-        db.session.add(student)
+
+@cli.command("add_test_user")
+def add_test_user():
+    """Adds a test user to the database"""
+    from models.user import User
+    from models.course import Course
+    from models.role import Role
+    from models.assignment_group import AssignmentGroup
+    from models.assignment_group_membership import AssignmentGroupMembership
+    from models.assignment import Assignment
+
+    default_course = Course.query.first()
+
+    click.echo("Adding Teacher")
+    teacher = User.new_from_instructor("klaus@acbart.com", "Klaus", "Bart", "password")
+    db.session.add(teacher)
+    db.session.flush()
+    db.session.add(Role(name='instructor', course_id=default_course.id, user_id=teacher.id))
+
+    click.echo("Adding Student")
+    student = User.new_from_instructor("ada@acbart.com", "Ada", "Bart", "password")
+    db.session.add(student)
+    db.session.flush()
+    db.session.add(Role(name='student', course_id=default_course.id, user_id=student.id))
+
+    click.echo("Adding basic assignments")
+    basic_group = AssignmentGroup(name="First Group", course_id=default_course.id, owner_id=teacher.id,
+                                  url="test_assignment_group")
+    db.session.add(basic_group)
+    db.session.flush()
+    for i in range(5):
+        assignment = Assignment(name="Problem {}".format(i), instructions="Complete this problem",
+                                owner_id=teacher.id, course_id=default_course.id,
+                                url=f"test_problem_{i}", group_id=basic_group.id)
+        db.session.add(assignment)
         db.session.flush()
-        db.session.add(Role(name='student', course_id=default_course.id, user_id=student.id))
+        db.session.add(AssignmentGroupMembership(assignment_group_id=basic_group.id,
+                                                 assignment_id=assignment.id))
 
-        print("Adding basic assignments")
-        basic_group = AssignmentGroup(name="First Group", course_id=default_course.id, owner_id=teacher.id)
-        db.session.add(basic_group)
-        db.session.flush()
-        for i in range(5):
-            assignment = Assignment(name="Problem {}".format(i), instructions="Complete this problem",
-                                    owner_id=teacher.id, course_id=default_course.id)
-            db.session.add(assignment)
-            db.session.flush()
-            db.session.add(AssignmentGroupMembership(assignment_group_id=basic_group.id,
-                                                     assignment_id=assignment.id))
-
-        db.session.commit()
-        print("Complete")
+    db.session.commit()
+    click.echo("Complete")
 
 
-class PopulateDB(Command):
-    """Fills in predefined data into DB"""
-
-    def run(self, **kwargs):
-        from models.user import User
-        from models.course import Course
-        from models.role import Role
-
-        with open('settings/secrets.json', 'r') as secret_file:
-            secrets = json.load(secret_file).get("ADMIN", {})
-
-        print("Adding Admin")
-        admin = User(first_name=secrets.get("first_name", "Admin"),
-                     last_name=secrets.get("last_name", "User"),
-                     password=hash_password(secrets.get("password", "password")),
-                     confirmed_at=datetime.datetime.now(),
-                     active=True,
-                     email=secrets.get("email", "email@whatever.com"))
-        db.session.add(admin)
-        db.session.flush()
-        db.session.add(Role(name='instructor', user_id=admin.id))
-        db.session.add(Role(name='admin', user_id=admin.id))
-
-        print("Adding default course")
-        default_course = Course(name="Default Course", owner_id=admin.id, service="native",
-                                url="default", visibility='public')
-        db.session.add(default_course)
-        db.session.flush()
-        db.session.add(Role(name='instructor', course_id=default_course.id, user_id=admin.id))
-
-        db.session.commit()
-        print("Complete")
+@cli.command("export_course")
+@click.option('--file', '-f', 'course_data_path', default='backups/current_course_data.json')
+@click.option('--course', '-c', 'course_id', default='1')
+def export_course(course_id, course_data_path):
+    """Exports a course to a JSON file"""
+    from models.course import Course
+    exported_data = Course.export(int(course_id))
+    with open(course_data_path, 'w') as output_file:
+        json.dump(exported_data, output_file, indent=2, sort_keys=True)
+    click.echo("Exported course")
 
 
-class DisplayDB(Command):
-    def run(self, **kwargs):
-        from sqlalchemy import MetaData
-        from scripts.sqlalchemy_schemadisplay3 import create_schema_graph
-        connection = app.config['SQLALCHEMY_DATABASE_URI']
-        filename = 'docs/dbschema.png'
-        graph = create_schema_graph(metadata=MetaData(connection),
-                                    show_datatypes=True,  # The image would get nasty big if we'd show the datatypes
-                                    show_indexes=False,  # ditto for indexes
-                                    rankdir='LR',  # From left to right (instead of top to bottom)
-                                    font='Helvetica',
-                                    concentrate=False  # Don't try to join the relation lines together
-                                    )
-        graph.write_png(filename)  # write out the file
+@cli.command("import_course")
+@click.option('--file', '-f', 'course_data_path', default='backups/current_course_data.json')
+@click.option('--course', '-c', 'course_id', default='1')
+def import_course(owner_id, course_data_path):
+    """Imports a course to a JSON file"""
+    from models.course import Course
+    with open(course_data_path, 'r') as input_file:
+        imported_data = json.load(input_file)
+    Course.import_json(imported_data, int(owner_id))
+    click.echo("Imported course")
 
 
-class ExportCourse(Command):
-    option_list = (
-        Option('--file', '-f', dest='course_data_path', default='backups/current_course_data.json'),
-        Option('--course', '-c', dest='course_id', default='1'),
-    )
-
-    def run(self, course_id, course_data_path, **kwargs):
-        from models.models import AssignmentGroupMembership
-        from models.course import Course
-        from models.assignment import Assignment
-        from models.assignment_group import AssignmentGroup
-        exported_data = Course.export(int(course_id))
-        with open(course_data_path, 'w') as output_file:
-            json.dump(exported_data, output_file, indent=2, sort_keys=True)
-        pprint(exported_data)
-
-
-class ImportCourse(Command):
-    option_list = (
-        Option('--file', '-f', dest='course_data_path', default='backups/current_course_data.json'),
-        Option('--owner', '-o', dest='owner_id', default='1'),
-    )
-
-    def run(self, owner_id, course_data_path, **kwargs):
-        from models.models import AssignmentGroupMembership
-        from models.course import Course
-        from models.assignment import Assignment
-        from models.assignment_group import AssignmentGroup
-        with open(course_data_path, 'r') as input_file:
-            imported_data = json.load(input_file)
-        Course.import_json(imported_data, int(owner_id))
-
-
-class RemoveCourse(Command):
-    option_list = (
-        Option('--course', '-c', dest='course_id'),
-    )
-
-    def run(self, course_id, **kwargs):
-        from models.course import Course
+@cli.command("delete_course")
+@click.option("--course", '-c', "course_id")
+def delete_course(course_id):
+    """Deletes a specific course"""
+    from models.course import Course
+    if click.confirm("Are you sure you want to delete this course?"):
         Course.remove(int(course_id), True)
 
 
-class DumpDB(Command):
-    option_list = (
-        Option('--output', '-o', dest='output', default='backups/db/'),
-        Option('--log_for_course', '-l', dest='log_for_course', default=None),
-    )
+def dump_rows(rows, output, table_name):
+    data = [{c.name: str(getattr(row, c.name))
+             for c in row.__table__.columns}
+            for row in rows]
+    full_path = os.path.join(output, table_name + '.json')
+    with open(full_path, 'w') as output_file:
+        json.dump(data, output_file)
 
-    def dump_rows(self, rows, output, table_name):
-        data = [{c.name: str(getattr(row, c.name))
-                 for c in row.__table__.columns}
-                for row in rows]
-        full_path = os.path.join(output, table_name + '.json')
-        with open(full_path, 'w') as output_file:
-            json.dump(data, output_file)
+def _log_for_course(course, output):
+    from models.log import Log
+    logs = Log.get_logs_for_course(course)
+    dump_rows(logs, output, 'log')
 
-    def _log_for_course(self, course, output):
-        from models.log import Log
-        logs = Log.get_logs_for_course(course)
-        self.dump_rows(logs, output, 'log')
-
-    def run(self, output, log_for_course, **kwargs):
-        if log_for_course:
-            return self._log_for_course(log_for_course, output)
-        from models.models import (db, AssignmentGroupMembership)
-        from models.user import User
-        from models.course import Course
-        from models.role import Role
-        from models.authentication import Authentication
-        from models.log import Log
-        from models.submission import Submission
-        from models.assignment import Assignment
-        from models.assignment_group import AssignmentGroup
-        tables = {
-            'user': User,
-            'course': Course,
-            'submission': Submission,
-            'assignment': Assignment,
-            'group': AssignmentGroup,
-            'membership': AssignmentGroupMembership,
-            'authentication': Authentication,
-            'log': Log,
-            'role': Role
-        }
-        for table_name, table_class in tables.items():
-            self.dump_rows(table_class.query.all(), output, table_name)
+@cli.command("dump_db")
+@click.option('--output', '-o', 'output', default='backups/db/')
+@click.option('--log_for_course', '-l', 'log_for_course', default=None)
+def dump_db(output, log_for_course):
+    if log_for_course:
+        return _log_for_course(log_for_course, output)
+    from models.assignment_group_membership import AssignmentGroupMembership
+    from models.user import User
+    from models.course import Course
+    from models.role import Role
+    from models.authentication import Authentication
+    from models.log import Log
+    from models.submission import Submission
+    from models.assignment import Assignment
+    from models.assignment_group import AssignmentGroup
+    tables = {
+        'user': User,
+        'course': Course,
+        'submission': Submission,
+        'assignment': Assignment,
+        'group': AssignmentGroup,
+        'membership': AssignmentGroupMembership,
+        'authentication': Authentication,
+        'log': Log,
+        'role': Role
+    }
+    for table_name, table_class in tables.items():
+        dump_rows(table_class.query.all(), output, table_name)
 
 
-class ExportProgSnap(Command):
-    option_list = (
-        Option('--output', '-o', dest='output', default='backups/progsnap2_{}'),
-        Option('--log_for_course', '-l', dest='log_for_course', default=1),
-        Option('--groups', '-g', dest='groups', default=None),
-        Option("--exclude", '-e', dest="exclude", default=None),
-        Option('--format', '-f', dest='format', default='csv', choices=['csv', 'sqlite'],
-               help="csv is zipped csv, sqlite is a SQLite db"),
-        Option('--overwrite', '-w', dest='overwrite', default=False, action="store_true"),
-        Option("--partition", '-p', dest="partition", default=None, help="How many user partitions to make", type=int),
-    )
+@cli.command("export_progsnap2")
+@click.option('--output', '-o', 'output', default='backups/progsnap2_{}')
+@click.option('--log_for_course', '-l', 'log_for_course', default=1)
+@click.option('--groups', '-g', 'groups', default=None)
+@click.option("--exclude", '-e', "exclude", default=None)
+@click.option('--format', '-f', 'format', default='csv',
+              type=click.Choice(['csv', 'sqlite']),
+              help="csv is zipped csv, sqlite is a SQLite db")
+@click.option('--overwrite', '-w', 'overwrite', default=False, is_flag=True)
+@click.option("--partition", '-p', "partition", default=None,
+              help="How many user partitions to make", type=int)
+def export_progsnap2(output, log_for_course, groups, exclude, format, overwrite, partition,):
+    from models.portation import export_progsnap2
+    if groups is not None:
+        output = output + "_{}".format(groups.replace(",", "_"))
+        groups = [int(g) for g in groups.split(",")]
+    if exclude is not None:
+        output = output + "_x{}".format(exclude.replace(",", "_"))
+        exclude = [int(g) for g in exclude.split(",")]
+    export_progsnap2(output.format(log_for_course), log_for_course, groups, exclude=exclude, log=True, format=format, overwrite=overwrite, partition=partition)
 
-    def run(self, output, log_for_course, groups, exclude, format, overwrite, partition, **kwargs):
-        from models.portation import export_progsnap2
-        if groups is not None:
-            output = output + "_{}".format(groups.replace(",", "_"))
-            groups = [int(g) for g in groups.split(",")]
-        if exclude is not None:
-            output = output + "_x{}".format(exclude.replace(",", "_"))
-            exclude = [int(g) for g in exclude.split(",")]
-        export_progsnap2(output.format(log_for_course), log_for_course, groups, exclude=exclude, log=True, format=format, overwrite=overwrite, partition=partition)
 
+@cli.command("clear_old_anonymous_users")
+@click.option("--days", '-d', "days", default=7)
+@click.option("--keep_active", '-a', "keep_active", default=True,
+              help="Do not remove users who have Logs or recent submissions")
+def clear_old_anonymous_users(days, keep_active):
+    """
+    Removes any old users that are anonymous, along with their linked data.
+    Old is determined by when the user is created.
 
-class ClearOldAnonymousUsers(Command):
-    option_list = (
-        Option('--confirm', '-c', dest='confirm', default=False)
-    )
+    Select all anonymous users who have been in the system for more than 1 week
+    Count how many there are, report in buckets.
+    Indicate how many resources they have.
 
-    def run(self, confirm, **kwargs):
-        # Select all anonymous users who have been in the system for more than 1 week
-        # If there are other resources owned by them, then report those in a file?
-        #   Really, just get a list of all the resources that they own.
-        # Delete their authentication, their logs, their submissions
-        # Return the number of users who were deleted
-        pass
+    Check that the admin wants to do this action. If so, then...
+    Delete their authentication, their logs, their submissions, everything they own.
+    Return the number of users who were deleted
+    """
+    click.echo("Finding all old anonymous users")
+    from models.user import User
+
+    anonymous_users = User.get_old_anonymous_users(int(days))
+    click.echo(f"Found {len(anonymous_users)} anonymous old users")
+
+    if keep_active:
+        old_count = len(anonymous_users)
+        click.echo(f"Keeping users who are active in the last {days} days")
+        with click.progressbar(anonymous_users) as bar:
+            anonymous_users = [user for user in bar if not user.has_activity(days)]
+
+        if old_count == len(anonymous_users):
+            click.echo("All of these users were inactive.")
+        else:
+            click.echo(f"Filtered down to {len(anonymous_users)} with no activity")
+
+    click.echo("Finding all linked resources that would need to be deleted first...")
+    combined_resources = {}
+    skipped_users = set()
+    with click.progressbar(anonymous_users) as bar:
+        for anonymous_user in bar:
+            # Find all things that would cry if we deleted this
+            resource_graph = find_all_linked_resources([anonymous_user])
+            # If any user is not in the anonymous user, this is not safe to delete
+            if any(user not in anonymous_users
+                   for user in resource_graph.get('User', [])):
+                skipped_users.add(anonymous_user)
+                continue
+            for category, resources in resource_graph.items():
+                combined_resources.setdefault(category, set()).update(resources)
+    if skipped_users:
+        click.echo(f"Skipped {len(skipped_users)} users because non-anonymous users are depending on their resources.")
+        if click.confirm("Would you like to see the users?"):
+            click.echo("These users are anonymous, but have non-anonymous users depending on them.")
+            for user in skipped_users:
+                click.echo(f"    {user}")
+        click.echo("")
+
+    click.echo("Found the following resources:")
+    total = 0
+    for category, resources in combined_resources.items():
+        if resources:
+            click.echo(f"    {category}s: {len(resources)}")
+            total += len(resources)
+    click.echo(f"Total Resources: {total}")
+
+    if not total and not anonymous_users:
+        click.echo("No users or resources to delete!")
+        return
+
+    # Check to make sure that all the referred users are anonymous
+    if not click.confirm("Are you sure you want to delete the users and their resources?"):
+        click.echo("Aborting!")
+        return
+
+    click.echo(f"Deleting resources...")
+    total = 0
+    for category in SAFE_DELETE_ORDER:
+        if category in combined_resources:
+            with click.progressbar(combined_resources[category]) as bar:
+                for resource in bar:
+                    db.session.delete(resource)
+                    total += 1
+    db.session.commit()
+    click.echo(f"Deleted {total} resources")
+
+    click.echo(f"Deleting users...")
+    total = 0
+    with click.progressbar(anonymous_users) as bar:
+        for user in bar:
+            db.session.delete(user)
+            total += 1
+    db.session.commit()
+    click.echo(f"Deleted {total} users")
+
+    click.echo("Done!")

@@ -1,13 +1,13 @@
 import json
 import re
+from urllib.parse import urlencode
 from datetime import datetime, timedelta
 
 from natsort import natsorted
 
-from controllers.helpers import compare_string_equality
-from common.highlighters import highlight_python_code, highlight_java_code
-from flask import request
-from werkzeug import url_encode
+from common.text import compare_string_equality
+from common.highlighters import highlight_python_code, highlight_java_code, highlight_javascript_code, highlight_json
+from flask import request, g
 from markdown import Markdown
 
 
@@ -63,7 +63,7 @@ def modify_query(new_values):
     for key, value in new_values.items():
         args[key] = value
 
-    return '{}?{}'.format(request.path, url_encode(args))
+    return '{}?{}'.format(request.path, urlencode(args))
 
 
 def make_readonly_form(assignment, submission, is_grader):
@@ -134,6 +134,8 @@ def setup_jinja_filters(app):
     app.jinja_env.filters['get_setting'] = get_setting
     app.jinja_env.filters['highlight_python_code'] = highlight_python_code
     app.jinja_env.filters['highlight_java_code'] = highlight_java_code
+    app.jinja_env.filters['highlight_javascript_code'] = highlight_javascript_code
+    app.jinja_env.filters['highlight_json'] = highlight_json
     app.jinja_env.filters['to_friendly_date'] = to_friendly_date
     app.jinja_env.filters['from_friendly_date'] = from_friendly_date
     app.jinja_env.filters['modify_query'] = modify_query

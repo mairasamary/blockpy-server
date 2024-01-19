@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script>
+        function executeCode(code) {
+            const blob = new Blob([code], {type: 'application/javascript'});
+            const worker = new Worker(URL.createObjectURL(blob));
+            // Proxy messages back to parent
+            //worker.addEventListener('message', (e) => parent.postMessage(e, '*'));
+        }
+        _originalConsole = console;
+        const parentPost = (e) => {
+            _originalConsole.log("Sending to parent", e);
+            parent.postMessage(JSON.parse(JSON.stringify(e)), '*');
+        };
+        console = {
+            log: (...text) => parentPost({type: "console.log", data: text}),
+            error: (...text) => parentPost({type: "console.error", data: text}),
+            info: (...text) => parentPost({type: "console.info", data: text}),
+            warning: (...text) => parentPost({type: "console.warning", data: text}),
+            table: (...text) => parentPost({type: "console.table", data: text}),
+            clear: () => parentPost({type: "console.clear", data: []})
+        };
+        function _kettleSystemError(place, category, error) {
+            _originalConsole.error("Kettle System Error", place, category, error);
+            parentPost({type: "system.error", data: {place, category, error: {
+                string: error.toString(),
+                message: error.message,
+                stack: error.stack
+            }}});
+        }
+        let latestWebWorker = null;
+        addEventListener("message", (event) => {
+            _originalConsole.log("Reached Webworker", event);
+            const data = JSON.parse(JSON.stringify(event.data));
+            if (data.type === 'execute') {
+                let mainCode = data.code;
+                if (latestWebWorker !== null) {
+                    latestWebWorker.terminate();
+                }
+                try {
+                    const mainFunction = Function("main", mainCode);
+                    try {
+                        mainFunction();
+                    } catch (e) {
+                        _kettleSystemError("student", "Runtime", e);
+                    }
+                } catch (e) {
+                    _kettleSystemError("student", "Syntax", e);
+                }
+            }
+        });
+    </script>
+</head>
+<body>
+
+</body>
+</html>

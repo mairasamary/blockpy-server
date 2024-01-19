@@ -36,9 +36,10 @@ bcrypt
 python-slugify~=8.0.1
 pytest
 natsort~=8.4.0
+psycopg2
 psycopg2-binary
 email-validator
-Werkzeug~=3.0.1
+Werkzeug
 alembic~=1.13.1
 gunicorn
 redis

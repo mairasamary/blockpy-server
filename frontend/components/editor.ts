@@ -8,12 +8,17 @@ export function launchEditor(assignment: Assignment, submission: Submission) {
     form.setAttribute("action", window["$URL_ROOT"]+"blockpy/load_readonly");
     form.setAttribute("target", "_blank");
 
+    // @ts-ignore
+    const accessToken = window['accessToken'];
+
     let formData = {
         user: {
             role: "owner"
         },
         assignment: assignment ? assignment.toJson(): null,
-        submission: submission ? submission.toJson(): null
+        submission: submission ? submission.toJson(): null,
+        // Matches JWT_JSON_KEY, which defaults to "access_token"
+        access_token: accessToken,
     };
 
     formData.assignment.forked_id = assignment.id;

@@ -169,7 +169,7 @@ export class AssignmentStore extends ModelStore<AssignmentJson, Assignment> {
     }
 
     getLocalStorageKey(): string {
-        return `BLOCKPY_COURSE_${this.courseId}_ASSIGNMENTS`;
+        return `COURSE_${this.courseId}_ASSIGNMENTS`;
     }
 
     getByUrl(url: string): Promise<Assignment> {

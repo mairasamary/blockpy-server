@@ -7,10 +7,13 @@ import csv
 import difflib
 from itertools import combinations, zip_longest
 
-from controllers.helpers import make_log_entry, ensure_dirs
+from thefuzz import fuzz
+from flask import current_app
+
+from common.filesystem import ensure_dirs
+from controllers.helpers import make_log_entry
 from controllers.pylti.common import LTIPostMessageException
 from controllers.pylti.flask import LTI
-from main import app, huey
 from models.log import Log
 from models.report import Report
 from models.assignment import Assignment
@@ -19,22 +22,20 @@ from models.course import Course
 from models.statuses import GradingStatuses
 from tasks.similarity_report import make_report
 
-from thefuzz import fuzz
 
-
-@huey.task(context=True)
+@current_app.huey.task(context=True)
 def get_events(course_id, user_id, task=None):
     """Background task that runs a long function with progress reports."""
     history = Log.get_history(course_id, assignment_id=None, user_id=user_id)
     return history
 
 
-@huey.task(context=True)
+@current_app.huey.task(context=True)
 def bulk_retry_all_failed_grades(course_id, json_lti):
     pass
 
 
-@huey.task(context=True)
+@current_app.huey.task(context=True)
 def check_similarity(user_id, assignment_id, exclude_courses, target_course, passes, use_starting_code,
                      number_of_matches, task=None):
     """
@@ -54,7 +55,7 @@ def check_similarity(user_id, assignment_id, exclude_courses, target_course, pas
              passes=passes, use_starting_code=use_starting_code, number_of_matches=number_of_matches)
     ), owner_id=user_id, course_id=target_course)
 
-    with app.app_context():
+    with current_app.app_context():
         report.start()
 
         report.update_progress(message="Getting all the submissions relevant to the assignment.")
@@ -84,7 +85,7 @@ def check_similarity(user_id, assignment_id, exclude_courses, target_course, pas
         error_path = open(os.path.join(directory, f"error_log.txt"), 'wb')
 
         report.update_progress(message="Run the compare50 program on them")
-        command = " ".join([app.config['COMPARE50_EXECUTABLE'],
+        command = " ".join([current_app.config['COMPARE50_EXECUTABLE'],
                             os.path.join(directory, "target", "*.py"),
                             "-a", os.path.join(directory, "archived", "*.py"),
                             "-d", os.path.join(directory, "distribution", "*.py"),
@@ -108,7 +109,7 @@ def check_similarity(user_id, assignment_id, exclude_courses, target_course, pas
         report.finish(result="output/index.html")
 
 
-@huey.task(context=True)
+@current_app.huey.task(context=True)
 def queue_lti_post_grade(json_lti, post_params,
                          submission_id, assignment_group_id, user_id, course_id,
                          attempts, log_params, subscore, task=None):
@@ -120,7 +121,7 @@ def queue_lti_post_grade(json_lti, post_params,
     success = False
     total_score, view_url, lis_result_sourcedid, lis_outcome_service_url, reviewed = post_params
 
-    with app.app_context():
+    with current_app.app_context():
         while not success and attempts > 0:
             time.sleep(10)
             error = f"General retry failure. There are {attempts} left."
@@ -177,7 +178,7 @@ class SimilarityRings:
         self.suspects.add(s2)
 
 
-@huey.task(context=True)
+@current_app.huey.task(context=True)
 def check_similarity_simple(user_id, assignment_id, exclude_courses, target_course,
                             other_student_threshold=95, starter_change_threshold=95,
                             minimum_file_length=100,
@@ -194,7 +195,7 @@ def check_similarity_simple(user_id, assignment_id, exclude_courses, target_cour
              minimum_file_length=minimum_file_length)
     ), owner_id=user_id, course_id=target_course, assignment_id=assignment_id)
 
-    with app.app_context():
+    with current_app.app_context():
         report.start()
 
         report.update_progress(message="Getting all the submissions relevant to the assignment.")
@@ -244,7 +245,7 @@ def check_similarity_simple(user_id, assignment_id, exclude_courses, target_cour
         return index_file
 
 
-@huey.task(context=True)
+@current_app.huey.task(context=True)
 def make_red_flag_report(user_id, target_course, short_threshold, characters_per_second_threshold, max_backstep_threshold, task=None):
     """
 
@@ -256,7 +257,7 @@ def make_red_flag_report(user_id, target_course, short_threshold, characters_per
              characters_per_second_threshold=characters_per_second_threshold, max_backstep_threshold=max_backstep_threshold)
     ), owner_id=user_id, course_id=target_course)
 
-    with app.app_context():
+    with current_app.app_context():
         report.start()
 
         report.update_progress(message="Getting all the learners in the course.")

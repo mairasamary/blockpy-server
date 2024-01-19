@@ -3,6 +3,7 @@ from hmac import compare_digest
 import json
 from typing import Tuple, List, Optional, Any
 
+from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import Column, String, Text, Integer, ForeignKey, UniqueConstraint, Boolean
 from werkzeug.utils import secure_filename
 from slugify import slugify
@@ -11,8 +12,9 @@ import models
 from common.dates import datetime_to_string
 from common.databases import optional_encoded_field, make_copy
 from models.generics.models import db, ma
-from models.generics.base import EnhancedBase
+from models.generics.base import EnhancedBase, Base
 from models.data_formats.textbook import search_textbook_for_key, rehydrate_textbook
+from models.assignment_tag_membership import assignment_tag_membership
 
 
 class Assignment(EnhancedBase):
@@ -23,51 +25,57 @@ class Assignment(EnhancedBase):
     An assignment belongs strongly to a specific course and user (via the `course` and `owner`
     fields). However, an Assignment can be used in a Submission for another Course.
     """
-    name = Column(String(255), default="Untitled")
-    url = Column(String(255), default=None, nullable=True)
+    __tablename__ = "assignment"
+
+    name: Mapped[str] = mapped_column(String(255), default="Untitled")
+    url: Mapped[str] = mapped_column(String(255), default=None, nullable=True)
 
     # Settings
     TYPES = ['blockpy', 'maze', 'reading',
              'quiz', 'typescript', 'textbook', 'java']
-    type = Column(String(10), default="blockpy")
-    instructions = Column(Text(), default="")
+    type: Mapped[str] = mapped_column(String(10), default="blockpy")
+    instructions: Mapped[str] = mapped_column(Text(), default="")
     # Should we suggest this assignment's submissions be reviewed manually?
-    reviewed = Column(Boolean(), default=False)
+    reviewed: Mapped[bool] = mapped_column(Boolean(), default=False)
     # Should we hide the current Complete status for submissions?
-    hidden = Column(Boolean(), default=False)
+    hidden: Mapped[bool] = mapped_column(Boolean(), default=False)
     # Should we allow ANYONE to see this submission?
-    public = Column(Boolean(), default=False)
+    public: Mapped[bool] = mapped_column(Boolean(), default=False)
     # Is this assignment meant to be used inside of another one?
-    subordinate = Column(Boolean(), default=False)
+    subordinate: Mapped[bool] = mapped_column(Boolean(), default=False)
     # Whitelist or blacklist IP address and address ranges
-    ip_ranges = Column(Text(), default="")
+    ip_ranges: Mapped[str] = mapped_column(Text(), default="")
     # How many points is this assignment worth?
-    points = Column(Integer(), default=1)
+    points: Mapped[int] = mapped_column(Integer(), default=1)
     # Completely open-ended settings, stored as JSON
-    settings = Column(Text())
+    settings: Mapped[str] = mapped_column(Text())
 
     # Code columns
-    on_run = Column(Text(), default="")
-    on_change = Column(Text(), default="")
-    on_eval = Column(Text(), default="")
-    starting_code = Column(Text(), default="")
-    extra_instructor_files = Column(Text(), default="")
-    extra_starting_files = Column(Text(), default="")
+    on_run: Mapped[str] = mapped_column(Text(), default="")
+    on_change: Mapped[str] = mapped_column(Text(), default="")
+    on_eval: Mapped[str] = mapped_column(Text(), default="")
+    starting_code: Mapped[str] = mapped_column(Text(), default="")
+    extra_instructor_files: Mapped[str] = mapped_column(Text(), default="")
+    extra_starting_files: Mapped[str] = mapped_column(Text(), default="")
 
     # Tracking
-    forked_id = Column(Integer(), ForeignKey('assignment.id'), nullable=True)
-    forked_version = Column(Integer(), nullable=True)
-    owner_id = Column(Integer(), ForeignKey('user.id'))
-    course_id = Column(Integer(), ForeignKey('course.id'))
-    version = Column(Integer(), default=0)
+    forked_id: Mapped[int] = mapped_column(Integer(), ForeignKey('assignment.id'), nullable=True)
+    forked_version: Mapped[int] = mapped_column(Integer(), nullable=True)
+    owner_id: Mapped[int] = mapped_column(Integer(), ForeignKey('user.id'))
+    course_id: Mapped[int] = mapped_column(Integer(), ForeignKey('course.id'))
+    version: Mapped[int] = mapped_column(Integer(), default=0)
 
     # Relationships
-    forked = db.relationship("Assignment")
-    owner = db.relationship("User")
-    course = db.relationship("Course")
-    tags = db.relationship("AssignmentTag", secondary=models.assignment_tag_membership,
-                           back_populates='assignments')
-    sample_submissions = db.relationship("SampleSubmission", backref='assignment', lazy='dynamic')
+    forked: Mapped["Assignment"] = db.relationship("Assignment", remote_side="Assignment.id")
+    owner: Mapped["User"] = db.relationship(back_populates="assignments")
+    course: Mapped["Course"] = db.relationship(back_populates="assignments")
+    tags: Mapped[list["AssignmentTag"]] = db.relationship(back_populates="assignments",
+                                                          secondary=assignment_tag_membership)
+    sample_submissions: Mapped[list["SampleSubmission"]] = db.relationship(back_populates="assignment")
+    memberships: Mapped[list["AssignmentGroupMembership"]] = db.relationship(back_populates="assignment")
+    logs: Mapped[list["Log"]] = db.relationship(back_populates="assignment")
+    submissions: Mapped[list["Submission"]] = db.relationship(back_populates="assignment")
+    reports: Mapped[list["Report"]] = db.relationship(back_populates="assignment")
 
     __table_args__ = (UniqueConstraint("course_id", "url", name="url_course_index"),)
 
@@ -127,8 +135,6 @@ class Assignment(EnhancedBase):
             'tags': [tag.encode_json(use_owner) for tag in self.tags],
             'sample_submissions': [sample.encode_json(use_owner) for sample in self.sample_submissions],
         }
-
-
 
     def encode_quiz_json(self):
         assignment = self.encode_json()
@@ -279,11 +285,13 @@ class Assignment(EnhancedBase):
         return False
 
     def load_or_new_submission(self, user_id: int, course_id: int,
-                               new_submission_url="", assignment_group_id: int = None) -> 'models.Submission':
+                               new_submission_url="", assignment_group_id: int = None,
+                               new_due_date='', new_lock_date='') -> 'models.Submission':
         """ Loads the relevant submission for this assignment given the user and course.
         If the Submission does not yet exist, then it is created.
         Potentially updates the new_submission_url and assignment_group_id too. """
-        return models.Submission.load_or_new(self, user_id, course_id, new_submission_url, assignment_group_id)
+        return models.Submission.load_or_new(self, user_id, course_id, new_submission_url, assignment_group_id,
+                                             new_due_date, new_lock_date)
 
     def load(self, user_id: int, course_id: int) -> 'models.Submission':
         """ Loads the given submission """
@@ -423,7 +431,7 @@ class Assignment(EnhancedBase):
         return old_value != value
 
     def update_ip_address(self, new_ip_ranges, is_instructor):
-        #if is_instructor:
+        # if is_instructor:
         #    self.edit(dict(ip_ranges=new_ip_ranges))
         #    return True
         try:
@@ -461,8 +469,8 @@ class Assignment(EnhancedBase):
     @classmethod
     def list_urls(self, partial) -> list[str]:
         all_assignments = (db.session.query(Assignment.url)
-                                     .filter(Assignment.url.ilike("%"+partial+"%"))
-                                     .all())
+                           .filter(Assignment.url.ilike("%" + partial + "%"))
+                           .all())
         all_assignments = [a[0] for a in all_assignments]
         all_assignments = sorted(all_assignments,
                                  key=lambda a: (not a.startswith(partial),
@@ -470,17 +478,30 @@ class Assignment(EnhancedBase):
                                                 a))
         return all_assignments
 
+    @classmethod
+    def get_textbooks(cls, user_id=None):
+        query = cls.query.filter_by(type='textbook')
+        if user_id is None:
+            query = query.filter_by(public=True)
+        # Also textbooks owned by the user or in a course the user owns
+        else:
+            query = query.filter((cls.public) |
+                                 (cls.owner_id == user_id) |
+                                 (cls.course_id.in_(db.session.query(models.Course.id)
+                                                    .filter_by(owner_id=user_id))))
+        return query.all()
+
     def load_as_textbook(self):
         try:
             textbook = json.loads(self.instructions)
             reading_urls = list(search_textbook_for_key(textbook, 'reading'))
             group_urls = search_textbook_for_key(textbook, 'group')
             db_readings = {a.url: a for a in db.session.query(Assignment)
-                                     .filter(Assignment.url.in_(reading_urls))
-                                     .all()}
+            .filter(Assignment.url.in_(reading_urls))
+            .all()}
             db_groups = {g.url: g for g in db.session.query(models.AssignmentGroup)
-                .filter(models.AssignmentGroup.url.in_(group_urls))
-                .all()}
+            .filter(models.AssignmentGroup.url.in_(group_urls))
+            .all()}
             rehydrate_textbook(textbook, db_readings, db_groups)
             if reading_urls:
                 first_page = db_readings[reading_urls[0]]
@@ -489,9 +510,18 @@ class Assignment(EnhancedBase):
             textbook['success'] = True
             return textbook, first_page
         except Exception as e:
-            return { "message": e, "success": False}, 0
+            return {"message": e, "success": False}, 0
 
-class AssignmentSchema(ma.SQLAlchemyAutoSchema):
-    class Meta:
-        model = Assignment
-        include_fk = True
+    def find_all_linked_resources(self) -> dict[str, list[Base]]:
+        # Get any assignments that are forked from this one
+        forked = Assignment.query.filter_by(forked_id=self.id).all()
+        resources = {
+            "Assignment": forked,
+            "AssignmentTag": self.tags,
+            "SampleSubmission": self.sample_submissions,
+            "Memberships": self.memberships,
+            "Logs": self.logs,
+            "Submission": self.submissions,
+            "Report": self.reports
+        }
+        return resources

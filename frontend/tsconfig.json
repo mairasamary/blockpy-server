@@ -18,6 +18,7 @@
         //"experimentalDecorators": true,
         "baseUrl": ".",
         "paths": {
+            "*": ["custom_types/*"]
         },
         "types": ["node", "jquery", "bootstrap", "knockout", "jasmine", "CodeMirror", "select2"],
       "allowSyntheticDefaultImports": true

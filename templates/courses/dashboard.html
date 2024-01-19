@@ -8,15 +8,43 @@ Dashboard
 {% endblock %}
 
 {% block extrahead %}
+
+
+    <script>
+
+        $(document).ready(function() {
+            if (inIframe()) {
+                $("#relaunch-login button").click(()=>relaunchInWindow());
+                $("#relaunch-login").show();
+
+                {% for textbook in textbooks %}
+                    $("#load-textbook-{{ textbook.url }}").click((event) => {
+                        relaunchInWindow({{ url_for('assignments.load', _external=True, assignment_url=textbook.url,course_id=g.course.id,
+                        grade_mode='textbook')|tojson }});
+                        event.preventDefault();
+                    });
+                {% endfor %}
+
+                $("#launch-scratchpad").click((event) => {
+                    relaunchInWindow({{ url_for('assignments.load', _external=True, course_id=g.course.id)|tojson }});
+                        event.preventDefault();
+                })
+            }
+        });
+
+    </script>
 {% endblock %}
 
 {% block body %}
 
     <h1>Dashboard</h1>
 
-    <p>Hello {{ g.user.name() }} ({{ g.user.id }}), you are in "{{ g.course.name }}" ({{g.course.id}}). Welcome to your dashboard!</p>
+    <p>Hello {{ g.user.name() }} ({{ g.user.id }}), you are in "{{ g.course.name }}" ({{g.course.id}}).</p>
+    <p>Welcome to your dashboard!</p>
 
     <div class="row">
+
+
 
         <!-- Textbooks -->
         {% if textbooks %}
@@ -28,7 +56,7 @@ Dashboard
                     {% for textbook in textbooks %}
                     <a href="{{ url_for('assignments.load_textbook', path=textbook.url, course_id=g.course.id, embed=True) }}"
                        target="_blank"
-                       class='btn btn-primary'>Read {{ textbook.name }}</a>
+                       class='btn btn-primary' id="load-textbook-{{ textbook.url }}">Read {{ textbook.name }}</a>
                     {% endfor %}
                 </div>
             </div>
@@ -40,7 +68,7 @@ Dashboard
                 <div class="card-body">
                     <h5 class="card-title">BlockPy Scratchpad</h5>
                     <p class="card-text">Need a place to quickly run some BlockPy code and experiment? Get a reusable scratchpad!</p>
-                    <a href="{{ {"force_default_assignment":"true"}|modify_query }}" class="btn btn-primary">BlockPy Scratchpad</a>
+                    <a href="{{ {"force_default_assignment":"true"}|modify_query }}" class="btn btn-primary" id="launch-scratchpad">BlockPy Scratchpad</a>
                 </div>
             </div>
         </div>
@@ -55,6 +83,13 @@ Dashboard
 
     {% include "helpers/submission_student_table.html" %}
 
-
+    <details id="relaunch-login" style="display:none;">
+    <summary>Extra Tools for Logging In</summary>
+    <div>
+        If third party cookies are not enabled correctly in your browser, then you may need to relaunch this page.
+        Click this button to relaunch this outside of Canvas (should log you in with cookies).
+        <button class="btn btn-primary">Relaunch</button>
+    </div>
+    </details>
 
 {% endblock %}

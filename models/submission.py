@@ -1,14 +1,15 @@
 import json
 import os
 import time
-from datetime import timedelta
+from datetime import timedelta, datetime
 import re
 
 import base64
 from typing import Union
 
 from flask import url_for, current_app
-from sqlalchemy import Column, Text, Integer, Boolean, ForeignKey, Index, func, String, or_
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import Column, Text, Integer, Boolean, ForeignKey, Index, func, String, or_, DateTime
 from sqlalchemy.orm import relationship
 from werkzeug.utils import secure_filename
 
@@ -17,7 +18,7 @@ import models
 from models.assignment import Assignment
 from models.log import Log
 from models.generics.models import db, ma
-from models.generics.base import EnhancedBase
+from models.generics.base import EnhancedBase, Base
 from common.dates import datetime_to_string
 from common.databases import optional_encoded_field
 from common.filesystem import ensure_dirs
@@ -82,27 +83,33 @@ DEFAULT_FILENAMES_BY_TYPE = {
 
 
 class Submission(EnhancedBase):
-    code = Column(Text(), default="")
-    extra_files = Column(Text(), default="")
-    url = Column(Text(), default="")
-    endpoint = Column(Text(), default="")
+    __tablename__ = "submission"
+    code: Mapped[str] = mapped_column(Text(), default="")
+    extra_files: Mapped[str] = mapped_column(Text(), default="")
+    url: Mapped[str] = mapped_column(Text(), default="")
+    endpoint: Mapped[str] = mapped_column(Text(), default="")
     # Should be treated as out of X/100
-    score = Column(Integer(), default=0)
-    correct = Column(Boolean(), default=False)
-    submission_status = Column(String(255), default=SubmissionStatuses.STARTED)
-    grading_status = Column(String(255), default=GradingStatuses.NOT_READY)
+    score: Mapped[int] = mapped_column(Integer(), default=0)
+    correct: Mapped[bool] = mapped_column(Boolean(), default=False)
+    submission_status: Mapped[str] = mapped_column(String(255), default=SubmissionStatuses.STARTED)
+    grading_status: Mapped[str] = mapped_column(String(255), default=GradingStatuses.NOT_READY)
+    date_submitted: Mapped[datetime] = mapped_column(DateTime(), default=None)
+    date_graded: Mapped[datetime] = mapped_column(DateTime(), default=None)
+    date_due: Mapped[datetime] = mapped_column(DateTime(), default=None)
+    date_locked: Mapped[datetime] = mapped_column(DateTime(), default=None)
     # Tracking
-    assignment_id = Column(Integer(), ForeignKey('assignment.id'))
-    assignment_group_id = Column(Integer(), ForeignKey('assignment_group.id'), nullable=True)
-    course_id = Column(Integer(), ForeignKey('course.id'))
-    user_id = Column(Integer(), ForeignKey('user.id'))
-    assignment_version = Column(Integer(), default=0)
-    version = Column(Integer(), default=0)
+    assignment_id: Mapped[int] = mapped_column(Integer(), ForeignKey('assignment.id'))
+    assignment_group_id: Mapped[int] = mapped_column(Integer(), ForeignKey('assignment_group.id'), nullable=True)
+    course_id: Mapped[int] = mapped_column(Integer(), ForeignKey('course.id'))
+    user_id: Mapped[int] = mapped_column(Integer(), ForeignKey('user.id'))
+    assignment_version: Mapped[int] = mapped_column(Integer(), default=0)
+    version: Mapped[int] = mapped_column(Integer(), default=0)
 
-    assignment = relationship("Assignment")
-    assignment_group = relationship("AssignmentGroup")
-    course = relationship("Course")
-    user = relationship("User")
+    assignment: Mapped["Assignment"] = db.relationship(back_populates="submissions")
+    assignment_group: Mapped["AssignmentGroup"] = db.relationship(back_populates="submissions")
+    course: Mapped["Course"] = db.relationship(back_populates="submissions")
+    user: Mapped["User"] = db.relationship(back_populates="submissions")
+    reviews: Mapped[list["Review"]] = db.relationship(back_populates="submission")
 
     # TODO: Shouldn't this be course_id THEN assignment_id ???
     __table_args__ = (Index('submission_index', "assignment_id",
@@ -127,7 +134,11 @@ class Submission(EnhancedBase):
             'user_id__email': optional_encoded_field(self.user_id, use_owner, models.User.query.get, 'email'),
             'id': self.id,
             'date_modified': datetime_to_string(self.date_modified),
-            'date_created': datetime_to_string(self.date_created)
+            'date_created': datetime_to_string(self.date_created),
+            'date_submitted': datetime_to_string(self.date_submitted),
+            'date_graded': datetime_to_string(self.date_graded),
+            'date_due': datetime_to_string(self.date_due),
+            'date_locked': datetime_to_string(self.date_locked),
         }
 
     def encode_human(self):
@@ -158,6 +169,10 @@ class Submission(EnhancedBase):
             'roles': [role.name for role, user in User.get_user_role(self.course_id, self.user_id)],
             'date_created': datetime_to_string(self.date_created),
             'date_modified': datetime_to_string(self.date_modified),
+            'date_submitted': datetime_to_string(self.date_submitted),
+            'date_graded': datetime_to_string(self.date_graded),
+            'date_due': datetime_to_string(self.date_due),
+            'date_locked': datetime_to_string(self.date_locked),
         }
         if self.user:
             _grade_data['user'] = {
@@ -370,13 +385,20 @@ class Submission(EnhancedBase):
                                           user_id=user_id).first()
 
     @staticmethod
-    def load_or_new(assignment, user_id, course_id, new_submission_url="", assignment_group_id=None):
+    def load_or_new(assignment, user_id, course_id, new_submission_url="", assignment_group_id=None,
+                    new_due_date='', new_lock_date=''):
         submission = Submission.get_submission(assignment.id, user_id, course_id)
         if not submission:
             submission = Submission.from_assignment(assignment, user_id, course_id, assignment_group_id)
 
         if new_submission_url:
             submission.endpoint = new_submission_url
+            db.session.commit()
+        if new_due_date:
+            submission.date_due = new_due_date
+            db.session.commit()
+        if new_lock_date:
+            submission.date_locked = new_lock_date
             db.session.commit()
         return submission
 
@@ -621,7 +643,11 @@ class Submission(EnhancedBase):
         db.session.commit()
         return self
 
-class SubmissionSchema(ma.SQLAlchemyAutoSchema):
-    class Meta:
-        model = Submission
-        include_fk = True
+    def find_all_linked_resources(self) -> dict[str, list[Base]]:
+        # Get any assignments that are forked from this one
+        forked = models.SampleSubmission.query.filter_by(forked_id=self.id).all()
+        resources = {
+            "Submission": forked,
+            "Review": self.reviews
+        }
+        return resources

@@ -12,7 +12,7 @@ from natsort import natsorted
 
 from flask import Blueprint, url_for, session, request, jsonify, g, render_template, redirect, make_response, current_app
 
-from controllers.endpoints.blockpy import lti_post_grade
+from controllers.endpoints.blockpy import lti_post_grade, TransmissionStatuses
 from controllers.pylti.common import LTIPostMessageException
 from controllers.pylti.post_grade import create_grade_post
 
@@ -59,17 +59,24 @@ def update_grading_status():
     if not g.lti:
         return ajax_success({"submitted": False, "new_status": "FullyGraded", "new_status_human": submission.human_grading_status()})
     error = "Generic LTI Failure - perhaps not logged into LTI session?"
-    post_params = create_grade_post(submission, None, assignment_group_id, submission.user_id, submission.course_id,
+    post_params = create_grade_post(submission, submission.endpoint, assignment_group_id, submission.user_id, submission.course_id,
                                     True)
+    transmission_status = TransmissionStatuses.QUEUED
     try:
         success, total_score = lti_post_grade(g.lti, *post_params)
     except LTIPostMessageException as e:
-        success = False
+        transmission_status = TransmissionStatuses.FAILURE
         error = str(e)
-    if success:
+    if transmission_status == TransmissionStatuses.SUCCESS:
+        # TODO: Augment these with categories
         make_log_entry(submission.assignment_id, submission.assignment_version,
                        submission.course_id, user_id, "X-Submission.LMS", "answer.py", message=str(total_score))
         return ajax_success({"submitted": True, "new_status": "FullyGraded", "new_status_human": submission.human_grading_status()})
+    elif transmission_status == TransmissionStatuses.QUEUED:
+        make_log_entry(submission.assignment_id, submission.assignment_version,
+                       submission.course_id, user_id, "X-Unchanged.LMS", "answer.py", message=str(total_score))
+        return ajax_success(
+            {"submitted": True, "new_status": "FullyGraded", "new_status_human": submission.human_grading_status()})
     else:
         submission.update_grading_status(GradingStatuses.FAILED)
         make_log_entry(submission.assignment_id, submission.assignment_version,

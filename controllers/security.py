@@ -1,11 +1,12 @@
 import re
 
-from models import db, User, Role
-
+import flask_wtf
 from flask_security import SQLAlchemyUserDatastore, Security
 from flask_security.forms import ConfirmRegisterForm
 
 from wtforms import StringField, validators, PasswordField
+
+from models import db, User, Role
 
 """
 TODO: Convert these to a proper test suite.
@@ -70,15 +71,18 @@ class ExtendedConfirmRegisterForm(ConfirmRegisterForm):
 
 
 def setup_security(app):
-    # User registration, etc.
+    """
+    Setup user registration and other stuff with Flask-Security-Too.
+    """
+    # TODO: Decide if the following is necessary:
+    flask_wtf.CSRFProtect(app)
+    # https://flask-security-too.readthedocs.io/en/stable/spa.html
+    # Might interfere with the LTI stuff?
+
     user_datastore = SQLAlchemyUserDatastore(db, User, Role)
     security = Security(app, user_datastore,
                         confirm_register_form=ExtendedConfirmRegisterForm,
                         register_form=ExtendedConfirmRegisterForm)
     app.user_datastore = user_datastore
-    # TODO: Decide if the following is necessary:
-    # flask_wtf.CSRFProtect(app)
-    # https://flask-security-too.readthedocs.io/en/stable/spa.html
-    # Might interfere with the LTI stuff?
 
     return security

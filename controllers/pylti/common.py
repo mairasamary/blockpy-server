@@ -243,7 +243,7 @@ def post_message(consumers, lti_key, url, body):
 
     is_success = b"<imsx_codeMajor>success</imsx_codeMajor>" in content
     log.debug("is success %s", is_success)
-    return is_success
+    return is_success, content
 
 
 def post_message2(consumers, lti_key, url, body,
@@ -330,7 +330,7 @@ def verify_request_common(consumers, url, method, headers, params):
 
 
 def generate_request_xml(message_identifier_id, operation,
-                         lis_result_sourcedid, score, message=None, url=False, needs_review=False,
+                         lis_result_sourcedid, score=None, message=None, url=False, needs_review=False,
                          when_submitted_at: str=None, overwrite_human_grades=False):
     # pylint: disable=too-many-locals
     """
@@ -387,6 +387,26 @@ def generate_request_xml(message_identifier_id, operation,
     #print(ret)
     log.debug("XML Response: \n%s", ret)
     return ret
+
+def parse_read_result(xml_response):
+    """
+    Parses XML response from LTI consumer
+
+    :param xml_response: xml response
+    :return: score
+    """
+    tree = etree.fromstring(xml_response)
+    log.debug("tree %s", tree)
+    result = tree.find('.//{http://www.imsglobal.org/services/ltiv1p1/xsd/'
+                       'imsoms_v1p0}resultScore')
+    if result is None:
+        return None
+    text_string = result.find(
+        '{http://www.imsglobal.org/services/ltiv1p1/xsd/imsoms_v1p0}'
+        'textString')
+    if text_string is None:
+        return None
+    return text_string.text
 
 class SignatureMethod_HMAC_SHA1_Unicode(oauth2.SignatureMethod_HMAC_SHA1):
     """

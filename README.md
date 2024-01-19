@@ -418,3 +418,55 @@ This feature isn't ready, but will eventually provide an interface for instructo
 # Getting Help
 
 Filing a GitHub Issue is the best way for us to help track and resolve trouble you're having. Please understand that we are a small team (mostly just Dr. Bart) with other responsibilities. We will try to fix show-stopper issues as quickly as possible.
+
+
+# Development
+
+## Big Jan 2024 Update
+
+We've rewritten huge chunks of the project.
+
+The following commands are used to update the database to handle the change to Flask-Security-Too:
+
+
+```sql
+alter table user
+    add fs_uniquifier VARCHAR(64) NOT NULL default hex(randomblob(64));
+
+UPDATE user SET fs_uniquifier=hex(randomblob(64));
+
+create unique index user_fs_uniquifier_index
+    on user (fs_uniquifier);
+
+alter table role
+    add description TEXT;
+```
+
+<https://flask-security-too.readthedocs.io/en/stable/changelog.html#id32>
+
+Courses can now be locked, which requires the following new field:
+
+```sql
+alter table course
+    add locked BOOLEAN NOT NULL default 0;
+```
+
+The submissions now track when they are submitted, graded, and due:
+
+```sql
+alter table submission
+    add date_submitted DATETIME default NULL;
+
+alter table submission
+    add date_graded DATETIME default NULL;
+
+alter table submission
+    add date_due DATETIME default NULL;
+
+alter table submission
+    add date_locked DATETIME default NULL;
+
+
+
+
+```

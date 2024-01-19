@@ -1,4 +1,4 @@
-{% macro navigate_course() %}
+{% macro navigate_course(course_id) %}
     <p>Back to <a href="{{ url_for('courses.course', course_id=course_id) }}">Course</a></p>
 {% endmacro %}
 

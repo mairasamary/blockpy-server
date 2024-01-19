@@ -23,14 +23,7 @@
     </span>
 
     <script>
-    function checkCookies() {
-        let cookieEnabled = navigator.cookieEnabled;
-        if (!cookieEnabled){
-            document.cookie = "testcookie";
-            cookieEnabled = document.cookie.indexOf("testcookie")!==-1;
-        }
-        return cookieEnabled;
-    }
+    
     function getParameterByName(name, url = window.location.href) {
         name = name.replace(/[\[\]]/g, '\\$&');
         var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)'),
@@ -185,6 +178,15 @@
                         markCorrect: markCorrect,
                         user: user"></java>
         <!-- /ko -->
+        <!-- ko if: assignmentType() == 'typescript' -->
+        <kettle params="server: server,
+                        courseId: courseId,
+                        currentAssignmentId: currentKettleAssignmentId,
+                        assignmentGroupId: assignmentGroupId,
+                        isInstructor: isInstructor,
+                        markCorrect: markCorrect,
+                        user: user"></kettle>
+        <!-- /ko -->
     </div>
 
     {% if group and group|length > 1 %}
@@ -196,6 +198,7 @@
         const READINGS = {{ readings|tojson }};
         const TEXTBOOKS = {{ textbooks|tojson }};
         const JAVAS = {{ javas|tojson }};
+        const KETTLES = {{ kettles|tojson }};
         window.$blocklyMediaPath = {{ url_for('static', filename='blockly/media/')|tojson }};
         window.$blockPyUrls = {
             "importDatasets": {{ config['CORGIS_URL']|tojson }},
@@ -244,6 +247,7 @@
                 currentReadingAssignmentId: ko.observable(null),
                 currentTextbookAssignmentId: ko.observable(null),
                 currentJavaAssignmentId: ko.observable(null),
+                currentKettleAssignmentId: ko.observable(null),
                 assignmentType: ko.observable(null),
                 assignmentGroupId: {{ (assignment_group_id or None)|tojson }},
                 markCorrect: markCorrect
@@ -274,6 +278,8 @@
                 {% if read_only %}
                     "display.read_only": true,
                 {% endif %}
+            
+                "access_token": window.accessToken,
 
                 {% for name, value in request.args.items() %}
                     {% if name.startswith('settings-') %}
@@ -293,46 +299,28 @@
 
             // System for switching assignments
             function loadAssignmentWrapper(id) {
+                const [isQuiz, isReading, isTextbook, isJava, isKettle] = [
+                    QUIZZES, READINGS, TEXTBOOKS, JAVAS, KETTLES
+                ].map((list) => list.includes(id));
+
                 id = parseInt(id, 10);
-                if (QUIZZES.includes(id) || READINGS.includes(id) || TEXTBOOKS.includes(id) || JAVAS.includes(id)) {
+                if ([isQuiz, isReading, isTextbook, isJava, isKettle].some(Boolean)) {
                     editor.hide();
-                    //$("quizzer").show();
-                    //console.log(mainModel.currentAssignmentId(), mainModel.assignmentType());
-                    if (QUIZZES.includes(id)) {
-                        mainModel.assignmentType('quiz');
-                        mainModel.currentQuizAssignmentId(id);
-                        mainModel.currentReadingAssignmentId(null);
-                        mainModel.currentTextbookAssignmentId(null);
-                        mainModel.currentJavaAssignmentId(null);
-                    } else if (READINGS.includes(id)) {
-                        mainModel.assignmentType('reading');
-                        mainModel.currentReadingAssignmentId(id);
-                        mainModel.currentQuizAssignmentId(null);
-                        mainModel.currentTextbookAssignmentId(null);
-                        mainModel.currentJavaAssignmentId(null);
-                    } else if (TEXTBOOKS.includes(id)) {
-                        mainModel.assignmentType('textbook');
-                        mainModel.currentReadingAssignmentId(null);
-                        mainModel.currentQuizAssignmentId(null);
-                        mainModel.currentTextbookAssignmentId(id);
-                        mainModel.currentJavaAssignmentId(null);
-                    } else if (JAVAS.includes(id)) {
-                        mainModel.assignmentType('java');
-                        mainModel.currentReadingAssignmentId(null);
-                        mainModel.currentQuizAssignmentId(null);
-                        mainModel.currentTextbookAssignmentId(null);
-                        mainModel.currentJavaAssignmentId(id);
-                    }
+                    mainModel.assignmentType(
+                        isQuiz ? 'quiz' :
+                            isReading ? 'reading' :
+                                isTextbook ? 'textbook' :
+                                    isJava ? 'java' : 'typescript');
                 } else {
-                    //$("quizzer").hide();
                     editor.show();
                     editor.loadAssignment(id);
-                    mainModel.currentQuizAssignmentId(null);
-                    mainModel.currentReadingAssignmentId(null);
-                    mainModel.currentTextbookAssignmentId(null);
-                    mainModel.currentJavaAssignmentId(null);
                     mainModel.assignmentType(null);
                 }
+                mainModel.currentQuizAssignmentId(isQuiz ? id : null);
+                mainModel.currentReadingAssignmentId(isReading ? id : null);
+                mainModel.currentTextbookAssignmentId(isTextbook ? id : null);
+                mainModel.currentJavaAssignmentId(isJava ? id : null);
+                mainModel.currentKettleAssignmentId(isKettle ? id : null);
             }
 
             // And/Or load assignment data explicitly passed in

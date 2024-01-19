@@ -20,6 +20,7 @@ import "./components/course_list";
 import "./components/assignment_manager";
 import "./components/quizzer";
 import "./components/reader";
-import "./components/java";
+//import "./components/java";
+import './components/kettle';
 import "./components/review_interface";
 //import "./components/textbook";

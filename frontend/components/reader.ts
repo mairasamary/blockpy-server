@@ -15,6 +15,7 @@ import {User} from "../models/user";
 import {Assignment} from "../models/assignment";
 import {Submission} from "../models/submission";
 import {AssignmentInterface, AssignmentInterfaceJson, EditorMode} from "./assignment_interface";
+import {STORAGE_SERVICE} from "../utilities/safe_local_storage";
 
 // TODO: Prevent popout button in exams, allow easy to close button there too?
 // TODO: Fix IP Change logEvent?
@@ -136,7 +137,7 @@ export class Reader extends AssignmentInterface {
     }
 
     getBestVoice(options: Record<string, string>) {
-        let previouslyChosenVoices = localStorage.getItem(this.LS_CURRENT_VOICE_CHOICES_KEY);
+        let previouslyChosenVoices = STORAGE_SERVICE.get(this.LS_CURRENT_VOICE_CHOICES_KEY);
         const defaultVoice = Object.values(options)[0] || "";
         if (previouslyChosenVoices == null) {
             return defaultVoice;
@@ -155,16 +156,16 @@ export class Reader extends AssignmentInterface {
     }
 
     rememberVoiceChoice(voice: string) {
-        let previouslyChosenVoicesRaw = localStorage.getItem(this.LS_CURRENT_VOICE_CHOICES_KEY);
+        let previouslyChosenVoicesRaw = STORAGE_SERVICE.get(this.LS_CURRENT_VOICE_CHOICES_KEY);
         if (previouslyChosenVoicesRaw == null) {
-            localStorage.setItem(this.LS_CURRENT_VOICE_CHOICES_KEY, JSON.stringify([voice]));
+            STORAGE_SERVICE.set(this.LS_CURRENT_VOICE_CHOICES_KEY, JSON.stringify([voice]));
             return;
         }
         let previouslyChosenVoices: string[];
         try {
             previouslyChosenVoices = JSON.parse(previouslyChosenVoicesRaw);
         } catch {
-            localStorage.setItem(this.LS_CURRENT_VOICE_CHOICES_KEY, JSON.stringify([voice]));
+            STORAGE_SERVICE.set(this.LS_CURRENT_VOICE_CHOICES_KEY, JSON.stringify([voice]));
             return;
         }
         // Remove if it exists
@@ -172,7 +173,7 @@ export class Reader extends AssignmentInterface {
         // Add it to the front
         previouslyChosenVoices.unshift(voice);
         // Store it for next time
-        localStorage.setItem(this.LS_CURRENT_VOICE_CHOICES_KEY, JSON.stringify(previouslyChosenVoices));
+        STORAGE_SERVICE.set(this.LS_CURRENT_VOICE_CHOICES_KEY, JSON.stringify(previouslyChosenVoices));
     }
 
     parseAdditionalSettings() {

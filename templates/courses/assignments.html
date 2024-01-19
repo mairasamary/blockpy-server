@@ -473,7 +473,7 @@ div.overlay {
 
     <h1>Manage Assignments</h1>
     <strong>{{ course.name }}</strong> (<code>{{  course.url }}</code>)
-    {{ navigation.navigate_course() }}
+    {{ navigation.navigate_course(course_id) }}
 
 <div class="modal fade" id="assignment-create" tabindex="-1" role="dialog" aria-labelledby="assignment-create-label">
   <div class="modal-dialog" role="document">
@@ -483,6 +483,9 @@ div.overlay {
         <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
       </div>
       <div class="modal-body">
+          <p>
+              Documentation on <strong><a href="{{ url_for('courses.making_problems') }}" target="_blank">new BlockPy assignments</a></strong>
+          </p>
         <div class="form-group">
             <label for="assignment-name">Type:
             <select class="form-control" data-bind="value: createAssignmentType">
@@ -571,8 +574,10 @@ div.overlay {
   </div>
 </div>
 
+    <p>
+        Documentation on <strong><a href="{{ url_for('courses.making_problems') }}" target="_blank">new BlockPy assignments</a></strong>.
+    </p>
 <table class="table table-condensed table-hover">
-<caption>All assignments owned by course:</caption>
 <tbody>
     <tr id='new-row'>
         <td colspan='4'>
@@ -668,7 +673,5 @@ div.overlay {
     
 </tbody>
 </table>
-
-Want to make <strong><a href="{{ url_for('courses.making_problems') }}">new BlockPy assignments?</a></strong><br><br>
 
 {% endblock %}
