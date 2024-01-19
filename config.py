@@ -33,11 +33,11 @@ class DefaultConfig:
     CANVAS_DIR = os.path.join(STATIC_DIRECTORY, 'canvas', 'courses')
     API_DOCUMENTATION_PATH = "./models/generated/openapi.json"
     # Library Files
-    LIB_PEDAL_DIR = os.path.join(ROOT_DIRECTORY, 'libs', 'pedal')
-    LIB_CURRICULUM_CTVT_DIR = os.path.join(ROOT_DIRECTORY, 'libs', 'pedal')
-    LIB_CURRICULUM_SNEKS_DIR = os.path.join(ROOT_DIRECTORY, 'libs', 'pedal')
-    LIB_DESIGNER_DIR = os.path.join(ROOT_DIRECTORY, 'libs', 'designer')
-    LIB_BLOCKPY_DIR = os.path.join(ROOT_DIRECTORY, 'libs', 'blockpy')
+    LIB_PEDAL_DIR = os.path.join(STATIC_DIRECTORY, 'libs', 'pedal')
+    LIB_CURRICULUM_CTVT_DIR = os.path.join(STATIC_DIRECTORY, 'libs', 'pedal')
+    LIB_CURRICULUM_SNEKS_DIR = os.path.join(STATIC_DIRECTORY, 'libs', 'pedal')
+    LIB_DESIGNER_DIR = os.path.join(STATIC_DIRECTORY, 'libs', 'designer')
+    LIB_BLOCKPY_DIR = os.path.join(STATIC_DIRECTORY, 'libs', 'blockpy')
     # External files settings
     BLOCKPY_SOURCE_DIR = None
     CORGIS_URL = "https://corgis-edu.github.io/corgis/datasets/"
