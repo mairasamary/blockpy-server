@@ -20,6 +20,6 @@ def cli(debug):
     """
     if debug:
         os.environ['FLASK_DEBUG'] = '1'
-    os.environ['FLASK_ENV'] = 'development'
-    os.environ['cert'] = 'instance/certs/server.crt'
-    os.environ['key'] = 'instance/certs/server.key'
+        os.environ['FLASK_ENV'] = 'development'
+        os.environ['cert'] = 'instance/certs/server.crt'
+        os.environ['key'] = 'instance/certs/server.key'

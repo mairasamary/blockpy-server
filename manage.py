@@ -9,13 +9,6 @@ from flask import current_app
 from scripts.setup import cli
 import scripts.db_commands
 
-#from scripts.db_commands import (ResetDB, PopulateDB, DisplayDB, ExportCourse,
-#                                 ImportCourse, CreateDB, RemoveCourse,
-#                                DumpDB, AddTestUsersDB, AddMazeCourse,
-#                                 ExportProgSnap)
-#from scripts.external_commands import UpdateBlockPy
-#from tasks.run import HueyWorker
-
 
 @cli.command('run_huey_debug')
 def run_huey_debug():

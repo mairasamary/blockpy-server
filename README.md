@@ -454,17 +454,13 @@ alter table course
 The submissions now track when they are submitted, graded, and due:
 
 ```sql
-alter table submission
-    add date_submitted DATETIME default NULL;
+alter table submission add date_submitted DATETIME default NULL;
 
-alter table submission
-    add date_graded DATETIME default NULL;
+alter table submission add date_graded DATETIME default NULL;
 
-alter table submission
-    add date_due DATETIME default NULL;
+alter table submission add date_due DATETIME default NULL;
 
-alter table submission
-    add date_locked DATETIME default NULL;
+alter table submission add date_locked DATETIME default NULL;
 
 
 
