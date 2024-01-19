@@ -10,8 +10,8 @@ from scripts.setup import cli
 import scripts.db_commands
 
 
-@cli.command('run_huey_debug')
-def run_huey_debug():
+@cli.command('huey')
+def run_huey():
     """
     Example command
     :return:
