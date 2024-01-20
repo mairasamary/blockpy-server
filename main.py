@@ -8,7 +8,7 @@ from flask_debugtoolbar import DebugToolbarExtension
 from flask_jwt_extended import JWTManager
 
 
-def create_app(test_config=None) -> Flask:
+def create_app(test_config=None, instance_config="configuration.py") -> Flask:
     """
     Per the App Factory pattern, this creates a new instance of the BlockPy app.
     :param test_config: 'testing' for unit tests, or a specific config object.
@@ -28,7 +28,7 @@ def create_app(test_config=None) -> Flask:
     else:
         print("Loading Production!")
         app.config.from_object('config.ProductionConfig')
-    app.config.from_pyfile('configuration.py')
+    app.config.from_pyfile(instance_config)
 
     # Additional settings being overridden here
     app.config['TEMPLATES_AUTO_RELOAD'] = True

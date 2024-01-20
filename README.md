@@ -466,3 +466,9 @@ alter table submission add date_locked DATETIME default NULL;
 
 
 ```
+
+Need to create a `butler` user with REPLICATION permissions, if you want to be able to clear old anonymous users:
+
+```sql
+CREATE USER butler LOGIN REPLICATION PASSWORD 'XXXX';
+```
