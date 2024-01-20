@@ -260,12 +260,14 @@ class User(Base, UserMixin):
             return lti.user
 
     @staticmethod
-    def get_old_anonymous_users(threshold_days: int):
+    def get_old_anonymous_users(threshold_days: int, limit: int = None):
         threshold = datetime.utcnow() - timedelta(days=threshold_days)
-        return (db.session.query(models.User)
-                .filter(models.User.anonymous == true())
-                .filter(models.User.date_created < threshold)
-                .all())
+        query = (db.session.query(models.User)
+                 .filter(models.User.anonymous == true())
+                 .filter(models.User.date_created < threshold))
+        if limit is not None:
+            query = query.limit(limit)
+        return query.all()
 
     def get_logs(self, threshold=None):
         course_assignments_subquery = (db.session.query(

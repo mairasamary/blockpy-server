@@ -6,6 +6,7 @@ from pprint import pprint
 
 import click
 from flask import current_app
+from sqlalchemy import text as sqla_text
 
 from models import db
 from models.generics.base import find_all_linked_resources, SAFE_DELETE_ORDER
@@ -235,10 +236,13 @@ def export_progsnap2(output, log_for_course, groups, exclude, format, overwrite,
 
 
 @cli.command("clear_old_anonymous_users")
-@click.option("--days", '-d', "days", default=7)
+@click.option("--days", '-d', "days", default=7,
+              help="How old the users must be (in days) before they are eligible")
 @click.option("--keep_active", '-a', "keep_active", default=True,
               help="Do not remove users who have Logs or recent submissions")
-def clear_old_anonymous_users(days, keep_active):
+@click.option("--limit", "-l", "limit", default=None,
+              help="Limit the number of users to delete")
+def clear_old_anonymous_users(days, keep_active, limit):
     """
     Removes any old users that are anonymous, along with their linked data.
     Old is determined by when the user is created.
@@ -254,7 +258,7 @@ def clear_old_anonymous_users(days, keep_active):
     click.echo("Finding all old anonymous users")
     from models.user import User
 
-    anonymous_users = User.get_old_anonymous_users(int(days))
+    anonymous_users = User.get_old_anonymous_users(int(days), limit=limit)
     click.echo(f"Found {len(anonymous_users)} anonymous old users")
 
     if keep_active:
@@ -320,11 +324,17 @@ def clear_old_anonymous_users(days, keep_active):
 
     click.echo(f"Deleting users...")
     total = 0
+    if current_app.config['SQLALCHEMY_DATABASE_URI'].startswith('postgresql'):
+        db.session.execute(sqla_text("SET session_replication_role='replica';"))
+        db.session.commit()
     with click.progressbar(anonymous_users) as bar:
         for user in bar:
             db.session.delete(user)
             total += 1
     db.session.commit()
+    if current_app.config['SQLALCHEMY_DATABASE_URI'].startswith('postgresql'):
+        db.session.execute(sqla_text("SET session_replication_role='origin';"))
+        db.session.commit()
     click.echo(f"Deleted {total} users")
 
     click.echo("Done!")
