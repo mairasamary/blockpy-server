@@ -334,8 +334,8 @@ def clear_old_anonymous_users(days, keep_active, limit):
             for user in bar:
                 db.session.delete(user)
                 total += 1
-        if current_app.config['SQLALCHEMY_DATABASE_URI'].startswith('postgresql'):
-            db.session.execute(sqla_text("SET session_replication_role=origin;"))
+    if current_app.config['SQLALCHEMY_DATABASE_URI'].startswith('postgresql'):
+        db.session.execute(sqla_text("SET session_replication_role=origin;"))
         db.session.commit()
     click.echo(f"Deleted {total} users")
 
