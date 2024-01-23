@@ -4,12 +4,25 @@ declare global {
     const RAW_D_TS_FILES: Record<string, string>;
 }
 
+const KETTLE_JEST_D_TS = `
+    interface Assertion {
+        toBe: (expected: any) => void;
+        toEqual: (expected: any) => void;
+        not: Assertion;
+    }
+    declare function describe(name: string, tests: any): void;
+    declare function test(name: string, assertions: any): void;
+    declare function expect(actual: any): Assertion;
+    declare var student: Record<string, any>;
+`;
+
 //
 // Result of compiling TypeScript code.
 //
 export interface CompilationResult {
     code?: string;
-    diagnostics: ts.Diagnostic[]
+    diagnostics: ts.Diagnostic[];
+    locals: Map<string, string>;
 };
 
 //
@@ -67,6 +80,7 @@ export function compile(code: string, libs: string[]): CompilationResult {
     const dummySourceFile = ts.createSourceFile(dummyFilePath, code, ts.ScriptTarget.Latest);
     let outputCode: string | undefined = undefined;
     const otherFakeFiles: Record<string, string> = RAW_D_TS_FILES;
+    otherFakeFiles['kettle.d.ts'] = KETTLE_JEST_D_TS;
 
     const host: ts.CompilerHost = {
         fileExists: filePath => filePath === dummyFilePath || realHost.fileExists(filePath),
@@ -95,7 +109,7 @@ export function compile(code: string, libs: string[]): CompilationResult {
         },
     };
 
-    const rootNames = Object.keys(RAW_D_TS_FILES); //libs.map(lib => require.resolve(`typescript/lib/lib.${lib}.d.ts`));
+    const rootNames = Object.keys(otherFakeFiles); //libs.map(lib => require.resolve(`typescript/lib/lib.${lib}.d.ts`));
     const program = ts.createProgram(rootNames.concat([dummyFilePath]), options, host);
     //console.log("P",program);
     const emitResult = program.emit();
@@ -103,7 +117,8 @@ export function compile(code: string, libs: string[]): CompilationResult {
     const diagnostics = ts.getPreEmitDiagnostics(program);
     return {
         code: outputCode,
-        diagnostics: emitResult.diagnostics.concat(diagnostics)
+        diagnostics: emitResult.diagnostics.concat(diagnostics),
+        locals: (dummySourceFile as any).locals
     };
 }
 

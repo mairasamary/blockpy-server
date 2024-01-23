@@ -7,7 +7,7 @@ import * as ko from 'knockout';
 import {AssignmentInterface, AssignmentInterfaceJson, EditorMode} from "./assignment_interface";
 import {Assignment} from "../models/assignment";
 import {Timer} from "../utilities/timer";
-import {formatClock, pad} from "../utilities/text";
+import {formatClock, pad, titleCase} from "../utilities/text";
 import {CompilationResult, compile, delint} from "../utilities/ts_compiler";
 import * as ts from "typescript";
 import {decode} from "../utilities/vlq";
@@ -91,7 +91,7 @@ test("First Test", () => {
 });
 `;
 
-function cleanStack(stack: string, sourceCodeMapping: SourceCodeMapping, originalCode: string) {
+function cleanStack(stack: string, sourceCodeMapping: SourceCodeMapping, originalCode: string, offset: number = 0) {
     const originalLines = originalCode.split("\n");
     const lines = stack.split("\n");
     let cleaned = [];
@@ -119,6 +119,7 @@ function cleanStack(stack: string, sourceCodeMapping: SourceCodeMapping, origina
             }
         }
         //lineNumber -= initialLine;
+        lineNumber += offset;
         if (inModule) {
             cleaned.push("    at " + functionName + " (line " + lineNumber + ", column " + colNumber + ")");
         }
@@ -139,45 +140,287 @@ function getValueForLowestKey(object: Record<number, any>, index: number) {
     return returned;
 }
 
-function improveError(e: any, sourceCodeMapping: SourceCodeMapping, originalCode: string): string {
-    if (e.stack) {
-        return cleanStack(e.stack, sourceCodeMapping, originalCode);
+function handleKettleSystemError(error: KettleEngineSystemError, request: FeedbackExecutionRequest) {
+    const result = [`${titleCase(error.category)} error in ${titleCase(error.place)} code:\n`];
+    const defaultText = error.error.text === "[object Object]" ? JSON.stringify(error.error.raw) : error.error.text;
+    if (error.place === "student" || error.place === "instructor") {
+        const sourceCodeMapping = request[error.place].sourceCodeMapping;
+        const originalCode = request[error.place].original;
+        if (error.category === "syntax" || error.category === "runtime") {
+            const offset = request[error.place].offset[error.category];
+            if (error.error.stack) {
+                result.push(cleanStack(error.error.stack, sourceCodeMapping, originalCode));
+            } else {
+                result.push(defaultText);
+            }
+        } else {
+            result.push(defaultText);
+        }
     } else {
-        return e.string;
+        result.push(defaultText);
+    }
+    return result.join("\n");
+}
+
+export function processTypeScriptDiagnostic(diagnostic: ts.Diagnostic, where: string) {
+    if (diagnostic.file) {
+      const { line, character } = ts.getLineAndCharacterOfPosition(diagnostic.file, diagnostic.start);
+      const message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n');
+      return (`${where}(Line ${line + 1}, Position ${character + 1}): ${message}`);
+    } else {
+      return (where + ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n'))
     }
 }
 
-const wrapStudentCode = (code: string) => {
-    code = code.replace(/\\|`|\$/g, '\\$&');
-    // TODO: Figure out if we should block postMessage?
-    return `try { const mainFunction = Function("main", \`${code}\`);
-    try {
-        mainFunction();
-    } catch (e) {
-        _kettleSystemError("student", "Runtime", e);
+
+interface KettleEngineSystemError {
+    place: string,
+    category: string,
+    error: {
+        stack: string,
+        message: string,
+        text: string,
+        raw: any
     }
-} catch (e) {
-    _kettleSystemError("student", "Syntax", e);
 }
-`};
 
 
-const EXECUTION_HEADER = `
+interface ParentPost {
+    type: string,
+    contents: KettleEngineSystemError | string[],
+}
+
+
+
+const EXECUTION_HEADER = `// Execution Header
+let silenceConsole = false;
+const parentPost = (type, contents) => {
+    //contents = JSON.parse(JSON.stringify(contents));
+    if (!silenceConsole) {
+        postMessage({type: type, contents: contents});
+    }
+};
 const console = {
-    log: (...text) => postMessage({type: "console.log", data: text}),
-    error: (...text) => postMessage({type: "console.error", data: text}),
-    info: (...text) => postMessage({type: "console.info", data: text}),
-    warning: (...text) => postMessage({type: "console.warning", data: text}),
-    table: (...text) => postMessage({type: "console.table", data: text}),
-    clear: () => postMessage({type: "console.clear", data: []})
+    log: (...text) => parentPost("console.log", text),
+    error: (...text) => parentPost("console.error", text),
+    info: (...text) => parentPost("console.info", text),
+    warning: (...text) => parentPost("console.warning", text),
+    table: (...text) => parentPost("console.table", text),
+    clear: () => parentPost("console.clear", [])
+};
+function _updateStatus(message) {
+    parentPost("execution.update", [message]);
 };
 function _kettleSystemError(place, category, error) {
-    postMessage({type: "system.error", data: {place, category, error}});
+    parentPost("execution.error", {
+        place,
+        category,
+        error: {
+            text: error.toString(),
+            message: error.message,
+            stack: error.stack,
+            raw: JSON.parse(JSON.stringify(error))
+        }
+    });
 }
+// Listen for cool stuff
 addEventListener('message', (message) => {
-    console.log("Web Worker heard", message)
+    console.log("Web Worker internally heard", message)
 });
 `;
+
+const EXECUTION_INSTRUCTOR = `// Instructor Header
+(function() {
+const isDeepEqual = (object1, object2) => {
+
+  const objKeys1 = Object.keys(object1);
+  const objKeys2 = Object.keys(object2);
+
+  if (objKeys1.length !== objKeys2.length) return false;
+
+  for (var key of objKeys1) {
+    const value1 = object1[key];
+    const value2 = object2[key];
+
+    const isObjects = isObject(value1) && isObject(value2);
+
+    if ((isObjects && !isDeepEqual(value1, value2)) ||
+      (!isObjects && value1 !== value2)
+    ) {
+      return false;
+    }
+  }
+  return true;
+};
+
+const isObject = (object) => {
+  return object != null && typeof object === "object";
+};
+
+const DEFAULT_SUITE = "__GLOBAL";
+let currentSuite = DEFAULT_SUITE, currentTest = null;
+let _results = {[DEFAULT_SUITE]: { status: "success", tests: {} }};
+const describe = (name, tests) => {
+    currentSuite = name;
+    if (name in _results) {
+        throw new Error("Test suite name already exists: "+name);
+    }
+    _results[currentSuite] = { status: "success", tests: {} };
+    try {
+        tests();
+    } catch (failedSuite) {
+        _results[name].status = "failed: "+failedSuite.toString();
+    }
+    currentSuite = DEFAULT_SUITE;
+}
+const test = (name, assertions) => {
+    currentTest = name;
+    _results[currentSuite].tests[name] = { status: "success", expects: [] };
+    silenceConsole = true;
+    try {
+        assertions();
+    } catch (failedTest) {
+        _results[currentSuite].tests[name].status = "failed: "+failedTest.toString();
+        _results[currentSuite].tests[name].expects.push(
+            "error"
+        );
+    } finally {
+        silenceConsole = false;
+    }
+    currentTest = null;
+}
+const getExpects = () => {
+    if (currentTest === null) {
+        throw new Error("Trying to run expect outside of a test.");
+    }
+    return _results[currentSuite].tests[currentTest].expects;
+}
+const expect = (actual) => {
+    return {
+        toBe: (expected) => {
+            const expects = getExpects();
+            expects.push(actual === expected ? "passed" : "failed");
+        },
+        toEqual: (expected) => {
+            const expects = getExpects();
+            expects.push(isDeepEqual(actual, expected) ? "passed" : "failed");
+        }
+    }
+}
+`;
+
+const EXECUTION_FOOTER = `// Execution Footer
+parentPost("instructor.tests", _results);
+})();
+parentPost("execution.finished", []);
+`;
+
+interface ProgramExecutionRequest {
+    code: string;
+    offset: {
+        syntax: number,
+        runtime: number
+    }
+    errors: ts.Diagnostic[];
+    original: string;
+    sourceCodeMapping: SourceCodeMapping;
+}
+
+interface FeedbackExecutionRequest {
+    header: string;
+    student: ProgramExecutionRequest;
+    instructor: ProgramExecutionRequest | null;
+    assembled: string;
+    noErrors: boolean;
+}
+
+interface WrappedCode {
+    code: string;
+    offset: {
+        syntax: number,
+        runtime: number,
+    };
+    lineCount: number;
+}
+
+const wrapStudentCode = (code: string, offset: number = 0, locals: Map<string, string>): WrappedCode => {
+    code = code.replace(/[\\`$]/g, '\\$&');
+    code += "\nreturn {" + Array.from(locals.keys()).join(", ")+"};";
+    const wrapped = `_updateStatus("Executing Student Code"); // $Student Code
+student = {};
+try {
+    const __studentFunction = Function("studentCode", \`${code}\`);
+    try {
+        student = __studentFunction();
+    } catch (e) {
+        _kettleSystemError('student', "runtime", e);
+    }
+} catch (e) {
+    _kettleSystemError('student', "syntax", e);
+}`.trim();
+    return {
+        code: wrapped,
+        offset: {
+            syntax: 2 + offset,
+            runtime: 4 + offset
+        },
+        lineCount: wrapped.split("\n").length + offset
+    }
+};
+
+const wrapInstructorCode = (code: string, offset: number = 0): WrappedCode => {
+    //code = code.replace(/[\\`$]/g, '\\$&');
+    const wrapped = `_updateStatus("Executing Instructor Code"); // Instructor Code
+try {
+    ${code}
+} catch (e) {
+    _kettleSystemError('instructor', "runtime", e);
+}`.trim();
+    return {
+        code: wrapped,
+        offset: {
+            syntax: 2 + offset,
+            runtime: 4 + offset
+        },
+        lineCount: wrapped.split("\n").length + offset
+    }
+};
+
+export function makeExecutionRequest(studentCode: string, instructorCode: string): FeedbackExecutionRequest {
+    // TODO: Handle strings with blank lines inside?
+    studentCode = studentCode.replace("\n\n", "\n//\n");
+    instructorCode = instructorCode.replace("\n\n", "\n//\n");
+    const studentResults: CompilationResult = compile(studentCode, ["es2015"]);
+    const studentLocals = studentResults.locals;
+    const instructorResults: CompilationResult = compile(instructorCode, ["es2015"]);
+    const headerOffset = EXECUTION_HEADER.split("\n").length;
+    const wrappedStudent = wrapStudentCode(studentResults.code, headerOffset, studentLocals);
+    const instructorHeaderOffset = EXECUTION_INSTRUCTOR.split("\n").length + wrappedStudent.lineCount;
+    const wrappedInstructor = wrapInstructorCode(instructorResults.code, instructorHeaderOffset);
+    const assembled = [
+        EXECUTION_HEADER, wrappedStudent.code,
+        EXECUTION_INSTRUCTOR, wrappedInstructor.code, EXECUTION_FOOTER
+    ].join("\n");
+
+    return {
+        assembled,
+        header: EXECUTION_HEADER,
+        student: {
+            ...wrappedStudent,
+            errors: studentResults.diagnostics,
+            original: studentCode,
+            sourceCodeMapping: extractSourceCodeMap(studentResults.code)
+        },
+        instructor: {
+            ...wrappedInstructor,
+            errors: instructorResults.diagnostics,
+            original: instructorCode,
+            sourceCodeMapping: extractSourceCodeMap(instructorResults.code)
+        },
+        noErrors:!(studentResults.diagnostics.length > 0 || instructorResults.diagnostics.length > 0),
+    };
+}
+
 
 export class Kettle extends AssignmentInterface {
     errorMessage: ko.Observable<string>;
@@ -268,6 +511,7 @@ export class Kettle extends AssignmentInterface {
             autostart: false,
             showDebugging: false,
             showTimestamp: false
+            // TODO: Stop this from using the real console too, please
         });
         this.console.createDocumentNode();
         console.log(this.console);
@@ -309,78 +553,104 @@ export class Kettle extends AssignmentInterface {
                 }, null, 2), this.assignment().url(), () => {});
     }
 
-    makeExecutionRequest(studentCode: string, instructorCode: string) {
-        studentCode = studentCode.replace("\n\n", "\n//\n");
-        const studentResults: CompilationResult = compile(studentCode, ["es2015"]);
-        const instructorResults: CompilationResult = compile(instructorCode, ["es2015"]);
-        const sourceCodeMapping = extractSourceCodeMap(studentResults.code);
-
-        //const compiledStudentCode = wrapStudentCode(studentResults.code);
-        //console.log("Preformated student code", compiledStudentCode);
-        return {
-            code: [
-                //EXECUTION_HEADER,
-                //compiledStudentCode,
-                studentResults.code,
-                instructorResults.code
-                ].join("\n"),
-            noErrors:!(studentResults.diagnostics.length > 0 || instructorResults.diagnostics.length > 0),
-            errors: studentResults.diagnostics.concat(instructorResults.diagnostics),
-            sourceCodeMapping: sourceCodeMapping,
-            originalCode: studentCode
-        };
-    }
-
-    handleExecutionEvents(event: MessageEvent, sourceCodeMapping: SourceCodeMapping, originalCode: string) {
+    handleExecutionEvents(event: MessageEvent, feedbackRequest: FeedbackExecutionRequest) {
         console.log("INSIDE Main Kettle Object", event);
         CONSOLE_API_COMMAND_LIST.forEach((type: ConsoleAPICommand) => {
             if (event.data.type === `console.${type}`) {
-                this.console.api[type](...event.data.data);
+                this.console.api[type](...event.data.contents);
             }
         })
-        if (event.data.type === "system.error") {
-            const data = event.data.data;
-            this.console.api.error(`${data.category} error in ${data.place} code:\n`, improveError(data.error, sourceCodeMapping, originalCode));
+        if (event.data.type === "execution.error") {
+            const data = event.data.contents as KettleEngineSystemError;
+            this.updateStatus(`${data.category} ${data.place} Error`, false);
+            this.console.api.error(handleKettleSystemError(data, feedbackRequest));
+            this.updateFeedback(`There were ${data.category} errors in the ${data.place} code. The execution stopped. Please see the console more information.`);
+        }
+        if (event.data.type === "execution.update") {
+            this.updateStatus(event.data.contents[0]);
+        }
+        if (event.data.type === "execution.finished") {
+            this.updateStatus("Execution Finished", false);
+            // TODO: Switch button to play button again
+        }
+        interface TestCollection {
+            expects: string[];
+            status: string;
+        }
+        interface TestSuite {
+            tests: TestCollection;
+            status: string;
+        }
+        if (event.data.type === "instructor.tests") {
+            console.log("Instructor Test Results", event.data.contents);
+            const assertions: string[] = [];
+            let allPassed = true;
+            Object.entries(event.data.contents).forEach(
+                ([suiteName, suite]: [string, TestSuite]) => {
+                    return Object.entries(suite.tests).forEach(
+                        ([testName, test]: [string, TestCollection]) => {
+                            const passed = test.expects.every((result: string) => result === "passed");
+                            assertions.push(
+                                (passed ? "✅" : "❌")+" "+
+                                (suiteName === "__GLOBAL" ? testName : suiteName +") "+ testName),
+                            );
+                            allPassed = allPassed && passed;
+                        }
+                    );
+                }
+            )
+            this.updateFeedback("Instructor unit test results:<br>"+
+                assertions.join("\n<br>\n")+"<br>"+
+                (allPassed ? "All the tests are passing. Good work!" : "Some tests are not yet passing. You are free to keep working.")
+            );
         }
     }
 
+    logAllErrors(request: ProgramExecutionRequest, where: string = "") {
+        where = where.length ? where+" " : where;
+        request.errors.map(
+            (diagnostic) => processTypeScriptDiagnostic(diagnostic, where)
+        ).forEach(
+            (error: string) => this.console.api.error(error)
+        );
+    }
+
     evaluateInstructorCode() {
-        // TODO: Clean up web workers from last time, if any
+        // TODO: Clean up event handler from last time, if any
         if (this.latestListener !== null) {
             window.removeEventListener('message', this.latestListener);
         }
+        this.console.api.clear(false);
         this.console.api.info("Evaluating your code");
         this.updateStatus("Saving, ");
         this.executionTimer.start();
         this.updateStatus("Compiling");
         // this.assignment().onRun() + "\n" +
-        const program = this.makeExecutionRequest(this.submission().code(), this.assignment().onRun());
-        if (program.noErrors) {
+        const request = makeExecutionRequest(this.submission().code(), this.assignment().onRun());
+        if (request.noErrors) {
             this.updateStatus("Executing");
             const iframe: HTMLIFrameElement = <HTMLIFrameElement>document.getElementsByClassName("kettle-execution-iframe")[0];
-            this.latestListener = (e: MessageEvent) => this.handleExecutionEvents(e, program.sourceCodeMapping, program.originalCode);
+            this.latestListener = (e: MessageEvent) => this.handleExecutionEvents(e, request);
             window.addEventListener('message', this.latestListener);
             iframe.contentWindow.postMessage({
                 'type': 'execute',
-                'code': ""+program.code,
+                'code': request.assembled,
             }, '*');
-            /*const blob = new Blob([program.code], {type: 'application/javascript'});
-            const worker = new Worker(URL.createObjectURL(blob));
-            worker.addEventListener('message', (e) => this.handleExecutionEvents(e, program.sourceCodeMapping, program.originalCode));*/
-            this.updateStatus("Completed!", false)
+            // TODO: Attach terminate signal to button
+            this.updateStatus("Running", false)
         } else {
-            program.errors.map((error: ts.Diagnostic) => "Line "+error.file.pos+") " +error.messageText).forEach(
-                (error) => this.console.api.error(error as string)
-            );
-            this.updateStatus("Errors!", false);
-            console.error(program.errors);
-            this.updateFeedback(program.errors.map((error: ts.Diagnostic) => "Line "+error.file.pos+") " +error.messageText).join("\n"));
+            console.error(request);
+            this.updateStatus("Typescript Error", false);
+            if (request.student.errors.length > 0) {
+                this.updateFeedback("There were TypeScript errors in your code. The program could not be executed. See the console for more information.");
+                this.logAllErrors(request.student);
+            }
         }
-
+        if (request.instructor.errors.length > 0) {
+            this.updateFeedback("There was an error in the instructor code.");
+            this.logAllErrors(request.instructor, "Instructor");
+        }
         this.executionTimer.stop();
-
-
-
         // TODO: Finish this
         const feedback = "TODO: Finish this";
         const points = 0;
@@ -698,9 +968,9 @@ export const KETTLE_HTML = `
         }" style="width: 100%; height: 300px; border: 1px solid black;"></div>
         <br>
       <!-- /ko -->
-      <iframe src="../blockpy/serve_kettle_iframe" class="kettle-execution-iframe"></iframe>
+      <iframe src="../blockpy/serve_kettle_iframe" class="kettle-execution-iframe" style="display: none;"></iframe>
       <div class="row mb-2">
-        <div class="col-md-12">
+        <div class="col-md-7">
             <button class="btn btn-mini btn-xs btn-outline-secondary float-right mr-3" style="display: none;" id="abort-command">Stop Execution</button>
             <h6>Console (log)</h6>
             

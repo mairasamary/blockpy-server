@@ -5,3 +5,7 @@ export function formatClock() {
     const time = `${now.getHours() % 12 || 12}:${pad(now.getMinutes())} `;
     return time + (now.getHours()>=12 ? 'PM': 'AM');
 }
+
+export function titleCase(text: string): string {
+    return text.charAt(0).toUpperCase() + text.slice(1);
+}
