@@ -507,14 +507,18 @@ export class Kettle extends AssignmentInterface {
     startEditor() {
         this.isExecuting(false);
 
-        this.console = new ConTodo(document.querySelector(".kettle-console"), {
-            autostart: false,
-            showDebugging: false,
-            showTimestamp: false
-            // TODO: Stop this from using the real console too, please
-        });
-        this.console.createDocumentNode();
-        console.log(this.console);
+        if (this.console === null) {
+            this.console = new ConTodo(document.querySelector(".kettle-console"), {
+                autostart: false,
+                showDebugging: false,
+                showTimestamp: false
+                // TODO: Stop this from using the real console too, please
+            });
+            this.console.createDocumentNode();
+            console.log(this.console);
+        } else {
+            this.console.api.clear(false);
+        }
 
         let shell = {
             stdout: (text: string)=> {
@@ -534,7 +538,8 @@ export class Kettle extends AssignmentInterface {
         this.console.api.info("Ready to run!");
         this.updateStatus("Ready", false);
 
-        $(".kettle-eval-button").on('click', () => {
+        $(".kettle-eval-button").off('click.run');
+        $(".kettle-eval-button").on('click.run', () => {
             this.evaluateInstructorCode();
         });
         $(".kettle-run-button").off('click.run');
@@ -942,9 +947,9 @@ export const KETTLE_HTML = `
                 data-bind="disable: isExecuting">
               
             </button>
-            <div class="dropdown-menu" aria-labelledby="kettle-execution-control">
+            <!--<div class="dropdown-menu" aria-labelledby="kettle-execution-control">
               <button class='btn btn-mini btn-success kettle-run-button' data-bind="disable: isExecuting">Run without grading</button>
-            </div>
+            </div>-->
           </div>
       </div>
       
