@@ -61,7 +61,10 @@ class UserView(RegularView):
 
     column_hide_backrefs = False
     column_formatters = {'roles': _list_roles}
-    form_excluded_columns = ('password', 'assignments', 'authentications', 'roles')
+    form_excluded_columns = ('password', 'roles', 'authentications',
+                             'assignments', 'assignment_groups', 'courses',
+                             'tags', 'logs', 'reviews', 'submissions', 'reports',
+                             'invites', 'grade_history')
     column_exclude_list = ('password', 'proof')
     column_display_pk = True
     column_searchable_list = ('first_name', 'last_name', 'email')
@@ -168,6 +171,7 @@ class RoleView(RegularView):
         'course': make_ajax_fields('id', 'url', 'name'),
         'user': make_ajax_fields('first_name', 'last_name', 'email', 'id')
     }
+    form_excluded_columns = ()
 
 
 def _render_course_service(view, context, model, name):
@@ -191,11 +195,13 @@ class CourseView(RegularView):
     settings = Column(Text(), default="")'''
     column_list = ('id', 'date_modified', 'name', 'url', 'owner_id',
                    'service', 'visibility', 'term', 'settings')
+    form_excluded_columns = ('roles', 'assignments', 'assignment_groups',
+                             'tags', 'logs', 'submissions', 'invites', 'reports')
     column_searchable_list = ('id', 'name', 'url')
     column_filters = ('id', 'name', 'date_modified', 'url', 'term', 'owner_id', 'service')
     column_formatters = {'service': _render_course_service}
     form_ajax_refs = {
-        'owner': make_ajax_fields('first_name', 'last_name', 'email', 'id')
+        'owner': make_ajax_fields('first_name', 'last_name', 'email', 'id'),
     }
 
 
@@ -223,7 +229,7 @@ class AssignmentView(RegularView):
         'tags': make_ajax_fields('name', 'id'),
         'sample_submissions': make_ajax_fields('id'),
     }
-    form_excluded_columns = ('user',)
+    form_excluded_columns = ('memberships', 'logs', 'submissions', 'reports')
     # form_columns = ('id', 'date_modified')
     column_filters = ('id', 'name', 'on_run', 'course_id', 'url', 'instructions', 'reviewed', 'hidden', 'public')
     column_formatters = {'name': _render_assignment_name,
@@ -249,6 +255,12 @@ class AssignmentGroupView(RegularView):
                    )
     column_filters = ('url', 'course_id', 'name')
     column_formatters = {'assignments': _list_assignments}
+    form_excluded_columns = ('memberships', 'submissions')
+    form_ajax_refs = {
+        'owner': make_ajax_fields('first_name', 'last_name', 'email', 'id'),
+        'course': make_ajax_fields('id', 'url', 'name'),
+        'forked': make_ajax_fields('name', 'url', 'id')
+    }
 
 
 class LogView(RegularView):
@@ -293,6 +305,7 @@ class AssignmentTagView(RegularView):
                    )
     column_formatters = {'owner_id': _editable(User, 'id'),
                          'course_id': _editable(Course, 'id')}
+    form_excluded_columns = ('reviews', 'assignments', )
 
 
 class ReviewView(RegularView):
@@ -306,8 +319,11 @@ class ReviewView(RegularView):
     column_formatters = {'author_id': _editable(User, 'id'), 'submission_id': _editable(Submission, 'id')}
 
     form_ajax_refs = {
-        'submission': QueryAjaxModelLoader('submission', db.session, Submission, fields=['id'], page_size=10)
+        'submission': QueryAjaxModelLoader('submission', db.session, Submission, fields=['id'], page_size=10),
+        'author': make_ajax_fields('first_name', 'last_name', 'email', 'id'),
+        'forked': make_ajax_fields('id')
     }
+    form_excluded_columns = ('tag', )
 
 
 class SampleSubmissionView(RegularView):
@@ -320,7 +336,9 @@ class SampleSubmissionView(RegularView):
                    )
     column_formatters = {'owner_id': _editable(User, 'id'),
                          'assignment_id': _editable(Assignment, 'id')}
-
+    form_ajax_refs = {
+        'assignment': make_ajax_fields('name', 'url', 'id'),
+    }
 
 class AuthenticationView(ModelIdView):
     form_ajax_refs = {
@@ -329,10 +347,10 @@ class AuthenticationView(ModelIdView):
 
 
 class InviteView(ModelIdView):
-    pass
-    #form_ajax_refs = {
-    #    'user': make_ajax_fields('first_name', 'last_name', 'email', 'id')
-    #}
+    form_ajax_refs = {
+        'user': make_ajax_fields('first_name', 'last_name', 'email', 'id'),
+        'course': make_ajax_fields('id', 'url', 'name')
+    }
 
 
 class ReportView(ModelIdView):
@@ -380,6 +398,7 @@ class SubmissionView(RegularView):
         'course': make_ajax_fields('id', 'url', 'name'),
         'user': make_ajax_fields('first_name', 'last_name', 'email', 'id')
     }
+    form_excluded_columns = ('reviews', 'grade_history')
 
 
 def setup_admin(app):
@@ -403,5 +422,7 @@ def setup_admin(app):
     # TODO: Add redis console
     admin.add_view(FileAdmin(app.config['UPLOADS_DIR'], '', name='File Uploads'))
     # TODO: Figure out how to make multiple fileadmin work
-    #admin.add_view(FileAdmin(app.config['REPORT_DIR'], '', name='Reports'))
+    report_dir = FileAdmin(app.config['REPORT_DIR'], '', name='Reports')
+    report_dir.endpoint = 'ReportFiles'
+    admin.add_view(report_dir)
     return admin
