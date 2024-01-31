@@ -44,5 +44,6 @@ def datetime_to_pretty_string(a_datetime: datetime) -> str:
 
 def from_canvas_isotime(a_datetime: str) -> datetime:
     if a_datetime and a_datetime[0] != '$':
-        return parse_date(a_datetime)
+        parsed = parse_date(a_datetime)
+        return (parsed - parsed.astimezone().utcoffset())
     return None

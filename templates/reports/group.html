@@ -7,15 +7,28 @@
 
 {% block extrahead %}
 <script>
+    let loggedInUser = {{ viewer.encode_json()|tojson }};
+    let userIds = {{  request.values.get('user_ids')|tojson }} || getLocalStorage("BLOCKPY_SERVER_USERIDS", "");
+    let assignmentIds = {{  request.values.get('assignment_ids')|tojson }} || getLocalStorage("BLOCKPY_SERVER_ASSIGNMENTIDS", "first");
+    let group = {{ assignment_group.encode_json()|tojson }};
+    let assignments = [], submissions = [];
+
     $(function() {
-        let userIds = {{  request.values.get('user_ids')|tojson }} || getLocalStorage("BLOCKPY_SERVER_USERIDS", "");
-        let assignmentIds = {{  request.values.get('assignment_ids')|tojson }} || getLocalStorage("BLOCKPY_SERVER_ASSIGNMENTIDS", "first");
-        console.log(userIds, assignmentIds);
-        ko.applyBindings({
+        server = new frontend.Server({{ course_id|tojson }}, {
+        }, {
+            users: [loggedInUser],
+            groups: [group]
+        });
+        mainModel = {
             pageCourseId: {{ course_id|tojson }},
             userIds: userIds,
-            assignmentIds: assignmentIds
-        });
+            assignmentIds: assignmentIds,
+            server: server,
+            group: group,
+            user: loggedInUser,
+            submissions: []
+        }
+        ko.applyBindings(mainModel);
     });
 </script>
 {% endblock %}
@@ -29,10 +42,9 @@
     {{ navigation.navigate_course(course_id) }}
     {% endif %}
 
-    <assignment-group params="group: group"></assignment-group>
-    <watcher params="courseId: pageCourseId, group: group, user: user, submissions: submissions"></watcher>
-
 <h1>Overview</h1>
+    
+    <assignment-group params="group: group"></assignment-group>
 
     <p>
     {% if reduced_layout %}
@@ -47,12 +59,18 @@
 
     <div>
         {% if is_grader or not any_hidden %}
-        <div>Overall Status: {{ points_total }}/{{ points_possible }} problems</div>
-        <div>Total Score: {{ score*100 }}%</div>
+            <div>Overall Status: {{ points_total }}/{{ points_possible }} problems</div>
+            <div>Total Score: {{ score*100 }}%</div>
+            {% if any_late_penalties %}
+                <div>Some submissions were late, and points may have been deducted.
+                See <a href="#late-penalties">Late Penalties</a> for details.
+                </div>
+            {% endif %}
         {% else %}
             <div>Total Status/Score Hidden in this view because you are not a grader.</div>
         {% endif  %}
     </div>
+
 <div>Contents:
     <ol>
         {% for assignment, submission in group %}
@@ -60,6 +78,34 @@
         {% endfor %}
     </ol>
 </div>
+{% if any_late_penalties %}
+<div>
+    <h2 id="late-penalties" name="late-penalties">Late Penalties</h2>
+    <p>
+        The following late penalties were applied to your score:
+        <ol>
+        {% for assignment, submission in group %}
+            {% if all_explanations[assignment.id] %}
+                <li>{{ assignment.name }}:
+                    {% if all_explanations[assignment.id]|length > 1 %}
+                    <details>
+                        <summary>{{ all_explanations[assignment.id][0] }}</summary>
+                        <ul>
+                            {% for explanation in all_explanations[assignment.id][1:] %}
+                                <li>{{ explanation }}</li>
+                            {% endfor %}
+                        </ul>
+                    </details>
+                    {% else %}
+                        {{ all_explanations[assignment.id][0] }}
+                    {% endif %}
+                </li>
+            {% endif %}
+        {% endfor %}
+        </ol>
+    </p>
+</div>
+{% endif %}
 <div>
     {% for assignment, submission in group %}
         {% if assignment.type.lower() == "blockpy" %}
@@ -74,6 +120,8 @@
             {% include "reports/java.html" with context %}
         {% elif assignment.type.lower() == "textbook" %}
             {% include "reports/textbook.html" with context %}
+        {% elif assignment.type.lower() == "typescript" %}
+            {% include "reports/typescript.html" with context %}
         {% else %}
             Unknown assignment type.
         {% endif %}

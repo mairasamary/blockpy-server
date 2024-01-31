@@ -18,13 +18,15 @@ from models.submission import Submission
 from models.sample_submission import SampleSubmission
 from models.invite import Invite
 from models.report import Report
+from models.grade_history import GradeHistory
 
 
 from models.generics.schemas import (UserSchema, RoleSchema, CourseSchema, AssignmentSchema, AssignmentTagSchema,
                                      #AssignmentTagMembershipSchema,
                                      GroupSchema, AssignmentGroupMembershipSchema,
                                      AuthenticationSchema, LogSchema, ReviewSchema, SubmissionSchema,
-                                     SampleSubmissionSchema, InviteSchema, ReportSchema)
+                                     SampleSubmissionSchema, InviteSchema, ReportSchema,
+                                     GradeHistorySchema)
 
 
 def init_database(app: Flask) -> Flask:
@@ -49,5 +51,5 @@ ALL_TABLES = (
     Course, Invite,
     Submission, Review, SampleSubmission,
     User, Role, Authentication,
-    Log, Report
+    Log, Report, GradeHistory
 )

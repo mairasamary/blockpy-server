@@ -407,7 +407,7 @@ def add_users(course_id):
                 new_user = current_app.user_datastore.create_user(first_name=first_name,
                                                                   last_name=last_name,
                                                                   email=new_email,
-                                                                  confirmed_at=datetime.now())
+                                                                  confirmed_at=datetime.utcnow())
                 newly_created.append(new_user)
             new_role = add_form.role.data
             if new_role == 'student' and not new_user.is_student(course_id):

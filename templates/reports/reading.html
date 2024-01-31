@@ -1,3 +1,5 @@
+{% import 'helpers/report_tools.html' as report_tools %}
+
 {% set hiding = assignment.hidden or assignment.get_setting('hide_submission', False) %}
 
 <div xml:lang="en">
@@ -6,11 +8,8 @@
     <a href="{{ url_for('assignments.load_reading', path=assignment.url, embed=True) }}" target="_blank">View reading</a>
 {% endif %}
 
-    <div>Submission Status: {{ submission.submission_status }}</div>
-    <div>Grading Status: {{ submission.grading_status }}</div>
-    <div>Score Status: {{ submission.full_status() }}</div>
-    <div>Date Created: {{ submission.date_created }}</div>
-    <div>Date Modified: {{ submission.date_modified }}</div>
+{{ report_tools.render_submission_details(submission) }}
+
 {% if is_grader or not hiding %}
     <div>Full Submission: <a href="{{ url_for('blockpy.load_assignment',
                             assignment_id=submission.assignment_id,

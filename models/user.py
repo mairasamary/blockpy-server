@@ -42,6 +42,7 @@ class User(Base, UserMixin):
     submissions: Mapped[list["Submission"]] = db.relationship(back_populates="user")
     reports: Mapped[list["Report"]] = db.relationship(back_populates="owner")
     invites: Mapped[list["Invite"]] = db.relationship(back_populates="user")
+    grade_history: Mapped[list["GradeHistory"]] = db.relationship(back_populates="grader")
 
     # TODO: Finish roles
     LEARNER_ROLES = ['learner']
@@ -324,6 +325,7 @@ class User(Base, UserMixin):
             "Log": self.get_logs().all(),
             # Can safely delete submissions owned by the user IF no
             "Submission": self.submissions,
-            "Report": self.reports
+            "Report": self.reports,
+            "GradeHistory": self.grade_history
         }
         return resources

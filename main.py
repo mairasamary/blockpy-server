@@ -81,5 +81,6 @@ def create_app(test_config=None, instance_config="configuration.py") -> Flask:
         # Load up all the controllers
         from controllers import create_blueprints
         create_blueprints(app)
+        print("Loaded all endpoints successfully!")
 
     return app

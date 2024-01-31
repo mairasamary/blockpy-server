@@ -174,7 +174,7 @@ class Log(Base):
     @staticmethod
     def get_recent_logs_for_course(course_id, duration_amount, duration_type):
         duration_amount = int(duration_amount)
-        start_time = datetime.now() - timedelta(**{duration_type: duration_amount})
+        start_time = datetime.utcnow() - timedelta(**{duration_type: duration_amount})
         recent_submissions = (
             models.Submission.query.with_entities(models.Submission.course_id,
                                                   models.Submission.assignment_id,

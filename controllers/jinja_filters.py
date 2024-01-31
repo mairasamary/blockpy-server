@@ -2,11 +2,13 @@ import json
 import re
 from urllib.parse import urlencode
 from datetime import datetime, timedelta
+import datetime as dt
 
 from natsort import natsorted
 
 from common.text import compare_string_equality
-from common.highlighters import highlight_python_code, highlight_java_code, highlight_javascript_code, highlight_json
+from common.highlighters import highlight_python_code, highlight_java_code, highlight_javascript_code, highlight_json, \
+    highlight_typescript_code
 from flask import request, g
 from markdown import Markdown
 
@@ -32,13 +34,15 @@ def get_setting(assignment, *keys):
 
 
 def to_iso_time(date):
-    date = (date - date.astimezone().utcoffset())
-    return date.strftime("%Y%m%dT%H%M%S.%fZ")
+    date = (date + date.astimezone().utcoffset())
+    date = date.replace(tzinfo=dt.timezone.utc)
+    return date.strftime("%Y-%m-%dT%H:%M:%S %z")
 
 
 def date_description(date):
     if not date:
         return "Never"
+    #print(date, date.tzinfo, date.astimezone(), date.astimezone().utcoffset(), sep=" | ")
     date = (date + date.astimezone().utcoffset())
     is_today = date > datetime.now().replace(hour=0, minute=0)
     if is_today:
@@ -135,6 +139,7 @@ def setup_jinja_filters(app):
     app.jinja_env.filters['highlight_python_code'] = highlight_python_code
     app.jinja_env.filters['highlight_java_code'] = highlight_java_code
     app.jinja_env.filters['highlight_javascript_code'] = highlight_javascript_code
+    app.jinja_env.filters['highlight_typescript_code'] = highlight_typescript_code
     app.jinja_env.filters['highlight_json'] = highlight_json
     app.jinja_env.filters['to_friendly_date'] = to_friendly_date
     app.jinja_env.filters['from_friendly_date'] = from_friendly_date

@@ -1,6 +1,6 @@
 import json
 from pygments import highlight
-from pygments.lexers import PythonLexer, JavaLexer, JavascriptLexer
+from pygments.lexers import PythonLexer, JavaLexer, JavascriptLexer, TypeScriptLexer
 from pygments.formatters import HtmlFormatter
 from html.parser import HTMLParser
 
@@ -34,6 +34,15 @@ def highlight_javascript_code(code, linenos=True, prestyles=''):
                               )
     return highlight(code, JavascriptLexer(), formatter)
 
+
+def highlight_typescript_code(code, linenos=True, prestyles=''):
+    formatter = HtmlFormatter(linenos=linenos, noclasses=True,
+                              lineanchors="code-lineno",
+                              linespans="code-span",
+                              prestyles=prestyles,
+                              # style='colorful'
+                              )
+    return highlight(code, TypeScriptLexer(), formatter)
 
 def highlight_json(value, linenos=False, prestyles=''):
     code = json.dumps(value)

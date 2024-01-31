@@ -215,6 +215,7 @@ def find_all_linked_resources(resources: list[Base]) -> dict[str, list[Base]]:
 
 
 SAFE_DELETE_ORDER = [
+    "GradeHistory",
     "Log",
     "Report",
     "AssignmentTagMembership",

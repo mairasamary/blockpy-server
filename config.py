@@ -4,6 +4,7 @@ Flask Configuration File
 Checks for a "secrets.json" file and uses that to add in private settings such as Secret Key.
 """
 import os
+from datetime import timedelta
 
 
 class DefaultConfig:
@@ -96,6 +97,8 @@ class DefaultConfig:
     JWT_TOKEN_LOCATION = ["headers", "cookies", "json", "query_string"]
     JWT_COOKIE_SAMESITE = 'None'
     JWT_COOKIE_SECURE = True
+    # If this is too low, could set to 30 days
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(days=30)
 
     # Task Settings
     TASK_DB_URI: str

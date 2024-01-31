@@ -14,6 +14,7 @@ from models.submission import Submission
 from models.sample_submission import SampleSubmission
 from models.invite import Invite
 from models.report import Report
+from models.grade_history import GradeHistory
 
 class UserSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
@@ -99,4 +100,10 @@ class SampleSubmissionSchema(ma.SQLAlchemyAutoSchema):
 class SubmissionSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = Submission
+        include_fk = True
+
+
+class GradeHistorySchema(ma.SQLAlchemyAutoSchema):
+    class meta:
+        model = GradeHistory
         include_fk = True

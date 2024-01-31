@@ -217,7 +217,7 @@ export const AssignmentTemplate = `
 `;
 
 export const AssignmentShortTemplate = `
-    <div>Assignment: <span data-bind="text: name"></span> (<span data-bind="text: url"></span>)</div>
+    <div>Assignment: <span data-bind="text: name, attr: {title: url}"></span></div>
 `;
 
 ko.components.register("assignment", {

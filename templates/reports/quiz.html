@@ -1,8 +1,11 @@
+{% import 'helpers/report_tools.html' as report_tools %}
 {% import 'reports/quiz_question.html' as quiz_questions %}
 
 <div xml:lang="en">
     <h2 id='{{ assignment.slug() }}'>Quiz {{ assignment.name }}</h2>
     <strong>Status:</strong><span> {{ submission.full_status() }}</span>
+
+    {{ report_tools.render_submission_details(submission) }}
 
     {% set hiding = assignment.hidden or assignment.get_setting('hide_submission', False) %}
 
@@ -20,8 +23,16 @@
                             course_id=submission.course_id,
                             force_download=True,
                             embed=True) }}">download</a></div>
-    <div>History: <a href="{{ url_for('blockpy.browse_history', assignment_id=submission.assignment_id,
-        user_id=submission.user_id, course_id=submission.course_id) }}">view</a></div>
+    <script>
+        submissions.push({{ submission.encode_json()|tojson }});
+        assignments.push({{ assignment.encode_json()|tojson }});
+    </script>
+    <submission-watcher params="server: server, courseId: pageCourseId,
+        user: user, 
+        userIds: [{{ submission.user_id|tojson }}], 
+        assignmentIds: [{{ submission.assignment_id|tojson }}]"></submission-watcher>
+    <!--<div>History: <a href="{{ url_for('blockpy.browse_history', assignment_id=submission.assignment_id,
+        user_id=submission.user_id, course_id=submission.course_id) }}">view</a></div>-->
     {% if 'summary' in code and code['summary']['points_possible'] != assignment.points %}
         <div>
         Quiz Question Points: {{ code['summary']['points_possible'] }}

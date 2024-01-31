@@ -242,6 +242,7 @@ def export_progsnap2(output, log_for_course, groups, exclude, format, overwrite,
               help="Do not remove users who have Logs or recent submissions")
 @click.option("--limit", "-l", "limit", default=None,
               help="Limit the number of users to delete")
+#@click.option("--output", "-o", "output", default="deleted_users.sql")
 def clear_old_anonymous_users(days, keep_active, limit):
     """
     Removes any old users that are anonymous, along with their linked data.
@@ -324,6 +325,7 @@ def clear_old_anonymous_users(days, keep_active, limit):
 
     click.echo(f"Deleting users...")
     total = 0
+    # Dump to SQL file that can be executed correctly instead?
     with db.session.begin():
         if current_app.config['SQLALCHEMY_DATABASE_URI'].startswith('postgresql'):
             click.echo("Setting session_replication_role to 'replica' to allow deletion of users")

@@ -6,7 +6,7 @@
 
 import * as ko from 'knockout';
 import {Log, LogJson, REMAP_EVENT_TYPES} from "../models/log";
-import {ajax_get} from "./ajax";
+import {ajax_post} from "./ajax";
 import {User, UserStore} from "../models/user";
 import {
     formatDuration,
@@ -174,12 +174,12 @@ export class SubmissionHistory {
     private isFull: KnockoutReadonlyComputed<boolean>;
     private hideFeedback: KnockoutReadonlyComputed<boolean>;
 
-    constructor(user: User, assignment: Assignment) {
+    constructor(user: User, assignment: Assignment, defaultWatchMode: WatchMode=WatchMode.SUMMARY) {
         this.states = ko.observableArray<SubmissionState>([]);
         this.currentStateIndex = ko.observable(0);
         this.user = user;
         this.assignment = assignment;
-        this.watchMode = ko.observable(WatchMode.SUMMARY);
+        this.watchMode = ko.observable(defaultWatchMode);
         this.feedbackMode = ko.observable(FeedbackMode.FEEDBACK);
         this.isVcrActive = ko.pureComputed(() => {
             return this.watchMode() !== WatchMode.SUMMARY;
@@ -209,26 +209,37 @@ export class SubmissionHistory {
         this.isFull = ko.pureComputed(() => {
             return this.watchMode() === WatchMode.FULL;
         }, this);
+
+        if (this.watchMode() === WatchMode.FULL) {
+            this.loadHistorySelector(null);
+        }
     }
 
     private getCurrentStateIndex(): number {
-        return parseInt(<string>this.currentStateIndex(), 10);
+        const result = parseInt(<string>this.currentStateIndex(), 10);
+        if (result < 0) {
+            return this.states().length + result;
+        } else {
+            return result;
+        }
     }
 
     addLogs(logs: Log[]) {
         let states: SubmissionState[] = [];
         let latestState: SubmissionState = this.states().length ? last(this.states()) : null;
+        console.log("Adding Logs");
         for (let i=0; i< logs.length; i+=1) {
             let nextState = new SubmissionState(latestState, logs[i]);
             states.push(nextState);
             latestState = nextState;
         }
         pushObservableArray(this.states, states);
+        console.log("Added");
         //console.log(states);
     }
 
     reload() {
-        ajax_get("blockpy/load_history", {
+        ajax_post("blockpy/load_history", {
             assignment_id: this.submission.assignmentId(),
             course_id: this.submission.courseId(),
             user_id: this.submission.userId(),
@@ -248,6 +259,7 @@ export class SubmissionHistory {
     // Map CodeStates to event IDs so we can quickly get code? Or playback history to status at each step...
 
     loadHistorySelector(event: Event) {
+        console.log("Loading history");
         let selector = this.getSelector(event);
         selector.empty();
         let i;
@@ -300,11 +312,14 @@ export class SubmissionHistory {
     }
 
     getSelector(event: Event) {
-        return $(event.target).closest("div").find(".history-select");
+        if (event == null) {
+            return $(`#history-select-${this.user.id}-${this.assignment.id}`);
+        } else {
+            return $(event.target).closest("div").find(".history-select");
+        }
     }
 
     moveToMostRecent(data: any, event: Event) {
-        console.log(this.states().length-1);
         this.currentStateIndex(this.states().length-1);
     }
 
@@ -376,7 +391,8 @@ export const SubmissionHistoryCard = `
                                             'col-md-11': submissionHistory.feedbackMode() === 'Hidden' },
                                      ifnot: submissionHistory.isSummary()">
             <pre class="python-code-block">
-                <code data-bind="highlightedCode: currentState().code" class="python" style="height: 200px; overflow: scroll"></code>
+                <code data-bind="highlightedCode: currentState().code" class="python" 
+                style="height: 200px; overflow: scroll"></code>
             </pre>
         </div>
         <div class="mt-2" data-bind="css: { 'col-md-6': submissionHistory.feedbackMode() !== 'Hidden',
@@ -434,7 +450,10 @@ export const SubmissionHistoryVCR = `
                 <span class='fas fa-backward'></span> Back
             </button>
             <select class="history-select form-control custom-select mr-2 custom-select-sm"
-                data-bind="value: submissionHistory.currentStateIndex"
+                data-bind="value: submissionHistory.currentStateIndex,
+                valueAllowUnset: true, attr: {
+                    id: 'history-select-'+submissionHistory.user.id+'-'+submissionHistory.assignment.id,
+                }"
                 aria-title="History Selector">
             </select>
             <button class="btn btn-outline-secondary mr-2 btn-sm" type="button"
@@ -481,6 +500,7 @@ export class Watcher {
     grouping: KnockoutObservable<WatchGroupingMode>;
     isLoading: KnockoutObservable<boolean>;
     hasFailed: KnockoutObservable<boolean>;
+    defaultWatchMode: KnockoutObservable<WatchMode>;
 
 
     constructor(data: any) {
@@ -496,6 +516,7 @@ export class Watcher {
         this.server = data.server;
         this.isLoading = ko.observable(false);
         this.hasFailed = ko.observable(false);
+        this.defaultWatchMode = ko.observable(data.defaultWatchMode);
 
         this.server.userStore.sortMode.subscribe(() => {
             this.submissions.sort((left, right) => {
@@ -513,7 +534,7 @@ export class Watcher {
             if (!(submissionId in this.cauToSubmission)) {
                 let user = this.server.userStore.getInstance(log.subjectId());
                 let assignment = this.server.assignmentStore.getInstance(log.assignmentId());
-                this.cauToSubmission[submissionId] = new SubmissionHistory(user, assignment);
+                this.cauToSubmission[submissionId] = new SubmissionHistory(user, assignment, this.defaultWatchMode());
                 this.submissions.push(this.cauToSubmission[submissionId]);
             }
             if (!(submissionId in sortedLogs)) {
@@ -533,7 +554,7 @@ export class Watcher {
             if (!(submissionId in this.cauToSubmission)) {
                 let user = this.server.userStore.getInstance(submission.userId());
                 let assignment = this.server.assignmentStore.getInstance(submission.assignmentId());
-                this.cauToSubmission[submissionId] = new SubmissionHistory(user, assignment);
+                this.cauToSubmission[submissionId] = new SubmissionHistory(user, assignment, this.defaultWatchMode());
                 this.submissions.push(this.cauToSubmission[submissionId]);
             }
             this.cauToSubmission[submissionId].submission = submission;
@@ -545,17 +566,27 @@ export class Watcher {
         this.submissions.removeAll();
     }
 
+    getChosenIds() {
+        return {
+            assignmentIds: this.assignmentSet() ? this.assignmentSet().getIds() :
+                this.assignmentIds,
+            userIds: this.userSet() ? this.userSet().getIds() :
+                this.userIds
+        };
+    }
+
     // TODO: Get latest for just a single submission
     getLatest() {
-        STORAGE_SERVICE.set("WATCHER_USERIDS", this.userSet().getStored());
-        STORAGE_SERVICE.set("WATCHER_ASSIGNMENTIDS", this.assignmentSet().getStored());
+        const {userIds, assignmentIds} = this.getChosenIds();
+        STORAGE_SERVICE.set("WATCHER_USERIDS", userIds);
+        STORAGE_SERVICE.set("WATCHER_ASSIGNMENTIDS", assignmentIds);
         this.isLoading(true);
         this.hasFailed(false);
         this.setGroupingMode();
-        ajax_get("blockpy/load_history", {
-            assignment_id: this.assignmentSet().getIds(),
+        ajax_post("blockpy/load_history", {
+            assignment_id: assignmentIds,
             course_id: this.courseId(),
-            user_id: this.userSet().getIds(),
+            user_id: userIds,
             with_submission: true
         }).then((data) => {
             this.isLoading(false);
@@ -575,8 +606,9 @@ export class Watcher {
     }
 
     setGroupingMode() {
-        let assignmentCount = this.assignmentSet().getIds().length;
-        let userCount = this.userSet().getIds().length;
+        const {userIds, assignmentIds} = this.getChosenIds();
+        let assignmentCount = assignmentIds.length;
+        let userCount = userIds.length;
         if (userCount > assignmentCount) {
             this.grouping(WatchGroupingMode.USER);
         } else if (userCount < assignmentCount) {
@@ -598,7 +630,7 @@ export const WatcherTemplate = `
         <assignment-set-selector params="store: server.assignmentStore, modelSet: assignmentSet, default: assignmentIds"></assignment-set-selector>
     </div>
     <div class="mb-4 mt-4">
-        <button class="btn btn-primary" data-bind="click: getLatest">Load Events</button>
+        <button class="btn btn-primary" data-bind="click: getLatest">View Submissions</button>
     </div>
     <div data-bind="if: isLoading">
         <div class="spinner-loader" role="status">
@@ -624,3 +656,35 @@ ko.components.register("watcher", {
     template: WatcherTemplate
 });
 
+
+export const SubmissionWatcherTemplate = `
+    <div>
+    <div class="mb-4 mt-4">
+        <button class="btn btn-sm btn-outline-secondary"
+            data-bind="click: getLatest">View History</button>
+            Show all edits and events from this submission.
+    </div>
+    <div data-bind="if: isLoading">
+        <div class="spinner-loader" role="status">
+            <span class="sr-only">Loading...</span>
+        </div>
+    </div>
+    <!-- ko if: hasFailed -->
+    <div class="alert alert-danger" role="alert">
+        Loading this history has failed; contact instructor for help.
+    </div>
+    <!-- /ko -->
+    <div data-bind="ifnot: isLoading">
+        <div data-bind="foreach: submissions" class="row">
+            <submission-history-card params="submissionHistory: $data, currentState: currentState, watchMode: watchMode,
+                                             user: user, assignment: assignment, grouping: $parent.grouping"
+                                     class="col-md-12 mb-4 rounded bg-light"></submission-history-card>    
+        </div>
+    </div>
+`;
+// defaultWatchMode
+
+ko.components.register("submission-watcher", {
+    viewModel: Watcher,
+    template: SubmissionWatcherTemplate
+});

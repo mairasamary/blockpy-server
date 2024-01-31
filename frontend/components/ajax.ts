@@ -6,13 +6,20 @@ declare global {
     var $blocklyMediaPath: string;
     var $blockPyUrls: Record<string, string>;
     var $blockPyUserData: Record<string, string>;
+    var accessToken: string;
 }
 
 export function ajax_get(url: string, data: any) {
+    if (window['accessToken']) {
+        data['access_token'] = window['accessToken'];
+    }
     return $.get(window["$URL_ROOT"]+url, data);
 }
 
 export function ajax_post(url: string, data: any) {
+    if (window['accessToken']) {
+        data['access_token'] = window['accessToken'];
+    }
     return $.post(window["$URL_ROOT"]+url, data);
 }
 

@@ -365,8 +365,10 @@ class SubmissionView(RegularView):
                    "submission_status", "grading_status",
                    'version', 'url'
                    )
+    column_sortable_list = column_list
     column_filters = ('id', 'user_id', 'assignment_id', 'course_id',
-                      'date_modified', 'correct', 'submission_status', 'grading_status')
+                      'date_modified', 'correct', 'submission_status', 'grading_status',
+                      'endpoint')
     column_formatters = {'code': _render_code, 'endpoint': _smaller,
                          'version': _render_version}
     column_formatters_export = None

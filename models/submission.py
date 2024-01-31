@@ -1,4 +1,5 @@
 import json
+import math
 import os
 import time
 from datetime import timedelta, datetime
@@ -15,6 +16,7 @@ from werkzeug.utils import secure_filename
 
 
 import models
+from models.generics.definitions import LatePolicy
 from models.assignment import Assignment
 from models.log import Log
 from models.generics.models import db, ma
@@ -110,6 +112,7 @@ class Submission(EnhancedBase):
     course: Mapped["Course"] = db.relationship(back_populates="submissions")
     user: Mapped["User"] = db.relationship(back_populates="submissions")
     reviews: Mapped[list["Review"]] = db.relationship(back_populates="submission")
+    grade_history: Mapped[list["GradeHistory"]] = db.relationship(back_populates="submission")
 
     # TODO: Shouldn't this be course_id THEN assignment_id ???
     __table_args__ = (Index('submission_index', "assignment_id",
@@ -122,7 +125,7 @@ class Submission(EnhancedBase):
             'extra_files': self.extra_files,
             'url': self.url,
             'endpoint': self.endpoint,
-            'score': self.score/100,
+            'score': self.as_float_score(self.score),
             'correct': self.correct,
             'assignment_id': self.assignment_id,
             'course_id': self.course_id,
@@ -155,7 +158,7 @@ class Submission(EnhancedBase):
         else:
             filename = DEFAULT_FILENAME
         _grade_data = {
-            'score': self.score/100,
+            'score': self.as_float_score(self.score),
             'correct': self.correct,
             'submission_status': self.submission_status,
             'grading_status': self.grading_status,
@@ -335,8 +338,8 @@ class Submission(EnhancedBase):
         possible = self.assignment.get_points()
         if self.assignment.reviewed:
             review_score = self.get_reviewed_scores()
-            return ((self.score + review_score) / 100.0) * possible
-        return (float(self.correct) or self.score / 100.0) * possible
+            return (self.as_float_score(self.score + review_score)) * possible
+        return (float(self.correct) or self.as_float_score(self.score)) * possible
 
     def get_reviewed_scores(self):
         reviews = Review.query.filter_by(submission_id=self.id).all()
@@ -422,20 +425,43 @@ class Submission(EnhancedBase):
         self.grading_status = GradingStatuses.FULLY_GRADED
         db.session.commit()
 
-    def update_submission(self, score, correct):
-        was_changed = self.score != score or self.correct != correct or self.grading_status == GradingStatuses.FAILED
-        self.score = int(round(100*score))
+    @staticmethod
+    def as_int_score(score):
+        return int(round(100 * score))
+
+    @staticmethod
+    def as_float_score(score):
+        return score / 100.0
+
+    def update_submission(self, score, correct, by_human=False, date_submitted=None):
+        # TODO: Potential unfairness, error grades are considered late!
+        new_score = self.as_int_score(score)
+        was_changed = (self.score != new_score or self.correct != correct
+                       or self.grading_status == GradingStatuses.FAILED)
+        self.score = new_score
         self.correct = correct
         assignment = Assignment.by_id(self.assignment_id)
+        do_change_submission_date, do_change_grading_date = True, True
         if assignment.reviewed:
-            self.submission_status = SubmissionStatuses.IN_PROGRESS
-            self.grading_status = GradingStatuses.NOT_READY
+            if by_human:
+                self.submission_status = SubmissionStatuses.COMPLETED
+                self.grading_status = GradingStatuses.FULLY_GRADED
+                do_change_submission_date = False
+            else:
+                self.submission_status = SubmissionStatuses.IN_PROGRESS
+                self.grading_status = GradingStatuses.NOT_READY
+                do_change_grading_date = False
         elif self.correct:
             self.submission_status = SubmissionStatuses.COMPLETED
             self.grading_status = GradingStatuses.FULLY_GRADED
         else:
             self.submission_status = SubmissionStatuses.SUBMITTED
             self.grading_status = GradingStatuses.PENDING
+        if was_changed:
+            if do_change_submission_date:
+                self.date_submitted = date_submitted or datetime.utcnow()
+            if do_change_grading_date:
+                self.date_graded = date_submitted or datetime.utcnow()
         db.session.commit()
         return was_changed
 
@@ -648,6 +674,79 @@ class Submission(EnhancedBase):
         forked = models.SampleSubmission.query.filter_by(forked_id=self.id).all()
         resources = {
             "Submission": forked,
-            "Review": self.reviews
+            "Review": self.reviews,
+            "GradeHistory": self.grade_history,
         }
         return resources
+
+    def penalized_full_score(self, at_time=None):
+        """
+        Looks for any "X-Quiz.Grade" events and penalizes the score based on the late policy
+
+        :param late_policy:
+        :param at_time:
+        :return:
+        """
+        late_policy: LatePolicy = self.assignment.get_late_policy(self.course_id)
+        if at_time is None:
+            if self.date_submitted:
+                at_time = self.date_submitted
+            else:
+                at_time = datetime.utcnow()
+        # First, compute the current "actual score"
+        actual_score = self.full_score()
+        # If we are not late, then just use the regular score
+        if not self.date_due or at_time < self.date_due:
+            return actual_score, ["Submission was not late"]
+        # No late policy, no penalty
+        if late_policy is None:
+            return actual_score, ["No late policy, no penalty"]
+        # If we are late and the late policy forbids this, we get a zero
+        if not late_policy.allowed:
+            return 0, ["Late policy forbids submission"]
+        # Create the list of grading events
+        grade_changes = []
+        for event in self.grade_history:
+            date_submitted = event.date_submitted
+            offset = date_submitted.astimezone().utcoffset()
+            grade_changes.append((date_submitted, offset, event.score))
+        grade_changes.append((at_time, at_time.astimezone().utcoffset(), actual_score))
+        # Otherwise, we must do some math
+        max_best_actual_score = 0
+        latest_score = 0
+        explanations = [f"Late submission: -{math.ceil(late_policy.amount*100)}% per {late_policy.interval}"]
+        #print("Grade changes:")
+        for (date_submitted, offset, score) in grade_changes:
+            # TODO: Verify time logic is correct
+            lateness = late_policy._get_gap(date_submitted, self.date_due)
+            lateness_ratio = 1 - late_policy.get_lateness_penalty(date_submitted, self.date_due)
+            points_earned = (score - max_best_actual_score)
+            taxed_points = points_earned * lateness_ratio
+            taxed_score = latest_score + taxed_points
+            #print("    ", lateness, lateness_ratio, points_earned, taxed_points, taxed_score)
+            #print("        ", date_submitted, self.date_due)
+            if lateness_ratio == 1:
+                latest_score = taxed_score
+                explanations.append(f"Changed to {math.floor(100*taxed_score)}% (no late penalty)")
+            elif points_earned <= 0:
+                pass
+                #explanations.append(f"No points earned")
+            elif taxed_score <= latest_score:
+                pass
+                #explanations.append(f"No points earned (less than previous)")
+            if points_earned > 0 and taxed_score > latest_score:
+                explanations.append(f"Had {math.floor(100*latest_score)}%, earned {math.floor(100*points_earned)}%, "
+                                    f"but reduced to {math.floor(100*taxed_score)}% "
+                                    f"because of {math.ceil((1-lateness_ratio)*100)}% penalty ("
+                                    f"{math.ceil(lateness)} {late_policy.interval})")
+                latest_score = taxed_score
+            max_best_actual_score = max(max_best_actual_score, score)
+        if max_best_actual_score >= 1:
+            explanations.append(f"Earned maximum possible points.")
+        if max_best_actual_score == 0 and len(explanations) == 1:
+            explanations.clear()
+            explanations.append(f"Never earned any points.")
+        # TODO: Remember to store the penalized score after this separately!
+        return latest_score, explanations
+
+

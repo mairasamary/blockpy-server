@@ -472,3 +472,26 @@ Need to create a `butler` user with REPLICATION permissions, if you want to be a
 ```sql
 CREATE USER butler LOGIN REPLICATION PASSWORD 'XXXX';
 ```
+
+
+Need to create a `GradeHistory` table:
+
+```sql
+create table grade_history
+(
+    id             integer not null
+        primary key,
+    date_created   datetime,
+    date_modified  datetime,
+    submission_id  integer not null
+        references submission,
+    grader_id      integer
+        references user,
+    score          integer,
+    date_submitted datetime
+);
+
+create index grade_history_submission_id_index
+    on grade_history (submission_id);
+
+```

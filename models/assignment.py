@@ -2,6 +2,7 @@ from ipaddress import ip_address, ip_network
 from hmac import compare_digest
 import json
 from typing import Tuple, List, Optional, Any
+from dataclasses import dataclass
 
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import Column, String, Text, Integer, ForeignKey, UniqueConstraint, Boolean
@@ -11,6 +12,7 @@ from slugify import slugify
 import models
 from common.dates import datetime_to_string
 from common.databases import optional_encoded_field, make_copy
+from models.generics.definitions import LatePolicy
 from models.generics.models import db, ma
 from models.generics.base import EnhancedBase, Base
 from models.data_formats.textbook import search_textbook_for_key, rehydrate_textbook
@@ -525,3 +527,25 @@ class Assignment(EnhancedBase):
             "Report": self.reports
         }
         return resources
+
+    def get_late_policy(self, course_id=None):
+        late_policy = None
+        # Try getting it from the assignment
+        settings = json.loads(self.settings or "{}")
+        if 'late_policy' in settings:
+            late_policy = settings.get('late_policy')
+        # If that fails, try to get it from the course
+        if not late_policy:
+            if course_id is None:
+                course_id = self.course_id
+            course = models.Course.query.get(course_id)
+            settings = json.loads(course.settings or "{}")
+            late_policy = settings.get('late_policy', {})
+        # Return whatever we got
+        return LatePolicy(late_policy.get('allowed', True),
+                          late_policy.get('interval', 'hours'),
+                          late_policy.get('amount', "1%"),
+                          late_policy.get("rounding", "round"),
+                          late_policy.get("max_penalty", "50%"))
+
+

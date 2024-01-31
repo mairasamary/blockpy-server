@@ -15,7 +15,7 @@ from werkzeug.utils import secure_filename
 from controllers.jinja_filters import to_iso_time
 from controllers.pylti.common import LTIPostMessageException
 from controllers.pylti.flask import LTI
-from controllers.pylti.post_grade import get_groups_submissions, calculate_submissions_score, create_grade_post
+from controllers.pylti.post_grade import get_groups_submissions, calculate_submissions_score,  grade_submission
 from models.assignment_tag import AssignmentTag
 from models.course import Course
 
@@ -164,6 +164,7 @@ def load_editor(editor_information):
 def serve_kettle_iframe():
     response = make_response(render_template('blockpy/kettle_iframe.html'))
     response.headers.set('Content-Security-Policy', "sandbox allow-scripts")
+    response.headers.set('Access-Control-Allow-Origin', "*")
     return response
 
 @blueprint_blockpy.route('/load_assignment/', methods=['GET', 'POST'])
@@ -364,7 +365,11 @@ def view_submissions(course_id, user_id, assignment_group_id, ):
                         "<br><br><br><h3>If you are not in Canvas, then you may not have Grader permissions "
                         "for this course, or this might not be your submission.</h3>")
     # Do action
-    points_total, points_possible = calculate_submissions_score(assignments, submissions)
+    points_total, points_possible, all_explanations = calculate_submissions_score(assignments, submissions, None)
+    any_late_penalties = any(len(explanation) > 1 or
+                                (len(explanation) == 1 and
+                                 explanation[0] == "Late policy forbids submission")
+                             for explanation in all_explanations.values())
     if points_possible:
         score = round(points_total / points_possible, 2)
     else:
@@ -385,8 +390,9 @@ def view_submissions(course_id, user_id, assignment_group_id, ):
                            referer=referer, any_hidden=any_hidden,
                            points_total=points_total, points_possible=points_possible,
                            score=score, tags=tags, is_grader=is_grader,
-                           assignment_group=group,
+                           assignment_group=group, viewer=viewer,
                            group=list(zip(assignments, submissions)),
+                           all_explanations=all_explanations, any_late_penalties=any_late_penalties,
                            user_id=user_id, course_id=course_id)
 
 
@@ -418,35 +424,16 @@ def view_submission():
                            user_id=submission.user_id, course_id=submission.course_id)
 
 
-class TransmissionStatuses:
-    SUCCESS = "success"
-    FAILURE = "failure"
-    UNCHANGED = "unchanged"
-    # TBD if needed
-    QUEUED = "queued"
-    UNKNOWN = "unknown"
-
-
-def lti_post_grade(lti, total_score, view_url, lis_result_sourcedid, lis_outcome_service_url, reviewed,
-                   send_even_if_equal=False):
-    session['lis_outcome_service_url'] = lis_outcome_service_url
-    if lis_result_sourcedid and lti:
-        existing_grade = lti.get_grade(endpoint=lis_result_sourcedid)
-        if existing_grade == total_score and not send_even_if_equal:
-            return TransmissionStatuses.UNCHANGED, total_score
-        lti.post_grade(total_score, view_url, endpoint=lis_result_sourcedid, url=True,
-                       needs_review=reviewed,
-                       # Seems to give the wrong time? Need to find a better source than "date_modified" anyway
-                       #when_submitted_at=to_iso_time(submission.date_modified)
-                       )
-        return TransmissionStatuses.SUCCESS, total_score
-    return TransmissionStatuses.FAILURE, total_score
-
-
 @blueprint_blockpy.route('/update_submission/', methods=['GET', 'POST'])
 @blueprint_blockpy.route('/update_submission', methods=['GET', 'POST'])
 @require_request_parameters('submission_id')
 def update_submission():
+    """
+    This endpoint is for automated graders and will push to Canvas, as if
+    by a machine. For things pushed by a human, consider update_submission_status.
+    It will only use the current time.
+    :return:
+    """
     # Get parameters
     submission_id = maybe_int(request.values.get("submission_id"))
     assignment_group_id = maybe_int(request.values.get('assignment_group_id'))
@@ -458,124 +445,58 @@ def update_submission():
     force_update = maybe_bool(request.values.get('force_update'))
     course_id = get_course_id()
     user, user_id = get_user()
-    submission = Submission.by_id(submission_id)
-    # Check resource exists
-    check_resource_exists(submission, "Submission", submission_id)
-    # Verify permissions
-    if submission.user_id != user_id and not user.is_grader(submission.course_id):
-        return ajax_failure("This is not your submission and you are not a grader in its course.")
-    # If quiz, then update the settings
-    quiz = submission.regrade_if_quiz()
-    if quiz:
-        if quiz.graded_successfully:
-            score, correct, feedbacks = quiz.score, quiz.correct, quiz.feedbacks
-        else:
-            submission.update_grading_status(GradingStatuses.FAILED)
-            make_log_entry(submission.assignment_id, submission.assignment_version,
-                           course_id, user_id, "X-Quiz.Grade.Failure", "answer.py", message=quiz.error)
-            return ajax_failure({"submitted": False, "changed": False, "correct": submission.correct,
-                                 "message": quiz.error, "feedbacks": quiz.feedbacks,
-                                 'submission_status': submission.submission_status,
-                                 "grading_status": submission.grading_status})
-    else:
-        feedbacks = {}
 
-    # Do action
-    was_changed = submission.update_submission(score, correct)
-    if assignment_group_id is None:
-        assignment_group_id = submission.assignment_group_id
-    # TODO: Document that we currently only pass back grade if it changed
-    # TODO: If failure on previous submission grading, then retry
-    if not submission.assignment.is_allowed(request.remote_addr) and not user.is_grader(submission.course_id):
-        reason = f"Your ({user.id}) IP address ({request.remote_addr}) is not allowed and you are not a grader in this course ({submission.course_id})."
-        make_log_entry(submission.assignment_id, submission.assignment_version,
-                       course_id, user_id, "X-Quiz.Grade.Failure", "answer.py", message=reason)
-        return ajax_failure(reason)
-    if was_changed or force_update:
-        submission.save_block_image(image)
-        if 'lti' not in g or g.lti is None:
-            g.lti = LTI(get_consumer_secrets(current_app))
-            #return ajax_success({"submitted": False, "changed": was_changed, "correct": correct,
-            #                     "feedbacks": feedbacks, 'submission_status': submission.submission_status,
-            #                     "grading_status": submission.grading_status,
-            #                     "message": "LTI is not present, no submission to LMS possible."})
-        if submission.user.is_grader(course_id):
-            return ajax_success({"submitted": False, "changed": was_changed, "correct": correct,
-                                 "feedbacks": feedbacks, 'submission_status': submission.submission_status,
-                                 "grading_status": submission.grading_status,
-                                 "message": "Submission user is grader, cannot submit to LMS."})
-        error = "Generic LTI Failure - perhaps not logged into LTI session?"
-        transmission_status = TransmissionStatuses.QUEUED
-        total_score = None
-        post_params = create_grade_post(submission, submission.endpoint, assignment_group_id, submission.user.id,
-                                        submission.course_id, False)
-        try:
-            transmission_status, total_score = lti_post_grade(g.lti, *post_params)
-        except LTIPostMessageException as e:
-            error = str(e)
-        if transmission_status == TransmissionStatuses.SUCCESS:
-            make_log_entry(submission.assignment_id, submission.assignment_version,
-                           course_id, user_id, "X-Submission.LMS", "answer.py", message=f"{total_score}|{score}")
-        elif transmission_status == TransmissionStatuses.UNCHANGED:
-            make_log_entry(submission.assignment_id, submission.assignment_version,
-                           course_id, user_id, "X-Unchanged.LMS", "answer.py", message=f"{total_score}|{score}")
-        else:
-            submission.update_grading_status(GradingStatuses.FAILED)
-            log_params = {'assignment_id': submission.assignment_id,
-                          'assignment_version': submission.assignment_version,
-                          'course_id': course_id,
-                          'user_id': user_id,
-                          'file_path': "answer.py",
-                          'timestamp': request.values.get('timestamp'),
-                          'timezone': request.values.get('timezone')}
-            make_log_entry(**log_params, event_type="X-Submission.LMS.Failure", message=error)
-            queue_lti_post_grade(g.lti.to_json(), post_params,
-                                 submission.id, assignment_group_id, submission.user_id, submission.course_id,
-                                 3, log_params, score)
-            return ajax_failure({"submitted": False, "changed": was_changed, "correct": correct,
-                                 "message": error, "feedbacks": feedbacks,
-                                 'submission_status': submission.submission_status,
-                                 "grading_status": submission.grading_status})
-    return ajax_success({"submitted": was_changed or force_update, "changed": was_changed, "correct": correct,
-                         "feedbacks": feedbacks, 'submission_status': submission.submission_status,
-                         "grading_status": submission.grading_status})
+    # New version!
+    report = grade_submission(submission_id, assignment_group_id,
+                              user, request.remote_addr,
+                              score, correct, None, image,
+                              force_update, by_human=False)
+    if report.no_errors:
+        return ajax_success(report.for_ajax())
+    else:
+        return ajax_failure(report.for_ajax())
+
+    """
+    log_params = {'assignment_id': submission.assignment_id,
+                  'assignment_version': submission.assignment_version,
+                  'course_id': course_id,
+                  'user_id': user_id,
+                  'file_path': "answer.py",
+                  'timestamp': request.values.get('timestamp'),
+                  'timezone': request.values.get('timezone')}
+    make_log_entry(**log_params, event_type="X-Submission.LMS.Failure", message=error)
+    queue_lti_post_grade(g.lti.to_json(), post_params,
+                         submission.id, assignment_group_id, submission.user_id, submission.course_id,
+                         3, log_params, score)
+    """
 
 
 @blueprint_blockpy.route('/update_submission_status/', methods=['GET', 'POST'])
 @blueprint_blockpy.route('/update_submission_status', methods=['GET', 'POST'])
 @require_request_parameters('submission_id', 'status')
 def update_submission_status():
+    """
+    This route is called when a student clicks "Mark Submission Submitted" to submit early.
+
+    Just like update_submission, this route will also push to Canvas. In fact,
+    it's really the same thing now, just doesn't bring any score along.
+
+    :return:
+    """
     # Get parameters
     submission_id = maybe_int(request.values.get("submission_id"))
+    assignment_group_id = maybe_int(request.values.get('assignment_group_id'))
     status = request.values.get('status')
-    course_id = get_course_id()
     user, user_id = get_user()
-    submission = Submission.by_id(submission_id)
-    # Check resource exists
-    check_resource_exists(submission, "Submission", submission_id)
-    # Verify permissions
-    if submission.user_id != user_id and not user.is_grader(submission.course_id):
-        return ajax_failure("This is not your submission and you are not a grader in its course.")
-    # Do action
-    success = submission.update_submission_status(status)
-    """
-    # TODO: Make it submit to canvas without a score
-    if submission.assignment.reviewed:
-        lis_result_sourcedid = request.values.get('lis_result_sourcedid')
-        assignment_group_id = maybe_int(request.values.get('assignment_group_id'))
-        score, *rest = create_grade_post(submission, lis_result_sourcedid, assignment_group_id, submission.user.id,
-                                        submission.course_id, True)
-        if submission.grading_status != GradingStatuses.FULLY_GRADED:
-            score = None
-        try:
-            success, total_score = lti_post_grade(g.lti, *(score, *rest))
-        except LTIPostMessageException as e:
-            error = str(e)
-            print(error)
-    """
-    make_log_entry(submission.assignment_id, submission.assignment_version,
-                   course_id, user_id, "Submit", "answer.py", category=status, message=str(success))
-    return ajax_success({"success": success})
+
+    report = grade_submission(submission_id, assignment_group_id,
+                              user, request.remote_addr,
+                              None, None, status, None,
+                              True, by_human=False)
+    if report.no_errors:
+        return ajax_success(report.for_ajax())
+    else:
+        return ajax_failure(report.for_ajax())
 
 
 @blueprint_blockpy.route('/upload_file/', methods=['GET', 'POST'])

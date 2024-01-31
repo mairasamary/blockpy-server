@@ -14,6 +14,7 @@ import {decode} from "../utilities/vlq";
 
 export const CONSOLE_API_COMMAND_LIST = ["log", "error", "info", "warning", "table", "clear"];
 export type ConsoleAPICommand = "log" | "error" | "info" | "warning" | "table" | "clear";
+export type ConsoleAPI = Record<ConsoleAPICommand, (...message: any[])=> void>;
 
 /**
  * Current strategy for safety is to extract out all the actual execution code to an iframe script
@@ -24,7 +25,7 @@ export type ConsoleAPICommand = "log" | "error" | "info" | "warning" | "table" |
 declare class ConTodo {
     constructor(node: HTMLElement, options: Record<string, any>);
     createDocumentNode(): void;
-    api: Record<ConsoleAPICommand, (...message: any[])=> void>;
+    api: ConsoleAPI;
 }
 
 interface KettleInterfaceJson extends AssignmentInterfaceJson {
@@ -306,7 +307,7 @@ const expect = (actual) => {
             expects.push(isDeepEqual(actual, expected) ? "passed" : "failed");
         }
     }
-}
+};
 `;
 
 const EXECUTION_FOOTER = `// Execution Footer
@@ -327,6 +328,7 @@ interface ProgramExecutionRequest {
 }
 
 interface FeedbackExecutionRequest {
+    mode: 'run' | 'evaluate';
     header: string;
     student: ProgramExecutionRequest;
     instructor: ProgramExecutionRequest | null;
@@ -386,23 +388,35 @@ try {
     }
 };
 
-export function makeExecutionRequest(studentCode: string, instructorCode: string): FeedbackExecutionRequest {
+export function makeExecutionRequest(studentCode: string, instructorCode: string | false): FeedbackExecutionRequest {
+    //
     // TODO: Handle strings with blank lines inside?
     studentCode = studentCode.replace("\n\n", "\n//\n");
-    instructorCode = instructorCode.replace("\n\n", "\n//\n");
     const studentResults: CompilationResult = compile(studentCode, ["es2015"]);
     const studentLocals = studentResults.locals;
-    const instructorResults: CompilationResult = compile(instructorCode, ["es2015"]);
     const headerOffset = EXECUTION_HEADER.split("\n").length;
     const wrappedStudent = wrapStudentCode(studentResults.code, headerOffset, studentLocals);
-    const instructorHeaderOffset = EXECUTION_INSTRUCTOR.split("\n").length + wrappedStudent.lineCount;
-    const wrappedInstructor = wrapInstructorCode(instructorResults.code, instructorHeaderOffset);
-    const assembled = [
-        EXECUTION_HEADER, wrappedStudent.code,
-        EXECUTION_INSTRUCTOR, wrappedInstructor.code, EXECUTION_FOOTER
-    ].join("\n");
+    const assemblage = [EXECUTION_HEADER, wrappedStudent.code];
+
+    // Add in instructor code if available
+    let instructor: ProgramExecutionRequest | null = null;
+    if (instructorCode !== false) {
+        instructorCode = instructorCode.replace("\n\n", "\n//\n");
+        const instructorResults: CompilationResult = compile(instructorCode, ["es2015"]);
+        const instructorHeaderOffset = EXECUTION_INSTRUCTOR.split("\n").length + wrappedStudent.lineCount;
+        const wrappedInstructor = wrapInstructorCode(instructorResults.code, instructorHeaderOffset);
+        assemblage.push(EXECUTION_INSTRUCTOR, wrappedInstructor.code, EXECUTION_FOOTER);
+        instructor = {
+            ...wrappedInstructor,
+            errors: instructorResults.diagnostics,
+            original: instructorCode,
+            sourceCodeMapping: extractSourceCodeMap(instructorResults.code)
+        };
+    }
+    const assembled = assemblage.join("\n");
 
     return {
+        mode: instructorCode !== false ? 'evaluate' : 'run',
         assembled,
         header: EXECUTION_HEADER,
         student: {
@@ -411,14 +425,75 @@ export function makeExecutionRequest(studentCode: string, instructorCode: string
             original: studentCode,
             sourceCodeMapping: extractSourceCodeMap(studentResults.code)
         },
-        instructor: {
-            ...wrappedInstructor,
-            errors: instructorResults.diagnostics,
-            original: instructorCode,
-            sourceCodeMapping: extractSourceCodeMap(instructorResults.code)
-        },
-        noErrors:!(studentResults.diagnostics.length > 0 || instructorResults.diagnostics.length > 0),
+        instructor,
+        noErrors:!(studentResults.diagnostics.length > 0 ||
+            instructor?.errors.length > 0),
     };
+}
+
+interface KettleConsoleLine {
+    type: string;
+    contents: any[];
+}
+
+export class KettleConsole implements ConsoleAPI {
+    contodo: ConTodo | null;
+    // Human readable output log for convenience
+    history: KettleConsoleLine[];
+
+    constructor(target: HTMLElement) {
+        this.contodo = new ConTodo(target, {
+            autostart: false,
+            showDebugging: false,
+            showTimestamp: false
+            // TODO: Stop this from using the real console too, please
+        });
+        this.contodo.createDocumentNode();
+        this.history = [];
+    }
+
+    _logEvent(type: string, contents: any[]) {
+        this.history.push({type, contents});
+    }
+
+    clear(info: boolean = false) {
+        this.contodo.api.clear(info);
+        this.history.push({type: "clear", contents: []});
+    }
+
+    log(...message: any[]) {
+        this.contodo.api.log(...message);
+        this._logEvent("log", message);
+    }
+
+    error(...message: any[]) {
+        this.contodo.api.error(...message);
+        this._logEvent("error", message);
+    }
+
+    info(...message: any[]) {
+        this.contodo.api.info(...message);
+        this._logEvent("info", message);
+    }
+
+    warning(...message: any[]) {
+        this.contodo.api.warning(...message);
+        this._logEvent("warning", message);
+    }
+
+    table(...message: any[]) {
+        this.contodo.api.table(...message);
+        this._logEvent("table", message);
+    }
+}
+
+interface TestCollection {
+    expects: string[];
+    status: string;
+}
+interface TestSuite {
+    tests: TestCollection;
+    status: string;
 }
 
 
@@ -427,26 +502,23 @@ export class Kettle extends AssignmentInterface {
     editorMode: ko.Observable<EditorMode>;
     isDirty: ko.Observable<boolean>;
     isExecuting: ko.Observable<boolean>;
+    isLoading: ko.Observable<boolean>;
+    isDebugMode: ko.Observable<boolean>;
     currentTime: ko.Observable<string>;
+    executionTimer: Timer;
 
-    console: ConTodo | null;
-    latestOutput: string[];
+    console: KettleConsole | null;
+    iframe: HTMLIFrameElement | null;
     latestErrors: string[];
+    latestFeedback: string;
+    // Decimal score
+    latestTestScore: number;
 
     subscriptions: {
         currentAssignmentId: ko.Subscription;
         submission: ko.Subscription;
         code: ko.Subscription;
     }
-
-    handlers: {
-        stdout: any;
-        stderr: any;
-    }
-
-    createdFiles: string[];
-
-    executionTimer: Timer;
 
     timeClock: NodeJS.Timeout | null;
     throttleSaving: NodeJS.Timeout | null;
@@ -459,16 +531,18 @@ export class Kettle extends AssignmentInterface {
         this.errorMessage = ko.observable("");
         this.subscriptions = {currentAssignmentId: null, code: null, submission: null};
         this.isDirty = ko.observable(false);
+        this.isLoading = ko.observable(true);
         this.isExecuting = ko.observable(false);
         this.currentTime = ko.observable(formatClock());
+        // For internal development
+        this.isDebugMode = ko.observable(false);
 
-        this.createdFiles = [];
-        this.latestOutput = [];
-        this.latestErrors = [];
         this.console = null;
+        this.iframe = null;
+        this.latestErrors = [];
+        this.latestFeedback = "";
+        this.latestTestScore = 0;
         this.latestListener = null;
-
-        this.handlers = {stdout: null, stderr: null};
 
         this.executionTimer = new Timer(".kettle-clock");
 
@@ -495,6 +569,12 @@ export class Kettle extends AssignmentInterface {
         this.loadExecutionEngine(this.currentAssignmentId());
     }
 
+    debugLog(...args: any[]) {
+        if (this.isDebugMode()) {
+            console.log(...args);
+        }
+    }
+
     updateStatus(message: string, spinner=true) {
         $(".kettle-status").text(message);
         $(".kettle-working-spinner").toggle(spinner);
@@ -502,187 +582,239 @@ export class Kettle extends AssignmentInterface {
 
     updateFeedback(message: string) {
         $(".kettle-feedback").html(message.toString());
+        if (message) {
+            this.logFeedback(message.toString());
+        }
     }
 
     startEditor() {
+        this.isLoading(true);
+        // Reset UI stuff
         this.isExecuting(false);
-
+        this.executionTimer.reset();
+        this.errorMessage("");
+        this.isDirty(false);
+        // Create or reset console
         if (this.console === null) {
-            this.console = new ConTodo(document.querySelector(".kettle-console"), {
-                autostart: false,
-                showDebugging: false,
-                showTimestamp: false
-                // TODO: Stop this from using the real console too, please
-            });
-            this.console.createDocumentNode();
-            console.log(this.console);
+            this.console = new KettleConsole(document.querySelector(".kettle-console"));
         } else {
-            this.console.api.clear(false);
+            this.console.clear();
         }
+        this.updateFeedback("");
+        // Find the iframe
+        this.iframe = <HTMLIFrameElement>document.getElementsByClassName("kettle-execution-iframe")[0];
+        // Clear out old errors
+        this.latestErrors = [];
 
-        let shell = {
-            stdout: (text: string)=> {
-                console.log(text);
-                this.console.api.log(text);
-                this.latestOutput.push(text);
-            },
-            stderr: (text: string) => {
-                console.error(text);
-                this.console.api.error(text);
-                this.latestErrors.push(text);
-            }
-        };
-        this.handlers.stdout = (data: any) => shell.stdout(data.toString());
-        this.handlers.stderr = (data: any) => shell.stderr(data.toString());
+        // Set up buttons
+        this.restoreRunButtons();
 
-        this.console.api.info("Ready to run!");
+        // Let the user know we're good
+        this.console.info("Ready to run!");
         this.updateStatus("Ready", false);
-
-        $(".kettle-eval-button").off('click.run');
-        $(".kettle-eval-button").on('click.run', () => {
-            this.evaluateInstructorCode();
-        });
-        $(".kettle-run-button").off('click.run');
-        $(".kettle-run-button").on('click.run', () => {
-            this.runStudentCode();
-        });
+        this.isLoading(false);
     }
 
     logExecution(eventType = "Run.Program") {
         this.logEvent(eventType, "kettle", "run",
                 JSON.stringify({
                     "code": this.submission().code(),
-                    "output": this.latestOutput,
-                    "errors": this.latestErrors,
+                    "output": JSON.stringify(this.console.history),
+                    "errors": JSON.stringify(this.latestErrors),
                     "timer": this.executionTimer.time()
                 }, null, 2), this.assignment().url(), () => {});
     }
 
-    handleExecutionEvents(event: MessageEvent, feedbackRequest: FeedbackExecutionRequest) {
-        console.log("INSIDE Main Kettle Object", event);
-        CONSOLE_API_COMMAND_LIST.forEach((type: ConsoleAPICommand) => {
-            if (event.data.type === `console.${type}`) {
-                this.console.api[type](...event.data.contents);
-            }
-        })
-        if (event.data.type === "execution.error") {
-            const data = event.data.contents as KettleEngineSystemError;
-            this.updateStatus(`${data.category} ${data.place} Error`, false);
-            this.console.api.error(handleKettleSystemError(data, feedbackRequest));
-            this.updateFeedback(`There were ${data.category} errors in the ${data.place} code. The execution stopped. Please see the console more information.`);
-        }
-        if (event.data.type === "execution.update") {
-            this.updateStatus(event.data.contents[0]);
-        }
-        if (event.data.type === "execution.finished") {
-            this.updateStatus("Execution Finished", false);
-            // TODO: Switch button to play button again
-        }
-        interface TestCollection {
-            expects: string[];
-            status: string;
-        }
-        interface TestSuite {
-            tests: TestCollection;
-            status: string;
-        }
-        if (event.data.type === "instructor.tests") {
-            console.log("Instructor Test Results", event.data.contents);
-            const assertions: string[] = [];
-            let allPassed = true;
-            Object.entries(event.data.contents).forEach(
-                ([suiteName, suite]: [string, TestSuite]) => {
-                    return Object.entries(suite.tests).forEach(
-                        ([testName, test]: [string, TestCollection]) => {
-                            const passed = test.expects.every((result: string) => result === "passed");
-                            assertions.push(
-                                (passed ? "✅" : "❌")+" "+
-                                (suiteName === "__GLOBAL" ? testName : suiteName +") "+ testName),
-                            );
-                            allPassed = allPassed && passed;
-                        }
-                    );
-                }
-            )
-            this.updateFeedback("Instructor unit test results:<br>"+
-                assertions.join("\n<br>\n")+"<br>"+
-                (allPassed ? "All the tests are passing. Good work!" : "Some tests are not yet passing. You are free to keep working.")
-            );
-        }
-    }
-
-    logAllErrors(request: ProgramExecutionRequest, where: string = "") {
-        where = where.length ? where+" " : where;
-        request.errors.map(
-            (diagnostic) => processTypeScriptDiagnostic(diagnostic, where)
-        ).forEach(
-            (error: string) => this.console.api.error(error)
-        );
-    }
-
-    evaluateInstructorCode() {
-        // TODO: Clean up event handler from last time, if any
-        if (this.latestListener !== null) {
-            window.removeEventListener('message', this.latestListener);
-        }
-        this.console.api.clear(false);
-        this.console.api.info("Evaluating your code");
-        this.updateStatus("Saving, ");
-        this.executionTimer.start();
-        this.updateStatus("Compiling");
-        // this.assignment().onRun() + "\n" +
-        const request = makeExecutionRequest(this.submission().code(), this.assignment().onRun());
-        if (request.noErrors) {
-            this.updateStatus("Executing");
-            const iframe: HTMLIFrameElement = <HTMLIFrameElement>document.getElementsByClassName("kettle-execution-iframe")[0];
-            this.latestListener = (e: MessageEvent) => this.handleExecutionEvents(e, request);
-            window.addEventListener('message', this.latestListener);
-            iframe.contentWindow.postMessage({
-                'type': 'execute',
-                'code': request.assembled,
-            }, '*');
-            // TODO: Attach terminate signal to button
-            this.updateStatus("Running", false)
-        } else {
-            console.error(request);
-            this.updateStatus("Typescript Error", false);
-            if (request.student.errors.length > 0) {
-                this.updateFeedback("There were TypeScript errors in your code. The program could not be executed. See the console for more information.");
-                this.logAllErrors(request.student);
-            }
-        }
-        if (request.instructor.errors.length > 0) {
-            this.updateFeedback("There was an error in the instructor code.");
-            this.logAllErrors(request.instructor, "Instructor");
-        }
-        this.executionTimer.stop();
-        // TODO: Finish this
-        const feedback = "TODO: Finish this";
-        const points = 0;
-        //this.updateFeedback(feedback);
-        this.submit(points, feedback, ()=>{});
-    }
-
-    runStudentCode() {
-        this.latestOutput = [];
-        this.latestErrors = [];
-        this.console.api.log(`Executing your code`);
-        this.updateStatus("Saving, ");
-        this.executionTimer.start();
-        this.updateFeedback("Compiling and executing your code!");
-        this.isExecuting(true);
+    logCompilation() {
         this.logEvent("Compile", "kettle", "compile",
                 JSON.stringify({
                     "code": this.submission().code()
                 }, null, 2), this.assignment().url(), () => {});
-        $("#abort-command").hide();
-        this.updateStatus("Finished in", false);
-        this.executionTimer.stop();
+    }
+
+    logFeedback(feedback: string) {
+        this.logEvent("Intervention", "kettle", "",
+                feedback, this.assignment().url(), () => {});
+    }
+
+    handleExecutionEvents(event: MessageEvent, feedbackRequest: FeedbackExecutionRequest) {
+        const handled = CONSOLE_API_COMMAND_LIST.find((type: ConsoleAPICommand) => {
+            if (event.data.type === `console.${type}`) {
+                this.debugLog("INSIDE Main Kettle Object", event);
+                this.console[type](...event.data.contents);
+                return type;
+            }
+            return false;
+        })
+        if (event.data.type === "execution.error") {
+            const data = event.data.contents as KettleEngineSystemError;
+            this.updateStatus(`${data.category} ${data.place} Error`, false);
+            const message = handleKettleSystemError(data, feedbackRequest);
+            this.console.error(message);
+            this.latestErrors.push(message);
+            this.updateFeedback(`There were ${data.category} errors in the ${data.place} code.
+                Please see the console more information.`);
+        } else if (event.data.type === "execution.update") {
+            this.updateStatus(event.data.contents[0]);
+        } else if (event.data.type === "execution.finished") {
+            this.handleExecutionStopped("Execution Finished");
+            if (feedbackRequest.mode === "evaluate") {
+                this.submit(this.latestTestScore, () => {});
+            }
+        } else if (event.data.type === "instructor.tests") {
+            this.debugLog("Instructor Test Results", event.data.contents);
+            try {
+                this.handleTestResults(event);
+            } catch (e) {
+                this.console.error("Error handling test results", e);
+                this.latestErrors.push(e.toString());
+                this.updateFeedback("There was an error handling the test results. Please notify the instructor.");
+            }
+        } else if (!handled) {
+            if (event.data.source === "react-devtools-content-script") {
+                return false;
+            }
+            this.debugLog("INSIDE Main Kettle Object", event);
+            //this.console.error("Unknown Execution Event: ", event);
+            this.latestErrors.push("Unknown Execution Event: "+JSON.stringify(event));
+        }
+    }
+
+    handleTestResults(event: MessageEvent<any>) {
+        const assertions: string[] = [];
+        let allPassed = true;
+        let totalPassed = 0, totalTests = 0;
+        Object.entries(event.data.contents).forEach(
+            ([suiteName, suite]: [string, TestSuite]) => {
+                return Object.entries(suite.tests).forEach(
+                    ([testName, test]: [string, TestCollection]) => {
+                        const passed = test.expects.every((result: string) => result === "passed");
+                        totalPassed += passed ? 1 : 0;
+                        totalTests += 1;
+                        assertions.push(
+                            (passed ? "✅" : "❌")+" "+
+                            (suiteName === "__GLOBAL" ? testName : suiteName +") "+ testName),
+                        );
+                        allPassed = allPassed && passed;
+                    }
+                );
+            }
+        )
+        this.updateFeedback("Instructor unit test results:<br>"+
+            assertions.join("\n<br>\n")+"<br>"+
+            (allPassed ? "All the tests are passing 100%. Good work!" :
+                `${totalPassed}/${totalTests} tests are currently passing. You are free to keep working.`)
+        );
+        this.latestTestScore = Math.min(1, Math.max(0, totalPassed/totalTests));
+    }
+
+    logTypeScriptErrors(request: ProgramExecutionRequest, where: string = "") {
+        where = where.length ? where+" " : where;
+        request.errors.map(
+            (diagnostic) => processTypeScriptDiagnostic(diagnostic, where)
+        ).forEach(
+            (error: string) => {
+                this.console.error(error);
+                this.latestErrors.push(error);
+            }
+        );
+    }
+
+    handleExecutionStarted() {
+        this.updateStatus("Starting");
+        this.executionTimer.start();
+        this.isExecuting(true);
+    }
+
+    /**
+     * Also logs the execution remotely, so MUST be the last thing we do.
+     * @param reason
+     */
+    handleExecutionStopped(reason: string) {
+        this.restoreRunButtons();
         this.isExecuting(false);
+        this.executionTimer.stop();
+        this.updateStatus(reason, false);
         this.logExecution();
-        $("#abort-command").show().on('click', ()=>{
-            $("#abort-command").hide();
-        });
+    }
+
+    executeRequest(request: FeedbackExecutionRequest) {
+        // Clear out any existing listeners
+        if (this.latestListener !== null) {
+            window.removeEventListener('message', this.latestListener);
+        }
+        this.latestListener = (e: MessageEvent) => this.handleExecutionEvents(e, request);
+        window.addEventListener('message', this.latestListener);
+        // Setup iframe listeners
+        this.iframe.contentWindow.postMessage({
+            'type': 'debug',
+            'contents': this.isDebugMode()
+        }, '*');
+        this.iframe.contentWindow.postMessage({
+            'type': 'execute',
+            'code': request.assembled,
+        }, '*');
+        // Change the button to a stop button
+        this.setupTerminateButton();
+    }
+
+    terminateExecution() {
+        if (this.iframe) {
+            this.iframe.contentWindow.postMessage({
+                'type': 'terminate'
+            }, '*');
+        }
+    }
+
+    setupTerminateButton() {
+        $(".kettle-eval-button").off('click.run').on('click.run', () => {
+            this.terminateExecution();
+            this.handleExecutionStopped("Terminated by user");
+        }).removeClass("btn-success").addClass("btn-danger").text("Stop");
+        $(".kettle-run-button").prop('disabled', true);
+        $("#kettle-execution-control").removeClass("btn-success").addClass("btn-danger");
+    }
+
+    restoreRunButtons() {
+        $(".kettle-eval-button").off('click.run').on('click.run', () => {
+            this.evaluateCode(true);
+        }).removeClass("btn-danger").addClass("btn-success").text("Run and Grade");
+        $(".kettle-run-button").off('click.run').on('click.run', () => {
+            this.evaluateCode(false);
+        }).prop('disabled', false);
+        $("#kettle-execution-control").removeClass("btn-danger").addClass("btn-success");
+    }
+
+    evaluateCode(instructor: boolean = true) {
+        this.console.clear(false);
+        this.console.info("Running and evaluating your code");
+        this.handleExecutionStarted();
+        this.updateStatus("Compiling");
+        this.logCompilation();
+        const request = makeExecutionRequest(this.submission().code(),
+            instructor ? this.assignment().onRun() : false);
+        if (request.noErrors) {
+            this.updateStatus("Starting execution");
+            this.executeRequest(request);
+            this.updateStatus("Running", false)
+        } else {
+            console.error("Compilation Errors", request);
+            if (request.instructor.errors.length > 0 && request.student.errors.length > 0) {
+                this.updateFeedback("There were TypeScript errors in your and the instructor code. The program could not be executed. See the console for more information, and notify the instructor.");
+                this.logTypeScriptErrors(request.instructor, "Instructor");
+                this.logTypeScriptErrors(request.student);
+            } else {
+                if (request.instructor.errors.length > 0) {
+                    this.updateFeedback("There were TypeScript error(s) in the instructor code. Please notify the instructor.");
+                    this.logTypeScriptErrors(request.instructor, "Instructor");
+                }
+                if (request.student.errors.length > 0) {
+                    this.updateFeedback("There were TypeScript error(s) in your code. The program could not be executed. See the console for more information.");
+                    this.logTypeScriptErrors(request.student);
+                }
+            }
+            this.handleExecutionStopped("Typescript Error");
+        }
     }
 
     loadExecutionEngine(assignmentId: number) {
@@ -699,6 +831,7 @@ export class Kettle extends AssignmentInterface {
                         this.assignment(assignment);
                         this.submission(submission);
                         this.parseAdditionalSettings();
+                        this.latestTestScore = this.submission().score()/100;
                         this.startEditor();
                     } else {
                         console.error("Failed to load", response);
@@ -734,6 +867,8 @@ export class Kettle extends AssignmentInterface {
         this.subscriptions.submission.dispose();
         this.executionTimer.reset();
         this.console = null;
+        this.terminateExecution();
+        this.iframe = null;
         clearInterval(this.timeClock);
     }
 
@@ -796,7 +931,7 @@ export class Kettle extends AssignmentInterface {
     }
 
 
-    submit(points: number, feedback: string, callback: any) {
+    submit(score: number, callback: any) {
         let BlockPyServer = window['$MAIN_BLOCKPY_EDITOR'].components.server;
         let now = new Date();
         let data = {
@@ -805,25 +940,26 @@ export class Kettle extends AssignmentInterface {
             course_id: this.courseId,
             submission_id: this.submission().id,
             user_id: this.user.id,
-            status: 0,
-            score: points,
-            correct: points >= 100,
+            status: 0, // TODO: What is this status field?
+            score: score,
+            correct: score >= 1,
             timestamp: now.getTime(),
             timezone: now.getTimezoneOffset(),
             passcode: window['$MAIN_BLOCKPY_EDITOR'].model.display.passcode(),
         };
-        // TODO: Skipping questions doesn't skip giving you points does it??
-        BlockPyServer._postBlocking("updateSubmission", data, 3,
+        return BlockPyServer._postBlocking("updateSubmission", data, 3,
                (response: any) => {
                     //console.log(response.message.feedbacks);
                     if (response.success || response.message.message === "Generic LTI Failure - perhaps not logged into LTI session?") {
-                        console.log(response);
+                        this.debugLog(response);
                     }
                     if (!response.success) {
                         console.error(response);
                         this.errorMessage(response.message.message);
                     }
                     this.submission().submissionStatus(response.submission_status);
+                    this.submission().score(Math.round(score*100));
+                    this.submission().correct(score >= 1);
                     if (response.correct) {
                         this.markCorrect(this.assignment().id);
                     }
@@ -930,7 +1066,7 @@ export const EDITOR_HTML = `
 
 
 export const KETTLE_HTML = `
-<div>
+<div><style>.kettle-student-editor .CodeMirror { resize: vertical} </style>
     ${EDITOR_HTML}
     <!-- ko if: assignment -->
     <div data-bind="markdowned: {value: assignment().instructions()}"></div>
@@ -939,17 +1075,18 @@ export const KETTLE_HTML = `
      <div id='ide'>
         <div id='source' style='height: 70%;'></div>
         <div class="btn-group m-2" role="group" aria-label="Execution Control Buttons" >
-          <button class='btn btn-success kettle-eval-button' type="button" data-bind="disable: isExecuting">Run and Grade</button>
+          <button class='btn btn-success kettle-eval-button' type="button"
+                data-bind="">Run and Grade</button>
         
           <div class="btn-group" role="group">
             <button id="kettle-execution-control" type="button" 
                 class="btn btn-success dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
-                data-bind="disable: isExecuting">
+                data-bind="">
               
             </button>
-            <!--<div class="dropdown-menu" aria-labelledby="kettle-execution-control">
-              <button class='btn btn-mini btn-success kettle-run-button' data-bind="disable: isExecuting">Run without grading</button>
-            </div>-->
+            <div class="dropdown-menu" aria-labelledby="kettle-execution-control">
+              <button class='btn btn-mini btn-success kettle-run-button' data-bind="">Run without grading</button>
+            </div>
           </div>
       </div>
       
@@ -970,7 +1107,7 @@ export const KETTLE_HTML = `
             matchBrackets: true, mode: 'text/typescript',
             indentUnit: 4,
             statementIndent: 4, noOverwrite: true,
-        }" style="width: 100%; height: 300px; border: 1px solid black;"></div>
+        }" style="width: 100%; border: 1px solid black;" class="kettle-student-editor"></div>
         <br>
       <!-- /ko -->
       <iframe src="../blockpy/serve_kettle_iframe" class="kettle-execution-iframe" style="display: none;"></iframe>

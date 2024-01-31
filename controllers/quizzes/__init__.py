@@ -10,7 +10,6 @@ from natsort import natsorted
 
 from flask import Blueprint, url_for, session, request, jsonify, g, render_template, redirect, current_app
 
-from controllers.endpoints.blockpy import lti_post_grade
 from controllers.pylti.common import LTIPostMessageException
 from models.assignment import Assignment
 from models.course import Course
