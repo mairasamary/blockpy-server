@@ -2,7 +2,7 @@ import json
 from datetime import datetime, timedelta
 
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import Column, String, Integer, ForeignKey, Text, func, JSON, Index, and_
+from sqlalchemy import Column, String, Integer, ForeignKey, Text, func, JSON, Index, and_, DECIMAL
 
 import models
 from models.generics.models import db, ma
@@ -19,7 +19,7 @@ class GradeHistory(Base):
     submission_id: Mapped[int] = mapped_column(Integer(), ForeignKey('submission.id'))
     grader_id: Mapped[int] = mapped_column(Integer(), ForeignKey('user.id'))
     # This is a "true actual" grade (from .full_score()), not a previously penalized one.
-    score: Mapped[int] = mapped_column(Integer())
+    score: Mapped[float] = mapped_column(DECIMAL(16, 2))
     date_submitted: Mapped[datetime] = mapped_column(db.DateTime(), default=datetime.utcnow)
 
     submission: Mapped["Submission"] = db.relationship(back_populates="grade_history")
