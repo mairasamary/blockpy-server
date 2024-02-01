@@ -4,6 +4,7 @@ Common utility functions for managing dates and times.
 
 from datetime import datetime
 from dateutil.parser import parse as parse_date
+from dateutil.tz import tzlocal
 
 
 def datetime_to_string(a_datetime: datetime) -> str:
@@ -45,5 +46,5 @@ def datetime_to_pretty_string(a_datetime: datetime) -> str:
 def from_canvas_isotime(a_datetime: str) -> datetime:
     if a_datetime and a_datetime[0] != '$':
         parsed = parse_date(a_datetime)
-        return parsed - parsed.utcoffset()
+        return parsed - tzlocal().utcoffset(parsed)
     return None
