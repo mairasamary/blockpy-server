@@ -28,6 +28,12 @@ declare class ConTodo {
     api: ConsoleAPI;
 }
 
+declare global {
+    interface Crypto {
+        randomUUID: () => string;
+    }
+}
+
 interface KettleInterfaceJson extends AssignmentInterfaceJson {
 }
 
@@ -195,6 +201,7 @@ interface ParentPost {
 
 const EXECUTION_HEADER = `// Execution Header
 let silenceConsole = false;
+let _signedKey = null;
 const parentPost = (type, contents) => {
     //contents = JSON.parse(JSON.stringify(contents));
     if (!silenceConsole) {
@@ -209,10 +216,10 @@ const console = {
     table: (...text) => parentPost("console.table", text),
     clear: () => parentPost("console.clear", [])
 };
-function _updateStatus(message) {
+const _updateStatus = (message) => {
     parentPost("execution.update", [message]);
 };
-function _kettleSystemError(place, category, error) {
+const _kettleSystemError = (place, category, error) => {
     parentPost("execution.error", {
         place,
         category,
@@ -334,6 +341,7 @@ interface FeedbackExecutionRequest {
     instructor: ProgramExecutionRequest | null;
     assembled: string;
     noErrors: boolean;
+    signedKey: string;
 }
 
 interface WrappedCode {
@@ -350,8 +358,9 @@ const wrapStudentCode = (code: string, offset: number = 0, locals: Map<string, s
     code += "\nreturn {" + Array.from(locals.keys()).join(", ")+"};";
     const wrapped = `_updateStatus("Executing Student Code"); // $Student Code
 student = {};
+studentNamespace = {};
 try {
-    const __studentFunction = Function("studentCode", \`${code}\`);
+    const __studentFunction = Function("studentCode", \`${code}\`).bind(studentNamespace);
     try {
         student = __studentFunction();
     } catch (e) {
@@ -363,16 +372,17 @@ try {
     return {
         code: wrapped,
         offset: {
-            syntax: 2 + offset,
-            runtime: 4 + offset
+            syntax: 4 + offset,
+            runtime: 6 + offset
         },
         lineCount: wrapped.split("\n").length + offset
     }
 };
 
-const wrapInstructorCode = (code: string, offset: number = 0): WrappedCode => {
+const wrapInstructorCode = (code: string, signedKey: string, offset: number = 0): WrappedCode => {
     //code = code.replace(/[\\`$]/g, '\\$&');
     const wrapped = `_updateStatus("Executing Instructor Code"); // Instructor Code
+_results['_signedKey'] = '${signedKey}';
 try {
     ${code}
 } catch (e) {
@@ -381,8 +391,8 @@ try {
     return {
         code: wrapped,
         offset: {
-            syntax: 2 + offset,
-            runtime: 4 + offset
+            syntax: 3 + offset,
+            runtime: 5 + offset
         },
         lineCount: wrapped.split("\n").length + offset
     }
@@ -397,6 +407,7 @@ export function makeExecutionRequest(studentCode: string, instructorCode: string
     const headerOffset = EXECUTION_HEADER.split("\n").length;
     const wrappedStudent = wrapStudentCode(studentResults.code, headerOffset, studentLocals);
     const assemblage = [EXECUTION_HEADER, wrappedStudent.code];
+    const signedKey = crypto.randomUUID();
 
     // Add in instructor code if available
     let instructor: ProgramExecutionRequest | null = null;
@@ -404,7 +415,7 @@ export function makeExecutionRequest(studentCode: string, instructorCode: string
         instructorCode = instructorCode.replace("\n\n", "\n//\n");
         const instructorResults: CompilationResult = compile(instructorCode, ["es2015"]);
         const instructorHeaderOffset = EXECUTION_INSTRUCTOR.split("\n").length + wrappedStudent.lineCount;
-        const wrappedInstructor = wrapInstructorCode(instructorResults.code, instructorHeaderOffset);
+        const wrappedInstructor = wrapInstructorCode(instructorResults.code, signedKey, instructorHeaderOffset);
         assemblage.push(EXECUTION_INSTRUCTOR, wrappedInstructor.code, EXECUTION_FOOTER);
         instructor = {
             ...wrappedInstructor,
@@ -426,6 +437,7 @@ export function makeExecutionRequest(studentCode: string, instructorCode: string
             sourceCodeMapping: extractSourceCodeMap(studentResults.code)
         },
         instructor,
+        signedKey,
         noErrors:!(studentResults.diagnostics.length > 0 ||
             instructor?.errors.length > 0),
     };
@@ -664,7 +676,7 @@ export class Kettle extends AssignmentInterface {
         } else if (event.data.type === "instructor.tests") {
             this.debugLog("Instructor Test Results", event.data.contents);
             try {
-                this.handleTestResults(event);
+                this.handleTestResults(event, feedbackRequest);
             } catch (e) {
                 this.console.error("Error handling test results", e);
                 this.latestErrors.push(e.toString());
@@ -680,12 +692,19 @@ export class Kettle extends AssignmentInterface {
         }
     }
 
-    handleTestResults(event: MessageEvent<any>) {
+    handleTestResults(event: MessageEvent<any>, feedbackRequest: FeedbackExecutionRequest) {
         const assertions: string[] = [];
         let allPassed = true;
         let totalPassed = 0, totalTests = 0;
-        Object.entries(event.data.contents).forEach(
+        let testResults = event.data.contents;
+        if (testResults['_signedKey'] !== feedbackRequest.signedKey) {
+            this.updateFeedback("There was an error while processing the instructor tests.\n" +
+                "The cryptographic keys did not match. Are you doing something strange? Contact Dr. Bart, please.");
+            return;
+        }
+        Object.entries(testResults).forEach(
             ([suiteName, suite]: [string, TestSuite]) => {
+                if (suiteName === "_signedKey") { return };
                 return Object.entries(suite.tests).forEach(
                     ([testName, test]: [string, TestCollection]) => {
                         const passed = test.expects.every((result: string) => result === "passed");

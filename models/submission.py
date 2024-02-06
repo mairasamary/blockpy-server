@@ -457,11 +457,10 @@ class Submission(EnhancedBase):
         else:
             self.submission_status = SubmissionStatuses.SUBMITTED
             self.grading_status = GradingStatuses.PENDING
-        if was_changed:
-            if do_change_submission_date:
-                self.date_submitted = date_submitted or datetime.utcnow()
-            if do_change_grading_date:
-                self.date_graded = date_submitted or datetime.utcnow()
+        if (was_changed and do_change_submission_date) or not self.date_submitted:
+            self.date_submitted = date_submitted or datetime.utcnow()
+        if was_changed and do_change_grading_date:
+            self.date_graded = date_submitted or datetime.utcnow()
         db.session.commit()
         return was_changed
 

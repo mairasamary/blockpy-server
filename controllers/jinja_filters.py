@@ -34,6 +34,8 @@ def get_setting(assignment, *keys):
 
 
 def to_iso_time(date):
+    if not date:
+        return None
     date = (date + date.astimezone().utcoffset())
     date = date.replace(tzinfo=dt.timezone.utc)
     return date.strftime("%Y-%m-%dT%H:%M:%S %z")
