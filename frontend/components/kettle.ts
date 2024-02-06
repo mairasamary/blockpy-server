@@ -960,7 +960,7 @@ export class Kettle extends AssignmentInterface {
             submission_id: this.submission().id,
             user_id: this.user.id,
             status: 0, // TODO: What is this status field?
-            score: score,
+            score: score || 0,
             correct: score >= 1,
             timestamp: now.getTime(),
             timezone: now.getTimezoneOffset(),
