@@ -25,6 +25,28 @@ export interface CompilationResult {
     locals: Map<string, string>;
 };
 
+function removeExports(context: ts.TransformationContext) {
+    return (sourceFile: ts.SourceFile) => {
+        function visit(node: ts.Node): ts.Node {
+            return ts.visitEachChild(node, node => convertNode(node), context);
+        }
+        function convertNode(node: ts.Node) {
+            return ts.visitEachChild(node, visitChildren, context);
+        }
+        function visitChildren(child: ts.Node): ts.Node | undefined {
+            if (child.kind == ts.SyntaxKind.ExportKeyword) return undefined;
+            if (child.kind == ts.SyntaxKind.AsyncKeyword) return undefined;
+            if (child.kind === ts.SyntaxKind.ExportDeclaration) {
+                return undefined;
+            }
+
+            return ts.visitEachChild(child, visitChildren, context);
+        }
+
+        return ts.visitNode(sourceFile, visit);
+    };
+}
+
 //
 // Check and compile in-memory TypeScript code for errors.
 //
@@ -73,6 +95,7 @@ export function compile(code: string, libs: string[]): CompilationResult {
     options.inlineSourceMap = true;
     options.target = 99;
     options.removeComments = false;
+    options.module = ts.ModuleKind.ESNext;
 
     const realHost = ts.createCompilerHost(options, true);
 
@@ -112,18 +135,22 @@ export function compile(code: string, libs: string[]): CompilationResult {
     const rootNames = Object.keys(otherFakeFiles); //libs.map(lib => require.resolve(`typescript/lib/lib.${lib}.d.ts`));
     const program = ts.createProgram(rootNames.concat([dummyFilePath]), options, host);
     //console.log("P",program);
-    const emitResult = program.emit();
+    const emitResult = program.emit(undefined, undefined, undefined, undefined, {
+        before: [removeExports]
+    });
     //console.log("ER", emitResult);
     const diagnostics = ts.getPreEmitDiagnostics(program);
     return {
-        code: outputCode,
+        code: removeEmptyExports(outputCode),
         diagnostics: emitResult.diagnostics.concat(diagnostics),
         locals: (dummySourceFile as any).locals
     };
 }
 
-
-
+export function removeEmptyExports(code: string): string {
+    // https://github.com/microsoft/TypeScript/issues/41513
+    return code.replace(/export\s*{\s*}/g, "");
+}
 
 export function delint(sourceFile: ts.SourceFile) {
   delintNode(sourceFile);
