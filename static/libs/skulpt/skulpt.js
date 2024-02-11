@@ -19490,6 +19490,9 @@ Sk.configure = function (options) {
     Sk.imageProxy = options["imageProxy"] || "http://localhost:8080/320x";
     Sk.asserts.assert(typeof Sk.imageProxy === "string" || typeof Sk.imageProxy === "function");
 
+    Sk.BottleSiteTarget = options["BottleSiteTarget"] || "#website";
+    Sk.asserts.assert(typeof Sk.BottleSiteTarget === "string" || typeof Sk.BottleSiteTarget === "function");
+
     Sk.inputfun = options["inputfun"] || Sk.inputfun;
     Sk.asserts.assert(typeof Sk.inputfun === "function");
 
@@ -22117,7 +22120,7 @@ function $resolveArgs(posargs, kw) {
 
     let kwargs;
 
-    /* Create a NOT-a-dictionary for keyword parameters (**kwags) */
+    /* Create a NOT-a-dictionary for keyword parameters (**kwargs) */
     if (this.co_kwargs) {
         kwargs = [];
     }
@@ -37181,7 +37184,7 @@ var Sk = {}; // jshint ignore:line
 
 Sk.build = {
     githash: "7a6b8b5042a767a2f94b6908811c386e71b06541",
-    date: "2023-10-30T21:07:34.775Z"
+    date: "2024-02-11T21:15:47.159Z"
 };
 
 /**
