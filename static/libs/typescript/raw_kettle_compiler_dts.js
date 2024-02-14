@@ -1,5 +1,30 @@
 const RAW_D_TS_FILES = {
-    "/lib.es2015.d.ts": `/*! *****************************************************************************
+    "lib.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+/// <reference lib="es5" />
+/// <reference lib="dom" />
+/// <reference lib="webworker.importscripts" />
+/// <reference lib="scripthost" />
+`,
+    "lib.dom.d.ts": `/*! *****************************************************************************
 Copyright (c) Microsoft Corporation. All rights reserved.
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use
 this file except in compliance with the License. You may obtain a copy of the
@@ -20139,7 +20164,4582 @@ type WebGLPowerPreference = "default" | "high-performance" | "low-power";
 type WorkerType = "classic" | "module";
 type XMLHttpRequestResponseType = "" | "arraybuffer" | "blob" | "document" | "json" | "text";
 `,
-    "/lib.dom.d.ts": `/*! *****************************************************************************
+    "lib.dom.iterable.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+/////////////////////////////
+/// DOM Iterable APIs
+/////////////////////////////
+
+interface AudioParam {
+    setValueCurveAtTime(values: Iterable<number>, startTime: number, duration: number): AudioParam;
+}
+
+interface AudioParamMap extends ReadonlyMap<string, AudioParam> {
+}
+
+interface BaseAudioContext {
+    createIIRFilter(feedforward: Iterable<number>, feedback: Iterable<number>): IIRFilterNode;
+    createPeriodicWave(real: Iterable<number>, imag: Iterable<number>, constraints?: PeriodicWaveConstraints): PeriodicWave;
+}
+
+interface CSSRuleList {
+    [Symbol.iterator](): IterableIterator<CSSRule>;
+}
+
+interface CSSStyleDeclaration {
+    [Symbol.iterator](): IterableIterator<string>;
+}
+
+interface Cache {
+    addAll(requests: Iterable<RequestInfo>): Promise<void>;
+}
+
+interface CanvasPathDrawingStyles {
+    setLineDash(segments: Iterable<number>): void;
+}
+
+interface ClientRectList {
+    [Symbol.iterator](): IterableIterator<ClientRect>;
+}
+
+interface DOMRectList {
+    [Symbol.iterator](): IterableIterator<DOMRect>;
+}
+
+interface DOMStringList {
+    [Symbol.iterator](): IterableIterator<string>;
+}
+
+interface DOMTokenList {
+    [Symbol.iterator](): IterableIterator<string>;
+    entries(): IterableIterator<[number, string]>;
+    keys(): IterableIterator<number>;
+    values(): IterableIterator<string>;
+}
+
+interface DataTransferItemList {
+    [Symbol.iterator](): IterableIterator<DataTransferItem>;
+}
+
+interface FileList {
+    [Symbol.iterator](): IterableIterator<File>;
+}
+
+interface FormData {
+    [Symbol.iterator](): IterableIterator<[string, FormDataEntryValue]>;
+    /**
+     * Returns an array of key, value pairs for every entry in the list.
+     */
+    entries(): IterableIterator<[string, FormDataEntryValue]>;
+    /**
+     * Returns a list of keys in the list.
+     */
+    keys(): IterableIterator<string>;
+    /**
+     * Returns a list of values in the list.
+     */
+    values(): IterableIterator<FormDataEntryValue>;
+}
+
+interface HTMLAllCollection {
+    [Symbol.iterator](): IterableIterator<Element>;
+}
+
+interface HTMLCollectionBase {
+    [Symbol.iterator](): IterableIterator<Element>;
+}
+
+interface HTMLCollectionOf<T extends Element> {
+    [Symbol.iterator](): IterableIterator<T>;
+}
+
+interface HTMLFormElement {
+    [Symbol.iterator](): IterableIterator<Element>;
+}
+
+interface HTMLSelectElement {
+    [Symbol.iterator](): IterableIterator<Element>;
+}
+
+interface Headers {
+    [Symbol.iterator](): IterableIterator<[string, string]>;
+    /**
+     * Returns an iterator allowing to go through all key/value pairs contained in this object.
+     */
+    entries(): IterableIterator<[string, string]>;
+    /**
+     * Returns an iterator allowing to go through all keys of the key/value pairs contained in this object.
+     */
+    keys(): IterableIterator<string>;
+    /**
+     * Returns an iterator allowing to go through all values of the key/value pairs contained in this object.
+     */
+    values(): IterableIterator<string>;
+}
+
+interface IDBDatabase {
+    /**
+     * Returns a new transaction with the given mode ("readonly" or "readwrite") and scope which can be a single object store name or an array of names.
+     */
+    transaction(storeNames: string | Iterable<string>, mode?: IDBTransactionMode): IDBTransaction;
+}
+
+interface IDBObjectStore {
+    /**
+     * Creates a new index in store with the given name, keyPath and options and returns a new IDBIndex. If the keyPath and options define constraints that cannot be satisfied with the data already in store the upgrade transaction will abort with a "ConstraintError" DOMException.
+     * 
+     * Throws an "InvalidStateError" DOMException if not called within an upgrade transaction.
+     */
+    createIndex(name: string, keyPath: string | Iterable<string>, options?: IDBIndexParameters): IDBIndex;
+}
+
+interface MediaKeyStatusMap {
+    [Symbol.iterator](): IterableIterator<[BufferSource, MediaKeyStatus]>;
+    entries(): IterableIterator<[BufferSource, MediaKeyStatus]>;
+    keys(): IterableIterator<BufferSource>;
+    values(): IterableIterator<MediaKeyStatus>;
+}
+
+interface MediaList {
+    [Symbol.iterator](): IterableIterator<string>;
+}
+
+interface MimeTypeArray {
+    [Symbol.iterator](): IterableIterator<MimeType>;
+}
+
+interface NamedNodeMap {
+    [Symbol.iterator](): IterableIterator<Attr>;
+}
+
+interface Navigator {
+    requestMediaKeySystemAccess(keySystem: string, supportedConfigurations: Iterable<MediaKeySystemConfiguration>): Promise<MediaKeySystemAccess>;
+}
+
+interface NodeList {
+    [Symbol.iterator](): IterableIterator<Node>;
+    /**
+     * Returns an array of key, value pairs for every entry in the list.
+     */
+    entries(): IterableIterator<[number, Node]>;
+    /**
+     * Returns an list of keys in the list.
+     */
+    keys(): IterableIterator<number>;
+    /**
+     * Returns an list of values in the list.
+     */
+    values(): IterableIterator<Node>;
+}
+
+interface NodeListOf<TNode extends Node> {
+    [Symbol.iterator](): IterableIterator<TNode>;
+    /**
+     * Returns an array of key, value pairs for every entry in the list.
+     */
+    entries(): IterableIterator<[number, TNode]>;
+    /**
+     * Returns an list of keys in the list.
+     */
+    keys(): IterableIterator<number>;
+    /**
+     * Returns an list of values in the list.
+     */
+    values(): IterableIterator<TNode>;
+}
+
+interface Plugin {
+    [Symbol.iterator](): IterableIterator<MimeType>;
+}
+
+interface PluginArray {
+    [Symbol.iterator](): IterableIterator<Plugin>;
+}
+
+interface RTCRtpTransceiver {
+    setCodecPreferences(codecs: Iterable<RTCRtpCodecCapability>): void;
+}
+
+interface RTCStatsReport extends ReadonlyMap<string, any> {
+}
+
+interface SVGLengthList {
+    [Symbol.iterator](): IterableIterator<SVGLength>;
+}
+
+interface SVGNumberList {
+    [Symbol.iterator](): IterableIterator<SVGNumber>;
+}
+
+interface SVGPointList {
+    [Symbol.iterator](): IterableIterator<DOMPoint>;
+}
+
+interface SVGStringList {
+    [Symbol.iterator](): IterableIterator<string>;
+}
+
+interface SourceBufferList {
+    [Symbol.iterator](): IterableIterator<SourceBuffer>;
+}
+
+interface SpeechGrammarList {
+    [Symbol.iterator](): IterableIterator<SpeechGrammar>;
+}
+
+interface SpeechRecognitionResult {
+    [Symbol.iterator](): IterableIterator<SpeechRecognitionAlternative>;
+}
+
+interface SpeechRecognitionResultList {
+    [Symbol.iterator](): IterableIterator<SpeechRecognitionResult>;
+}
+
+interface StyleSheetList {
+    [Symbol.iterator](): IterableIterator<CSSStyleSheet>;
+}
+
+interface TextTrackCueList {
+    [Symbol.iterator](): IterableIterator<TextTrackCue>;
+}
+
+interface TextTrackList {
+    [Symbol.iterator](): IterableIterator<TextTrack>;
+}
+
+interface TouchList {
+    [Symbol.iterator](): IterableIterator<Touch>;
+}
+
+interface URLSearchParams {
+    [Symbol.iterator](): IterableIterator<[string, string]>;
+    /**
+     * Returns an array of key, value pairs for every entry in the search params.
+     */
+    entries(): IterableIterator<[string, string]>;
+    /**
+     * Returns a list of keys in the search params.
+     */
+    keys(): IterableIterator<string>;
+    /**
+     * Returns a list of values in the search params.
+     */
+    values(): IterableIterator<string>;
+}
+
+interface VRDisplay {
+    requestPresent(layers: Iterable<VRLayer>): Promise<void>;
+}
+
+interface WEBGL_draw_buffers {
+    drawBuffersWEBGL(buffers: Iterable<GLenum>): void;
+}
+
+interface WebAuthentication {
+    makeCredential(accountInformation: Account, cryptoParameters: Iterable<ScopedCredentialParameters>, attestationChallenge: Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | Float32Array | Float64Array | DataView | ArrayBuffer | null, options?: ScopedCredentialOptions): Promise<ScopedCredentialInfo>;
+}
+
+interface WebGL2RenderingContextBase {
+    clearBufferfv(buffer: GLenum, drawbuffer: GLint, values: Iterable<GLfloat>, srcOffset?: GLuint): void;
+    clearBufferiv(buffer: GLenum, drawbuffer: GLint, values: Iterable<GLint>, srcOffset?: GLuint): void;
+    clearBufferuiv(buffer: GLenum, drawbuffer: GLint, values: Iterable<GLuint>, srcOffset?: GLuint): void;
+    drawBuffers(buffers: Iterable<GLenum>): void;
+    getActiveUniforms(program: WebGLProgram, uniformIndices: Iterable<GLuint>, pname: GLenum): any;
+    getUniformIndices(program: WebGLProgram, uniformNames: Iterable<string>): Iterable<GLuint> | null;
+    invalidateFramebuffer(target: GLenum, attachments: Iterable<GLenum>): void;
+    invalidateSubFramebuffer(target: GLenum, attachments: Iterable<GLenum>, x: GLint, y: GLint, width: GLsizei, height: GLsizei): void;
+    transformFeedbackVaryings(program: WebGLProgram, varyings: Iterable<string>, bufferMode: GLenum): void;
+    uniform1uiv(location: WebGLUniformLocation | null, data: Iterable<GLuint>, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniform2uiv(location: WebGLUniformLocation | null, data: Iterable<GLuint>, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniform3uiv(location: WebGLUniformLocation | null, data: Iterable<GLuint>, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniform4uiv(location: WebGLUniformLocation | null, data: Iterable<GLuint>, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniformMatrix2x3fv(location: WebGLUniformLocation | null, transpose: GLboolean, data: Iterable<GLfloat>, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniformMatrix2x4fv(location: WebGLUniformLocation | null, transpose: GLboolean, data: Iterable<GLfloat>, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniformMatrix3x2fv(location: WebGLUniformLocation | null, transpose: GLboolean, data: Iterable<GLfloat>, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniformMatrix3x4fv(location: WebGLUniformLocation | null, transpose: GLboolean, data: Iterable<GLfloat>, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniformMatrix4x2fv(location: WebGLUniformLocation | null, transpose: GLboolean, data: Iterable<GLfloat>, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniformMatrix4x3fv(location: WebGLUniformLocation | null, transpose: GLboolean, data: Iterable<GLfloat>, srcOffset?: GLuint, srcLength?: GLuint): void;
+    vertexAttribI4iv(index: GLuint, values: Iterable<GLint>): void;
+    vertexAttribI4uiv(index: GLuint, values: Iterable<GLuint>): void;
+}
+
+interface WebGL2RenderingContextOverloads {
+    uniform1fv(location: WebGLUniformLocation | null, data: Iterable<GLfloat>, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniform1iv(location: WebGLUniformLocation | null, data: Iterable<GLint>, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniform2fv(location: WebGLUniformLocation | null, data: Iterable<GLfloat>, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniform2iv(location: WebGLUniformLocation | null, data: Iterable<GLint>, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniform3fv(location: WebGLUniformLocation | null, data: Iterable<GLfloat>, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniform3iv(location: WebGLUniformLocation | null, data: Iterable<GLint>, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniform4fv(location: WebGLUniformLocation | null, data: Iterable<GLfloat>, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniform4iv(location: WebGLUniformLocation | null, data: Iterable<GLint>, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniformMatrix2fv(location: WebGLUniformLocation | null, transpose: GLboolean, data: Iterable<GLfloat>, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniformMatrix3fv(location: WebGLUniformLocation | null, transpose: GLboolean, data: Iterable<GLfloat>, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniformMatrix4fv(location: WebGLUniformLocation | null, transpose: GLboolean, data: Iterable<GLfloat>, srcOffset?: GLuint, srcLength?: GLuint): void;
+}
+
+interface WebGLRenderingContextBase {
+    vertexAttrib1fv(index: GLuint, values: Iterable<GLfloat>): void;
+    vertexAttrib2fv(index: GLuint, values: Iterable<GLfloat>): void;
+    vertexAttrib3fv(index: GLuint, values: Iterable<GLfloat>): void;
+    vertexAttrib4fv(index: GLuint, values: Iterable<GLfloat>): void;
+}
+
+interface WebGLRenderingContextOverloads {
+    uniform1fv(location: WebGLUniformLocation | null, v: Iterable<GLfloat>): void;
+    uniform1iv(location: WebGLUniformLocation | null, v: Iterable<GLint>): void;
+    uniform2fv(location: WebGLUniformLocation | null, v: Iterable<GLfloat>): void;
+    uniform2iv(location: WebGLUniformLocation | null, v: Iterable<GLint>): void;
+    uniform3fv(location: WebGLUniformLocation | null, v: Iterable<GLfloat>): void;
+    uniform3iv(location: WebGLUniformLocation | null, v: Iterable<GLint>): void;
+    uniform4fv(location: WebGLUniformLocation | null, v: Iterable<GLfloat>): void;
+    uniform4iv(location: WebGLUniformLocation | null, v: Iterable<GLint>): void;
+    uniformMatrix2fv(location: WebGLUniformLocation | null, transpose: GLboolean, value: Iterable<GLfloat>): void;
+    uniformMatrix3fv(location: WebGLUniformLocation | null, transpose: GLboolean, value: Iterable<GLfloat>): void;
+    uniformMatrix4fv(location: WebGLUniformLocation | null, transpose: GLboolean, value: Iterable<GLfloat>): void;
+}
+`,
+    "lib.es2015.collection.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+interface Map<K, V> {
+    clear(): void;
+    delete(key: K): boolean;
+    forEach(callbackfn: (value: V, key: K, map: Map<K, V>) => void, thisArg?: any): void;
+    get(key: K): V | undefined;
+    has(key: K): boolean;
+    set(key: K, value: V): this;
+    readonly size: number;
+}
+
+interface MapConstructor {
+    new(): Map<any, any>;
+    new<K, V>(entries?: readonly (readonly [K, V])[] | null): Map<K, V>;
+    readonly prototype: Map<any, any>;
+}
+declare var Map: MapConstructor;
+
+interface ReadonlyMap<K, V> {
+    forEach(callbackfn: (value: V, key: K, map: ReadonlyMap<K, V>) => void, thisArg?: any): void;
+    get(key: K): V | undefined;
+    has(key: K): boolean;
+    readonly size: number;
+}
+
+interface WeakMap<K extends object, V> {
+    delete(key: K): boolean;
+    get(key: K): V | undefined;
+    has(key: K): boolean;
+    set(key: K, value: V): this;
+}
+
+interface WeakMapConstructor {
+    new <K extends object = object, V = any>(entries?: readonly [K, V][] | null): WeakMap<K, V>;
+    readonly prototype: WeakMap<object, any>;
+}
+declare var WeakMap: WeakMapConstructor;
+
+interface Set<T> {
+    add(value: T): this;
+    clear(): void;
+    delete(value: T): boolean;
+    forEach(callbackfn: (value: T, value2: T, set: Set<T>) => void, thisArg?: any): void;
+    has(value: T): boolean;
+    readonly size: number;
+}
+
+interface SetConstructor {
+    new <T = any>(values?: readonly T[] | null): Set<T>;
+    readonly prototype: Set<any>;
+}
+declare var Set: SetConstructor;
+
+interface ReadonlySet<T> {
+    forEach(callbackfn: (value: T, value2: T, set: ReadonlySet<T>) => void, thisArg?: any): void;
+    has(value: T): boolean;
+    readonly size: number;
+}
+
+interface WeakSet<T extends object> {
+    add(value: T): this;
+    delete(value: T): boolean;
+    has(value: T): boolean;
+}
+
+interface WeakSetConstructor {
+    new <T extends object = object>(values?: readonly T[] | null): WeakSet<T>;
+    readonly prototype: WeakSet<object>;
+}
+declare var WeakSet: WeakSetConstructor;
+`,
+    "lib.es2015.core.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+interface Array<T> {
+    /**
+     * Returns the value of the first element in the array where predicate is true, and undefined
+     * otherwise.
+     * @param predicate find calls predicate once for each element of the array, in ascending
+     * order, until it finds one where predicate returns true. If such an element is found, find
+     * immediately returns that element value. Otherwise, find returns undefined.
+     * @param thisArg If provided, it will be used as the this value for each invocation of
+     * predicate. If it is not provided, undefined is used instead.
+     */
+    find<S extends T>(predicate: (this: void, value: T, index: number, obj: T[]) => value is S, thisArg?: any): S | undefined;
+    find(predicate: (value: T, index: number, obj: T[]) => unknown, thisArg?: any): T | undefined;
+
+    /**
+     * Returns the index of the first element in the array where predicate is true, and -1
+     * otherwise.
+     * @param predicate find calls predicate once for each element of the array, in ascending
+     * order, until it finds one where predicate returns true. If such an element is found,
+     * findIndex immediately returns that element index. Otherwise, findIndex returns -1.
+     * @param thisArg If provided, it will be used as the this value for each invocation of
+     * predicate. If it is not provided, undefined is used instead.
+     */
+    findIndex(predicate: (value: T, index: number, obj: T[]) => unknown, thisArg?: any): number;
+
+    /**
+     * Returns the this object after filling the section identified by start and end with value
+     * @param value value to fill array section with
+     * @param start index to start filling the array at. If start is negative, it is treated as
+     * length+start where length is the length of the array.
+     * @param end index to stop filling the array at. If end is negative, it is treated as
+     * length+end.
+     */
+    fill(value: T, start?: number, end?: number): this;
+
+    /**
+     * Returns the this object after copying a section of the array identified by start and end
+     * to the same array starting at position target
+     * @param target If target is negative, it is treated as length+target where length is the
+     * length of the array.
+     * @param start If start is negative, it is treated as length+start. If end is negative, it
+     * is treated as length+end.
+     * @param end If not specified, length of the this object is used as its default value.
+     */
+    copyWithin(target: number, start: number, end?: number): this;
+}
+
+interface ArrayConstructor {
+    /**
+     * Creates an array from an array-like object.
+     * @param arrayLike An array-like object to convert to an array.
+     */
+    from<T>(arrayLike: ArrayLike<T>): T[];
+
+    /**
+     * Creates an array from an iterable object.
+     * @param arrayLike An array-like object to convert to an array.
+     * @param mapfn A mapping function to call on every element of the array.
+     * @param thisArg Value of 'this' used to invoke the mapfn.
+     */
+    from<T, U>(arrayLike: ArrayLike<T>, mapfn: (v: T, k: number) => U, thisArg?: any): U[];
+
+    /**
+     * Returns a new array from a set of elements.
+     * @param items A set of elements to include in the new array object.
+     */
+    of<T>(...items: T[]): T[];
+}
+
+interface DateConstructor {
+    new (value: number | string | Date): Date;
+}
+
+interface Function {
+    /**
+     * Returns the name of the function. Function names are read-only and can not be changed.
+     */
+    readonly name: string;
+}
+
+interface Math {
+    /**
+     * Returns the number of leading zero bits in the 32-bit binary representation of a number.
+     * @param x A numeric expression.
+     */
+    clz32(x: number): number;
+
+    /**
+     * Returns the result of 32-bit multiplication of two numbers.
+     * @param x First number
+     * @param y Second number
+     */
+    imul(x: number, y: number): number;
+
+    /**
+     * Returns the sign of the x, indicating whether x is positive, negative or zero.
+     * @param x The numeric expression to test
+     */
+    sign(x: number): number;
+
+    /**
+     * Returns the base 10 logarithm of a number.
+     * @param x A numeric expression.
+     */
+    log10(x: number): number;
+
+    /**
+     * Returns the base 2 logarithm of a number.
+     * @param x A numeric expression.
+     */
+    log2(x: number): number;
+
+    /**
+     * Returns the natural logarithm of 1 + x.
+     * @param x A numeric expression.
+     */
+    log1p(x: number): number;
+
+    /**
+     * Returns the result of (e^x - 1), which is an implementation-dependent approximation to
+     * subtracting 1 from the exponential function of x (e raised to the power of x, where e
+     * is the base of the natural logarithms).
+     * @param x A numeric expression.
+     */
+    expm1(x: number): number;
+
+    /**
+     * Returns the hyperbolic cosine of a number.
+     * @param x A numeric expression that contains an angle measured in radians.
+     */
+    cosh(x: number): number;
+
+    /**
+     * Returns the hyperbolic sine of a number.
+     * @param x A numeric expression that contains an angle measured in radians.
+     */
+    sinh(x: number): number;
+
+    /**
+     * Returns the hyperbolic tangent of a number.
+     * @param x A numeric expression that contains an angle measured in radians.
+     */
+    tanh(x: number): number;
+
+    /**
+     * Returns the inverse hyperbolic cosine of a number.
+     * @param x A numeric expression that contains an angle measured in radians.
+     */
+    acosh(x: number): number;
+
+    /**
+     * Returns the inverse hyperbolic sine of a number.
+     * @param x A numeric expression that contains an angle measured in radians.
+     */
+    asinh(x: number): number;
+
+    /**
+     * Returns the inverse hyperbolic tangent of a number.
+     * @param x A numeric expression that contains an angle measured in radians.
+     */
+    atanh(x: number): number;
+
+    /**
+     * Returns the square root of the sum of squares of its arguments.
+     * @param values Values to compute the square root for.
+     *     If no arguments are passed, the result is +0.
+     *     If there is only one argument, the result is the absolute value.
+     *     If any argument is +Infinity or -Infinity, the result is +Infinity.
+     *     If any argument is NaN, the result is NaN.
+     *     If all arguments are either +0 or −0, the result is +0.
+     */
+    hypot(...values: number[]): number;
+
+    /**
+     * Returns the integral part of the a numeric expression, x, removing any fractional digits.
+     * If x is already an integer, the result is x.
+     * @param x A numeric expression.
+     */
+    trunc(x: number): number;
+
+    /**
+     * Returns the nearest single precision float representation of a number.
+     * @param x A numeric expression.
+     */
+    fround(x: number): number;
+
+    /**
+     * Returns an implementation-dependent approximation to the cube root of number.
+     * @param x A numeric expression.
+     */
+    cbrt(x: number): number;
+}
+
+interface NumberConstructor {
+    /**
+     * The value of Number.EPSILON is the difference between 1 and the smallest value greater than 1
+     * that is representable as a Number value, which is approximately:
+     * 2.2204460492503130808472633361816 x 10‍−‍16.
+     */
+    readonly EPSILON: number;
+
+    /**
+     * Returns true if passed value is finite.
+     * Unlike the global isFinite, Number.isFinite doesn't forcibly convert the parameter to a
+     * number. Only finite values of the type number, result in true.
+     * @param number A numeric value.
+     */
+    isFinite(number: unknown): boolean;
+
+    /**
+     * Returns true if the value passed is an integer, false otherwise.
+     * @param number A numeric value.
+     */
+    isInteger(number: unknown): boolean;
+
+    /**
+     * Returns a Boolean value that indicates whether a value is the reserved value NaN (not a
+     * number). Unlike the global isNaN(), Number.isNaN() doesn't forcefully convert the parameter
+     * to a number. Only values of the type number, that are also NaN, result in true.
+     * @param number A numeric value.
+     */
+    isNaN(number: unknown): boolean;
+
+    /**
+     * Returns true if the value passed is a safe integer.
+     * @param number A numeric value.
+     */
+    isSafeInteger(number: unknown): boolean;
+
+    /**
+     * The value of the largest integer n such that n and n + 1 are both exactly representable as
+     * a Number value.
+     * The value of Number.MAX_SAFE_INTEGER is 9007199254740991 2^53 − 1.
+     */
+    readonly MAX_SAFE_INTEGER: number;
+
+    /**
+     * The value of the smallest integer n such that n and n − 1 are both exactly representable as
+     * a Number value.
+     * The value of Number.MIN_SAFE_INTEGER is −9007199254740991 (−(2^53 − 1)).
+     */
+    readonly MIN_SAFE_INTEGER: number;
+
+    /**
+     * Converts a string to a floating-point number.
+     * @param string A string that contains a floating-point number.
+     */
+    parseFloat(string: string): number;
+
+    /**
+     * Converts A string to an integer.
+     * @param s A string to convert into a number.
+     * @param radix A value between 2 and 36 that specifies the base of the number in numString.
+     * If this argument is not supplied, strings with a prefix of '0x' are considered hexadecimal.
+     * All other strings are considered decimal.
+     */
+    parseInt(string: string, radix?: number): number;
+}
+
+interface ObjectConstructor {
+    /**
+     * Copy the values of all of the enumerable own properties from one or more source objects to a
+     * target object. Returns the target object.
+     * @param target The target object to copy to.
+     * @param source The source object from which to copy properties.
+     */
+    assign<T, U>(target: T, source: U): T & U;
+
+    /**
+     * Copy the values of all of the enumerable own properties from one or more source objects to a
+     * target object. Returns the target object.
+     * @param target The target object to copy to.
+     * @param source1 The first source object from which to copy properties.
+     * @param source2 The second source object from which to copy properties.
+     */
+    assign<T, U, V>(target: T, source1: U, source2: V): T & U & V;
+
+    /**
+     * Copy the values of all of the enumerable own properties from one or more source objects to a
+     * target object. Returns the target object.
+     * @param target The target object to copy to.
+     * @param source1 The first source object from which to copy properties.
+     * @param source2 The second source object from which to copy properties.
+     * @param source3 The third source object from which to copy properties.
+     */
+    assign<T, U, V, W>(target: T, source1: U, source2: V, source3: W): T & U & V & W;
+
+    /**
+     * Copy the values of all of the enumerable own properties from one or more source objects to a
+     * target object. Returns the target object.
+     * @param target The target object to copy to.
+     * @param sources One or more source objects from which to copy properties
+     */
+    assign(target: object, ...sources: any[]): any;
+
+    /**
+     * Returns an array of all symbol properties found directly on object o.
+     * @param o Object to retrieve the symbols from.
+     */
+    getOwnPropertySymbols(o: any): symbol[];
+
+    /**
+     * Returns the names of the enumerable string properties and methods of an object.
+     * @param o Object that contains the properties and methods. This can be an object that you created or an existing Document Object Model (DOM) object.
+     */
+    keys(o: {}): string[];
+
+    /**
+     * Returns true if the values are the same value, false otherwise.
+     * @param value1 The first value.
+     * @param value2 The second value.
+     */
+    is(value1: any, value2: any): boolean;
+
+    /**
+     * Sets the prototype of a specified object o to object proto or null. Returns the object o.
+     * @param o The object to change its prototype.
+     * @param proto The value of the new prototype or null.
+     */
+    setPrototypeOf(o: any, proto: object | null): any;
+}
+
+interface ReadonlyArray<T> {
+    /**
+     * Returns the value of the first element in the array where predicate is true, and undefined
+     * otherwise.
+     * @param predicate find calls predicate once for each element of the array, in ascending
+     * order, until it finds one where predicate returns true. If such an element is found, find
+     * immediately returns that element value. Otherwise, find returns undefined.
+     * @param thisArg If provided, it will be used as the this value for each invocation of
+     * predicate. If it is not provided, undefined is used instead.
+     */
+    find<S extends T>(predicate: (this: void, value: T, index: number, obj: readonly T[]) => value is S, thisArg?: any): S | undefined;
+    find(predicate: (value: T, index: number, obj: readonly T[]) => unknown, thisArg?: any): T | undefined;
+
+    /**
+     * Returns the index of the first element in the array where predicate is true, and -1
+     * otherwise.
+     * @param predicate find calls predicate once for each element of the array, in ascending
+     * order, until it finds one where predicate returns true. If such an element is found,
+     * findIndex immediately returns that element index. Otherwise, findIndex returns -1.
+     * @param thisArg If provided, it will be used as the this value for each invocation of
+     * predicate. If it is not provided, undefined is used instead.
+     */
+    findIndex(predicate: (value: T, index: number, obj: readonly T[]) => unknown, thisArg?: any): number;
+}
+
+interface RegExp {
+    /**
+     * Returns a string indicating the flags of the regular expression in question. This field is read-only.
+     * The characters in this string are sequenced and concatenated in the following order:
+     *
+     *    - "g" for global
+     *    - "i" for ignoreCase
+     *    - "m" for multiline
+     *    - "u" for unicode
+     *    - "y" for sticky
+     *
+     * If no flags are set, the value is the empty string.
+     */
+    readonly flags: string;
+
+    /**
+     * Returns a Boolean value indicating the state of the sticky flag (y) used with a regular
+     * expression. Default is false. Read-only.
+     */
+    readonly sticky: boolean;
+
+    /**
+     * Returns a Boolean value indicating the state of the Unicode flag (u) used with a regular
+     * expression. Default is false. Read-only.
+     */
+    readonly unicode: boolean;
+}
+
+interface RegExpConstructor {
+    new (pattern: RegExp | string, flags?: string): RegExp;
+    (pattern: RegExp | string, flags?: string): RegExp;
+}
+
+interface String {
+    /**
+     * Returns a nonnegative integer Number less than 1114112 (0x110000) that is the code point
+     * value of the UTF-16 encoded code point starting at the string element at position pos in
+     * the String resulting from converting this object to a String.
+     * If there is no element at that position, the result is undefined.
+     * If a valid UTF-16 surrogate pair does not begin at pos, the result is the code unit at pos.
+     */
+    codePointAt(pos: number): number | undefined;
+
+    /**
+     * Returns true if searchString appears as a substring of the result of converting this
+     * object to a String, at one or more positions that are
+     * greater than or equal to position; otherwise, returns false.
+     * @param searchString search string
+     * @param position If position is undefined, 0 is assumed, so as to search all of the String.
+     */
+    includes(searchString: string, position?: number): boolean;
+
+    /**
+     * Returns true if the sequence of elements of searchString converted to a String is the
+     * same as the corresponding elements of this object (converted to a String) starting at
+     * endPosition – length(this). Otherwise returns false.
+     */
+    endsWith(searchString: string, endPosition?: number): boolean;
+
+    /**
+     * Returns the String value result of normalizing the string into the normalization form
+     * named by form as specified in Unicode Standard Annex #15, Unicode Normalization Forms.
+     * @param form Applicable values: "NFC", "NFD", "NFKC", or "NFKD", If not specified default
+     * is "NFC"
+     */
+    normalize(form: "NFC" | "NFD" | "NFKC" | "NFKD"): string;
+
+    /**
+     * Returns the String value result of normalizing the string into the normalization form
+     * named by form as specified in Unicode Standard Annex #15, Unicode Normalization Forms.
+     * @param form Applicable values: "NFC", "NFD", "NFKC", or "NFKD", If not specified default
+     * is "NFC"
+     */
+    normalize(form?: string): string;
+
+    /**
+     * Returns a String value that is made from count copies appended together. If count is 0,
+     * the empty string is returned.
+     * @param count number of copies to append
+     */
+    repeat(count: number): string;
+
+    /**
+     * Returns true if the sequence of elements of searchString converted to a String is the
+     * same as the corresponding elements of this object (converted to a String) starting at
+     * position. Otherwise returns false.
+     */
+    startsWith(searchString: string, position?: number): boolean;
+
+    /**
+     * Returns an \`<a>\` HTML anchor element and sets the name attribute to the text value
+     * @param name
+     */
+    anchor(name: string): string;
+
+    /** Returns a \`<big>\` HTML element */
+    big(): string;
+
+    /** Returns a \`<blink>\` HTML element */
+    blink(): string;
+
+    /** Returns a \`<b>\` HTML element */
+    bold(): string;
+
+    /** Returns a \`<tt>\` HTML element */
+    fixed(): string;
+
+    /** Returns a \`<font>\` HTML element and sets the color attribute value */
+    fontcolor(color: string): string;
+
+    /** Returns a \`<font>\` HTML element and sets the size attribute value */
+    fontsize(size: number): string;
+
+    /** Returns a \`<font>\` HTML element and sets the size attribute value */
+    fontsize(size: string): string;
+
+    /** Returns an \`<i>\` HTML element */
+    italics(): string;
+
+    /** Returns an \`<a>\` HTML element and sets the href attribute value */
+    link(url: string): string;
+
+    /** Returns a \`<small>\` HTML element */
+    small(): string;
+
+    /** Returns a \`<strike>\` HTML element */
+    strike(): string;
+
+    /** Returns a \`<sub>\` HTML element */
+    sub(): string;
+
+    /** Returns a \`<sup>\` HTML element */
+    sup(): string;
+}
+
+interface StringConstructor {
+    /**
+     * Return the String value whose elements are, in order, the elements in the List elements.
+     * If length is 0, the empty string is returned.
+     */
+    fromCodePoint(...codePoints: number[]): string;
+
+    /**
+     * String.raw is intended for use as a tag function of a Tagged Template String. When called
+     * as such the first argument will be a well formed template call site object and the rest
+     * parameter will contain the substitution values.
+     * @param template A well-formed template string call site representation.
+     * @param substitutions A set of substitution values.
+     */
+    raw(template: TemplateStringsArray, ...substitutions: any[]): string;
+}
+`,
+    "lib.es2015.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+/// <reference lib="es5" />
+/// <reference lib="es2015.core" />
+/// <reference lib="es2015.collection" />
+/// <reference lib="es2015.iterable" />
+/// <reference lib="es2015.generator" />
+/// <reference lib="es2015.promise" />
+/// <reference lib="es2015.proxy" />
+/// <reference lib="es2015.reflect" />
+/// <reference lib="es2015.symbol" />
+/// <reference lib="es2015.symbol.wellknown" />
+`,
+    "lib.es2015.generator.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+/// <reference lib="es2015.iterable" />
+
+interface Generator<T = unknown, TReturn = any, TNext = unknown> extends Iterator<T, TReturn, TNext> {
+    // NOTE: 'next' is defined using a tuple to ensure we report the correct assignability errors in all places.
+    next(...args: [] | [TNext]): IteratorResult<T, TReturn>;
+    return(value: TReturn): IteratorResult<T, TReturn>;
+    throw(e: any): IteratorResult<T, TReturn>;
+    [Symbol.iterator](): Generator<T, TReturn, TNext>;
+}
+
+interface GeneratorFunction {
+    /**
+     * Creates a new Generator object.
+     * @param args A list of arguments the function accepts.
+     */
+    new (...args: any[]): Generator;
+    /**
+     * Creates a new Generator object.
+     * @param args A list of arguments the function accepts.
+     */
+    (...args: any[]): Generator;
+    /**
+     * The length of the arguments.
+     */
+    readonly length: number;
+    /**
+     * Returns the name of the function.
+     */
+    readonly name: string;
+    /**
+     * A reference to the prototype.
+     */
+    readonly prototype: Generator;
+}
+
+interface GeneratorFunctionConstructor {
+    /**
+     * Creates a new Generator function.
+     * @param args A list of arguments the function accepts.
+     */
+    new (...args: string[]): GeneratorFunction;
+    /**
+     * Creates a new Generator function.
+     * @param args A list of arguments the function accepts.
+     */
+    (...args: string[]): GeneratorFunction;
+    /**
+     * The length of the arguments.
+     */
+    readonly length: number;
+    /**
+     * Returns the name of the function.
+     */
+    readonly name: string;
+    /**
+     * A reference to the prototype.
+     */
+    readonly prototype: GeneratorFunction;
+}
+`,
+    "lib.es2015.iterable.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+/// <reference lib="es2015.symbol" />
+
+interface SymbolConstructor {
+    /**
+     * A method that returns the default iterator for an object. Called by the semantics of the
+     * for-of statement.
+     */
+    readonly iterator: symbol;
+}
+
+interface IteratorYieldResult<TYield> {
+    done?: false;
+    value: TYield;
+}
+
+interface IteratorReturnResult<TReturn> {
+    done: true;
+    value: TReturn;
+}
+
+type IteratorResult<T, TReturn = any> = IteratorYieldResult<T> | IteratorReturnResult<TReturn>;
+
+interface Iterator<T, TReturn = any, TNext = undefined> {
+    // NOTE: 'next' is defined using a tuple to ensure we report the correct assignability errors in all places.
+    next(...args: [] | [TNext]): IteratorResult<T, TReturn>;
+    return?(value?: TReturn): IteratorResult<T, TReturn>;
+    throw?(e?: any): IteratorResult<T, TReturn>;
+}
+
+interface Iterable<T> {
+    [Symbol.iterator](): Iterator<T>;
+}
+
+interface IterableIterator<T> extends Iterator<T> {
+    [Symbol.iterator](): IterableIterator<T>;
+}
+
+interface Array<T> {
+    /** Iterator */
+    [Symbol.iterator](): IterableIterator<T>;
+
+    /**
+     * Returns an iterable of key, value pairs for every entry in the array
+     */
+    entries(): IterableIterator<[number, T]>;
+
+    /**
+     * Returns an iterable of keys in the array
+     */
+    keys(): IterableIterator<number>;
+
+    /**
+     * Returns an iterable of values in the array
+     */
+    values(): IterableIterator<T>;
+}
+
+interface ArrayConstructor {
+    /**
+     * Creates an array from an iterable object.
+     * @param iterable An iterable object to convert to an array.
+     */
+    from<T>(iterable: Iterable<T> | ArrayLike<T>): T[];
+
+    /**
+     * Creates an array from an iterable object.
+     * @param iterable An iterable object to convert to an array.
+     * @param mapfn A mapping function to call on every element of the array.
+     * @param thisArg Value of 'this' used to invoke the mapfn.
+     */
+    from<T, U>(iterable: Iterable<T> | ArrayLike<T>, mapfn: (v: T, k: number) => U, thisArg?: any): U[];
+}
+
+interface ReadonlyArray<T> {
+    /** Iterator of values in the array. */
+    [Symbol.iterator](): IterableIterator<T>;
+
+    /**
+     * Returns an iterable of key, value pairs for every entry in the array
+     */
+    entries(): IterableIterator<[number, T]>;
+
+    /**
+     * Returns an iterable of keys in the array
+     */
+    keys(): IterableIterator<number>;
+
+    /**
+     * Returns an iterable of values in the array
+     */
+    values(): IterableIterator<T>;
+}
+
+interface IArguments {
+    /** Iterator */
+    [Symbol.iterator](): IterableIterator<any>;
+}
+
+interface Map<K, V> {
+    /** Returns an iterable of entries in the map. */
+    [Symbol.iterator](): IterableIterator<[K, V]>;
+
+    /**
+     * Returns an iterable of key, value pairs for every entry in the map.
+     */
+    entries(): IterableIterator<[K, V]>;
+
+    /**
+     * Returns an iterable of keys in the map
+     */
+    keys(): IterableIterator<K>;
+
+    /**
+     * Returns an iterable of values in the map
+     */
+    values(): IterableIterator<V>;
+}
+
+interface ReadonlyMap<K, V> {
+    /** Returns an iterable of entries in the map. */
+    [Symbol.iterator](): IterableIterator<[K, V]>;
+
+    /**
+     * Returns an iterable of key, value pairs for every entry in the map.
+     */
+    entries(): IterableIterator<[K, V]>;
+
+    /**
+     * Returns an iterable of keys in the map
+     */
+    keys(): IterableIterator<K>;
+
+    /**
+     * Returns an iterable of values in the map
+     */
+    values(): IterableIterator<V>;
+}
+
+interface MapConstructor {
+    new <K, V>(iterable: Iterable<readonly [K, V]>): Map<K, V>;
+}
+
+interface WeakMap<K extends object, V> { }
+
+interface WeakMapConstructor {
+    new <K extends object, V>(iterable: Iterable<[K, V]>): WeakMap<K, V>;
+}
+
+interface Set<T> {
+    /** Iterates over values in the set. */
+    [Symbol.iterator](): IterableIterator<T>;
+    /**
+     * Returns an iterable of [v,v] pairs for every value \`v\` in the set.
+     */
+    entries(): IterableIterator<[T, T]>;
+    /**
+     * Despite its name, returns an iterable of the values in the set.
+     */
+    keys(): IterableIterator<T>;
+
+    /**
+     * Returns an iterable of values in the set.
+     */
+    values(): IterableIterator<T>;
+}
+
+interface ReadonlySet<T> {
+    /** Iterates over values in the set. */
+    [Symbol.iterator](): IterableIterator<T>;
+
+    /**
+     * Returns an iterable of [v,v] pairs for every value \`v\` in the set.
+     */
+    entries(): IterableIterator<[T, T]>;
+
+    /**
+     * Despite its name, returns an iterable of the values in the set.
+     */
+    keys(): IterableIterator<T>;
+
+    /**
+     * Returns an iterable of values in the set.
+     */
+    values(): IterableIterator<T>;
+}
+
+interface SetConstructor {
+    new <T>(iterable?: Iterable<T> | null): Set<T>;
+}
+
+interface WeakSet<T extends object> { }
+
+interface WeakSetConstructor {
+    new <T extends object = object>(iterable: Iterable<T>): WeakSet<T>;
+}
+
+interface Promise<T> { }
+
+interface PromiseConstructor {
+    /**
+     * Creates a Promise that is resolved with an array of results when all of the provided Promises
+     * resolve, or rejected when any Promise is rejected.
+     * @param values An iterable of Promises.
+     * @returns A new Promise.
+     */
+    all<T>(values: Iterable<T | PromiseLike<T>>): Promise<T[]>;
+
+    /**
+     * Creates a Promise that is resolved or rejected when any of the provided Promises are resolved
+     * or rejected.
+     * @param values An iterable of Promises.
+     * @returns A new Promise.
+     */
+    race<T>(values: Iterable<T>): Promise<T extends PromiseLike<infer U> ? U : T>;
+
+    /**
+     * Creates a Promise that is resolved or rejected when any of the provided Promises are resolved
+     * or rejected.
+     * @param values An iterable of Promises.
+     * @returns A new Promise.
+     */
+    race<T>(values: Iterable<T | PromiseLike<T>>): Promise<T>;
+}
+
+interface String {
+    /** Iterator */
+    [Symbol.iterator](): IterableIterator<string>;
+}
+
+interface Int8Array {
+    [Symbol.iterator](): IterableIterator<number>;
+    /**
+     * Returns an array of key, value pairs for every entry in the array
+     */
+    entries(): IterableIterator<[number, number]>;
+    /**
+     * Returns an list of keys in the array
+     */
+    keys(): IterableIterator<number>;
+    /**
+     * Returns an list of values in the array
+     */
+    values(): IterableIterator<number>;
+}
+
+interface Int8ArrayConstructor {
+    new (elements: Iterable<number>): Int8Array;
+
+    /**
+     * Creates an array from an array-like or iterable object.
+     * @param arrayLike An array-like or iterable object to convert to an array.
+     * @param mapfn A mapping function to call on every element of the array.
+     * @param thisArg Value of 'this' used to invoke the mapfn.
+     */
+    from(arrayLike: Iterable<number>, mapfn?: (v: number, k: number) => number, thisArg?: any): Int8Array;
+}
+
+interface Uint8Array {
+    [Symbol.iterator](): IterableIterator<number>;
+    /**
+     * Returns an array of key, value pairs for every entry in the array
+     */
+    entries(): IterableIterator<[number, number]>;
+    /**
+     * Returns an list of keys in the array
+     */
+    keys(): IterableIterator<number>;
+    /**
+     * Returns an list of values in the array
+     */
+    values(): IterableIterator<number>;
+}
+
+interface Uint8ArrayConstructor {
+    new (elements: Iterable<number>): Uint8Array;
+
+    /**
+     * Creates an array from an array-like or iterable object.
+     * @param arrayLike An array-like or iterable object to convert to an array.
+     * @param mapfn A mapping function to call on every element of the array.
+     * @param thisArg Value of 'this' used to invoke the mapfn.
+     */
+    from(arrayLike: Iterable<number>, mapfn?: (v: number, k: number) => number, thisArg?: any): Uint8Array;
+}
+
+interface Uint8ClampedArray {
+    [Symbol.iterator](): IterableIterator<number>;
+    /**
+     * Returns an array of key, value pairs for every entry in the array
+     */
+    entries(): IterableIterator<[number, number]>;
+
+    /**
+     * Returns an list of keys in the array
+     */
+    keys(): IterableIterator<number>;
+
+    /**
+     * Returns an list of values in the array
+     */
+    values(): IterableIterator<number>;
+}
+
+interface Uint8ClampedArrayConstructor {
+    new (elements: Iterable<number>): Uint8ClampedArray;
+
+
+    /**
+     * Creates an array from an array-like or iterable object.
+     * @param arrayLike An array-like or iterable object to convert to an array.
+     * @param mapfn A mapping function to call on every element of the array.
+     * @param thisArg Value of 'this' used to invoke the mapfn.
+     */
+    from(arrayLike: Iterable<number>, mapfn?: (v: number, k: number) => number, thisArg?: any): Uint8ClampedArray;
+}
+
+interface Int16Array {
+    [Symbol.iterator](): IterableIterator<number>;
+    /**
+     * Returns an array of key, value pairs for every entry in the array
+     */
+    entries(): IterableIterator<[number, number]>;
+
+    /**
+     * Returns an list of keys in the array
+     */
+    keys(): IterableIterator<number>;
+
+    /**
+     * Returns an list of values in the array
+     */
+    values(): IterableIterator<number>;
+}
+
+interface Int16ArrayConstructor {
+    new (elements: Iterable<number>): Int16Array;
+
+    /**
+     * Creates an array from an array-like or iterable object.
+     * @param arrayLike An array-like or iterable object to convert to an array.
+     * @param mapfn A mapping function to call on every element of the array.
+     * @param thisArg Value of 'this' used to invoke the mapfn.
+     */
+    from(arrayLike: Iterable<number>, mapfn?: (v: number, k: number) => number, thisArg?: any): Int16Array;
+}
+
+interface Uint16Array {
+    [Symbol.iterator](): IterableIterator<number>;
+    /**
+     * Returns an array of key, value pairs for every entry in the array
+     */
+    entries(): IterableIterator<[number, number]>;
+    /**
+     * Returns an list of keys in the array
+     */
+    keys(): IterableIterator<number>;
+    /**
+     * Returns an list of values in the array
+     */
+    values(): IterableIterator<number>;
+}
+
+interface Uint16ArrayConstructor {
+    new (elements: Iterable<number>): Uint16Array;
+
+    /**
+     * Creates an array from an array-like or iterable object.
+     * @param arrayLike An array-like or iterable object to convert to an array.
+     * @param mapfn A mapping function to call on every element of the array.
+     * @param thisArg Value of 'this' used to invoke the mapfn.
+     */
+    from(arrayLike: Iterable<number>, mapfn?: (v: number, k: number) => number, thisArg?: any): Uint16Array;
+}
+
+interface Int32Array {
+    [Symbol.iterator](): IterableIterator<number>;
+    /**
+     * Returns an array of key, value pairs for every entry in the array
+     */
+    entries(): IterableIterator<[number, number]>;
+    /**
+     * Returns an list of keys in the array
+     */
+    keys(): IterableIterator<number>;
+    /**
+     * Returns an list of values in the array
+     */
+    values(): IterableIterator<number>;
+}
+
+interface Int32ArrayConstructor {
+    new (elements: Iterable<number>): Int32Array;
+
+    /**
+     * Creates an array from an array-like or iterable object.
+     * @param arrayLike An array-like or iterable object to convert to an array.
+     * @param mapfn A mapping function to call on every element of the array.
+     * @param thisArg Value of 'this' used to invoke the mapfn.
+     */
+    from(arrayLike: Iterable<number>, mapfn?: (v: number, k: number) => number, thisArg?: any): Int32Array;
+}
+
+interface Uint32Array {
+    [Symbol.iterator](): IterableIterator<number>;
+    /**
+     * Returns an array of key, value pairs for every entry in the array
+     */
+    entries(): IterableIterator<[number, number]>;
+    /**
+     * Returns an list of keys in the array
+     */
+    keys(): IterableIterator<number>;
+    /**
+     * Returns an list of values in the array
+     */
+    values(): IterableIterator<number>;
+}
+
+interface Uint32ArrayConstructor {
+    new (elements: Iterable<number>): Uint32Array;
+
+    /**
+     * Creates an array from an array-like or iterable object.
+     * @param arrayLike An array-like or iterable object to convert to an array.
+     * @param mapfn A mapping function to call on every element of the array.
+     * @param thisArg Value of 'this' used to invoke the mapfn.
+     */
+    from(arrayLike: Iterable<number>, mapfn?: (v: number, k: number) => number, thisArg?: any): Uint32Array;
+}
+
+interface Float32Array {
+    [Symbol.iterator](): IterableIterator<number>;
+    /**
+     * Returns an array of key, value pairs for every entry in the array
+     */
+    entries(): IterableIterator<[number, number]>;
+    /**
+     * Returns an list of keys in the array
+     */
+    keys(): IterableIterator<number>;
+    /**
+     * Returns an list of values in the array
+     */
+    values(): IterableIterator<number>;
+}
+
+interface Float32ArrayConstructor {
+    new (elements: Iterable<number>): Float32Array;
+
+    /**
+     * Creates an array from an array-like or iterable object.
+     * @param arrayLike An array-like or iterable object to convert to an array.
+     * @param mapfn A mapping function to call on every element of the array.
+     * @param thisArg Value of 'this' used to invoke the mapfn.
+     */
+    from(arrayLike: Iterable<number>, mapfn?: (v: number, k: number) => number, thisArg?: any): Float32Array;
+}
+
+interface Float64Array {
+    [Symbol.iterator](): IterableIterator<number>;
+    /**
+     * Returns an array of key, value pairs for every entry in the array
+     */
+    entries(): IterableIterator<[number, number]>;
+    /**
+     * Returns an list of keys in the array
+     */
+    keys(): IterableIterator<number>;
+    /**
+     * Returns an list of values in the array
+     */
+    values(): IterableIterator<number>;
+}
+
+interface Float64ArrayConstructor {
+    new (elements: Iterable<number>): Float64Array;
+
+    /**
+     * Creates an array from an array-like or iterable object.
+     * @param arrayLike An array-like or iterable object to convert to an array.
+     * @param mapfn A mapping function to call on every element of the array.
+     * @param thisArg Value of 'this' used to invoke the mapfn.
+     */
+    from(arrayLike: Iterable<number>, mapfn?: (v: number, k: number) => number, thisArg?: any): Float64Array;
+}
+`,
+    "lib.es2015.promise.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+interface PromiseConstructor {
+    /**
+     * A reference to the prototype.
+     */
+    readonly prototype: Promise<any>;
+
+    /**
+     * Creates a new Promise.
+     * @param executor A callback used to initialize the promise. This callback is passed two arguments:
+     * a resolve callback used to resolve the promise with a value or the result of another promise,
+     * and a reject callback used to reject the promise with a provided reason or error.
+     */
+    new <T>(executor: (resolve: (value: T | PromiseLike<T>) => void, reject: (reason?: any) => void) => void): Promise<T>;
+
+    /**
+     * Creates a Promise that is resolved with an array of results when all of the provided Promises
+     * resolve, or rejected when any Promise is rejected.
+     * @param values An array of Promises.
+     * @returns A new Promise.
+     */
+    all<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>(values: readonly [T1 | PromiseLike<T1>, T2 | PromiseLike<T2>, T3 | PromiseLike<T3>, T4 | PromiseLike<T4>, T5 | PromiseLike<T5>, T6 | PromiseLike<T6>, T7 | PromiseLike<T7>, T8 | PromiseLike<T8>, T9 | PromiseLike<T9>, T10 | PromiseLike<T10>]): Promise<[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10]>;
+
+    /**
+     * Creates a Promise that is resolved with an array of results when all of the provided Promises
+     * resolve, or rejected when any Promise is rejected.
+     * @param values An array of Promises.
+     * @returns A new Promise.
+     */
+    all<T1, T2, T3, T4, T5, T6, T7, T8, T9>(values: readonly [T1 | PromiseLike<T1>, T2 | PromiseLike<T2>, T3 | PromiseLike<T3>, T4 | PromiseLike<T4>, T5 | PromiseLike<T5>, T6 | PromiseLike<T6>, T7 | PromiseLike<T7>, T8 | PromiseLike<T8>, T9 | PromiseLike<T9>]): Promise<[T1, T2, T3, T4, T5, T6, T7, T8, T9]>;
+
+    /**
+     * Creates a Promise that is resolved with an array of results when all of the provided Promises
+     * resolve, or rejected when any Promise is rejected.
+     * @param values An array of Promises.
+     * @returns A new Promise.
+     */
+    all<T1, T2, T3, T4, T5, T6, T7, T8>(values: readonly [T1 | PromiseLike<T1>, T2 | PromiseLike<T2>, T3 | PromiseLike<T3>, T4 | PromiseLike<T4>, T5 | PromiseLike<T5>, T6 | PromiseLike<T6>, T7 | PromiseLike<T7>, T8 | PromiseLike<T8>]): Promise<[T1, T2, T3, T4, T5, T6, T7, T8]>;
+
+    /**
+     * Creates a Promise that is resolved with an array of results when all of the provided Promises
+     * resolve, or rejected when any Promise is rejected.
+     * @param values An array of Promises.
+     * @returns A new Promise.
+     */
+    all<T1, T2, T3, T4, T5, T6, T7>(values: readonly [T1 | PromiseLike<T1>, T2 | PromiseLike<T2>, T3 | PromiseLike<T3>, T4 | PromiseLike<T4>, T5 | PromiseLike<T5>, T6 | PromiseLike<T6>, T7 | PromiseLike<T7>]): Promise<[T1, T2, T3, T4, T5, T6, T7]>;
+
+    /**
+     * Creates a Promise that is resolved with an array of results when all of the provided Promises
+     * resolve, or rejected when any Promise is rejected.
+     * @param values An array of Promises.
+     * @returns A new Promise.
+     */
+    all<T1, T2, T3, T4, T5, T6>(values: readonly [T1 | PromiseLike<T1>, T2 | PromiseLike<T2>, T3 | PromiseLike<T3>, T4 | PromiseLike<T4>, T5 | PromiseLike<T5>, T6 | PromiseLike<T6>]): Promise<[T1, T2, T3, T4, T5, T6]>;
+
+    /**
+     * Creates a Promise that is resolved with an array of results when all of the provided Promises
+     * resolve, or rejected when any Promise is rejected.
+     * @param values An array of Promises.
+     * @returns A new Promise.
+     */
+    all<T1, T2, T3, T4, T5>(values: readonly [T1 | PromiseLike<T1>, T2 | PromiseLike<T2>, T3 | PromiseLike<T3>, T4 | PromiseLike<T4>, T5 | PromiseLike<T5>]): Promise<[T1, T2, T3, T4, T5]>;
+
+    /**
+     * Creates a Promise that is resolved with an array of results when all of the provided Promises
+     * resolve, or rejected when any Promise is rejected.
+     * @param values An array of Promises.
+     * @returns A new Promise.
+     */
+    all<T1, T2, T3, T4>(values: readonly [T1 | PromiseLike<T1>, T2 | PromiseLike<T2>, T3 | PromiseLike<T3>, T4 | PromiseLike<T4>]): Promise<[T1, T2, T3, T4]>;
+
+    /**
+     * Creates a Promise that is resolved with an array of results when all of the provided Promises
+     * resolve, or rejected when any Promise is rejected.
+     * @param values An array of Promises.
+     * @returns A new Promise.
+     */
+    all<T1, T2, T3>(values: readonly [T1 | PromiseLike<T1>, T2 | PromiseLike<T2>, T3 | PromiseLike<T3>]): Promise<[T1, T2, T3]>;
+
+    /**
+     * Creates a Promise that is resolved with an array of results when all of the provided Promises
+     * resolve, or rejected when any Promise is rejected.
+     * @param values An array of Promises.
+     * @returns A new Promise.
+     */
+    all<T1, T2>(values: readonly [T1 | PromiseLike<T1>, T2 | PromiseLike<T2>]): Promise<[T1, T2]>;
+
+    /**
+     * Creates a Promise that is resolved with an array of results when all of the provided Promises
+     * resolve, or rejected when any Promise is rejected.
+     * @param values An array of Promises.
+     * @returns A new Promise.
+     */
+    all<T>(values: readonly (T | PromiseLike<T>)[]): Promise<T[]>;
+
+    // see: lib.es2015.iterable.d.ts
+    // all<T>(values: Iterable<T | PromiseLike<T>>): Promise<T[]>;
+
+    /**
+     * Creates a Promise that is resolved or rejected when any of the provided Promises are resolved
+     * or rejected.
+     * @param values An array of Promises.
+     * @returns A new Promise.
+     */
+    race<T>(values: readonly T[]): Promise<T extends PromiseLike<infer U> ? U : T>;
+
+    // see: lib.es2015.iterable.d.ts
+    // race<T>(values: Iterable<T>): Promise<T extends PromiseLike<infer U> ? U : T>;
+
+    /**
+     * Creates a new rejected promise for the provided reason.
+     * @param reason The reason the promise was rejected.
+     * @returns A new rejected Promise.
+     */
+    reject<T = never>(reason?: any): Promise<T>;
+
+    /**
+     * Creates a new resolved promise.
+     * @returns A resolved promise.
+     */
+    resolve(): Promise<void>;
+
+    /**
+     * Creates a new resolved promise for the provided value.
+     * @param value A promise.
+     * @returns A promise whose internal state matches the provided promise.
+     */
+    resolve<T>(value: T | PromiseLike<T>): Promise<T>;
+}
+
+declare var Promise: PromiseConstructor;
+`,
+    "lib.es2015.proxy.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+interface ProxyHandler<T extends object> {
+    getPrototypeOf? (target: T): object | null;
+    setPrototypeOf? (target: T, v: any): boolean;
+    isExtensible? (target: T): boolean;
+    preventExtensions? (target: T): boolean;
+    getOwnPropertyDescriptor? (target: T, p: PropertyKey): PropertyDescriptor | undefined;
+    has? (target: T, p: PropertyKey): boolean;
+    get? (target: T, p: PropertyKey, receiver: any): any;
+    set? (target: T, p: PropertyKey, value: any, receiver: any): boolean;
+    deleteProperty? (target: T, p: PropertyKey): boolean;
+    defineProperty? (target: T, p: PropertyKey, attributes: PropertyDescriptor): boolean;
+    ownKeys? (target: T): PropertyKey[];
+    apply? (target: T, thisArg: any, argArray?: any): any;
+    construct? (target: T, argArray: any, newTarget?: any): object;
+}
+
+interface ProxyConstructor {
+    revocable<T extends object>(target: T, handler: ProxyHandler<T>): { proxy: T; revoke: () => void; };
+    new <T extends object>(target: T, handler: ProxyHandler<T>): T;
+}
+declare var Proxy: ProxyConstructor;
+`,
+    "lib.es2015.reflect.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+declare namespace Reflect {
+    function apply(target: Function, thisArgument: any, argumentsList: ArrayLike<any>): any;
+    function construct(target: Function, argumentsList: ArrayLike<any>, newTarget?: any): any;
+    function defineProperty(target: object, propertyKey: PropertyKey, attributes: PropertyDescriptor): boolean;
+    function deleteProperty(target: object, propertyKey: PropertyKey): boolean;
+    function get(target: object, propertyKey: PropertyKey, receiver?: any): any;
+    function getOwnPropertyDescriptor(target: object, propertyKey: PropertyKey): PropertyDescriptor | undefined;
+    function getPrototypeOf(target: object): object;
+    function has(target: object, propertyKey: PropertyKey): boolean;
+    function isExtensible(target: object): boolean;
+    function ownKeys(target: object): PropertyKey[];
+    function preventExtensions(target: object): boolean;
+    function set(target: object, propertyKey: PropertyKey, value: any, receiver?: any): boolean;
+    function setPrototypeOf(target: object, proto: any): boolean;
+}
+`,
+    "lib.es2015.symbol.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+interface SymbolConstructor {
+    /**
+     * A reference to the prototype.
+     */
+    readonly prototype: Symbol;
+
+    /**
+     * Returns a new unique Symbol value.
+     * @param  description Description of the new Symbol object.
+     */
+    (description?: string | number): symbol;
+
+    /**
+     * Returns a Symbol object from the global symbol registry matching the given key if found.
+     * Otherwise, returns a new symbol with this key.
+     * @param key key to search for.
+     */
+    for(key: string): symbol;
+
+    /**
+     * Returns a key from the global symbol registry matching the given Symbol if found.
+     * Otherwise, returns a undefined.
+     * @param sym Symbol to find the key for.
+     */
+    keyFor(sym: symbol): string | undefined;
+}
+
+declare var Symbol: SymbolConstructor;`,
+    "lib.es2015.symbol.wellknown.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+/// <reference lib="es2015.symbol" />
+
+interface SymbolConstructor {
+    /**
+     * A method that determines if a constructor object recognizes an object as one of the
+     * constructor’s instances. Called by the semantics of the instanceof operator.
+     */
+    readonly hasInstance: symbol;
+
+    /**
+     * A Boolean value that if true indicates that an object should flatten to its array elements
+     * by Array.prototype.concat.
+     */
+    readonly isConcatSpreadable: symbol;
+
+    /**
+     * A regular expression method that matches the regular expression against a string. Called
+     * by the String.prototype.match method.
+     */
+    readonly match: symbol;
+
+    /**
+     * A regular expression method that replaces matched substrings of a string. Called by the
+     * String.prototype.replace method.
+     */
+    readonly replace: symbol;
+
+    /**
+     * A regular expression method that returns the index within a string that matches the
+     * regular expression. Called by the String.prototype.search method.
+     */
+    readonly search: symbol;
+
+    /**
+     * A function valued property that is the constructor function that is used to create
+     * derived objects.
+     */
+    readonly species: symbol;
+
+    /**
+     * A regular expression method that splits a string at the indices that match the regular
+     * expression. Called by the String.prototype.split method.
+     */
+    readonly split: symbol;
+
+    /**
+     * A method that converts an object to a corresponding primitive value.
+     * Called by the ToPrimitive abstract operation.
+     */
+    readonly toPrimitive: symbol;
+
+    /**
+     * A String value that is used in the creation of the default string description of an object.
+     * Called by the built-in method Object.prototype.toString.
+     */
+    readonly toStringTag: symbol;
+
+    /**
+     * An Object whose own property names are property names that are excluded from the 'with'
+     * environment bindings of the associated objects.
+     */
+    readonly unscopables: symbol;
+}
+
+interface Symbol {
+    /**
+     * Converts a Symbol object to a symbol.
+     */
+    [Symbol.toPrimitive](hint: string): symbol;
+
+    readonly [Symbol.toStringTag]: string;
+}
+
+interface Array<T> {
+    /**
+     * Returns an object whose properties have the value 'true'
+     * when they will be absent when used in a 'with' statement.
+     */
+    [Symbol.unscopables](): {
+        copyWithin: boolean;
+        entries: boolean;
+        fill: boolean;
+        find: boolean;
+        findIndex: boolean;
+        keys: boolean;
+        values: boolean;
+    };
+}
+
+interface Date {
+    /**
+     * Converts a Date object to a string.
+     */
+    [Symbol.toPrimitive](hint: "default"): string;
+    /**
+     * Converts a Date object to a string.
+     */
+    [Symbol.toPrimitive](hint: "string"): string;
+    /**
+     * Converts a Date object to a number.
+     */
+    [Symbol.toPrimitive](hint: "number"): number;
+    /**
+     * Converts a Date object to a string or number.
+     *
+     * @param hint The strings "number", "string", or "default" to specify what primitive to return.
+     *
+     * @throws {TypeError} If 'hint' was given something other than "number", "string", or "default".
+     * @returns A number if 'hint' was "number", a string if 'hint' was "string" or "default".
+     */
+    [Symbol.toPrimitive](hint: string): string | number;
+}
+
+interface Map<K, V> {
+    readonly [Symbol.toStringTag]: string;
+}
+
+interface WeakMap<K extends object, V> {
+    readonly [Symbol.toStringTag]: string;
+}
+
+interface Set<T> {
+    readonly [Symbol.toStringTag]: string;
+}
+
+interface WeakSet<T extends object> {
+    readonly [Symbol.toStringTag]: string;
+}
+
+interface JSON {
+    readonly [Symbol.toStringTag]: string;
+}
+
+interface Function {
+    /**
+     * Determines whether the given value inherits from this function if this function was used
+     * as a constructor function.
+     *
+     * A constructor function can control which objects are recognized as its instances by
+     * 'instanceof' by overriding this method.
+     */
+    [Symbol.hasInstance](value: any): boolean;
+}
+
+interface GeneratorFunction {
+    readonly [Symbol.toStringTag]: string;
+}
+
+interface Math {
+    readonly [Symbol.toStringTag]: string;
+}
+
+interface Promise<T> {
+    readonly [Symbol.toStringTag]: string;
+}
+
+interface PromiseConstructor {
+    readonly [Symbol.species]: PromiseConstructor;
+}
+
+interface RegExp {
+    /**
+     * Matches a string with this regular expression, and returns an array containing the results of
+     * that search.
+     * @param string A string to search within.
+     */
+    [Symbol.match](string: string): RegExpMatchArray | null;
+
+    /**
+     * Replaces text in a string, using this regular expression.
+     * @param string A String object or string literal whose contents matching against
+     *               this regular expression will be replaced
+     * @param replaceValue A String object or string literal containing the text to replace for every
+     *                     successful match of this regular expression.
+     */
+    [Symbol.replace](string: string, replaceValue: string): string;
+
+    /**
+     * Replaces text in a string, using this regular expression.
+     * @param string A String object or string literal whose contents matching against
+     *               this regular expression will be replaced
+     * @param replacer A function that returns the replacement text.
+     */
+    [Symbol.replace](string: string, replacer: (substring: string, ...args: any[]) => string): string;
+
+    /**
+     * Finds the position beginning first substring match in a regular expression search
+     * using this regular expression.
+     *
+     * @param string The string to search within.
+     */
+    [Symbol.search](string: string): number;
+
+    /**
+     * Returns an array of substrings that were delimited by strings in the original input that
+     * match against this regular expression.
+     *
+     * If the regular expression contains capturing parentheses, then each time this
+     * regular expression matches, the results (including any undefined results) of the
+     * capturing parentheses are spliced.
+     *
+     * @param string string value to split
+     * @param limit if not undefined, the output array is truncated so that it contains no more
+     * than 'limit' elements.
+     */
+    [Symbol.split](string: string, limit?: number): string[];
+}
+
+interface RegExpConstructor {
+    readonly [Symbol.species]: RegExpConstructor;
+}
+
+interface String {
+    /**
+     * Matches a string or an object that supports being matched against, and returns an array
+     * containing the results of that search, or null if no matches are found.
+     * @param matcher An object that supports being matched against.
+     */
+    match(matcher: { [Symbol.match](string: string): RegExpMatchArray | null; }): RegExpMatchArray | null;
+
+    /**
+     * Replaces text in a string, using an object that supports replacement within a string.
+     * @param searchValue A object can search for and replace matches within a string.
+     * @param replaceValue A string containing the text to replace for every successful match of searchValue in this string.
+     */
+    replace(searchValue: { [Symbol.replace](string: string, replaceValue: string): string; }, replaceValue: string): string;
+
+    /**
+     * Replaces text in a string, using an object that supports replacement within a string.
+     * @param searchValue A object can search for and replace matches within a string.
+     * @param replacer A function that returns the replacement text.
+     */
+    replace(searchValue: { [Symbol.replace](string: string, replacer: (substring: string, ...args: any[]) => string): string; }, replacer: (substring: string, ...args: any[]) => string): string;
+
+    /**
+     * Finds the first substring match in a regular expression search.
+     * @param searcher An object which supports searching within a string.
+     */
+    search(searcher: { [Symbol.search](string: string): number; }): number;
+
+    /**
+     * Split a string into substrings using the specified separator and return them as an array.
+     * @param splitter An object that can split a string.
+     * @param limit A value used to limit the number of elements returned in the array.
+     */
+    split(splitter: { [Symbol.split](string: string, limit?: number): string[]; }, limit?: number): string[];
+}
+
+interface ArrayBuffer {
+    readonly [Symbol.toStringTag]: string;
+}
+
+interface DataView {
+    readonly [Symbol.toStringTag]: string;
+}
+
+interface Int8Array {
+    readonly [Symbol.toStringTag]: "Int8Array";
+}
+
+interface Uint8Array {
+    readonly [Symbol.toStringTag]: "Uint8Array";
+}
+
+interface Uint8ClampedArray {
+    readonly [Symbol.toStringTag]: "Uint8ClampedArray";
+}
+
+interface Int16Array {
+    readonly [Symbol.toStringTag]: "Int16Array";
+}
+
+interface Uint16Array {
+    readonly [Symbol.toStringTag]: "Uint16Array";
+}
+
+interface Int32Array {
+    readonly [Symbol.toStringTag]: "Int32Array";
+}
+
+interface Uint32Array {
+    readonly [Symbol.toStringTag]: "Uint32Array";
+}
+
+interface Float32Array {
+    readonly [Symbol.toStringTag]: "Float32Array";
+}
+
+interface Float64Array {
+    readonly [Symbol.toStringTag]: "Float64Array";
+}
+
+interface ArrayConstructor {
+    readonly [Symbol.species]: ArrayConstructor;
+}
+interface MapConstructor {
+    readonly [Symbol.species]: MapConstructor;
+}
+interface SetConstructor {
+    readonly [Symbol.species]: SetConstructor;
+}
+interface ArrayBufferConstructor {
+    readonly [Symbol.species]: ArrayBufferConstructor;
+}
+`,
+    "lib.es2016.array.include.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+interface Array<T> {
+    /**
+     * Determines whether an array includes a certain element, returning true or false as appropriate.
+     * @param searchElement The element to search for.
+     * @param fromIndex The position in this array at which to begin searching for searchElement.
+     */
+    includes(searchElement: T, fromIndex?: number): boolean;
+}
+
+interface ReadonlyArray<T> {
+    /**
+     * Determines whether an array includes a certain element, returning true or false as appropriate.
+     * @param searchElement The element to search for.
+     * @param fromIndex The position in this array at which to begin searching for searchElement.
+     */
+    includes(searchElement: T, fromIndex?: number): boolean;
+}
+
+interface Int8Array {
+    /**
+     * Determines whether an array includes a certain element, returning true or false as appropriate.
+     * @param searchElement The element to search for.
+     * @param fromIndex The position in this array at which to begin searching for searchElement.
+     */
+    includes(searchElement: number, fromIndex?: number): boolean;
+}
+
+interface Uint8Array {
+    /**
+     * Determines whether an array includes a certain element, returning true or false as appropriate.
+     * @param searchElement The element to search for.
+     * @param fromIndex The position in this array at which to begin searching for searchElement.
+     */
+    includes(searchElement: number, fromIndex?: number): boolean;
+}
+
+interface Uint8ClampedArray {
+    /**
+     * Determines whether an array includes a certain element, returning true or false as appropriate.
+     * @param searchElement The element to search for.
+     * @param fromIndex The position in this array at which to begin searching for searchElement.
+     */
+    includes(searchElement: number, fromIndex?: number): boolean;
+}
+
+interface Int16Array {
+    /**
+     * Determines whether an array includes a certain element, returning true or false as appropriate.
+     * @param searchElement The element to search for.
+     * @param fromIndex The position in this array at which to begin searching for searchElement.
+     */
+    includes(searchElement: number, fromIndex?: number): boolean;
+}
+
+interface Uint16Array {
+    /**
+     * Determines whether an array includes a certain element, returning true or false as appropriate.
+     * @param searchElement The element to search for.
+     * @param fromIndex The position in this array at which to begin searching for searchElement.
+     */
+    includes(searchElement: number, fromIndex?: number): boolean;
+}
+
+interface Int32Array {
+    /**
+     * Determines whether an array includes a certain element, returning true or false as appropriate.
+     * @param searchElement The element to search for.
+     * @param fromIndex The position in this array at which to begin searching for searchElement.
+     */
+    includes(searchElement: number, fromIndex?: number): boolean;
+}
+
+interface Uint32Array {
+    /**
+     * Determines whether an array includes a certain element, returning true or false as appropriate.
+     * @param searchElement The element to search for.
+     * @param fromIndex The position in this array at which to begin searching for searchElement.
+     */
+    includes(searchElement: number, fromIndex?: number): boolean;
+}
+
+interface Float32Array {
+    /**
+     * Determines whether an array includes a certain element, returning true or false as appropriate.
+     * @param searchElement The element to search for.
+     * @param fromIndex The position in this array at which to begin searching for searchElement.
+     */
+    includes(searchElement: number, fromIndex?: number): boolean;
+}
+
+interface Float64Array {
+    /**
+     * Determines whether an array includes a certain element, returning true or false as appropriate.
+     * @param searchElement The element to search for.
+     * @param fromIndex The position in this array at which to begin searching for searchElement.
+     */
+    includes(searchElement: number, fromIndex?: number): boolean;
+}`,
+    "lib.es2016.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+/// <reference lib="es2015" />
+/// <reference lib="es2016.array.include" />`,
+    "lib.es2016.full.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+/// <reference lib="es2016" />
+/// <reference lib="dom" />
+/// <reference lib="webworker.importscripts" />
+/// <reference lib="scripthost" />
+/// <reference lib="dom.iterable" />`,
+    "lib.es2017.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+/// <reference lib="es2016" />
+/// <reference lib="es2017.object" />
+/// <reference lib="es2017.sharedmemory" />
+/// <reference lib="es2017.string" />
+/// <reference lib="es2017.intl" />
+/// <reference lib="es2017.typedarrays" />
+`,
+    "lib.es2017.full.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+/// <reference lib="es2017" />
+/// <reference lib="dom" />
+/// <reference lib="webworker.importscripts" />
+/// <reference lib="scripthost" />
+/// <reference lib="dom.iterable" />`,
+    "lib.es2017.intl.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+declare namespace Intl {
+    type DateTimeFormatPartTypes = "day" | "dayPeriod" | "era" | "hour" | "literal" | "minute" | "month" | "second" | "timeZoneName" | "weekday" | "year";
+
+    interface DateTimeFormatPart {
+        type: DateTimeFormatPartTypes;
+        value: string;
+    }
+
+    interface DateTimeFormat {
+        formatToParts(date?: Date | number): DateTimeFormatPart[];
+    }
+}
+`,
+    "lib.es2017.object.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+interface ObjectConstructor {
+    /**
+     * Returns an array of values of the enumerable properties of an object
+     * @param o Object that contains the properties and methods. This can be an object that you created or an existing Document Object Model (DOM) object.
+     */
+    values<T>(o: { [s: string]: T } | ArrayLike<T>): T[];
+
+    /**
+     * Returns an array of values of the enumerable properties of an object
+     * @param o Object that contains the properties and methods. This can be an object that you created or an existing Document Object Model (DOM) object.
+     */
+    values(o: {}): any[];
+
+    /**
+     * Returns an array of key/values of the enumerable properties of an object
+     * @param o Object that contains the properties and methods. This can be an object that you created or an existing Document Object Model (DOM) object.
+     */
+    entries<T>(o: { [s: string]: T } | ArrayLike<T>): [string, T][];
+
+    /**
+     * Returns an array of key/values of the enumerable properties of an object
+     * @param o Object that contains the properties and methods. This can be an object that you created or an existing Document Object Model (DOM) object.
+     */
+    entries(o: {}): [string, any][];
+
+    /**
+     * Returns an object containing all own property descriptors of an object
+     * @param o Object that contains the properties and methods. This can be an object that you created or an existing Document Object Model (DOM) object.
+     */
+    getOwnPropertyDescriptors<T>(o: T): {[P in keyof T]: TypedPropertyDescriptor<T[P]>} & { [x: string]: PropertyDescriptor };
+}
+`,
+    "lib.es2017.sharedmemory.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+/// <reference lib="es2015.symbol" />
+/// <reference lib="es2015.symbol.wellknown" />
+
+interface SharedArrayBuffer {
+    /**
+     * Read-only. The length of the ArrayBuffer (in bytes).
+     */
+    readonly byteLength: number;
+
+    /**
+     * Returns a section of an SharedArrayBuffer.
+     */
+    slice(begin: number, end?: number): SharedArrayBuffer;
+    readonly [Symbol.species]: SharedArrayBuffer;
+    readonly [Symbol.toStringTag]: "SharedArrayBuffer";
+}
+
+interface SharedArrayBufferConstructor {
+    readonly prototype: SharedArrayBuffer;
+    new (byteLength: number): SharedArrayBuffer;
+}
+declare var SharedArrayBuffer: SharedArrayBufferConstructor;
+
+interface ArrayBufferTypes {
+    SharedArrayBuffer: SharedArrayBuffer;
+}
+
+interface Atomics {
+    /**
+     * Adds a value to the value at the given position in the array, returning the original value.
+     * Until this atomic operation completes, any other read or write operation against the array
+     * will block.
+     */
+    add(typedArray: Int8Array | Uint8Array | Int16Array | Uint16Array | Int32Array | Uint32Array, index: number, value: number): number;
+
+    /**
+     * Stores the bitwise AND of a value with the value at the given position in the array,
+     * returning the original value. Until this atomic operation completes, any other read or
+     * write operation against the array will block.
+     */
+    and(typedArray: Int8Array | Uint8Array | Int16Array | Uint16Array | Int32Array | Uint32Array, index: number, value: number): number;
+
+    /**
+     * Replaces the value at the given position in the array if the original value equals the given
+     * expected value, returning the original value. Until this atomic operation completes, any
+     * other read or write operation against the array will block.
+     */
+    compareExchange(typedArray: Int8Array | Uint8Array | Int16Array | Uint16Array | Int32Array | Uint32Array, index: number, expectedValue: number, replacementValue: number): number;
+
+    /**
+     * Replaces the value at the given position in the array, returning the original value. Until
+     * this atomic operation completes, any other read or write operation against the array will
+     * block.
+     */
+    exchange(typedArray: Int8Array | Uint8Array | Int16Array | Uint16Array | Int32Array | Uint32Array, index: number, value: number): number;
+
+    /**
+     * Returns a value indicating whether high-performance algorithms can use atomic operations
+     * (\`true\`) or must use locks (\`false\`) for the given number of bytes-per-element of a typed
+     * array.
+     */
+    isLockFree(size: number): boolean;
+
+    /**
+     * Returns the value at the given position in the array. Until this atomic operation completes,
+     * any other read or write operation against the array will block.
+     */
+    load(typedArray: Int8Array | Uint8Array | Int16Array | Uint16Array | Int32Array | Uint32Array, index: number): number;
+
+    /**
+     * Stores the bitwise OR of a value with the value at the given position in the array,
+     * returning the original value. Until this atomic operation completes, any other read or write
+     * operation against the array will block.
+     */
+    or(typedArray: Int8Array | Uint8Array | Int16Array | Uint16Array | Int32Array | Uint32Array, index: number, value: number): number;
+
+    /**
+     * Stores a value at the given position in the array, returning the new value. Until this
+     * atomic operation completes, any other read or write operation against the array will block.
+     */
+    store(typedArray: Int8Array | Uint8Array | Int16Array | Uint16Array | Int32Array | Uint32Array, index: number, value: number): number;
+
+    /**
+     * Subtracts a value from the value at the given position in the array, returning the original
+     * value. Until this atomic operation completes, any other read or write operation against the
+     * array will block.
+     */
+    sub(typedArray: Int8Array | Uint8Array | Int16Array | Uint16Array | Int32Array | Uint32Array, index: number, value: number): number;
+
+    /**
+     * If the value at the given position in the array is equal to the provided value, the current
+     * agent is put to sleep causing execution to suspend until the timeout expires (returning
+     * \`"timed-out"\`) or until the agent is awoken (returning \`"ok"\`); otherwise, returns
+     * \`"not-equal"\`.
+     */
+    wait(typedArray: Int32Array, index: number, value: number, timeout?: number): "ok" | "not-equal" | "timed-out";
+
+    /**
+     * Wakes up sleeping agents that are waiting on the given index of the array, returning the
+     * number of agents that were awoken.
+     * @param typedArray A shared Int32Array.
+     * @param index The position in the typedArray to wake up on.
+     * @param count The number of sleeping agents to notify. Defaults to +Infinity.
+     */
+    notify(typedArray: Int32Array, index: number, count?: number): number;
+
+    /**
+     * Stores the bitwise XOR of a value with the value at the given position in the array,
+     * returning the original value. Until this atomic operation completes, any other read or write
+     * operation against the array will block.
+     */
+    xor(typedArray: Int8Array | Uint8Array | Int16Array | Uint16Array | Int32Array | Uint32Array, index: number, value: number): number;
+
+    readonly [Symbol.toStringTag]: "Atomics";
+}
+
+declare var Atomics: Atomics;
+`,
+    "lib.es2017.string.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+interface String {
+    /**
+     * Pads the current string with a given string (possibly repeated) so that the resulting string reaches a given length.
+     * The padding is applied from the start (left) of the current string.
+     *
+     * @param maxLength The length of the resulting string once the current string has been padded.
+     *        If this parameter is smaller than the current string's length, the current string will be returned as it is.
+     *
+     * @param fillString The string to pad the current string with.
+     *        If this string is too long, it will be truncated and the left-most part will be applied.
+     *        The default value for this parameter is " " (U+0020).
+     */
+    padStart(maxLength: number, fillString?: string): string;
+
+    /**
+     * Pads the current string with a given string (possibly repeated) so that the resulting string reaches a given length.
+     * The padding is applied from the end (right) of the current string.
+     *
+     * @param maxLength The length of the resulting string once the current string has been padded.
+     *        If this parameter is smaller than the current string's length, the current string will be returned as it is.
+     *
+     * @param fillString The string to pad the current string with.
+     *        If this string is too long, it will be truncated and the left-most part will be applied.
+     *        The default value for this parameter is " " (U+0020).
+     */
+    padEnd(maxLength: number, fillString?: string): string;
+}
+`,
+    "lib.es2017.typedarrays.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+interface Int8ArrayConstructor {
+    new (): Int8Array;
+}
+
+interface Uint8ArrayConstructor {
+    new (): Uint8Array;
+}
+
+interface Uint8ClampedArrayConstructor {
+    new (): Uint8ClampedArray;
+}
+
+interface Int16ArrayConstructor {
+    new (): Int16Array;
+}
+
+interface Uint16ArrayConstructor {
+    new (): Uint16Array;
+}
+
+interface Int32ArrayConstructor {
+    new (): Int32Array;
+}
+
+interface Uint32ArrayConstructor {
+    new (): Uint32Array;
+}
+
+interface Float32ArrayConstructor {
+    new (): Float32Array;
+}
+
+interface Float64ArrayConstructor {
+    new (): Float64Array;
+}
+`,
+    "lib.es2018.asyncgenerator.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+/// <reference lib="es2018.asynciterable" />
+
+interface AsyncGenerator<T = unknown, TReturn = any, TNext = unknown> extends AsyncIterator<T, TReturn, TNext> {
+    // NOTE: 'next' is defined using a tuple to ensure we report the correct assignability errors in all places.
+    next(...args: [] | [TNext]): Promise<IteratorResult<T, TReturn>>;
+    return(value: TReturn | PromiseLike<TReturn>): Promise<IteratorResult<T, TReturn>>;
+    throw(e: any): Promise<IteratorResult<T, TReturn>>;
+    [Symbol.asyncIterator](): AsyncGenerator<T, TReturn, TNext>;
+}
+
+interface AsyncGeneratorFunction {
+    /**
+     * Creates a new AsyncGenerator object.
+     * @param args A list of arguments the function accepts.
+     */
+    new (...args: any[]): AsyncGenerator;
+    /**
+     * Creates a new AsyncGenerator object.
+     * @param args A list of arguments the function accepts.
+     */
+    (...args: any[]): AsyncGenerator;
+    /**
+     * The length of the arguments.
+     */
+    readonly length: number;
+    /**
+     * Returns the name of the function.
+     */
+    readonly name: string;
+    /**
+     * A reference to the prototype.
+     */
+    readonly prototype: AsyncGenerator;
+}
+
+interface AsyncGeneratorFunctionConstructor {
+    /**
+     * Creates a new AsyncGenerator function.
+     * @param args A list of arguments the function accepts.
+     */
+    new (...args: string[]): AsyncGeneratorFunction;
+    /**
+     * Creates a new AsyncGenerator function.
+     * @param args A list of arguments the function accepts.
+     */
+    (...args: string[]): AsyncGeneratorFunction;
+    /**
+     * The length of the arguments.
+     */
+    readonly length: number;
+    /**
+     * Returns the name of the function.
+     */
+    readonly name: string;
+    /**
+     * A reference to the prototype.
+     */
+    readonly prototype: AsyncGeneratorFunction;
+}
+`,
+    "lib.es2018.asynciterable.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+/// <reference lib="es2015.symbol" />
+/// <reference lib="es2015.iterable" />
+
+interface SymbolConstructor {
+    /**
+     * A method that returns the default async iterator for an object. Called by the semantics of
+     * the for-await-of statement.
+     */
+    readonly asyncIterator: symbol;
+}
+
+interface AsyncIterator<T, TReturn = any, TNext = undefined> {
+    // NOTE: 'next' is defined using a tuple to ensure we report the correct assignability errors in all places.
+    next(...args: [] | [TNext]): Promise<IteratorResult<T, TReturn>>;
+    return?(value?: TReturn | PromiseLike<TReturn>): Promise<IteratorResult<T, TReturn>>;
+    throw?(e?: any): Promise<IteratorResult<T, TReturn>>;
+}
+
+interface AsyncIterable<T> {
+    [Symbol.asyncIterator](): AsyncIterator<T>;
+}
+
+interface AsyncIterableIterator<T> extends AsyncIterator<T> {
+    [Symbol.asyncIterator](): AsyncIterableIterator<T>;
+}`,
+    "lib.es2018.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+/// <reference lib="es2017" />
+/// <reference lib="es2018.asynciterable" />
+/// <reference lib="es2018.asyncgenerator" />
+/// <reference lib="es2018.promise" />
+/// <reference lib="es2018.regexp" />
+/// <reference lib="es2018.intl" />
+`,
+    "lib.es2018.full.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+/// <reference lib="es2018" />
+/// <reference lib="dom" />
+/// <reference lib="webworker.importscripts" />
+/// <reference lib="scripthost" />
+/// <reference lib="dom.iterable" />`,
+    "lib.es2018.intl.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+declare namespace Intl {
+
+    // http://cldr.unicode.org/index/cldr-spec/plural-rules#TOC-Determining-Plural-Categories
+    type LDMLPluralRule = "zero" | "one" | "two" | "few" | "many" | "other";
+    type PluralRuleType = "cardinal" | "ordinal";
+
+    interface PluralRulesOptions {
+        localeMatcher?: "lookup" | "best fit";
+        type?: PluralRuleType;
+        minimumIntegerDigits?: number;
+        minimumFractionDigits?: number;
+        maximumFractionDigits?: number;
+        minimumSignificantDigits?: number;
+        maximumSignificantDigits?: number;
+    }
+
+    interface ResolvedPluralRulesOptions {
+        locale: string;
+        pluralCategories: LDMLPluralRule[];
+        type: PluralRuleType;
+        minimumIntegerDigits: number;
+        minimumFractionDigits: number;
+        maximumFractionDigits: number;
+        minimumSignificantDigits?: number;
+        maximumSignificantDigits?: number;
+    }
+
+    interface PluralRules {
+        resolvedOptions(): ResolvedPluralRulesOptions;
+        select(n: number): LDMLPluralRule;
+    }
+
+    const PluralRules: {
+        new (locales?: string | string[], options?: PluralRulesOptions): PluralRules;
+        (locales?: string | string[], options?: PluralRulesOptions): PluralRules;
+        supportedLocalesOf(
+            locales: string | string[],
+            options?: PluralRulesOptions,
+        ): string[];
+    };
+}
+`,
+    "lib.es2018.promise.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+/**
+ * Represents the completion of an asynchronous operation
+ */
+interface Promise<T> {
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): Promise<T>
+}
+`,
+    "lib.es2018.regexp.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+interface RegExpMatchArray {
+    groups?: {
+        [key: string]: string
+    }
+}
+
+interface RegExpExecArray {
+    groups?: {
+        [key: string]: string
+    }
+}
+
+interface RegExp {
+    /**
+     * Returns a Boolean value indicating the state of the dotAll flag (s) used with a regular expression.
+     * Default is false. Read-only.
+     */
+    readonly dotAll: boolean;
+}`,
+    "lib.es2019.array.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+type FlatArray<Arr, Depth extends number> = {
+    "done": Arr,
+    "recur": Arr extends ReadonlyArray<infer InnerArr>
+        ? FlatArray<InnerArr, [-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20][Depth]>
+        : Arr
+}[Depth extends -1 ? "done" : "recur"];
+
+interface ReadonlyArray<T> {
+
+    /**
+     * Calls a defined callback function on each element of an array. Then, flattens the result into
+     * a new array.
+     * This is identical to a map followed by flat with depth 1.
+     *
+     * @param callback A function that accepts up to three arguments. The flatMap method calls the
+     * callback function one time for each element in the array.
+     * @param thisArg An object to which the this keyword can refer in the callback function. If
+     * thisArg is omitted, undefined is used as the this value.
+     */
+    flatMap<U, This = undefined> (
+        callback: (this: This, value: T, index: number, array: T[]) => U | ReadonlyArray<U>,
+        thisArg?: This
+    ): U[]
+
+
+    /**
+     * Returns a new array with all sub-array elements concatenated into it recursively up to the
+     * specified depth.
+     *
+     * @param depth The maximum recursion depth
+     */
+    flat<A, D extends number = 1>(
+        this: A,
+        depth?: D
+    ): FlatArray<A, D>[]
+  }
+
+interface Array<T> {
+
+    /**
+     * Calls a defined callback function on each element of an array. Then, flattens the result into
+     * a new array.
+     * This is identical to a map followed by flat with depth 1.
+     *
+     * @param callback A function that accepts up to three arguments. The flatMap method calls the
+     * callback function one time for each element in the array.
+     * @param thisArg An object to which the this keyword can refer in the callback function. If
+     * thisArg is omitted, undefined is used as the this value.
+     */
+    flatMap<U, This = undefined> (
+        callback: (this: This, value: T, index: number, array: T[]) => U | ReadonlyArray<U>,
+        thisArg?: This
+    ): U[]
+
+    /**
+     * Returns a new array with all sub-array elements concatenated into it recursively up to the
+     * specified depth.
+     *
+     * @param depth The maximum recursion depth
+     */
+    flat<A, D extends number = 1>(
+        this: A,
+        depth?: D
+    ): FlatArray<A, D>[]
+}
+`,
+    "lib.es2019.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+/// <reference lib="es2018" />
+/// <reference lib="es2019.array" />
+/// <reference lib="es2019.object" />
+/// <reference lib="es2019.string" />
+/// <reference lib="es2019.symbol" />
+`,
+    "lib.es2019.full.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+/// <reference lib="es2019" />
+/// <reference lib="dom" />
+/// <reference lib="webworker.importscripts" />
+/// <reference lib="scripthost" />
+/// <reference lib="dom.iterable" />
+`,
+    "lib.es2019.object.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+/// <reference lib="es2015.iterable" />
+
+interface ObjectConstructor {
+    /**
+     * Returns an object created by key-value entries for properties and methods
+     * @param entries An iterable object that contains key-value entries for properties and methods.
+     */
+    fromEntries<T = any>(entries: Iterable<readonly [PropertyKey, T]>): { [k: string]: T };
+
+    /**
+     * Returns an object created by key-value entries for properties and methods
+     * @param entries An iterable object that contains key-value entries for properties and methods.
+     */
+    fromEntries(entries: Iterable<readonly any[]>): any;
+}
+`,
+    "lib.es2019.string.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+interface String {
+    /** Removes the trailing white space and line terminator characters from a string. */
+    trimEnd(): string;
+
+    /** Removes the leading white space and line terminator characters from a string. */
+    trimStart(): string;
+
+    /** Removes the leading white space and line terminator characters from a string. */
+    trimLeft(): string;
+
+    /** Removes the trailing white space and line terminator characters from a string. */
+    trimRight(): string;
+}
+`,
+    "lib.es2019.symbol.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+interface Symbol {
+    /**
+     * Expose the [[Description]] internal slot of a symbol directly.
+     */
+    readonly description: string | undefined;
+}
+`,
+    "lib.es2020.bigint.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+interface BigIntToLocaleStringOptions {
+    /**
+     * The locale matching algorithm to use.The default is "best fit". For information about this option, see the {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl#Locale_negotiation Intl page}.
+     */
+    localeMatcher?: string;
+    /**
+     * The formatting style to use , the default is "decimal".
+     */
+    style?: string;
+
+    numberingSystem?: string;
+    /**
+     * The unit to use in unit formatting, Possible values are core unit identifiers, defined in UTS #35, Part 2, Section 6. A subset of units from the full list was selected for use in ECMAScript. Pairs of simple units can be concatenated with "-per-" to make a compound unit. There is no default value; if the style is "unit", the unit property must be provided.
+     */
+    unit?: string;
+
+    /**
+     * The unit formatting style to use in unit formatting, the defaults is "short".
+     */
+    unitDisplay?: string;
+
+    /**
+     * The currency to use in currency formatting. Possible values are the ISO 4217 currency codes, such as "USD" for the US dollar, "EUR" for the euro, or "CNY" for the Chinese RMB — see the Current currency & funds code list. There is no default value; if the style is "currency", the currency property must be provided. It is only used when [[Style]] has the value "currency".
+     */
+    currency?: string;
+
+    /**
+     * How to display the currency in currency formatting. It is only used when [[Style]] has the value "currency". The default is "symbol".
+     *
+     * "symbol" to use a localized currency symbol such as €,
+     *
+     * "code" to use the ISO currency code,
+     *
+     * "name" to use a localized currency name such as "dollar"
+     */
+    currencyDisplay?: string;
+
+    /**
+     * Whether to use grouping separators, such as thousands separators or thousand/lakh/crore separators. The default is true.
+     */
+    useGrouping?: boolean;
+
+    /**
+     * The minimum number of integer digits to use. Possible values are from 1 to 21; the default is 1.
+     */
+    minimumIntegerDigits?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21;
+
+    /**
+     * The minimum number of fraction digits to use. Possible values are from 0 to 20; the default for plain number and percent formatting is 0; the default for currency formatting is the number of minor unit digits provided by the {@link http://www.currency-iso.org/en/home/tables/table-a1.html ISO 4217 currency codes list} (2 if the list doesn't provide that information).
+     */
+    minimumFractionDigits?: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20;
+
+    /**
+     * The maximum number of fraction digits to use. Possible values are from 0 to 20; the default for plain number formatting is the larger of minimumFractionDigits and 3; the default for currency formatting is the larger of minimumFractionDigits and the number of minor unit digits provided by the {@link http://www.currency-iso.org/en/home/tables/table-a1.html ISO 4217 currency codes list} (2 if the list doesn't provide that information); the default for percent formatting is the larger of minimumFractionDigits and 0.
+     */
+    maximumFractionDigits?: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20;
+
+    /**
+     * The minimum number of significant digits to use. Possible values are from 1 to 21; the default is 1.
+     */
+    minimumSignificantDigits?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21;
+
+    /**
+     * The maximum number of significant digits to use. Possible values are from 1 to 21; the default is 21.
+     */
+    maximumSignificantDigits?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21;
+
+    /**
+     * The formatting that should be displayed for the number, the defaults is "standard"
+     *
+     *     "standard" plain number formatting
+     *
+     *     "scientific" return the order-of-magnitude for formatted number.
+     *
+     *     "engineering" return the exponent of ten when divisible by three
+     *
+     *     "compact" string representing exponent, defaults is using the "short" form
+     */
+    notation?: string;
+
+    /**
+     * used only when notation is "compact"
+     */
+    compactDisplay?: string;
+}
+
+interface BigInt {
+    /**
+     * Returns a string representation of an object.
+     * @param radix Specifies a radix for converting numeric values to strings.
+     */
+    toString(radix?: number): string;
+
+    /** Returns a string representation appropriate to the host environment's current locale. */
+    toLocaleString(locales?: string, options?: BigIntToLocaleStringOptions): string;
+
+    /** Returns the primitive value of the specified object. */
+    valueOf(): bigint;
+
+    readonly [Symbol.toStringTag]: "BigInt";
+}
+
+interface BigIntConstructor {
+    (value?: any): bigint;
+    readonly prototype: BigInt;
+
+    /**
+     * Interprets the low bits of a BigInt as a 2's-complement signed integer.
+     * All higher bits are discarded.
+     * @param bits The number of low bits to use
+     * @param int The BigInt whose bits to extract
+     */
+    asIntN(bits: number, int: bigint): bigint;
+    /**
+     * Interprets the low bits of a BigInt as an unsigned integer.
+     * All higher bits are discarded.
+     * @param bits The number of low bits to use
+     * @param int The BigInt whose bits to extract
+     */
+    asUintN(bits: number, int: bigint): bigint;
+}
+
+declare var BigInt: BigIntConstructor;
+
+/**
+ * A typed array of 64-bit signed integer values. The contents are initialized to 0. If the
+ * requested number of bytes could not be allocated, an exception is raised.
+ */
+interface BigInt64Array {
+    /** The size in bytes of each element in the array. */
+    readonly BYTES_PER_ELEMENT: number;
+
+    /** The ArrayBuffer instance referenced by the array. */
+    readonly buffer: ArrayBufferLike;
+
+    /** The length in bytes of the array. */
+    readonly byteLength: number;
+
+    /** The offset in bytes of the array. */
+    readonly byteOffset: number;
+
+    /**
+     * Returns the this object after copying a section of the array identified by start and end
+     * to the same array starting at position target
+     * @param target If target is negative, it is treated as length+target where length is the
+     * length of the array.
+     * @param start If start is negative, it is treated as length+start. If end is negative, it
+     * is treated as length+end.
+     * @param end If not specified, length of the this object is used as its default value.
+     */
+    copyWithin(target: number, start: number, end?: number): this;
+
+    /** Yields index, value pairs for every entry in the array. */
+    entries(): IterableIterator<[number, bigint]>;
+
+    /**
+     * Determines whether all the members of an array satisfy the specified test.
+     * @param predicate A function that accepts up to three arguments. The every method calls
+     * the predicate function for each element in the array until the predicate returns false,
+     * or until the end of the array.
+     * @param thisArg An object to which the this keyword can refer in the predicate function.
+     * If thisArg is omitted, undefined is used as the this value.
+     */
+    every(predicate: (value: bigint, index: number, array: BigInt64Array) => boolean, thisArg?: any): boolean;
+
+    /**
+     * Returns the this object after filling the section identified by start and end with value
+     * @param value value to fill array section with
+     * @param start index to start filling the array at. If start is negative, it is treated as
+     * length+start where length is the length of the array.
+     * @param end index to stop filling the array at. If end is negative, it is treated as
+     * length+end.
+     */
+    fill(value: bigint, start?: number, end?: number): this;
+
+    /**
+     * Returns the elements of an array that meet the condition specified in a callback function.
+     * @param predicate A function that accepts up to three arguments. The filter method calls
+     * the predicate function one time for each element in the array.
+     * @param thisArg An object to which the this keyword can refer in the predicate function.
+     * If thisArg is omitted, undefined is used as the this value.
+     */
+    filter(predicate: (value: bigint, index: number, array: BigInt64Array) => any, thisArg?: any): BigInt64Array;
+
+    /**
+     * Returns the value of the first element in the array where predicate is true, and undefined
+     * otherwise.
+     * @param predicate find calls predicate once for each element of the array, in ascending
+     * order, until it finds one where predicate returns true. If such an element is found, find
+     * immediately returns that element value. Otherwise, find returns undefined.
+     * @param thisArg If provided, it will be used as the this value for each invocation of
+     * predicate. If it is not provided, undefined is used instead.
+     */
+    find(predicate: (value: bigint, index: number, array: BigInt64Array) => boolean, thisArg?: any): bigint | undefined;
+
+    /**
+     * Returns the index of the first element in the array where predicate is true, and -1
+     * otherwise.
+     * @param predicate find calls predicate once for each element of the array, in ascending
+     * order, until it finds one where predicate returns true. If such an element is found,
+     * findIndex immediately returns that element index. Otherwise, findIndex returns -1.
+     * @param thisArg If provided, it will be used as the this value for each invocation of
+     * predicate. If it is not provided, undefined is used instead.
+     */
+    findIndex(predicate: (value: bigint, index: number, array: BigInt64Array) => boolean, thisArg?: any): number;
+
+    /**
+     * Performs the specified action for each element in an array.
+     * @param callbackfn A function that accepts up to three arguments. forEach calls the
+     * callbackfn function one time for each element in the array.
+     * @param thisArg An object to which the this keyword can refer in the callbackfn function.
+     * If thisArg is omitted, undefined is used as the this value.
+     */
+    forEach(callbackfn: (value: bigint, index: number, array: BigInt64Array) => void, thisArg?: any): void;
+
+    /**
+     * Determines whether an array includes a certain element, returning true or false as appropriate.
+     * @param searchElement The element to search for.
+     * @param fromIndex The position in this array at which to begin searching for searchElement.
+     */
+    includes(searchElement: bigint, fromIndex?: number): boolean;
+
+    /**
+     * Returns the index of the first occurrence of a value in an array.
+     * @param searchElement The value to locate in the array.
+     * @param fromIndex The array index at which to begin the search. If fromIndex is omitted, the
+     * search starts at index 0.
+     */
+    indexOf(searchElement: bigint, fromIndex?: number): number;
+
+    /**
+     * Adds all the elements of an array separated by the specified separator string.
+     * @param separator A string used to separate one element of an array from the next in the
+     * resulting String. If omitted, the array elements are separated with a comma.
+     */
+    join(separator?: string): string;
+
+    /** Yields each index in the array. */
+    keys(): IterableIterator<number>;
+
+    /**
+     * Returns the index of the last occurrence of a value in an array.
+     * @param searchElement The value to locate in the array.
+     * @param fromIndex The array index at which to begin the search. If fromIndex is omitted, the
+     * search starts at index 0.
+     */
+    lastIndexOf(searchElement: bigint, fromIndex?: number): number;
+
+    /** The length of the array. */
+    readonly length: number;
+
+    /**
+     * Calls a defined callback function on each element of an array, and returns an array that
+     * contains the results.
+     * @param callbackfn A function that accepts up to three arguments. The map method calls the
+     * callbackfn function one time for each element in the array.
+     * @param thisArg An object to which the this keyword can refer in the callbackfn function.
+     * If thisArg is omitted, undefined is used as the this value.
+     */
+    map(callbackfn: (value: bigint, index: number, array: BigInt64Array) => bigint, thisArg?: any): BigInt64Array;
+
+    /**
+     * Calls the specified callback function for all the elements in an array. The return value of
+     * the callback function is the accumulated result, and is provided as an argument in the next
+     * call to the callback function.
+     * @param callbackfn A function that accepts up to four arguments. The reduce method calls the
+     * callbackfn function one time for each element in the array.
+     * @param initialValue If initialValue is specified, it is used as the initial value to start
+     * the accumulation. The first call to the callbackfn function provides this value as an argument
+     * instead of an array value.
+     */
+    reduce(callbackfn: (previousValue: bigint, currentValue: bigint, currentIndex: number, array: BigInt64Array) => bigint): bigint;
+
+    /**
+     * Calls the specified callback function for all the elements in an array. The return value of
+     * the callback function is the accumulated result, and is provided as an argument in the next
+     * call to the callback function.
+     * @param callbackfn A function that accepts up to four arguments. The reduce method calls the
+     * callbackfn function one time for each element in the array.
+     * @param initialValue If initialValue is specified, it is used as the initial value to start
+     * the accumulation. The first call to the callbackfn function provides this value as an argument
+     * instead of an array value.
+     */
+    reduce<U>(callbackfn: (previousValue: U, currentValue: bigint, currentIndex: number, array: BigInt64Array) => U, initialValue: U): U;
+
+    /**
+     * Calls the specified callback function for all the elements in an array, in descending order.
+     * The return value of the callback function is the accumulated result, and is provided as an
+     * argument in the next call to the callback function.
+     * @param callbackfn A function that accepts up to four arguments. The reduceRight method calls
+     * the callbackfn function one time for each element in the array.
+     * @param initialValue If initialValue is specified, it is used as the initial value to start
+     * the accumulation. The first call to the callbackfn function provides this value as an
+     * argument instead of an array value.
+     */
+    reduceRight(callbackfn: (previousValue: bigint, currentValue: bigint, currentIndex: number, array: BigInt64Array) => bigint): bigint;
+
+    /**
+     * Calls the specified callback function for all the elements in an array, in descending order.
+     * The return value of the callback function is the accumulated result, and is provided as an
+     * argument in the next call to the callback function.
+     * @param callbackfn A function that accepts up to four arguments. The reduceRight method calls
+     * the callbackfn function one time for each element in the array.
+     * @param initialValue If initialValue is specified, it is used as the initial value to start
+     * the accumulation. The first call to the callbackfn function provides this value as an argument
+     * instead of an array value.
+     */
+    reduceRight<U>(callbackfn: (previousValue: U, currentValue: bigint, currentIndex: number, array: BigInt64Array) => U, initialValue: U): U;
+
+    /** Reverses the elements in the array. */
+    reverse(): this;
+
+    /**
+     * Sets a value or an array of values.
+     * @param array A typed or untyped array of values to set.
+     * @param offset The index in the current array at which the values are to be written.
+     */
+    set(array: ArrayLike<bigint>, offset?: number): void;
+
+    /**
+     * Returns a section of an array.
+     * @param start The beginning of the specified portion of the array.
+     * @param end The end of the specified portion of the array.
+     */
+    slice(start?: number, end?: number): BigInt64Array;
+
+    /**
+     * Determines whether the specified callback function returns true for any element of an array.
+     * @param predicate A function that accepts up to three arguments. The some method calls the
+     * predicate function for each element in the array until the predicate returns true, or until
+     * the end of the array.
+     * @param thisArg An object to which the this keyword can refer in the predicate function.
+     * If thisArg is omitted, undefined is used as the this value.
+     */
+    some(predicate: (value: bigint, index: number, array: BigInt64Array) => boolean, thisArg?: any): boolean;
+
+    /**
+     * Sorts the array.
+     * @param compareFn The function used to determine the order of the elements. If omitted, the elements are sorted in ascending order.
+     */
+    sort(compareFn?: (a: bigint, b: bigint) => number | bigint): this;
+
+    /**
+     * Gets a new BigInt64Array view of the ArrayBuffer store for this array, referencing the elements
+     * at begin, inclusive, up to end, exclusive.
+     * @param begin The index of the beginning of the array.
+     * @param end The index of the end of the array.
+     */
+    subarray(begin?: number, end?: number): BigInt64Array;
+
+    /** Converts the array to a string by using the current locale. */
+    toLocaleString(): string;
+
+    /** Returns a string representation of the array. */
+    toString(): string;
+
+    /** Returns the primitive value of the specified object. */
+    valueOf(): BigInt64Array;
+
+    /** Yields each value in the array. */
+    values(): IterableIterator<bigint>;
+
+    [Symbol.iterator](): IterableIterator<bigint>;
+
+    readonly [Symbol.toStringTag]: "BigInt64Array";
+
+    [index: number]: bigint;
+}
+
+interface BigInt64ArrayConstructor {
+    readonly prototype: BigInt64Array;
+    new(length?: number): BigInt64Array;
+    new(array: Iterable<bigint>): BigInt64Array;
+    new(buffer: ArrayBufferLike, byteOffset?: number, length?: number): BigInt64Array;
+
+    /** The size in bytes of each element in the array. */
+    readonly BYTES_PER_ELEMENT: number;
+
+    /**
+     * Returns a new array from a set of elements.
+     * @param items A set of elements to include in the new array object.
+     */
+    of(...items: bigint[]): BigInt64Array;
+
+    /**
+     * Creates an array from an array-like or iterable object.
+     * @param arrayLike An array-like or iterable object to convert to an array.
+     * @param mapfn A mapping function to call on every element of the array.
+     * @param thisArg Value of 'this' used to invoke the mapfn.
+     */
+    from(arrayLike: ArrayLike<bigint>): BigInt64Array;
+    from<U>(arrayLike: ArrayLike<U>, mapfn: (v: U, k: number) => bigint, thisArg?: any): BigInt64Array;
+}
+
+declare var BigInt64Array: BigInt64ArrayConstructor;
+
+/**
+ * A typed array of 64-bit unsigned integer values. The contents are initialized to 0. If the
+ * requested number of bytes could not be allocated, an exception is raised.
+ */
+interface BigUint64Array {
+    /** The size in bytes of each element in the array. */
+    readonly BYTES_PER_ELEMENT: number;
+
+    /** The ArrayBuffer instance referenced by the array. */
+    readonly buffer: ArrayBufferLike;
+
+    /** The length in bytes of the array. */
+    readonly byteLength: number;
+
+    /** The offset in bytes of the array. */
+    readonly byteOffset: number;
+
+    /**
+     * Returns the this object after copying a section of the array identified by start and end
+     * to the same array starting at position target
+     * @param target If target is negative, it is treated as length+target where length is the
+     * length of the array.
+     * @param start If start is negative, it is treated as length+start. If end is negative, it
+     * is treated as length+end.
+     * @param end If not specified, length of the this object is used as its default value.
+     */
+    copyWithin(target: number, start: number, end?: number): this;
+
+    /** Yields index, value pairs for every entry in the array. */
+    entries(): IterableIterator<[number, bigint]>;
+
+    /**
+     * Determines whether all the members of an array satisfy the specified test.
+     * @param predicate A function that accepts up to three arguments. The every method calls
+     * the predicate function for each element in the array until the predicate returns false,
+     * or until the end of the array.
+     * @param thisArg An object to which the this keyword can refer in the predicate function.
+     * If thisArg is omitted, undefined is used as the this value.
+     */
+    every(predicate: (value: bigint, index: number, array: BigUint64Array) => boolean, thisArg?: any): boolean;
+
+    /**
+     * Returns the this object after filling the section identified by start and end with value
+     * @param value value to fill array section with
+     * @param start index to start filling the array at. If start is negative, it is treated as
+     * length+start where length is the length of the array.
+     * @param end index to stop filling the array at. If end is negative, it is treated as
+     * length+end.
+     */
+    fill(value: bigint, start?: number, end?: number): this;
+
+    /**
+     * Returns the elements of an array that meet the condition specified in a callback function.
+     * @param predicate A function that accepts up to three arguments. The filter method calls
+     * the predicate function one time for each element in the array.
+     * @param thisArg An object to which the this keyword can refer in the predicate function.
+     * If thisArg is omitted, undefined is used as the this value.
+     */
+    filter(predicate: (value: bigint, index: number, array: BigUint64Array) => any, thisArg?: any): BigUint64Array;
+
+    /**
+     * Returns the value of the first element in the array where predicate is true, and undefined
+     * otherwise.
+     * @param predicate find calls predicate once for each element of the array, in ascending
+     * order, until it finds one where predicate returns true. If such an element is found, find
+     * immediately returns that element value. Otherwise, find returns undefined.
+     * @param thisArg If provided, it will be used as the this value for each invocation of
+     * predicate. If it is not provided, undefined is used instead.
+     */
+    find(predicate: (value: bigint, index: number, array: BigUint64Array) => boolean, thisArg?: any): bigint | undefined;
+
+    /**
+     * Returns the index of the first element in the array where predicate is true, and -1
+     * otherwise.
+     * @param predicate find calls predicate once for each element of the array, in ascending
+     * order, until it finds one where predicate returns true. If such an element is found,
+     * findIndex immediately returns that element index. Otherwise, findIndex returns -1.
+     * @param thisArg If provided, it will be used as the this value for each invocation of
+     * predicate. If it is not provided, undefined is used instead.
+     */
+    findIndex(predicate: (value: bigint, index: number, array: BigUint64Array) => boolean, thisArg?: any): number;
+
+    /**
+     * Performs the specified action for each element in an array.
+     * @param callbackfn A function that accepts up to three arguments. forEach calls the
+     * callbackfn function one time for each element in the array.
+     * @param thisArg An object to which the this keyword can refer in the callbackfn function.
+     * If thisArg is omitted, undefined is used as the this value.
+     */
+    forEach(callbackfn: (value: bigint, index: number, array: BigUint64Array) => void, thisArg?: any): void;
+
+    /**
+     * Determines whether an array includes a certain element, returning true or false as appropriate.
+     * @param searchElement The element to search for.
+     * @param fromIndex The position in this array at which to begin searching for searchElement.
+     */
+    includes(searchElement: bigint, fromIndex?: number): boolean;
+
+    /**
+     * Returns the index of the first occurrence of a value in an array.
+     * @param searchElement The value to locate in the array.
+     * @param fromIndex The array index at which to begin the search. If fromIndex is omitted, the
+     * search starts at index 0.
+     */
+    indexOf(searchElement: bigint, fromIndex?: number): number;
+
+    /**
+     * Adds all the elements of an array separated by the specified separator string.
+     * @param separator A string used to separate one element of an array from the next in the
+     * resulting String. If omitted, the array elements are separated with a comma.
+     */
+    join(separator?: string): string;
+
+    /** Yields each index in the array. */
+    keys(): IterableIterator<number>;
+
+    /**
+     * Returns the index of the last occurrence of a value in an array.
+     * @param searchElement The value to locate in the array.
+     * @param fromIndex The array index at which to begin the search. If fromIndex is omitted, the
+     * search starts at index 0.
+     */
+    lastIndexOf(searchElement: bigint, fromIndex?: number): number;
+
+    /** The length of the array. */
+    readonly length: number;
+
+    /**
+     * Calls a defined callback function on each element of an array, and returns an array that
+     * contains the results.
+     * @param callbackfn A function that accepts up to three arguments. The map method calls the
+     * callbackfn function one time for each element in the array.
+     * @param thisArg An object to which the this keyword can refer in the callbackfn function.
+     * If thisArg is omitted, undefined is used as the this value.
+     */
+    map(callbackfn: (value: bigint, index: number, array: BigUint64Array) => bigint, thisArg?: any): BigUint64Array;
+
+    /**
+     * Calls the specified callback function for all the elements in an array. The return value of
+     * the callback function is the accumulated result, and is provided as an argument in the next
+     * call to the callback function.
+     * @param callbackfn A function that accepts up to four arguments. The reduce method calls the
+     * callbackfn function one time for each element in the array.
+     * @param initialValue If initialValue is specified, it is used as the initial value to start
+     * the accumulation. The first call to the callbackfn function provides this value as an argument
+     * instead of an array value.
+     */
+    reduce(callbackfn: (previousValue: bigint, currentValue: bigint, currentIndex: number, array: BigUint64Array) => bigint): bigint;
+
+    /**
+     * Calls the specified callback function for all the elements in an array. The return value of
+     * the callback function is the accumulated result, and is provided as an argument in the next
+     * call to the callback function.
+     * @param callbackfn A function that accepts up to four arguments. The reduce method calls the
+     * callbackfn function one time for each element in the array.
+     * @param initialValue If initialValue is specified, it is used as the initial value to start
+     * the accumulation. The first call to the callbackfn function provides this value as an argument
+     * instead of an array value.
+     */
+    reduce<U>(callbackfn: (previousValue: U, currentValue: bigint, currentIndex: number, array: BigUint64Array) => U, initialValue: U): U;
+
+    /**
+     * Calls the specified callback function for all the elements in an array, in descending order.
+     * The return value of the callback function is the accumulated result, and is provided as an
+     * argument in the next call to the callback function.
+     * @param callbackfn A function that accepts up to four arguments. The reduceRight method calls
+     * the callbackfn function one time for each element in the array.
+     * @param initialValue If initialValue is specified, it is used as the initial value to start
+     * the accumulation. The first call to the callbackfn function provides this value as an
+     * argument instead of an array value.
+     */
+    reduceRight(callbackfn: (previousValue: bigint, currentValue: bigint, currentIndex: number, array: BigUint64Array) => bigint): bigint;
+
+    /**
+     * Calls the specified callback function for all the elements in an array, in descending order.
+     * The return value of the callback function is the accumulated result, and is provided as an
+     * argument in the next call to the callback function.
+     * @param callbackfn A function that accepts up to four arguments. The reduceRight method calls
+     * the callbackfn function one time for each element in the array.
+     * @param initialValue If initialValue is specified, it is used as the initial value to start
+     * the accumulation. The first call to the callbackfn function provides this value as an argument
+     * instead of an array value.
+     */
+    reduceRight<U>(callbackfn: (previousValue: U, currentValue: bigint, currentIndex: number, array: BigUint64Array) => U, initialValue: U): U;
+
+    /** Reverses the elements in the array. */
+    reverse(): this;
+
+    /**
+     * Sets a value or an array of values.
+     * @param array A typed or untyped array of values to set.
+     * @param offset The index in the current array at which the values are to be written.
+     */
+    set(array: ArrayLike<bigint>, offset?: number): void;
+
+    /**
+     * Returns a section of an array.
+     * @param start The beginning of the specified portion of the array.
+     * @param end The end of the specified portion of the array.
+     */
+    slice(start?: number, end?: number): BigUint64Array;
+
+    /**
+     * Determines whether the specified callback function returns true for any element of an array.
+     * @param predicate A function that accepts up to three arguments. The some method calls the
+     * predicate function for each element in the array until the predicate returns true, or until
+     * the end of the array.
+     * @param thisArg An object to which the this keyword can refer in the predicate function.
+     * If thisArg is omitted, undefined is used as the this value.
+     */
+    some(predicate: (value: bigint, index: number, array: BigUint64Array) => boolean, thisArg?: any): boolean;
+
+    /**
+     * Sorts the array.
+     * @param compareFn The function used to determine the order of the elements. If omitted, the elements are sorted in ascending order.
+     */
+    sort(compareFn?: (a: bigint, b: bigint) => number | bigint): this;
+
+    /**
+     * Gets a new BigUint64Array view of the ArrayBuffer store for this array, referencing the elements
+     * at begin, inclusive, up to end, exclusive.
+     * @param begin The index of the beginning of the array.
+     * @param end The index of the end of the array.
+     */
+    subarray(begin?: number, end?: number): BigUint64Array;
+
+    /** Converts the array to a string by using the current locale. */
+    toLocaleString(): string;
+
+    /** Returns a string representation of the array. */
+    toString(): string;
+
+    /** Returns the primitive value of the specified object. */
+    valueOf(): BigUint64Array;
+
+    /** Yields each value in the array. */
+    values(): IterableIterator<bigint>;
+
+    [Symbol.iterator](): IterableIterator<bigint>;
+
+    readonly [Symbol.toStringTag]: "BigUint64Array";
+
+    [index: number]: bigint;
+}
+
+interface BigUint64ArrayConstructor {
+    readonly prototype: BigUint64Array;
+    new(length?: number): BigUint64Array;
+    new(array: Iterable<bigint>): BigUint64Array;
+    new(buffer: ArrayBufferLike, byteOffset?: number, length?: number): BigUint64Array;
+
+    /** The size in bytes of each element in the array. */
+    readonly BYTES_PER_ELEMENT: number;
+
+    /**
+     * Returns a new array from a set of elements.
+     * @param items A set of elements to include in the new array object.
+     */
+    of(...items: bigint[]): BigUint64Array;
+
+    /**
+     * Creates an array from an array-like or iterable object.
+     * @param arrayLike An array-like or iterable object to convert to an array.
+     * @param mapfn A mapping function to call on every element of the array.
+     * @param thisArg Value of 'this' used to invoke the mapfn.
+     */
+    from(arrayLike: ArrayLike<bigint>): BigUint64Array;
+    from<U>(arrayLike: ArrayLike<U>, mapfn: (v: U, k: number) => bigint, thisArg?: any): BigUint64Array;
+}
+
+declare var BigUint64Array: BigUint64ArrayConstructor;
+
+interface DataView {
+    /**
+     * Gets the BigInt64 value at the specified byte offset from the start of the view. There is
+     * no alignment constraint; multi-byte values may be fetched from any offset.
+     * @param byteOffset The place in the buffer at which the value should be retrieved.
+     */
+    getBigInt64(byteOffset: number, littleEndian?: boolean): bigint;
+
+    /**
+     * Gets the BigUint64 value at the specified byte offset from the start of the view. There is
+     * no alignment constraint; multi-byte values may be fetched from any offset.
+     * @param byteOffset The place in the buffer at which the value should be retrieved.
+     */
+    getBigUint64(byteOffset: number, littleEndian?: boolean): bigint;
+
+    /**
+     * Stores a BigInt64 value at the specified byte offset from the start of the view.
+     * @param byteOffset The place in the buffer at which the value should be set.
+     * @param value The value to set.
+     * @param littleEndian If false or undefined, a big-endian value should be written,
+     * otherwise a little-endian value should be written.
+     */
+    setBigInt64(byteOffset: number, value: bigint, littleEndian?: boolean): void;
+
+    /**
+     * Stores a BigUint64 value at the specified byte offset from the start of the view.
+     * @param byteOffset The place in the buffer at which the value should be set.
+     * @param value The value to set.
+     * @param littleEndian If false or undefined, a big-endian value should be written,
+     * otherwise a little-endian value should be written.
+     */
+    setBigUint64(byteOffset: number, value: bigint, littleEndian?: boolean): void;
+}
+
+declare namespace Intl{
+    interface NumberFormat {
+        format(value: number | bigint): string;
+        resolvedOptions(): ResolvedNumberFormatOptions;
+    }
+}
+`,
+    "lib.es2020.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+/// <reference lib="es2019" />
+/// <reference lib="es2020.bigint" />
+/// <reference lib="es2020.promise" />
+/// <reference lib="es2020.sharedmemory" />
+/// <reference lib="es2020.string" />
+/// <reference lib="es2020.symbol.wellknown" />
+/// <reference lib="es2020.intl" />
+`,
+    "lib.es2020.full.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+/// <reference lib="es2020" />
+/// <reference lib="dom" />
+/// <reference lib="webworker.importscripts" />
+/// <reference lib="scripthost" />
+/// <reference lib="dom.iterable" />
+`,
+    "lib.es2020.intl.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+declare namespace Intl {
+
+    /**
+     * [BCP 47 language tag](http://tools.ietf.org/html/rfc5646) definition.
+     *
+     * [MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl#locales_argument).
+     *
+     * [Wikipedia](https://en.wikipedia.org/wiki/IETF_language_tag).
+     */
+    type BCP47LanguageTag = string;
+
+    /**
+     * Unit to use in the relative time internationalized message.
+     *
+     * [MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/RelativeTimeFormat/format#Parameters).
+     *
+     * [Specification](https://tc39.es/ecma402/#sec-singularrelativetimeunit).
+     */
+    type RelativeTimeFormatUnit =
+        | "year" | "years"
+        | "quarter" | "quarters"
+        | "month" | "months"
+        | "week" | "weeks"
+        | "day" | "days"
+        | "hour" | "hours"
+        | "minute" | "minutes"
+        | "second" | "seconds"
+        ;
+
+    /**
+     * The locale matching algorithm to use.
+     *
+     * [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl#Locale_negotiation).
+     *
+     * [Specification](https://tc39.es/ecma402/#sec-InitializeRelativeTimeFormat).
+     */
+    type RelativeTimeFormatLocaleMatcher = "lookup" | "best fit";
+
+    /**
+     * The format of output message.
+     *
+     * [MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/RelativeTimeFormat/RelativeTimeFormat#Parameters).
+     *
+     * [Specification](https://tc39.es/ecma402/#sec-InitializeRelativeTimeFormat).
+     */
+    type RelativeTimeFormatNumeric = "always" | "auto";
+
+    /**
+     * The length of the internationalized message.
+     *
+     * [MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/RelativeTimeFormat/RelativeTimeFormat#Parameters).
+     *
+     * [Specification](https://tc39.es/ecma402/#sec-InitializeRelativeTimeFormat).
+     */
+    type RelativeTimeFormatStyle = "long" | "short" | "narrow";
+
+    /**
+     * An object with some or all of properties of \`options\` parameter
+     * of \`Intl.RelativeTimeFormat\` constructor.
+     *
+     * [MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/RelativeTimeFormat/RelativeTimeFormat#Parameters).
+     *
+     * [Specification](https://tc39.es/ecma402/#sec-InitializeRelativeTimeFormat).
+     */
+    interface RelativeTimeFormatOptions {
+        localeMatcher?: RelativeTimeFormatLocaleMatcher;
+        numeric?: RelativeTimeFormatNumeric;
+        style?: RelativeTimeFormatStyle;
+    }
+
+    /**
+     * An object with properties reflecting the locale
+     * and formatting options computed during initialization
+     * of the \`Intel.RelativeTimeFormat\` object
+     *
+     * [MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/RelativeTimeFormat/resolvedOptions#Description).
+     *
+     * [Specification](https://tc39.es/ecma402/#table-relativetimeformat-resolvedoptions-properties)
+     */
+    interface ResolvedRelativeTimeFormatOptions {
+        locale: BCP47LanguageTag;
+        style: RelativeTimeFormatStyle;
+        numeric: RelativeTimeFormatNumeric;
+        numberingSystem: string;
+    }
+
+    /**
+     * An object representing the relative time format in parts
+     * that can be used for custom locale-aware formatting.
+     *
+     * [MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/RelativeTimeFormat/formatToParts#Using_formatToParts).
+     *
+     * [Specification](https://tc39.es/ecma402/#sec-FormatRelativeTimeToParts).
+     */
+    interface RelativeTimeFormatPart {
+        type: string;
+        value: string;
+        unit?: RelativeTimeFormatUnit;
+    }
+
+    interface RelativeTimeFormat {
+        /**
+         * Formats a value and a unit according to the locale
+         * and formatting options of the given
+         * [\`Intl.RelativeTimeFormat\`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/RelativeTimeFormat)
+         * object.
+         *
+         * While this method automatically provides the correct plural forms,
+         * the grammatical form is otherwise as neutral as possible.
+         * It is the caller's responsibility to handle cut-off logic
+         * such as deciding between displaying "in 7 days" or "in 1 week".
+         * This API does not support relative dates involving compound units.
+         * e.g "in 5 days and 4 hours".
+         *
+         * @param value -  Numeric value to use in the internationalized relative time message
+         *
+         * @param unit - [Unit](https://tc39.es/ecma402/#sec-singularrelativetimeunit)
+         *  to use in the relative time internationalized message.
+         *  Possible values are: \`"year"\`, \`"quarter"\`, \`"month"\`, \`"week"\`,
+         *  \`"day"\`, \`"hour"\`, \`"minute"\`, \`"second"\`.
+         *  Plural forms are also permitted.
+         *
+         * @throws \`RangeError\` if \`unit\` was given something other than \`unit\` possible values
+         *
+         * @returns Internationalized relative time message as string
+         *
+         * [MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/RelativeTimeFormat/format).
+         *
+         * [Specification](https://tc39.es/ecma402/#sec-Intl.RelativeTimeFormat.prototype.format).
+         */
+        format(
+            value: number,
+            unit: RelativeTimeFormatUnit,
+        ): string;
+
+        /**
+         *  A version of the format method which it returns an array of objects
+         *  which represent "parts" of the object,
+         *  separating the formatted number into its constituent parts
+         *  and separating it from other surrounding text.
+         *  These objects have two properties:
+         * \`type\` a NumberFormat formatToParts type, and \`value\`,
+         *  which is the String which is the component of the output.
+         *  If a "part" came from NumberFormat,
+         *  it will have a unit property which indicates the \`unit\` being formatted;
+         *  literals which are part of the larger frame will not have this property.
+         *
+         *  @param value - Numeric value to use in the internationalized relative time message
+         *
+         *  @param unit - [Unit](https://tc39.es/ecma402/#sec-singularrelativetimeunit)
+         *   to use in the relative time internationalized message.
+         *   Possible values are: \`"year"\`, \`"quarter"\`, \`"month"\`, \`"week"\`,
+         *   \`"day"\`, \`"hour"\`, \`"minute"\`, \`"second"\`.
+         *   Plural forms are also permitted.
+         *
+         *  @throws \`RangeError\` if \`unit\` was given something other than \`unit\` possible values
+         *
+         *  @returns Array of [FormatRelativeTimeToParts](https://tc39.es/ecma402/#sec-FormatRelativeTimeToParts)
+         *
+         *  [MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/RelativeTimeFormat/formatToParts).
+         *
+         *  [Specification](https://tc39.es/ecma402/#sec-Intl.RelativeTimeFormat.prototype.formatToParts).
+         */
+        formatToParts(
+            value: number,
+            unit: RelativeTimeFormatUnit,
+        ): RelativeTimeFormatPart[];
+
+        /**
+         * Provides access to the locale and options computed during initialization of this \`Intl.RelativeTimeFormat\` object.
+         *
+         * @returns A new object with properties reflecting the locale
+         *  and formatting options computed during initialization
+         *  of the \`Intel.RelativeTimeFormat\` object.
+         *
+         * [MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/RelativeTimeFormat/resolvedOptions).
+         *
+         * [Specification](https://tc39.es/ecma402/#sec-intl.relativetimeformat.prototype.resolvedoptions)
+         */
+        resolvedOptions(): ResolvedRelativeTimeFormatOptions;
+    }
+
+    /**
+     * The [\`Intl.RelativeTimeFormat\`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/RelativeTimeFormat)
+     * object is a constructor for objects that enable language-sensitive relative time formatting.
+     *
+     * Part of [Intl object](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl)
+     * namespace and the [ECMAScript Internationalization API](https://www.ecma-international.org/publications/standards/Ecma-402.htm).
+     *
+     * [Compatibility](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/RelativeTimeFormat#Browser_compatibility).
+     *
+     * [Polyfills](https://github.com/tc39/proposal-intl-relative-time#polyfills).
+     */
+    const RelativeTimeFormat: {
+        /**
+         * Constructor creates [Intl.RelativeTimeFormat](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RelativeTimeFormat)
+         * objects
+         *
+         * @param locales - A string with a [BCP 47 language tag](http://tools.ietf.org/html/rfc5646), or an array of such strings.
+         *  For the general form and interpretation of the locales argument,
+         *  see the [\`Intl\` page](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl#Locale_identification_and_negotiation).
+         *
+         * @param options - An [object](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/RelativeTimeFormat/RelativeTimeFormat#Parameters)
+         *  with some or all of options of the formatting.
+         *  An object with some or all of the following properties:
+         *  - \`localeMatcher\` - The locale matching algorithm to use.
+         *    Possible values are \`"lookup"\` and \`"best fit"\`; the default is \`"best fit"\`.
+         *    For information about this option, see [Intl page](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl#Locale_negotiation).
+         *  - \`numeric\` - The format of output message.
+         *    Possible values are: \`"always"\` (default, e.g., \`1 day ago\`) or \`"auto"\` (e.g., \`yesterday\`).
+         *    The \`"auto"\` value allows to not always have to use numeric values in the output.
+         *  - \`style\` - The length of the internationalized message. Possible values are:
+         *    \`"long"\` (default, e.g., in 1 month),
+         *    \`"short"\` (e.g., in 1 mo.)
+         *    or \`"narrow"\` (e.g., in 1 mo.). The narrow style could be similar to the short style for some locales.
+         *
+         * @returns [Intl.RelativeTimeFormat](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RelativeTimeFormat) object.
+         *
+         * [MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/RelativeTimeFormat/RelativeTimeFormat).
+         *
+         * [Specification](https://tc39.es/ecma402/#sec-intl-relativetimeformat-constructor).
+         */
+        new(
+            locales?: BCP47LanguageTag | BCP47LanguageTag[],
+            options?: RelativeTimeFormatOptions,
+        ): RelativeTimeFormat;
+
+        /**
+         * Returns an array containing those of the provided locales
+         * that are supported in date and time formatting
+         * without having to fall back to the runtime's default locale.
+         *
+         * @param locales - A string with a [BCP 47 language tag](http://tools.ietf.org/html/rfc5646), or an array of such strings.
+         *  For the general form and interpretation of the locales argument,
+         *  see the [\`Intl\` page](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl#Locale_identification_and_negotiation).
+         *
+         * @param options - An [object](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/RelativeTimeFormat/RelativeTimeFormat#Parameters)
+         *  with some or all of options of the formatting.
+         *  An object with some or all of the following properties:
+         *  - \`localeMatcher\` - The locale matching algorithm to use.
+         *    Possible values are \`"lookup"\` and \`"best fit"\`; the default is \`"best fit"\`.
+         *    For information about this option, see [Intl page](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl#Locale_negotiation).
+         *  - \`numeric\` - The format of output message.
+         *    Possible values are: \`"always"\` (default, e.g., \`1 day ago\`) or \`"auto"\` (e.g., \`yesterday\`).
+         *    The \`"auto"\` value allows to not always have to use numeric values in the output.
+         *  - \`style\` - The length of the internationalized message. Possible values are:
+         *    \`"long"\` (default, e.g., in 1 month),
+         *    \`"short"\` (e.g., in 1 mo.)
+         *    or \`"narrow"\` (e.g., in 1 mo.). The narrow style could be similar to the short style for some locales.
+         *
+         * @returns An array containing those of the provided locales
+         *  that are supported in date and time formatting
+         *  without having to fall back to the runtime's default locale.
+         *
+         * [MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/RelativeTimeFormat/supportedLocalesOf).
+         *
+         * [Specification](https://tc39.es/ecma402/#sec-Intl.RelativeTimeFormat.supportedLocalesOf).
+         */
+        supportedLocalesOf(
+            locales: BCP47LanguageTag | BCP47LanguageTag[],
+            options?: RelativeTimeFormatOptions,
+        ): BCP47LanguageTag[];
+    };
+
+    interface NumberFormatOptions {
+        compactDisplay?: string;
+        notation?: string;
+        signDisplay?: string;
+        unit?: string;
+        unitDisplay?: string;
+    }
+
+    interface ResolvedNumberFormatOptions {
+        compactDisplay?: string;
+        notation?: string;
+        signDisplay?: string;
+        unit?: string;
+        unitDisplay?: string;
+    }
+}
+`,
+    "lib.es2020.promise.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+interface PromiseFulfilledResult<T> {
+    status: "fulfilled";
+    value: T;
+}
+
+interface PromiseRejectedResult {
+    status: "rejected";
+    reason: any;
+}
+
+type PromiseSettledResult<T> = PromiseFulfilledResult<T> | PromiseRejectedResult;
+
+interface PromiseConstructor {
+    /**
+     * Creates a Promise that is resolved with an array of results when all
+     * of the provided Promises resolve or reject.
+     * @param values An array of Promises.
+     * @returns A new Promise.
+     */
+    allSettled<T extends readonly unknown[] | readonly [unknown]>(values: T):
+        Promise<{ -readonly [P in keyof T]: PromiseSettledResult<T[P] extends PromiseLike<infer U> ? U : T[P]> }>;
+
+    /**
+     * Creates a Promise that is resolved with an array of results when all
+     * of the provided Promises resolve or reject.
+     * @param values An array of Promises.
+     * @returns A new Promise.
+     */
+    allSettled<T>(values: Iterable<T>): Promise<PromiseSettledResult<T extends PromiseLike<infer U> ? U : T>[]>;
+}
+`,
+    "lib.es2020.sharedmemory.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+interface Atomics {
+    /**
+     * Adds a value to the value at the given position in the array, returning the original value.
+     * Until this atomic operation completes, any other read or write operation against the array
+     * will block.
+     */
+    add(typedArray: BigInt64Array | BigUint64Array, index: number, value: bigint): bigint;
+
+    /**
+     * Stores the bitwise AND of a value with the value at the given position in the array,
+     * returning the original value. Until this atomic operation completes, any other read or
+     * write operation against the array will block.
+     */
+    and(typedArray: BigInt64Array | BigUint64Array, index: number, value: bigint): bigint;
+
+    /**
+     * Replaces the value at the given position in the array if the original value equals the given
+     * expected value, returning the original value. Until this atomic operation completes, any
+     * other read or write operation against the array will block.
+     */
+    compareExchange(typedArray: BigInt64Array | BigUint64Array, index: number, expectedValue: bigint, replacementValue: bigint): bigint;
+
+    /**
+     * Replaces the value at the given position in the array, returning the original value. Until
+     * this atomic operation completes, any other read or write operation against the array will
+     * block.
+     */
+    exchange(typedArray: BigInt64Array | BigUint64Array, index: number, value: bigint): bigint;
+
+    /**
+     * Returns the value at the given position in the array. Until this atomic operation completes,
+     * any other read or write operation against the array will block.
+     */
+    load(typedArray: BigInt64Array | BigUint64Array, index: number): bigint;
+
+    /**
+     * Stores the bitwise OR of a value with the value at the given position in the array,
+     * returning the original value. Until this atomic operation completes, any other read or write
+     * operation against the array will block.
+     */
+    or(typedArray: BigInt64Array | BigUint64Array, index: number, value: bigint): bigint;
+
+    /**
+     * Stores a value at the given position in the array, returning the new value. Until this
+     * atomic operation completes, any other read or write operation against the array will block.
+     */
+    store(typedArray: BigInt64Array | BigUint64Array, index: number, value: bigint): bigint;
+
+    /**
+     * Subtracts a value from the value at the given position in the array, returning the original
+     * value. Until this atomic operation completes, any other read or write operation against the
+     * array will block.
+     */
+    sub(typedArray: BigInt64Array | BigUint64Array, index: number, value: bigint): bigint;
+
+    /**
+     * If the value at the given position in the array is equal to the provided value, the current
+     * agent is put to sleep causing execution to suspend until the timeout expires (returning
+     * \`"timed-out"\`) or until the agent is awoken (returning \`"ok"\`); otherwise, returns
+     * \`"not-equal"\`.
+     */
+    wait(typedArray: BigInt64Array, index: number, value: bigint, timeout?: number): "ok" | "not-equal" | "timed-out";
+
+    /**
+     * Wakes up sleeping agents that are waiting on the given index of the array, returning the
+     * number of agents that were awoken.
+     * @param typedArray A shared BigInt64Array.
+     * @param index The position in the typedArray to wake up on.
+     * @param count The number of sleeping agents to notify. Defaults to +Infinity.
+     */
+    notify(typedArray: BigInt64Array, index: number, count?: number): number;
+
+    /**
+     * Stores the bitwise XOR of a value with the value at the given position in the array,
+     * returning the original value. Until this atomic operation completes, any other read or write
+     * operation against the array will block.
+     */
+    xor(typedArray: BigInt64Array | BigUint64Array, index: number, value: bigint): bigint;
+}
+`,
+    "lib.es2020.string.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+/// <reference lib="es2015.iterable" />
+
+interface String {
+    /**
+     * Matches a string with a regular expression, and returns an iterable of matches
+     * containing the results of that search.
+     * @param regexp A variable name or string literal containing the regular expression pattern and flags.
+     */
+    matchAll(regexp: RegExp): IterableIterator<RegExpMatchArray>;
+}
+`,
+    "lib.es2020.symbol.wellknown.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+/// <reference lib="es2015.iterable" />
+/// <reference lib="es2015.symbol" />
+
+interface SymbolConstructor {
+    /**
+     * A regular expression method that matches the regular expression against a string. Called
+     * by the String.prototype.matchAll method.
+     */
+    readonly matchAll: symbol;
+}
+
+interface RegExp {
+    /**
+     * Matches a string with this regular expression, and returns an iterable of matches
+     * containing the results of that search.
+     * @param string A string to search within.
+     */
+    [Symbol.matchAll](str: string): IterableIterator<RegExpMatchArray>;
+}
+`,
+    "lib.es5.d.ts": `/*! *****************************************************************************
 Copyright (c) Microsoft Corporation. All rights reserved.
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use
 this file except in compliance with the License. You may obtain a copy of the
@@ -24562,5 +29162,6862 @@ interface Date {
      */
     toLocaleTimeString(locales?: string | string[], options?: Intl.DateTimeFormatOptions): string;
 }
-`
+`,
+    "lib.es6.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+/// <reference lib="es2015" />
+/// <reference lib="dom" />
+/// <reference lib="dom.iterable" />
+/// <reference lib="webworker.importscripts" />
+/// <reference lib="scripthost" />
+`,
+    "lib.esnext.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+/// <reference lib="es2020" />
+/// <reference lib="esnext.intl" />
+/// <reference lib="esnext.string" />
+/// <reference lib="esnext.promise" />
+/// <reference lib="esnext.weakref" />
+`,
+    "lib.esnext.full.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+/// <reference lib="esnext" />
+/// <reference lib="dom" />
+/// <reference lib="webworker.importscripts" />
+/// <reference lib="scripthost" />
+/// <reference lib="dom.iterable" />`,
+    "lib.esnext.intl.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+declare namespace Intl {
+    type NumberFormatPartTypes = "currency" | "decimal" | "fraction" | "group" | "infinity" | "integer" | "literal" | "minusSign" | "nan" | "plusSign" | "percentSign";
+
+    interface NumberFormatPart {
+        type: NumberFormatPartTypes;
+        value: string;
+    }
+
+    interface NumberFormat {
+        formatToParts(number?: number): NumberFormatPart[];
+    }
+}
+`,
+    "lib.esnext.promise.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+interface AggregateError extends Error {
+    errors: any[]
+}
+
+interface AggregateErrorConstructor {
+    new(errors: Iterable<any>, message?: string): AggregateError;
+    (errors: Iterable<any>, message?: string): AggregateError;
+    readonly prototype: AggregateError;
+}
+
+declare var AggregateError: AggregateErrorConstructor;
+
+/**
+ * Represents the completion of an asynchronous operation
+ */
+interface PromiseConstructor {
+    /**
+     * The any function returns a promise that is fulfilled by the first given promise to be fulfilled, or rejected with an AggregateError containing an array of rejection reasons if all of the given promises are rejected. It resolves all elements of the passed iterable to promises as it runs this algorithm.
+     * @param values An array or iterable of Promises.
+     * @returns A new Promise.
+     */
+    any<T>(values: (T | PromiseLike<T>)[] | Iterable<T | PromiseLike<T>>): Promise<T>
+}
+`,
+    "lib.esnext.string.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+interface String {
+    /**
+     * Replace all instances of a substring in a string, using a regular expression or search string.
+     * @param searchValue A string to search for.
+     * @param replaceValue A string containing the text to replace for every successful match of searchValue in this string.
+     */
+    replaceAll(searchValue: string | RegExp, replaceValue: string): string;
+
+    /**
+     * Replace all instances of a substring in a string, using a regular expression or search string.
+     * @param searchValue A string to search for.
+     * @param replacer A function that returns the replacement text.
+     */
+    replaceAll(searchValue: string | RegExp, replacer: (substring: string, ...args: any[]) => string): string;
+}
+`,
+    "lib.esnext.weakref.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+interface WeakRef<T extends object> {
+    readonly [Symbol.toStringTag]: "WeakRef";
+
+    /**
+     * Returns the WeakRef instance's target object, or undefined if the target object has been
+     * reclaimed.
+     */
+    deref(): T | undefined;
+}
+
+interface WeakRefConstructor {
+    readonly prototype: WeakRef<any>;
+
+    /**
+     * Creates a WeakRef instance for the given target object.
+     * @param target The target object for the WeakRef instance.
+     */
+    new<T extends object>(target?: T): WeakRef<T>;
+}
+
+declare var WeakRef: WeakRefConstructor;
+
+interface FinalizationRegistry {
+    readonly [Symbol.toStringTag]: "FinalizationRegistry";
+
+    /**
+     * Registers an object with the registry.
+     * @param target The target object to register.
+     * @param heldValue The value to pass to the finalizer for this object. This cannot be the
+     * target object.
+     * @param unregisterToken The token to pass to the unregister method to unregister the target
+     * object. If provided (and not undefined), this must be an object. If not provided, the target
+     * cannot be unregistered.
+     */
+    register(target: object, heldValue: any, unregisterToken?: object): void;
+
+    /**
+     * Unregisters an object from the registry.
+     * @param unregisterToken The token that was used as the unregisterToken argument when calling
+     * register to register the target object.
+     */
+    unregister(unregisterToken: object): void;
+}
+
+interface FinalizationRegistryConstructor {
+    readonly prototype: FinalizationRegistry;
+
+    /**
+     * Creates a finalization registry with an associated cleanup callback
+     * @param cleanupCallback The callback to call after an object in the registry has been reclaimed.
+     */
+    new(cleanupCallback: (heldValue: any) => void): FinalizationRegistry;
+}
+
+declare var FinalizationRegistry: FinalizationRegistryConstructor;
+`,
+    "lib.scripthost.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+
+
+/////////////////////////////
+/// Windows Script Host APIS
+/////////////////////////////
+
+
+interface ActiveXObject {
+    new (s: string): any;
+}
+declare var ActiveXObject: ActiveXObject;
+
+interface ITextWriter {
+    Write(s: string): void;
+    WriteLine(s: string): void;
+    Close(): void;
+}
+
+interface TextStreamBase {
+    /**
+     * The column number of the current character position in an input stream.
+     */
+    Column: number;
+
+    /**
+     * The current line number in an input stream.
+     */
+    Line: number;
+
+    /**
+     * Closes a text stream.
+     * It is not necessary to close standard streams; they close automatically when the process ends. If
+     * you close a standard stream, be aware that any other pointers to that standard stream become invalid.
+     */
+    Close(): void;
+}
+
+interface TextStreamWriter extends TextStreamBase {
+    /**
+     * Sends a string to an output stream.
+     */
+    Write(s: string): void;
+
+    /**
+     * Sends a specified number of blank lines (newline characters) to an output stream.
+     */
+    WriteBlankLines(intLines: number): void;
+
+    /**
+     * Sends a string followed by a newline character to an output stream.
+     */
+    WriteLine(s: string): void;
+}
+
+interface TextStreamReader extends TextStreamBase {
+    /**
+     * Returns a specified number of characters from an input stream, starting at the current pointer position.
+     * Does not return until the ENTER key is pressed.
+     * Can only be used on a stream in reading mode; causes an error in writing or appending mode.
+     */
+    Read(characters: number): string;
+
+    /**
+     * Returns all characters from an input stream.
+     * Can only be used on a stream in reading mode; causes an error in writing or appending mode.
+     */
+    ReadAll(): string;
+
+    /**
+     * Returns an entire line from an input stream.
+     * Although this method extracts the newline character, it does not add it to the returned string.
+     * Can only be used on a stream in reading mode; causes an error in writing or appending mode.
+     */
+    ReadLine(): string;
+
+    /**
+     * Skips a specified number of characters when reading from an input text stream.
+     * Can only be used on a stream in reading mode; causes an error in writing or appending mode.
+     * @param characters Positive number of characters to skip forward. (Backward skipping is not supported.)
+     */
+    Skip(characters: number): void;
+
+    /**
+     * Skips the next line when reading from an input text stream.
+     * Can only be used on a stream in reading mode, not writing or appending mode.
+     */
+    SkipLine(): void;
+
+    /**
+     * Indicates whether the stream pointer position is at the end of a line.
+     */
+    AtEndOfLine: boolean;
+
+    /**
+     * Indicates whether the stream pointer position is at the end of a stream.
+     */
+    AtEndOfStream: boolean;
+}
+
+declare var WScript: {
+    /**
+     * Outputs text to either a message box (under WScript.exe) or the command console window followed by
+     * a newline (under CScript.exe).
+     */
+    Echo(s: any): void;
+
+    /**
+     * Exposes the write-only error output stream for the current script.
+     * Can be accessed only while using CScript.exe.
+     */
+    StdErr: TextStreamWriter;
+
+    /**
+     * Exposes the write-only output stream for the current script.
+     * Can be accessed only while using CScript.exe.
+     */
+    StdOut: TextStreamWriter;
+    Arguments: { length: number; Item(n: number): string; };
+
+    /**
+     *  The full path of the currently running script.
+     */
+    ScriptFullName: string;
+
+    /**
+     * Forces the script to stop immediately, with an optional exit code.
+     */
+    Quit(exitCode?: number): number;
+
+    /**
+     * The Windows Script Host build version number.
+     */
+    BuildVersion: number;
+
+    /**
+     * Fully qualified path of the host executable.
+     */
+    FullName: string;
+
+    /**
+     * Gets/sets the script mode - interactive(true) or batch(false).
+     */
+    Interactive: boolean;
+
+    /**
+     * The name of the host executable (WScript.exe or CScript.exe).
+     */
+    Name: string;
+
+    /**
+     * Path of the directory containing the host executable.
+     */
+    Path: string;
+
+    /**
+     * The filename of the currently running script.
+     */
+    ScriptName: string;
+
+    /**
+     * Exposes the read-only input stream for the current script.
+     * Can be accessed only while using CScript.exe.
+     */
+    StdIn: TextStreamReader;
+
+    /**
+     * Windows Script Host version
+     */
+    Version: string;
+
+    /**
+     * Connects a COM object's event sources to functions named with a given prefix, in the form prefix_event.
+     */
+    ConnectObject(objEventSource: any, strPrefix: string): void;
+
+    /**
+     * Creates a COM object.
+     * @param strProgiID
+     * @param strPrefix Function names in the form prefix_event will be bound to this object's COM events.
+     */
+    CreateObject(strProgID: string, strPrefix?: string): any;
+
+    /**
+     * Disconnects a COM object from its event sources.
+     */
+    DisconnectObject(obj: any): void;
+
+    /**
+     * Retrieves an existing object with the specified ProgID from memory, or creates a new one from a file.
+     * @param strPathname Fully qualified path to the file containing the object persisted to disk.
+     *                       For objects in memory, pass a zero-length string.
+     * @param strProgID
+     * @param strPrefix Function names in the form prefix_event will be bound to this object's COM events.
+     */
+    GetObject(strPathname: string, strProgID?: string, strPrefix?: string): any;
+
+    /**
+     * Suspends script execution for a specified length of time, then continues execution.
+     * @param intTime Interval (in milliseconds) to suspend script execution.
+     */
+    Sleep(intTime: number): void;
+};
+
+/**
+ * WSH is an alias for WScript under Windows Script Host
+ */
+declare var WSH: typeof WScript;
+
+/**
+ * Represents an Automation SAFEARRAY
+ */
+declare class SafeArray<T = any> {
+    private constructor();
+    private SafeArray_typekey: SafeArray<T>;
+}
+
+/**
+ * Allows enumerating over a COM collection, which may not have indexed item access.
+ */
+interface Enumerator<T = any> {
+    /**
+     * Returns true if the current item is the last one in the collection, or the collection is empty,
+     * or the current item is undefined.
+     */
+    atEnd(): boolean;
+
+    /**
+     * Returns the current item in the collection
+     */
+    item(): T;
+
+    /**
+     * Resets the current item in the collection to the first item. If there are no items in the collection,
+     * the current item is set to undefined.
+     */
+    moveFirst(): void;
+
+    /**
+     * Moves the current item to the next item in the collection. If the enumerator is at the end of
+     * the collection or the collection is empty, the current item is set to undefined.
+     */
+    moveNext(): void;
+}
+
+interface EnumeratorConstructor {
+    new <T = any>(safearray: SafeArray<T>): Enumerator<T>;
+    new <T = any>(collection: { Item(index: any): T }): Enumerator<T>;
+    new <T = any>(collection: any): Enumerator<T>;
+}
+
+declare var Enumerator: EnumeratorConstructor;
+
+/**
+ * Enables reading from a COM safe array, which might have an alternate lower bound, or multiple dimensions.
+ */
+interface VBArray<T = any> {
+    /**
+     * Returns the number of dimensions (1-based).
+     */
+    dimensions(): number;
+
+    /**
+     * Takes an index for each dimension in the array, and returns the item at the corresponding location.
+     */
+    getItem(dimension1Index: number, ...dimensionNIndexes: number[]): T;
+
+    /**
+     * Returns the smallest available index for a given dimension.
+     * @param dimension 1-based dimension (defaults to 1)
+     */
+    lbound(dimension?: number): number;
+
+    /**
+     * Returns the largest available index for a given dimension.
+     * @param dimension 1-based dimension (defaults to 1)
+     */
+    ubound(dimension?: number): number;
+
+    /**
+     * Returns a Javascript array with all the elements in the VBArray. If there are multiple dimensions,
+     * each successive dimension is appended to the end of the array.
+     * Example: [[1,2,3],[4,5,6]] becomes [1,2,3,4,5,6]
+     */
+    toArray(): T[];
+}
+
+interface VBArrayConstructor {
+    new <T = any>(safeArray: SafeArray<T>): VBArray<T>;
+}
+
+declare var VBArray: VBArrayConstructor;
+
+/**
+ * Automation date (VT_DATE)
+ */
+declare class VarDate {
+    private constructor();
+    private VarDate_typekey: VarDate;
+}
+
+interface DateConstructor {
+    new (vd: VarDate): Date;
+}
+
+interface Date {
+    getVarDate: () => VarDate;
+}
+`,
+    "lib.webworker.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+/////////////////////////////
+/// Worker APIs
+/////////////////////////////
+
+interface AddEventListenerOptions extends EventListenerOptions {
+    once?: boolean;
+    passive?: boolean;
+}
+
+interface AesCbcParams extends Algorithm {
+    iv: Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | Float32Array | Float64Array | DataView | ArrayBuffer;
+}
+
+interface AesCtrParams extends Algorithm {
+    counter: Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | Float32Array | Float64Array | DataView | ArrayBuffer;
+    length: number;
+}
+
+interface AesDerivedKeyParams extends Algorithm {
+    length: number;
+}
+
+interface AesGcmParams extends Algorithm {
+    additionalData?: Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | Float32Array | Float64Array | DataView | ArrayBuffer;
+    iv: Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | Float32Array | Float64Array | DataView | ArrayBuffer;
+    tagLength?: number;
+}
+
+interface AesKeyAlgorithm extends KeyAlgorithm {
+    length: number;
+}
+
+interface AesKeyGenParams extends Algorithm {
+    length: number;
+}
+
+interface Algorithm {
+    name: string;
+}
+
+interface BlobPropertyBag {
+    endings?: EndingType;
+    type?: string;
+}
+
+interface CacheQueryOptions {
+    ignoreMethod?: boolean;
+    ignoreSearch?: boolean;
+    ignoreVary?: boolean;
+}
+
+interface CanvasRenderingContext2DSettings {
+    alpha?: boolean;
+    desynchronized?: boolean;
+}
+
+interface ClientQueryOptions {
+    includeUncontrolled?: boolean;
+    type?: ClientTypes;
+}
+
+interface CloseEventInit extends EventInit {
+    code?: number;
+    reason?: string;
+    wasClean?: boolean;
+}
+
+interface CryptoKeyPair {
+    privateKey?: CryptoKey;
+    publicKey?: CryptoKey;
+}
+
+interface CustomEventInit<T = any> extends EventInit {
+    detail?: T;
+}
+
+interface DOMMatrix2DInit {
+    a?: number;
+    b?: number;
+    c?: number;
+    d?: number;
+    e?: number;
+    f?: number;
+    m11?: number;
+    m12?: number;
+    m21?: number;
+    m22?: number;
+    m41?: number;
+    m42?: number;
+}
+
+interface DOMMatrixInit extends DOMMatrix2DInit {
+    is2D?: boolean;
+    m13?: number;
+    m14?: number;
+    m23?: number;
+    m24?: number;
+    m31?: number;
+    m32?: number;
+    m33?: number;
+    m34?: number;
+    m43?: number;
+    m44?: number;
+}
+
+interface DOMPointInit {
+    w?: number;
+    x?: number;
+    y?: number;
+    z?: number;
+}
+
+interface DOMQuadInit {
+    p1?: DOMPointInit;
+    p2?: DOMPointInit;
+    p3?: DOMPointInit;
+    p4?: DOMPointInit;
+}
+
+interface DOMRectInit {
+    height?: number;
+    width?: number;
+    x?: number;
+    y?: number;
+}
+
+interface DevicePermissionDescriptor extends PermissionDescriptor {
+    deviceId?: string;
+    name: "camera" | "microphone" | "speaker";
+}
+
+interface EcKeyGenParams extends Algorithm {
+    namedCurve: NamedCurve;
+}
+
+interface EcKeyImportParams extends Algorithm {
+    namedCurve: NamedCurve;
+}
+
+interface EcdhKeyDeriveParams extends Algorithm {
+    public: CryptoKey;
+}
+
+interface EcdsaParams extends Algorithm {
+    hash: HashAlgorithmIdentifier;
+}
+
+interface ErrorEventInit extends EventInit {
+    colno?: number;
+    error?: any;
+    filename?: string;
+    lineno?: number;
+    message?: string;
+}
+
+interface EventInit {
+    bubbles?: boolean;
+    cancelable?: boolean;
+    composed?: boolean;
+}
+
+interface EventListenerOptions {
+    capture?: boolean;
+}
+
+interface EventSourceInit {
+    withCredentials?: boolean;
+}
+
+interface ExtendableEventInit extends EventInit {
+}
+
+interface ExtendableMessageEventInit extends ExtendableEventInit {
+    data?: any;
+    lastEventId?: string;
+    origin?: string;
+    ports?: MessagePort[];
+    source?: Client | ServiceWorker | MessagePort | null;
+}
+
+interface FetchEventInit extends ExtendableEventInit {
+    clientId?: string;
+    preloadResponse?: Promise<any>;
+    replacesClientId?: string;
+    request: Request;
+    resultingClientId?: string;
+}
+
+interface FilePropertyBag extends BlobPropertyBag {
+    lastModified?: number;
+}
+
+interface GetNotificationOptions {
+    tag?: string;
+}
+
+interface HkdfParams extends Algorithm {
+    hash: HashAlgorithmIdentifier;
+    info: Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | Float32Array | Float64Array | DataView | ArrayBuffer;
+    salt: Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | Float32Array | Float64Array | DataView | ArrayBuffer;
+}
+
+interface HmacImportParams extends Algorithm {
+    hash: HashAlgorithmIdentifier;
+    length?: number;
+}
+
+interface HmacKeyGenParams extends Algorithm {
+    hash: HashAlgorithmIdentifier;
+    length?: number;
+}
+
+interface IDBIndexParameters {
+    multiEntry?: boolean;
+    unique?: boolean;
+}
+
+interface IDBObjectStoreParameters {
+    autoIncrement?: boolean;
+    keyPath?: string | string[] | null;
+}
+
+interface IDBVersionChangeEventInit extends EventInit {
+    newVersion?: number | null;
+    oldVersion?: number;
+}
+
+interface ImageBitmapOptions {
+    colorSpaceConversion?: ColorSpaceConversion;
+    imageOrientation?: ImageOrientation;
+    premultiplyAlpha?: PremultiplyAlpha;
+    resizeHeight?: number;
+    resizeQuality?: ResizeQuality;
+    resizeWidth?: number;
+}
+
+interface ImageBitmapRenderingContextSettings {
+    alpha?: boolean;
+}
+
+interface ImageEncodeOptions {
+    quality?: number;
+    type?: string;
+}
+
+interface JsonWebKey {
+    alg?: string;
+    crv?: string;
+    d?: string;
+    dp?: string;
+    dq?: string;
+    e?: string;
+    ext?: boolean;
+    k?: string;
+    key_ops?: string[];
+    kty?: string;
+    n?: string;
+    oth?: RsaOtherPrimesInfo[];
+    p?: string;
+    q?: string;
+    qi?: string;
+    use?: string;
+    x?: string;
+    y?: string;
+}
+
+interface KeyAlgorithm {
+    name: string;
+}
+
+interface MessageEventInit<T = any> extends EventInit {
+    data?: T;
+    lastEventId?: string;
+    origin?: string;
+    ports?: MessagePort[];
+    source?: MessageEventSource | null;
+}
+
+interface MidiPermissionDescriptor extends PermissionDescriptor {
+    name: "midi";
+    sysex?: boolean;
+}
+
+interface MultiCacheQueryOptions extends CacheQueryOptions {
+    cacheName?: string;
+}
+
+interface NavigationPreloadState {
+    enabled?: boolean;
+    headerValue?: string;
+}
+
+interface NotificationAction {
+    action: string;
+    icon?: string;
+    title: string;
+}
+
+interface NotificationEventInit extends ExtendableEventInit {
+    action?: string;
+    notification: Notification;
+}
+
+interface NotificationOptions {
+    actions?: NotificationAction[];
+    badge?: string;
+    body?: string;
+    data?: any;
+    dir?: NotificationDirection;
+    icon?: string;
+    image?: string;
+    lang?: string;
+    renotify?: boolean;
+    requireInteraction?: boolean;
+    silent?: boolean;
+    tag?: string;
+    timestamp?: number;
+    vibrate?: VibratePattern;
+}
+
+interface Pbkdf2Params extends Algorithm {
+    hash: HashAlgorithmIdentifier;
+    iterations: number;
+    salt: Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | Float32Array | Float64Array | DataView | ArrayBuffer;
+}
+
+interface PerformanceObserverInit {
+    buffered?: boolean;
+    entryTypes?: string[];
+    type?: string;
+}
+
+interface PermissionDescriptor {
+    name: PermissionName;
+}
+
+interface PipeOptions {
+    preventAbort?: boolean;
+    preventCancel?: boolean;
+    preventClose?: boolean;
+    signal?: AbortSignal;
+}
+
+interface PostMessageOptions {
+    transfer?: any[];
+}
+
+interface ProgressEventInit extends EventInit {
+    lengthComputable?: boolean;
+    loaded?: number;
+    total?: number;
+}
+
+interface PromiseRejectionEventInit extends EventInit {
+    promise: Promise<any>;
+    reason?: any;
+}
+
+interface PushEventInit extends ExtendableEventInit {
+    data?: PushMessageDataInit;
+}
+
+interface PushPermissionDescriptor extends PermissionDescriptor {
+    name: "push";
+    userVisibleOnly?: boolean;
+}
+
+interface PushSubscriptionChangeEventInit extends ExtendableEventInit {
+    newSubscription?: PushSubscription;
+    oldSubscription?: PushSubscription;
+}
+
+interface PushSubscriptionJSON {
+    endpoint?: string;
+    expirationTime?: number | null;
+    keys?: Record<string, string>;
+}
+
+interface PushSubscriptionOptionsInit {
+    applicationServerKey?: BufferSource | string | null;
+    userVisibleOnly?: boolean;
+}
+
+interface QueuingStrategy<T = any> {
+    highWaterMark?: number;
+    size?: QueuingStrategySizeCallback<T>;
+}
+
+interface ReadableStreamReadDoneResult<T> {
+    done: true;
+    value?: T;
+}
+
+interface ReadableStreamReadValueResult<T> {
+    done: false;
+    value: T;
+}
+
+interface RegistrationOptions {
+    scope?: string;
+    type?: WorkerType;
+    updateViaCache?: ServiceWorkerUpdateViaCache;
+}
+
+interface RequestInit {
+    /**
+     * A BodyInit object or null to set request's body.
+     */
+    body?: BodyInit | null;
+    /**
+     * A string indicating how the request will interact with the browser's cache to set request's cache.
+     */
+    cache?: RequestCache;
+    /**
+     * A string indicating whether credentials will be sent with the request always, never, or only when sent to a same-origin URL. Sets request's credentials.
+     */
+    credentials?: RequestCredentials;
+    /**
+     * A Headers object, an object literal, or an array of two-item arrays to set request's headers.
+     */
+    headers?: HeadersInit;
+    /**
+     * A cryptographic hash of the resource to be fetched by request. Sets request's integrity.
+     */
+    integrity?: string;
+    /**
+     * A boolean to set request's keepalive.
+     */
+    keepalive?: boolean;
+    /**
+     * A string to set request's method.
+     */
+    method?: string;
+    /**
+     * A string to indicate whether the request will use CORS, or will be restricted to same-origin URLs. Sets request's mode.
+     */
+    mode?: RequestMode;
+    /**
+     * A string indicating whether request follows redirects, results in an error upon encountering a redirect, or returns the redirect (in an opaque fashion). Sets request's redirect.
+     */
+    redirect?: RequestRedirect;
+    /**
+     * A string whose value is a same-origin URL, "about:client", or the empty string, to set request's referrer.
+     */
+    referrer?: string;
+    /**
+     * A referrer policy to set request's referrerPolicy.
+     */
+    referrerPolicy?: ReferrerPolicy;
+    /**
+     * An AbortSignal to set request's signal.
+     */
+    signal?: AbortSignal | null;
+    /**
+     * Can only be null. Used to disassociate request from any Window.
+     */
+    window?: any;
+}
+
+interface ResponseInit {
+    headers?: HeadersInit;
+    status?: number;
+    statusText?: string;
+}
+
+interface RsaHashedImportParams extends Algorithm {
+    hash: HashAlgorithmIdentifier;
+}
+
+interface RsaHashedKeyGenParams extends RsaKeyGenParams {
+    hash: HashAlgorithmIdentifier;
+}
+
+interface RsaKeyGenParams extends Algorithm {
+    modulusLength: number;
+    publicExponent: BigInteger;
+}
+
+interface RsaOaepParams extends Algorithm {
+    label?: Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | Float32Array | Float64Array | DataView | ArrayBuffer;
+}
+
+interface RsaOtherPrimesInfo {
+    d?: string;
+    r?: string;
+    t?: string;
+}
+
+interface RsaPssParams extends Algorithm {
+    saltLength: number;
+}
+
+interface StorageEstimate {
+    quota?: number;
+    usage?: number;
+}
+
+interface SyncEventInit extends ExtendableEventInit {
+    lastChance?: boolean;
+    tag: string;
+}
+
+interface TextDecodeOptions {
+    stream?: boolean;
+}
+
+interface TextDecoderOptions {
+    fatal?: boolean;
+    ignoreBOM?: boolean;
+}
+
+interface TextEncoderEncodeIntoResult {
+    read?: number;
+    written?: number;
+}
+
+interface Transformer<I = any, O = any> {
+    flush?: TransformStreamDefaultControllerCallback<O>;
+    readableType?: undefined;
+    start?: TransformStreamDefaultControllerCallback<O>;
+    transform?: TransformStreamDefaultControllerTransformCallback<I, O>;
+    writableType?: undefined;
+}
+
+interface UnderlyingByteSource {
+    autoAllocateChunkSize?: number;
+    cancel?: ReadableStreamErrorCallback;
+    pull?: ReadableByteStreamControllerCallback;
+    start?: ReadableByteStreamControllerCallback;
+    type: "bytes";
+}
+
+interface UnderlyingSink<W = any> {
+    abort?: WritableStreamErrorCallback;
+    close?: WritableStreamDefaultControllerCloseCallback;
+    start?: WritableStreamDefaultControllerStartCallback;
+    type?: undefined;
+    write?: WritableStreamDefaultControllerWriteCallback<W>;
+}
+
+interface UnderlyingSource<R = any> {
+    cancel?: ReadableStreamErrorCallback;
+    pull?: ReadableStreamDefaultControllerCallback<R>;
+    start?: ReadableStreamDefaultControllerCallback<R>;
+    type?: undefined;
+}
+
+interface WebGLContextAttributes {
+    alpha?: boolean;
+    antialias?: boolean;
+    depth?: boolean;
+    desynchronized?: boolean;
+    failIfMajorPerformanceCaveat?: boolean;
+    powerPreference?: WebGLPowerPreference;
+    premultipliedAlpha?: boolean;
+    preserveDrawingBuffer?: boolean;
+    stencil?: boolean;
+}
+
+interface WebGLContextEventInit extends EventInit {
+    statusMessage?: string;
+}
+
+interface WorkerOptions {
+    credentials?: RequestCredentials;
+    name?: string;
+    type?: WorkerType;
+}
+
+interface EventListener {
+    (evt: Event): void;
+}
+
+/** The ANGLE_instanced_arrays extension is part of the WebGL API and allows to draw the same object, or groups of similar objects multiple times, if they share the same vertex data, primitive count and type. */
+interface ANGLE_instanced_arrays {
+    drawArraysInstancedANGLE(mode: GLenum, first: GLint, count: GLsizei, primcount: GLsizei): void;
+    drawElementsInstancedANGLE(mode: GLenum, count: GLsizei, type: GLenum, offset: GLintptr, primcount: GLsizei): void;
+    vertexAttribDivisorANGLE(index: GLuint, divisor: GLuint): void;
+    readonly VERTEX_ATTRIB_ARRAY_DIVISOR_ANGLE: GLenum;
+}
+
+/** A controller object that allows you to abort one or more DOM requests as and when desired. */
+interface AbortController {
+    /**
+     * Returns the AbortSignal object associated with this object.
+     */
+    readonly signal: AbortSignal;
+    /**
+     * Invoking this method will set this object's AbortSignal's aborted flag and signal to any observers that the associated activity is to be aborted.
+     */
+    abort(): void;
+}
+
+declare var AbortController: {
+    prototype: AbortController;
+    new(): AbortController;
+};
+
+interface AbortSignalEventMap {
+    "abort": Event;
+}
+
+/** A signal object that allows you to communicate with a DOM request (such as a Fetch) and abort it if required via an AbortController object. */
+interface AbortSignal extends EventTarget {
+    /**
+     * Returns true if this AbortSignal's AbortController has signaled to abort, and false otherwise.
+     */
+    readonly aborted: boolean;
+    onabort: ((this: AbortSignal, ev: Event) => any) | null;
+    addEventListener<K extends keyof AbortSignalEventMap>(type: K, listener: (this: AbortSignal, ev: AbortSignalEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+    addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+    removeEventListener<K extends keyof AbortSignalEventMap>(type: K, listener: (this: AbortSignal, ev: AbortSignalEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+    removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+}
+
+declare var AbortSignal: {
+    prototype: AbortSignal;
+    new(): AbortSignal;
+};
+
+interface AbstractWorkerEventMap {
+    "error": ErrorEvent;
+}
+
+interface AbstractWorker {
+    onerror: ((this: AbstractWorker, ev: ErrorEvent) => any) | null;
+    addEventListener<K extends keyof AbstractWorkerEventMap>(type: K, listener: (this: AbstractWorker, ev: AbstractWorkerEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+    addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+    removeEventListener<K extends keyof AbstractWorkerEventMap>(type: K, listener: (this: AbstractWorker, ev: AbstractWorkerEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+    removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+}
+
+interface AesCfbParams extends Algorithm {
+    iv: Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | Float32Array | Float64Array | DataView | ArrayBuffer;
+}
+
+interface AesCmacParams extends Algorithm {
+    length: number;
+}
+
+interface AnimationFrameProvider {
+    cancelAnimationFrame(handle: number): void;
+    requestAnimationFrame(callback: FrameRequestCallback): number;
+}
+
+/** A file-like object of immutable, raw data. Blobs represent data that isn't necessarily in a JavaScript-native format. The File interface is based on Blob, inheriting blob functionality and expanding it to support files on the user's system. */
+interface Blob {
+    readonly size: number;
+    readonly type: string;
+    arrayBuffer(): Promise<ArrayBuffer>;
+    slice(start?: number, end?: number, contentType?: string): Blob;
+    stream(): ReadableStream;
+    text(): Promise<string>;
+}
+
+declare var Blob: {
+    prototype: Blob;
+    new(blobParts?: BlobPart[], options?: BlobPropertyBag): Blob;
+};
+
+interface Body {
+    readonly body: ReadableStream<Uint8Array> | null;
+    readonly bodyUsed: boolean;
+    arrayBuffer(): Promise<ArrayBuffer>;
+    blob(): Promise<Blob>;
+    formData(): Promise<FormData>;
+    json(): Promise<any>;
+    text(): Promise<string>;
+}
+
+interface BroadcastChannelEventMap {
+    "message": MessageEvent;
+    "messageerror": MessageEvent;
+}
+
+interface BroadcastChannel extends EventTarget {
+    /**
+     * Returns the channel name (as passed to the constructor).
+     */
+    readonly name: string;
+    onmessage: ((this: BroadcastChannel, ev: MessageEvent) => any) | null;
+    onmessageerror: ((this: BroadcastChannel, ev: MessageEvent) => any) | null;
+    /**
+     * Closes the BroadcastChannel object, opening it up to garbage collection.
+     */
+    close(): void;
+    /**
+     * Sends the given message to other BroadcastChannel objects set up for this channel. Messages can be structured objects, e.g. nested objects and arrays.
+     */
+    postMessage(message: any): void;
+    addEventListener<K extends keyof BroadcastChannelEventMap>(type: K, listener: (this: BroadcastChannel, ev: BroadcastChannelEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+    addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+    removeEventListener<K extends keyof BroadcastChannelEventMap>(type: K, listener: (this: BroadcastChannel, ev: BroadcastChannelEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+    removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+}
+
+declare var BroadcastChannel: {
+    prototype: BroadcastChannel;
+    new(name: string): BroadcastChannel;
+};
+
+/** This Streams API interface provides a built-in byte length queuing strategy that can be used when constructing streams. */
+interface ByteLengthQueuingStrategy extends QueuingStrategy<ArrayBufferView> {
+    highWaterMark: number;
+    size(chunk: ArrayBufferView): number;
+}
+
+declare var ByteLengthQueuingStrategy: {
+    prototype: ByteLengthQueuingStrategy;
+    new(options: { highWaterMark: number }): ByteLengthQueuingStrategy;
+};
+
+/** Provides a storage mechanism for Request / Response object pairs that are cached, for example as part of the ServiceWorker life cycle. Note that the Cache interface is exposed to windowed scopes as well as workers. You don't have to use it in conjunction with service workers, even though it is defined in the service worker spec. */
+interface Cache {
+    add(request: RequestInfo): Promise<void>;
+    addAll(requests: RequestInfo[]): Promise<void>;
+    delete(request: RequestInfo, options?: CacheQueryOptions): Promise<boolean>;
+    keys(request?: RequestInfo, options?: CacheQueryOptions): Promise<ReadonlyArray<Request>>;
+    match(request: RequestInfo, options?: CacheQueryOptions): Promise<Response | undefined>;
+    matchAll(request?: RequestInfo, options?: CacheQueryOptions): Promise<ReadonlyArray<Response>>;
+    put(request: RequestInfo, response: Response): Promise<void>;
+}
+
+declare var Cache: {
+    prototype: Cache;
+    new(): Cache;
+};
+
+/** The storage for Cache objects. */
+interface CacheStorage {
+    delete(cacheName: string): Promise<boolean>;
+    has(cacheName: string): Promise<boolean>;
+    keys(): Promise<string[]>;
+    match(request: RequestInfo, options?: MultiCacheQueryOptions): Promise<Response | undefined>;
+    open(cacheName: string): Promise<Cache>;
+}
+
+declare var CacheStorage: {
+    prototype: CacheStorage;
+    new(): CacheStorage;
+};
+
+interface CanvasCompositing {
+    globalAlpha: number;
+    globalCompositeOperation: string;
+}
+
+interface CanvasDrawImage {
+    drawImage(image: CanvasImageSource, dx: number, dy: number): void;
+    drawImage(image: CanvasImageSource, dx: number, dy: number, dw: number, dh: number): void;
+    drawImage(image: CanvasImageSource, sx: number, sy: number, sw: number, sh: number, dx: number, dy: number, dw: number, dh: number): void;
+}
+
+interface CanvasDrawPath {
+    beginPath(): void;
+    clip(fillRule?: CanvasFillRule): void;
+    clip(path: Path2D, fillRule?: CanvasFillRule): void;
+    fill(fillRule?: CanvasFillRule): void;
+    fill(path: Path2D, fillRule?: CanvasFillRule): void;
+    isPointInPath(x: number, y: number, fillRule?: CanvasFillRule): boolean;
+    isPointInPath(path: Path2D, x: number, y: number, fillRule?: CanvasFillRule): boolean;
+    isPointInStroke(x: number, y: number): boolean;
+    isPointInStroke(path: Path2D, x: number, y: number): boolean;
+    stroke(): void;
+    stroke(path: Path2D): void;
+}
+
+interface CanvasFillStrokeStyles {
+    fillStyle: string | CanvasGradient | CanvasPattern;
+    strokeStyle: string | CanvasGradient | CanvasPattern;
+    createLinearGradient(x0: number, y0: number, x1: number, y1: number): CanvasGradient;
+    createPattern(image: CanvasImageSource, repetition: string | null): CanvasPattern | null;
+    createRadialGradient(x0: number, y0: number, r0: number, x1: number, y1: number, r1: number): CanvasGradient;
+}
+
+interface CanvasFilters {
+    filter: string;
+}
+
+/** An opaque object describing a gradient. It is returned by the methods CanvasRenderingContext2D.createLinearGradient() or CanvasRenderingContext2D.createRadialGradient(). */
+interface CanvasGradient {
+    /**
+     * Adds a color stop with the given color to the gradient at the given offset. 0.0 is the offset at one end of the gradient, 1.0 is the offset at the other end.
+     * 
+     * Throws an "IndexSizeError" DOMException if the offset is out of range. Throws a "SyntaxError" DOMException if the color cannot be parsed.
+     */
+    addColorStop(offset: number, color: string): void;
+}
+
+declare var CanvasGradient: {
+    prototype: CanvasGradient;
+    new(): CanvasGradient;
+};
+
+interface CanvasImageData {
+    createImageData(sw: number, sh: number): ImageData;
+    createImageData(imagedata: ImageData): ImageData;
+    getImageData(sx: number, sy: number, sw: number, sh: number): ImageData;
+    putImageData(imagedata: ImageData, dx: number, dy: number): void;
+    putImageData(imagedata: ImageData, dx: number, dy: number, dirtyX: number, dirtyY: number, dirtyWidth: number, dirtyHeight: number): void;
+}
+
+interface CanvasImageSmoothing {
+    imageSmoothingEnabled: boolean;
+    imageSmoothingQuality: ImageSmoothingQuality;
+}
+
+interface CanvasPath {
+    arc(x: number, y: number, radius: number, startAngle: number, endAngle: number, anticlockwise?: boolean): void;
+    arcTo(x1: number, y1: number, x2: number, y2: number, radius: number): void;
+    bezierCurveTo(cp1x: number, cp1y: number, cp2x: number, cp2y: number, x: number, y: number): void;
+    closePath(): void;
+    ellipse(x: number, y: number, radiusX: number, radiusY: number, rotation: number, startAngle: number, endAngle: number, anticlockwise?: boolean): void;
+    lineTo(x: number, y: number): void;
+    moveTo(x: number, y: number): void;
+    quadraticCurveTo(cpx: number, cpy: number, x: number, y: number): void;
+    rect(x: number, y: number, w: number, h: number): void;
+}
+
+interface CanvasPathDrawingStyles {
+    lineCap: CanvasLineCap;
+    lineDashOffset: number;
+    lineJoin: CanvasLineJoin;
+    lineWidth: number;
+    miterLimit: number;
+    getLineDash(): number[];
+    setLineDash(segments: number[]): void;
+}
+
+/** An opaque object describing a pattern, based on an image, a canvas, or a video, created by the CanvasRenderingContext2D.createPattern() method. */
+interface CanvasPattern {
+    /**
+     * Sets the transformation matrix that will be used when rendering the pattern during a fill or stroke painting operation.
+     */
+    setTransform(transform?: DOMMatrix2DInit): void;
+}
+
+declare var CanvasPattern: {
+    prototype: CanvasPattern;
+    new(): CanvasPattern;
+};
+
+interface CanvasRect {
+    clearRect(x: number, y: number, w: number, h: number): void;
+    fillRect(x: number, y: number, w: number, h: number): void;
+    strokeRect(x: number, y: number, w: number, h: number): void;
+}
+
+interface CanvasShadowStyles {
+    shadowBlur: number;
+    shadowColor: string;
+    shadowOffsetX: number;
+    shadowOffsetY: number;
+}
+
+interface CanvasState {
+    restore(): void;
+    save(): void;
+}
+
+interface CanvasText {
+    fillText(text: string, x: number, y: number, maxWidth?: number): void;
+    measureText(text: string): TextMetrics;
+    strokeText(text: string, x: number, y: number, maxWidth?: number): void;
+}
+
+interface CanvasTextDrawingStyles {
+    direction: CanvasDirection;
+    font: string;
+    textAlign: CanvasTextAlign;
+    textBaseline: CanvasTextBaseline;
+}
+
+interface CanvasTransform {
+    getTransform(): DOMMatrix;
+    resetTransform(): void;
+    rotate(angle: number): void;
+    scale(x: number, y: number): void;
+    setTransform(a: number, b: number, c: number, d: number, e: number, f: number): void;
+    setTransform(transform?: DOMMatrix2DInit): void;
+    transform(a: number, b: number, c: number, d: number, e: number, f: number): void;
+    translate(x: number, y: number): void;
+}
+
+/** The Client interface represents an executable context such as a Worker, or a SharedWorker. Window clients are represented by the more-specific WindowClient. You can get Client/WindowClient objects from methods such as Clients.matchAll() and Clients.get(). */
+interface Client {
+    readonly frameType: FrameType;
+    readonly id: string;
+    readonly type: ClientTypes;
+    readonly url: string;
+    postMessage(message: any, transfer?: Transferable[]): void;
+}
+
+declare var Client: {
+    prototype: Client;
+    new(): Client;
+};
+
+/** Provides access to Client objects. Access it via self.clients within a service worker. */
+interface Clients {
+    claim(): Promise<void>;
+    get(id: string): Promise<Client | undefined>;
+    matchAll(options?: ClientQueryOptions): Promise<ReadonlyArray<Client>>;
+    openWindow(url: string): Promise<WindowClient | null>;
+}
+
+declare var Clients: {
+    prototype: Clients;
+    new(): Clients;
+};
+
+/** A CloseEvent is sent to clients using WebSockets when the connection is closed. This is delivered to the listener indicated by the WebSocket object's onclose attribute. */
+interface CloseEvent extends Event {
+    /**
+     * Returns the WebSocket connection close code provided by the server.
+     */
+    readonly code: number;
+    /**
+     * Returns the WebSocket connection close reason provided by the server.
+     */
+    readonly reason: string;
+    /**
+     * Returns true if the connection closed cleanly; false otherwise.
+     */
+    readonly wasClean: boolean;
+}
+
+declare var CloseEvent: {
+    prototype: CloseEvent;
+    new(type: string, eventInitDict?: CloseEventInit): CloseEvent;
+};
+
+interface ConcatParams extends Algorithm {
+    algorithmId: Uint8Array;
+    hash?: string | Algorithm;
+    partyUInfo: Uint8Array;
+    partyVInfo: Uint8Array;
+    privateInfo?: Uint8Array;
+    publicInfo?: Uint8Array;
+}
+
+/** This Streams API interface provides a built-in byte length queuing strategy that can be used when constructing streams. */
+interface CountQueuingStrategy extends QueuingStrategy {
+    highWaterMark: number;
+    size(chunk: any): 1;
+}
+
+declare var CountQueuingStrategy: {
+    prototype: CountQueuingStrategy;
+    new(options: { highWaterMark: number }): CountQueuingStrategy;
+};
+
+/** Basic cryptography features available in the current context. It allows access to a cryptographically strong random number generator and to cryptographic primitives. */
+interface Crypto {
+    readonly subtle: SubtleCrypto;
+    getRandomValues<T extends Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | Float32Array | Float64Array | DataView | null>(array: T): T;
+}
+
+declare var Crypto: {
+    prototype: Crypto;
+    new(): Crypto;
+};
+
+/** The CryptoKey dictionary of the Web Crypto API represents a cryptographic key. */
+interface CryptoKey {
+    readonly algorithm: KeyAlgorithm;
+    readonly extractable: boolean;
+    readonly type: KeyType;
+    readonly usages: KeyUsage[];
+}
+
+declare var CryptoKey: {
+    prototype: CryptoKey;
+    new(): CryptoKey;
+};
+
+interface CustomEvent<T = any> extends Event {
+    /**
+     * Returns any custom data event was created with. Typically used for synthetic events.
+     */
+    readonly detail: T;
+    initCustomEvent(typeArg: string, canBubbleArg: boolean, cancelableArg: boolean, detailArg: T): void;
+}
+
+declare var CustomEvent: {
+    prototype: CustomEvent;
+    new<T>(typeArg: string, eventInitDict?: CustomEventInit<T>): CustomEvent<T>;
+};
+
+/** An abnormal event (called an exception) which occurs as a result of calling a method or accessing a property of a web API. */
+interface DOMException {
+    readonly code: number;
+    readonly message: string;
+    readonly name: string;
+    readonly ABORT_ERR: number;
+    readonly DATA_CLONE_ERR: number;
+    readonly DOMSTRING_SIZE_ERR: number;
+    readonly HIERARCHY_REQUEST_ERR: number;
+    readonly INDEX_SIZE_ERR: number;
+    readonly INUSE_ATTRIBUTE_ERR: number;
+    readonly INVALID_ACCESS_ERR: number;
+    readonly INVALID_CHARACTER_ERR: number;
+    readonly INVALID_MODIFICATION_ERR: number;
+    readonly INVALID_NODE_TYPE_ERR: number;
+    readonly INVALID_STATE_ERR: number;
+    readonly NAMESPACE_ERR: number;
+    readonly NETWORK_ERR: number;
+    readonly NOT_FOUND_ERR: number;
+    readonly NOT_SUPPORTED_ERR: number;
+    readonly NO_DATA_ALLOWED_ERR: number;
+    readonly NO_MODIFICATION_ALLOWED_ERR: number;
+    readonly QUOTA_EXCEEDED_ERR: number;
+    readonly SECURITY_ERR: number;
+    readonly SYNTAX_ERR: number;
+    readonly TIMEOUT_ERR: number;
+    readonly TYPE_MISMATCH_ERR: number;
+    readonly URL_MISMATCH_ERR: number;
+    readonly VALIDATION_ERR: number;
+    readonly WRONG_DOCUMENT_ERR: number;
+}
+
+declare var DOMException: {
+    prototype: DOMException;
+    new(message?: string, name?: string): DOMException;
+    readonly ABORT_ERR: number;
+    readonly DATA_CLONE_ERR: number;
+    readonly DOMSTRING_SIZE_ERR: number;
+    readonly HIERARCHY_REQUEST_ERR: number;
+    readonly INDEX_SIZE_ERR: number;
+    readonly INUSE_ATTRIBUTE_ERR: number;
+    readonly INVALID_ACCESS_ERR: number;
+    readonly INVALID_CHARACTER_ERR: number;
+    readonly INVALID_MODIFICATION_ERR: number;
+    readonly INVALID_NODE_TYPE_ERR: number;
+    readonly INVALID_STATE_ERR: number;
+    readonly NAMESPACE_ERR: number;
+    readonly NETWORK_ERR: number;
+    readonly NOT_FOUND_ERR: number;
+    readonly NOT_SUPPORTED_ERR: number;
+    readonly NO_DATA_ALLOWED_ERR: number;
+    readonly NO_MODIFICATION_ALLOWED_ERR: number;
+    readonly QUOTA_EXCEEDED_ERR: number;
+    readonly SECURITY_ERR: number;
+    readonly SYNTAX_ERR: number;
+    readonly TIMEOUT_ERR: number;
+    readonly TYPE_MISMATCH_ERR: number;
+    readonly URL_MISMATCH_ERR: number;
+    readonly VALIDATION_ERR: number;
+    readonly WRONG_DOCUMENT_ERR: number;
+};
+
+interface DOMMatrix extends DOMMatrixReadOnly {
+    a: number;
+    b: number;
+    c: number;
+    d: number;
+    e: number;
+    f: number;
+    m11: number;
+    m12: number;
+    m13: number;
+    m14: number;
+    m21: number;
+    m22: number;
+    m23: number;
+    m24: number;
+    m31: number;
+    m32: number;
+    m33: number;
+    m34: number;
+    m41: number;
+    m42: number;
+    m43: number;
+    m44: number;
+    invertSelf(): DOMMatrix;
+    multiplySelf(other?: DOMMatrixInit): DOMMatrix;
+    preMultiplySelf(other?: DOMMatrixInit): DOMMatrix;
+    rotateAxisAngleSelf(x?: number, y?: number, z?: number, angle?: number): DOMMatrix;
+    rotateFromVectorSelf(x?: number, y?: number): DOMMatrix;
+    rotateSelf(rotX?: number, rotY?: number, rotZ?: number): DOMMatrix;
+    scale3dSelf(scale?: number, originX?: number, originY?: number, originZ?: number): DOMMatrix;
+    scaleSelf(scaleX?: number, scaleY?: number, scaleZ?: number, originX?: number, originY?: number, originZ?: number): DOMMatrix;
+    skewXSelf(sx?: number): DOMMatrix;
+    skewYSelf(sy?: number): DOMMatrix;
+    translateSelf(tx?: number, ty?: number, tz?: number): DOMMatrix;
+}
+
+declare var DOMMatrix: {
+    prototype: DOMMatrix;
+    new(init?: string | number[]): DOMMatrix;
+    fromFloat32Array(array32: Float32Array): DOMMatrix;
+    fromFloat64Array(array64: Float64Array): DOMMatrix;
+    fromMatrix(other?: DOMMatrixInit): DOMMatrix;
+};
+
+interface DOMMatrixReadOnly {
+    readonly a: number;
+    readonly b: number;
+    readonly c: number;
+    readonly d: number;
+    readonly e: number;
+    readonly f: number;
+    readonly is2D: boolean;
+    readonly isIdentity: boolean;
+    readonly m11: number;
+    readonly m12: number;
+    readonly m13: number;
+    readonly m14: number;
+    readonly m21: number;
+    readonly m22: number;
+    readonly m23: number;
+    readonly m24: number;
+    readonly m31: number;
+    readonly m32: number;
+    readonly m33: number;
+    readonly m34: number;
+    readonly m41: number;
+    readonly m42: number;
+    readonly m43: number;
+    readonly m44: number;
+    flipX(): DOMMatrix;
+    flipY(): DOMMatrix;
+    inverse(): DOMMatrix;
+    multiply(other?: DOMMatrixInit): DOMMatrix;
+    rotate(rotX?: number, rotY?: number, rotZ?: number): DOMMatrix;
+    rotateAxisAngle(x?: number, y?: number, z?: number, angle?: number): DOMMatrix;
+    rotateFromVector(x?: number, y?: number): DOMMatrix;
+    scale(scaleX?: number, scaleY?: number, scaleZ?: number, originX?: number, originY?: number, originZ?: number): DOMMatrix;
+    scale3d(scale?: number, originX?: number, originY?: number, originZ?: number): DOMMatrix;
+    /** @deprecated */
+    scaleNonUniform(scaleX?: number, scaleY?: number): DOMMatrix;
+    skewX(sx?: number): DOMMatrix;
+    skewY(sy?: number): DOMMatrix;
+    toFloat32Array(): Float32Array;
+    toFloat64Array(): Float64Array;
+    toJSON(): any;
+    transformPoint(point?: DOMPointInit): DOMPoint;
+    translate(tx?: number, ty?: number, tz?: number): DOMMatrix;
+}
+
+declare var DOMMatrixReadOnly: {
+    prototype: DOMMatrixReadOnly;
+    new(init?: string | number[]): DOMMatrixReadOnly;
+    fromFloat32Array(array32: Float32Array): DOMMatrixReadOnly;
+    fromFloat64Array(array64: Float64Array): DOMMatrixReadOnly;
+    fromMatrix(other?: DOMMatrixInit): DOMMatrixReadOnly;
+};
+
+interface DOMPoint extends DOMPointReadOnly {
+    w: number;
+    x: number;
+    y: number;
+    z: number;
+}
+
+declare var DOMPoint: {
+    prototype: DOMPoint;
+    new(x?: number, y?: number, z?: number, w?: number): DOMPoint;
+    fromPoint(other?: DOMPointInit): DOMPoint;
+};
+
+interface DOMPointReadOnly {
+    readonly w: number;
+    readonly x: number;
+    readonly y: number;
+    readonly z: number;
+    matrixTransform(matrix?: DOMMatrixInit): DOMPoint;
+    toJSON(): any;
+}
+
+declare var DOMPointReadOnly: {
+    prototype: DOMPointReadOnly;
+    new(x?: number, y?: number, z?: number, w?: number): DOMPointReadOnly;
+    fromPoint(other?: DOMPointInit): DOMPointReadOnly;
+};
+
+interface DOMQuad {
+    readonly p1: DOMPoint;
+    readonly p2: DOMPoint;
+    readonly p3: DOMPoint;
+    readonly p4: DOMPoint;
+    getBounds(): DOMRect;
+    toJSON(): any;
+}
+
+declare var DOMQuad: {
+    prototype: DOMQuad;
+    new(p1?: DOMPointInit, p2?: DOMPointInit, p3?: DOMPointInit, p4?: DOMPointInit): DOMQuad;
+    fromQuad(other?: DOMQuadInit): DOMQuad;
+    fromRect(other?: DOMRectInit): DOMQuad;
+};
+
+interface DOMRect extends DOMRectReadOnly {
+    height: number;
+    width: number;
+    x: number;
+    y: number;
+}
+
+declare var DOMRect: {
+    prototype: DOMRect;
+    new(x?: number, y?: number, width?: number, height?: number): DOMRect;
+    fromRect(other?: DOMRectInit): DOMRect;
+};
+
+interface DOMRectReadOnly {
+    readonly bottom: number;
+    readonly height: number;
+    readonly left: number;
+    readonly right: number;
+    readonly top: number;
+    readonly width: number;
+    readonly x: number;
+    readonly y: number;
+    toJSON(): any;
+}
+
+declare var DOMRectReadOnly: {
+    prototype: DOMRectReadOnly;
+    new(x?: number, y?: number, width?: number, height?: number): DOMRectReadOnly;
+    fromRect(other?: DOMRectInit): DOMRectReadOnly;
+};
+
+/** A type returned by some APIs which contains a list of DOMString (strings). */
+interface DOMStringList {
+    /**
+     * Returns the number of strings in strings.
+     */
+    readonly length: number;
+    /**
+     * Returns true if strings contains string, and false otherwise.
+     */
+    contains(string: string): boolean;
+    /**
+     * Returns the string with index index from strings.
+     */
+    item(index: number): string | null;
+    [index: number]: string;
+}
+
+declare var DOMStringList: {
+    prototype: DOMStringList;
+    new(): DOMStringList;
+};
+
+interface DedicatedWorkerGlobalScopeEventMap extends WorkerGlobalScopeEventMap {
+    "message": MessageEvent;
+    "messageerror": MessageEvent;
+}
+
+/** (the Worker global scope) is accessible through the self keyword. Some additional global functions, namespaces objects, and constructors, not typically associated with the worker global scope, but available on it, are listed in the JavaScript Reference. See also: Functions available to workers. */
+interface DedicatedWorkerGlobalScope extends WorkerGlobalScope, AnimationFrameProvider {
+    /**
+     * Returns dedicatedWorkerGlobal's name, i.e. the value given to the Worker constructor. Primarily useful for debugging.
+     */
+    readonly name: string;
+    onmessage: ((this: DedicatedWorkerGlobalScope, ev: MessageEvent) => any) | null;
+    onmessageerror: ((this: DedicatedWorkerGlobalScope, ev: MessageEvent) => any) | null;
+    /**
+     * Aborts dedicatedWorkerGlobal.
+     */
+    close(): void;
+    /**
+     * Clones message and transmits it to the Worker object associated with dedicatedWorkerGlobal. transfer can be passed as a list of objects that are to be transferred rather than cloned.
+     */
+    postMessage(message: any, transfer: Transferable[]): void;
+    postMessage(message: any, options?: PostMessageOptions): void;
+    addEventListener<K extends keyof DedicatedWorkerGlobalScopeEventMap>(type: K, listener: (this: DedicatedWorkerGlobalScope, ev: DedicatedWorkerGlobalScopeEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+    addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+    removeEventListener<K extends keyof DedicatedWorkerGlobalScopeEventMap>(type: K, listener: (this: DedicatedWorkerGlobalScope, ev: DedicatedWorkerGlobalScopeEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+    removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+}
+
+declare var DedicatedWorkerGlobalScope: {
+    prototype: DedicatedWorkerGlobalScope;
+    new(): DedicatedWorkerGlobalScope;
+};
+
+interface DhImportKeyParams extends Algorithm {
+    generator: Uint8Array;
+    prime: Uint8Array;
+}
+
+interface DhKeyAlgorithm extends KeyAlgorithm {
+    generator: Uint8Array;
+    prime: Uint8Array;
+}
+
+interface DhKeyDeriveParams extends Algorithm {
+    public: CryptoKey;
+}
+
+interface DhKeyGenParams extends Algorithm {
+    generator: Uint8Array;
+    prime: Uint8Array;
+}
+
+interface EXT_blend_minmax {
+    readonly MAX_EXT: GLenum;
+    readonly MIN_EXT: GLenum;
+}
+
+/** The EXT_frag_depth extension is part of the WebGL API and enables to set a depth value of a fragment from within the fragment shader. */
+interface EXT_frag_depth {
+}
+
+interface EXT_sRGB {
+    readonly FRAMEBUFFER_ATTACHMENT_COLOR_ENCODING_EXT: GLenum;
+    readonly SRGB8_ALPHA8_EXT: GLenum;
+    readonly SRGB_ALPHA_EXT: GLenum;
+    readonly SRGB_EXT: GLenum;
+}
+
+interface EXT_shader_texture_lod {
+}
+
+/** The EXT_texture_filter_anisotropic extension is part of the WebGL API and exposes two constants for anisotropic filtering (AF). */
+interface EXT_texture_filter_anisotropic {
+    readonly MAX_TEXTURE_MAX_ANISOTROPY_EXT: GLenum;
+    readonly TEXTURE_MAX_ANISOTROPY_EXT: GLenum;
+}
+
+/** Events providing information related to errors in scripts or in files. */
+interface ErrorEvent extends Event {
+    readonly colno: number;
+    readonly error: any;
+    readonly filename: string;
+    readonly lineno: number;
+    readonly message: string;
+}
+
+declare var ErrorEvent: {
+    prototype: ErrorEvent;
+    new(type: string, eventInitDict?: ErrorEventInit): ErrorEvent;
+};
+
+/** An event which takes place in the DOM. */
+interface Event {
+    /**
+     * Returns true or false depending on how event was initialized. True if event goes through its target's ancestors in reverse tree order, and false otherwise.
+     */
+    readonly bubbles: boolean;
+    cancelBubble: boolean;
+    /**
+     * Returns true or false depending on how event was initialized. Its return value does not always carry meaning, but true can indicate that part of the operation during which event was dispatched, can be canceled by invoking the preventDefault() method.
+     */
+    readonly cancelable: boolean;
+    /**
+     * Returns true or false depending on how event was initialized. True if event invokes listeners past a ShadowRoot node that is the root of its target, and false otherwise.
+     */
+    readonly composed: boolean;
+    /**
+     * Returns the object whose event listener's callback is currently being invoked.
+     */
+    readonly currentTarget: EventTarget | null;
+    /**
+     * Returns true if preventDefault() was invoked successfully to indicate cancelation, and false otherwise.
+     */
+    readonly defaultPrevented: boolean;
+    /**
+     * Returns the event's phase, which is one of NONE, CAPTURING_PHASE, AT_TARGET, and BUBBLING_PHASE.
+     */
+    readonly eventPhase: number;
+    /**
+     * Returns true if event was dispatched by the user agent, and false otherwise.
+     */
+    readonly isTrusted: boolean;
+    returnValue: boolean;
+    /** @deprecated */
+    readonly srcElement: EventTarget | null;
+    /**
+     * Returns the object to which event is dispatched (its target).
+     */
+    readonly target: EventTarget | null;
+    /**
+     * Returns the event's timestamp as the number of milliseconds measured relative to the time origin.
+     */
+    readonly timeStamp: number;
+    /**
+     * Returns the type of event, e.g. "click", "hashchange", or "submit".
+     */
+    readonly type: string;
+    /**
+     * Returns the invocation target objects of event's path (objects on which listeners will be invoked), except for any nodes in shadow trees of which the shadow root's mode is "closed" that are not reachable from event's currentTarget.
+     */
+    composedPath(): EventTarget[];
+    initEvent(type: string, bubbles?: boolean, cancelable?: boolean): void;
+    /**
+     * If invoked when the cancelable attribute value is true, and while executing a listener for the event with passive set to false, signals to the operation that caused event to be dispatched that it needs to be canceled.
+     */
+    preventDefault(): void;
+    /**
+     * Invoking this method prevents event from reaching any registered event listeners after the current one finishes running and, when dispatched in a tree, also prevents event from reaching any other objects.
+     */
+    stopImmediatePropagation(): void;
+    /**
+     * When dispatched in a tree, invoking this method prevents event from reaching any objects other than the current object.
+     */
+    stopPropagation(): void;
+    readonly AT_TARGET: number;
+    readonly BUBBLING_PHASE: number;
+    readonly CAPTURING_PHASE: number;
+    readonly NONE: number;
+}
+
+declare var Event: {
+    prototype: Event;
+    new(type: string, eventInitDict?: EventInit): Event;
+    readonly AT_TARGET: number;
+    readonly BUBBLING_PHASE: number;
+    readonly CAPTURING_PHASE: number;
+    readonly NONE: number;
+};
+
+interface EventListenerObject {
+    handleEvent(evt: Event): void;
+}
+
+interface EventSourceEventMap {
+    "error": Event;
+    "message": MessageEvent;
+    "open": Event;
+}
+
+interface EventSource extends EventTarget {
+    onerror: ((this: EventSource, ev: Event) => any) | null;
+    onmessage: ((this: EventSource, ev: MessageEvent) => any) | null;
+    onopen: ((this: EventSource, ev: Event) => any) | null;
+    /**
+     * Returns the state of this EventSource object's connection. It can have the values described below.
+     */
+    readonly readyState: number;
+    /**
+     * Returns the URL providing the event stream.
+     */
+    readonly url: string;
+    /**
+     * Returns true if the credentials mode for connection requests to the URL providing the event stream is set to "include", and false otherwise.
+     */
+    readonly withCredentials: boolean;
+    /**
+     * Aborts any instances of the fetch algorithm started for this EventSource object, and sets the readyState attribute to CLOSED.
+     */
+    close(): void;
+    readonly CLOSED: number;
+    readonly CONNECTING: number;
+    readonly OPEN: number;
+    addEventListener<K extends keyof EventSourceEventMap>(type: K, listener: (this: EventSource, ev: EventSourceEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+    addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+    removeEventListener<K extends keyof EventSourceEventMap>(type: K, listener: (this: EventSource, ev: EventSourceEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+    removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+}
+
+declare var EventSource: {
+    prototype: EventSource;
+    new(url: string, eventSourceInitDict?: EventSourceInit): EventSource;
+    readonly CLOSED: number;
+    readonly CONNECTING: number;
+    readonly OPEN: number;
+};
+
+/** EventTarget is a DOM interface implemented by objects that can receive events and may have listeners for them. */
+interface EventTarget {
+    /**
+     * Appends an event listener for events whose type attribute value is type. The callback argument sets the callback that will be invoked when the event is dispatched.
+     * 
+     * The options argument sets listener-specific options. For compatibility this can be a boolean, in which case the method behaves exactly as if the value was specified as options's capture.
+     * 
+     * When set to true, options's capture prevents callback from being invoked when the event's eventPhase attribute value is BUBBLING_PHASE. When false (or not present), callback will not be invoked when event's eventPhase attribute value is CAPTURING_PHASE. Either way, callback will be invoked if event's eventPhase attribute value is AT_TARGET.
+     * 
+     * When set to true, options's passive indicates that the callback will not cancel the event by invoking preventDefault(). This is used to enable performance optimizations described in § 2.8 Observing event listeners.
+     * 
+     * When set to true, options's once indicates that the callback will only be invoked once after which the event listener will be removed.
+     * 
+     * The event listener is appended to target's event listener list and is not appended if it has the same type, callback, and capture.
+     */
+    addEventListener(type: string, listener: EventListenerOrEventListenerObject | null, options?: boolean | AddEventListenerOptions): void;
+    /**
+     * Dispatches a synthetic event event to target and returns true if either event's cancelable attribute value is false or its preventDefault() method was not invoked, and false otherwise.
+     */
+    dispatchEvent(event: Event): boolean;
+    /**
+     * Removes the event listener in target's event listener list with the same type, callback, and options.
+     */
+    removeEventListener(type: string, callback: EventListenerOrEventListenerObject | null, options?: EventListenerOptions | boolean): void;
+}
+
+declare var EventTarget: {
+    prototype: EventTarget;
+    new(): EventTarget;
+};
+
+/** Extends the lifetime of the install and activate events dispatched on the global scope as part of the service worker lifecycle. This ensures that any functional events (like FetchEvent) are not dispatched until it upgrades database schemas and deletes the outdated cache entries. */
+interface ExtendableEvent extends Event {
+    waitUntil(f: any): void;
+}
+
+declare var ExtendableEvent: {
+    prototype: ExtendableEvent;
+    new(type: string, eventInitDict?: ExtendableEventInit): ExtendableEvent;
+};
+
+/** This ServiceWorker API interface represents the event object of a message event fired on a service worker (when a channel message is received on the ServiceWorkerGlobalScope from another context) — extends the lifetime of such events. */
+interface ExtendableMessageEvent extends ExtendableEvent {
+    readonly data: any;
+    readonly lastEventId: string;
+    readonly origin: string;
+    readonly ports: ReadonlyArray<MessagePort>;
+    readonly source: Client | ServiceWorker | MessagePort | null;
+}
+
+declare var ExtendableMessageEvent: {
+    prototype: ExtendableMessageEvent;
+    new(type: string, eventInitDict?: ExtendableMessageEventInit): ExtendableMessageEvent;
+};
+
+/** This is the event type for fetch events dispatched on the service worker global scope. It contains information about the fetch, including the request and how the receiver will treat the response. It provides the event.respondWith() method, which allows us to provide a response to this fetch. */
+interface FetchEvent extends ExtendableEvent {
+    readonly clientId: string;
+    readonly preloadResponse: Promise<any>;
+    readonly replacesClientId: string;
+    readonly request: Request;
+    readonly resultingClientId: string;
+    respondWith(r: Response | Promise<Response>): void;
+}
+
+declare var FetchEvent: {
+    prototype: FetchEvent;
+    new(type: string, eventInitDict: FetchEventInit): FetchEvent;
+};
+
+/** Provides information about files and allows JavaScript in a web page to access their content. */
+interface File extends Blob {
+    readonly lastModified: number;
+    readonly name: string;
+}
+
+declare var File: {
+    prototype: File;
+    new(fileBits: BlobPart[], fileName: string, options?: FilePropertyBag): File;
+};
+
+/** An object of this type is returned by the files property of the HTML <input> element; this lets you access the list of files selected with the <input type="file"> element. It's also used for a list of files dropped into web content when using the drag and drop API; see the DataTransfer object for details on this usage. */
+interface FileList {
+    readonly length: number;
+    item(index: number): File | null;
+    [index: number]: File;
+}
+
+declare var FileList: {
+    prototype: FileList;
+    new(): FileList;
+};
+
+interface FileReaderEventMap {
+    "abort": ProgressEvent<FileReader>;
+    "error": ProgressEvent<FileReader>;
+    "load": ProgressEvent<FileReader>;
+    "loadend": ProgressEvent<FileReader>;
+    "loadstart": ProgressEvent<FileReader>;
+    "progress": ProgressEvent<FileReader>;
+}
+
+/** Lets web applications asynchronously read the contents of files (or raw data buffers) stored on the user's computer, using File or Blob objects to specify the file or data to read. */
+interface FileReader extends EventTarget {
+    readonly error: DOMException | null;
+    onabort: ((this: FileReader, ev: ProgressEvent<FileReader>) => any) | null;
+    onerror: ((this: FileReader, ev: ProgressEvent<FileReader>) => any) | null;
+    onload: ((this: FileReader, ev: ProgressEvent<FileReader>) => any) | null;
+    onloadend: ((this: FileReader, ev: ProgressEvent<FileReader>) => any) | null;
+    onloadstart: ((this: FileReader, ev: ProgressEvent<FileReader>) => any) | null;
+    onprogress: ((this: FileReader, ev: ProgressEvent<FileReader>) => any) | null;
+    readonly readyState: number;
+    readonly result: string | ArrayBuffer | null;
+    abort(): void;
+    readAsArrayBuffer(blob: Blob): void;
+    readAsBinaryString(blob: Blob): void;
+    readAsDataURL(blob: Blob): void;
+    readAsText(blob: Blob, encoding?: string): void;
+    readonly DONE: number;
+    readonly EMPTY: number;
+    readonly LOADING: number;
+    addEventListener<K extends keyof FileReaderEventMap>(type: K, listener: (this: FileReader, ev: FileReaderEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+    addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+    removeEventListener<K extends keyof FileReaderEventMap>(type: K, listener: (this: FileReader, ev: FileReaderEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+    removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+}
+
+declare var FileReader: {
+    prototype: FileReader;
+    new(): FileReader;
+    readonly DONE: number;
+    readonly EMPTY: number;
+    readonly LOADING: number;
+};
+
+/** Allows to read File or Blob objects in a synchronous way. */
+interface FileReaderSync {
+    readAsArrayBuffer(blob: Blob): ArrayBuffer;
+    readAsBinaryString(blob: Blob): string;
+    readAsDataURL(blob: Blob): string;
+    readAsText(blob: Blob, encoding?: string): string;
+}
+
+declare var FileReaderSync: {
+    prototype: FileReaderSync;
+    new(): FileReaderSync;
+};
+
+/** Provides a way to easily construct a set of key/value pairs representing form fields and their values, which can then be easily sent using the XMLHttpRequest.send() method. It uses the same format a form would use if the encoding type were set to "multipart/form-data". */
+interface FormData {
+    append(name: string, value: string | Blob, fileName?: string): void;
+    delete(name: string): void;
+    get(name: string): FormDataEntryValue | null;
+    getAll(name: string): FormDataEntryValue[];
+    has(name: string): boolean;
+    set(name: string, value: string | Blob, fileName?: string): void;
+    forEach(callbackfn: (value: FormDataEntryValue, key: string, parent: FormData) => void, thisArg?: any): void;
+}
+
+declare var FormData: {
+    prototype: FormData;
+    new(): FormData;
+};
+
+interface GenericTransformStream {
+    /**
+     * Returns a readable stream whose chunks are strings resulting from running encoding's decoder on the chunks written to writable.
+     */
+    readonly readable: ReadableStream;
+    /**
+     * Returns a writable stream which accepts [AllowShared] BufferSource chunks and runs them through encoding's decoder before making them available to readable.
+     * 
+     * Typically this will be used via the pipeThrough() method on a ReadableStream source.
+     * 
+     * \`\`\`
+     * var decoder = new TextDecoderStream(encoding);
+     * byteReadable
+     *   .pipeThrough(decoder)
+     *   .pipeTo(textWritable);
+     * \`\`\`
+     * 
+     * If the error mode is "fatal" and encoding's decoder returns error, both readable and writable will be errored with a TypeError.
+     */
+    readonly writable: WritableStream;
+}
+
+/** This Fetch API interface allows you to perform various actions on HTTP request and response headers. These actions include retrieving, setting, adding to, and removing. A Headers object has an associated header list, which is initially empty and consists of zero or more name and value pairs.  You can add to this using methods like append() (see Examples.) In all methods of this interface, header names are matched by case-insensitive byte sequence. */
+interface Headers {
+    append(name: string, value: string): void;
+    delete(name: string): void;
+    get(name: string): string | null;
+    has(name: string): boolean;
+    set(name: string, value: string): void;
+    forEach(callbackfn: (value: string, key: string, parent: Headers) => void, thisArg?: any): void;
+}
+
+declare var Headers: {
+    prototype: Headers;
+    new(init?: HeadersInit): Headers;
+};
+
+interface IDBArrayKey extends Array<IDBValidKey> {
+}
+
+/** This IndexedDB API interface represents a cursor for traversing or iterating over multiple records in a database. */
+interface IDBCursor {
+    /**
+     * Returns the direction ("next", "nextunique", "prev" or "prevunique") of the cursor.
+     */
+    readonly direction: IDBCursorDirection;
+    /**
+     * Returns the key of the cursor. Throws a "InvalidStateError" DOMException if the cursor is advancing or is finished.
+     */
+    readonly key: IDBValidKey;
+    /**
+     * Returns the effective key of the cursor. Throws a "InvalidStateError" DOMException if the cursor is advancing or is finished.
+     */
+    readonly primaryKey: IDBValidKey;
+    /**
+     * Returns the IDBObjectStore or IDBIndex the cursor was opened from.
+     */
+    readonly source: IDBObjectStore | IDBIndex;
+    /**
+     * Advances the cursor through the next count records in range.
+     */
+    advance(count: number): void;
+    /**
+     * Advances the cursor to the next record in range.
+     */
+    continue(key?: IDBValidKey): void;
+    /**
+     * Advances the cursor to the next record in range matching or after key and primaryKey. Throws an "InvalidAccessError" DOMException if the source is not an index.
+     */
+    continuePrimaryKey(key: IDBValidKey, primaryKey: IDBValidKey): void;
+    /**
+     * Delete the record pointed at by the cursor with a new value.
+     * 
+     * If successful, request's result will be undefined.
+     */
+    delete(): IDBRequest<undefined>;
+    /**
+     * Updated the record pointed at by the cursor with a new value.
+     * 
+     * Throws a "DataError" DOMException if the effective object store uses in-line keys and the key would have changed.
+     * 
+     * If successful, request's result will be the record's key.
+     */
+    update(value: any): IDBRequest<IDBValidKey>;
+}
+
+declare var IDBCursor: {
+    prototype: IDBCursor;
+    new(): IDBCursor;
+};
+
+/** This IndexedDB API interface represents a cursor for traversing or iterating over multiple records in a database. It is the same as the IDBCursor, except that it includes the value property. */
+interface IDBCursorWithValue extends IDBCursor {
+    /**
+     * Returns the cursor's current value.
+     */
+    readonly value: any;
+}
+
+declare var IDBCursorWithValue: {
+    prototype: IDBCursorWithValue;
+    new(): IDBCursorWithValue;
+};
+
+interface IDBDatabaseEventMap {
+    "abort": Event;
+    "close": Event;
+    "error": Event;
+    "versionchange": IDBVersionChangeEvent;
+}
+
+/** This IndexedDB API interface provides a connection to a database; you can use an IDBDatabase object to open a transaction on your database then create, manipulate, and delete objects (data) in that database. The interface provides the only way to get and manage versions of the database. */
+interface IDBDatabase extends EventTarget {
+    /**
+     * Returns the name of the database.
+     */
+    readonly name: string;
+    /**
+     * Returns a list of the names of object stores in the database.
+     */
+    readonly objectStoreNames: DOMStringList;
+    onabort: ((this: IDBDatabase, ev: Event) => any) | null;
+    onclose: ((this: IDBDatabase, ev: Event) => any) | null;
+    onerror: ((this: IDBDatabase, ev: Event) => any) | null;
+    onversionchange: ((this: IDBDatabase, ev: IDBVersionChangeEvent) => any) | null;
+    /**
+     * Returns the version of the database.
+     */
+    readonly version: number;
+    /**
+     * Closes the connection once all running transactions have finished.
+     */
+    close(): void;
+    /**
+     * Creates a new object store with the given name and options and returns a new IDBObjectStore.
+     * 
+     * Throws a "InvalidStateError" DOMException if not called within an upgrade transaction.
+     */
+    createObjectStore(name: string, options?: IDBObjectStoreParameters): IDBObjectStore;
+    /**
+     * Deletes the object store with the given name.
+     * 
+     * Throws a "InvalidStateError" DOMException if not called within an upgrade transaction.
+     */
+    deleteObjectStore(name: string): void;
+    /**
+     * Returns a new transaction with the given mode ("readonly" or "readwrite") and scope which can be a single object store name or an array of names.
+     */
+    transaction(storeNames: string | string[], mode?: IDBTransactionMode): IDBTransaction;
+    addEventListener<K extends keyof IDBDatabaseEventMap>(type: K, listener: (this: IDBDatabase, ev: IDBDatabaseEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+    addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+    removeEventListener<K extends keyof IDBDatabaseEventMap>(type: K, listener: (this: IDBDatabase, ev: IDBDatabaseEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+    removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+}
+
+declare var IDBDatabase: {
+    prototype: IDBDatabase;
+    new(): IDBDatabase;
+};
+
+/** In the following code snippet, we make a request to open a database, and include handlers for the success and error cases. For a full working example, see our To-do Notifications app (view example live.) */
+interface IDBFactory {
+    /**
+     * Compares two values as keys. Returns -1 if key1 precedes key2, 1 if key2 precedes key1, and 0 if the keys are equal.
+     * 
+     * Throws a "DataError" DOMException if either input is not a valid key.
+     */
+    cmp(first: any, second: any): number;
+    /**
+     * Attempts to delete the named database. If the database already exists and there are open connections that don't close in response to a versionchange event, the request will be blocked until all they close. If the request is successful request's result will be null.
+     */
+    deleteDatabase(name: string): IDBOpenDBRequest;
+    /**
+     * Attempts to open a connection to the named database with the current version, or 1 if it does not already exist. If the request is successful request's result will be the connection.
+     */
+    open(name: string, version?: number): IDBOpenDBRequest;
+}
+
+declare var IDBFactory: {
+    prototype: IDBFactory;
+    new(): IDBFactory;
+};
+
+/** IDBIndex interface of the IndexedDB API provides asynchronous access to an index in a database. An index is a kind of object store for looking up records in another object store, called the referenced object store. You use this interface to retrieve data. */
+interface IDBIndex {
+    readonly keyPath: string | string[];
+    readonly multiEntry: boolean;
+    /**
+     * Returns the name of the index.
+     */
+    name: string;
+    /**
+     * Returns the IDBObjectStore the index belongs to.
+     */
+    readonly objectStore: IDBObjectStore;
+    readonly unique: boolean;
+    /**
+     * Retrieves the number of records matching the given key or key range in query.
+     * 
+     * If successful, request's result will be the count.
+     */
+    count(key?: IDBValidKey | IDBKeyRange): IDBRequest<number>;
+    /**
+     * Retrieves the value of the first record matching the given key or key range in query.
+     * 
+     * If successful, request's result will be the value, or undefined if there was no matching record.
+     */
+    get(key: IDBValidKey | IDBKeyRange): IDBRequest<any | undefined>;
+    /**
+     * Retrieves the values of the records matching the given key or key range in query (up to count if given).
+     * 
+     * If successful, request's result will be an Array of the values.
+     */
+    getAll(query?: IDBValidKey | IDBKeyRange | null, count?: number): IDBRequest<any[]>;
+    /**
+     * Retrieves the keys of records matching the given key or key range in query (up to count if given).
+     * 
+     * If successful, request's result will be an Array of the keys.
+     */
+    getAllKeys(query?: IDBValidKey | IDBKeyRange | null, count?: number): IDBRequest<IDBValidKey[]>;
+    /**
+     * Retrieves the key of the first record matching the given key or key range in query.
+     * 
+     * If successful, request's result will be the key, or undefined if there was no matching record.
+     */
+    getKey(key: IDBValidKey | IDBKeyRange): IDBRequest<IDBValidKey | undefined>;
+    /**
+     * Opens a cursor over the records matching query, ordered by direction. If query is null, all records in index are matched.
+     * 
+     * If successful, request's result will be an IDBCursorWithValue, or null if there were no matching records.
+     */
+    openCursor(query?: IDBValidKey | IDBKeyRange | null, direction?: IDBCursorDirection): IDBRequest<IDBCursorWithValue | null>;
+    /**
+     * Opens a cursor with key only flag set over the records matching query, ordered by direction. If query is null, all records in index are matched.
+     * 
+     * If successful, request's result will be an IDBCursor, or null if there were no matching records.
+     */
+    openKeyCursor(query?: IDBValidKey | IDBKeyRange | null, direction?: IDBCursorDirection): IDBRequest<IDBCursor | null>;
+}
+
+declare var IDBIndex: {
+    prototype: IDBIndex;
+    new(): IDBIndex;
+};
+
+/** A key range can be a single value or a range with upper and lower bounds or endpoints. If the key range has both upper and lower bounds, then it is bounded; if it has no bounds, it is unbounded. A bounded key range can either be open (the endpoints are excluded) or closed (the endpoints are included). To retrieve all keys within a certain range, you can use the following code constructs: */
+interface IDBKeyRange {
+    /**
+     * Returns lower bound, or undefined if none.
+     */
+    readonly lower: any;
+    /**
+     * Returns true if the lower open flag is set, and false otherwise.
+     */
+    readonly lowerOpen: boolean;
+    /**
+     * Returns upper bound, or undefined if none.
+     */
+    readonly upper: any;
+    /**
+     * Returns true if the upper open flag is set, and false otherwise.
+     */
+    readonly upperOpen: boolean;
+    /**
+     * Returns true if key is included in the range, and false otherwise.
+     */
+    includes(key: any): boolean;
+}
+
+declare var IDBKeyRange: {
+    prototype: IDBKeyRange;
+    new(): IDBKeyRange;
+    /**
+     * Returns a new IDBKeyRange spanning from lower to upper. If lowerOpen is true, lower is not included in the range. If upperOpen is true, upper is not included in the range.
+     */
+    bound(lower: any, upper: any, lowerOpen?: boolean, upperOpen?: boolean): IDBKeyRange;
+    /**
+     * Returns a new IDBKeyRange starting at key with no upper bound. If open is true, key is not included in the range.
+     */
+    lowerBound(lower: any, open?: boolean): IDBKeyRange;
+    /**
+     * Returns a new IDBKeyRange spanning only key.
+     */
+    only(value: any): IDBKeyRange;
+    /**
+     * Returns a new IDBKeyRange with no lower bound and ending at key. If open is true, key is not included in the range.
+     */
+    upperBound(upper: any, open?: boolean): IDBKeyRange;
+};
+
+/** This example shows a variety of different uses of object stores, from updating the data structure with IDBObjectStore.createIndex inside an onupgradeneeded function, to adding a new item to our object store with IDBObjectStore.add. For a full working example, see our To-do Notifications app (view example live.) */
+interface IDBObjectStore {
+    /**
+     * Returns true if the store has a key generator, and false otherwise.
+     */
+    readonly autoIncrement: boolean;
+    /**
+     * Returns a list of the names of indexes in the store.
+     */
+    readonly indexNames: DOMStringList;
+    /**
+     * Returns the key path of the store, or null if none.
+     */
+    readonly keyPath: string | string[];
+    /**
+     * Returns the name of the store.
+     */
+    name: string;
+    /**
+     * Returns the associated transaction.
+     */
+    readonly transaction: IDBTransaction;
+    /**
+     * Adds or updates a record in store with the given value and key.
+     * 
+     * If the store uses in-line keys and key is specified a "DataError" DOMException will be thrown.
+     * 
+     * If put() is used, any existing record with the key will be replaced. If add() is used, and if a record with the key already exists the request will fail, with request's error set to a "ConstraintError" DOMException.
+     * 
+     * If successful, request's result will be the record's key.
+     */
+    add(value: any, key?: IDBValidKey): IDBRequest<IDBValidKey>;
+    /**
+     * Deletes all records in store.
+     * 
+     * If successful, request's result will be undefined.
+     */
+    clear(): IDBRequest<undefined>;
+    /**
+     * Retrieves the number of records matching the given key or key range in query.
+     * 
+     * If successful, request's result will be the count.
+     */
+    count(key?: IDBValidKey | IDBKeyRange): IDBRequest<number>;
+    /**
+     * Creates a new index in store with the given name, keyPath and options and returns a new IDBIndex. If the keyPath and options define constraints that cannot be satisfied with the data already in store the upgrade transaction will abort with a "ConstraintError" DOMException.
+     * 
+     * Throws an "InvalidStateError" DOMException if not called within an upgrade transaction.
+     */
+    createIndex(name: string, keyPath: string | string[], options?: IDBIndexParameters): IDBIndex;
+    /**
+     * Deletes records in store with the given key or in the given key range in query.
+     * 
+     * If successful, request's result will be undefined.
+     */
+    delete(key: IDBValidKey | IDBKeyRange): IDBRequest<undefined>;
+    /**
+     * Deletes the index in store with the given name.
+     * 
+     * Throws an "InvalidStateError" DOMException if not called within an upgrade transaction.
+     */
+    deleteIndex(name: string): void;
+    /**
+     * Retrieves the value of the first record matching the given key or key range in query.
+     * 
+     * If successful, request's result will be the value, or undefined if there was no matching record.
+     */
+    get(query: IDBValidKey | IDBKeyRange): IDBRequest<any | undefined>;
+    /**
+     * Retrieves the values of the records matching the given key or key range in query (up to count if given).
+     * 
+     * If successful, request's result will be an Array of the values.
+     */
+    getAll(query?: IDBValidKey | IDBKeyRange | null, count?: number): IDBRequest<any[]>;
+    /**
+     * Retrieves the keys of records matching the given key or key range in query (up to count if given).
+     * 
+     * If successful, request's result will be an Array of the keys.
+     */
+    getAllKeys(query?: IDBValidKey | IDBKeyRange | null, count?: number): IDBRequest<IDBValidKey[]>;
+    /**
+     * Retrieves the key of the first record matching the given key or key range in query.
+     * 
+     * If successful, request's result will be the key, or undefined if there was no matching record.
+     */
+    getKey(query: IDBValidKey | IDBKeyRange): IDBRequest<IDBValidKey | undefined>;
+    index(name: string): IDBIndex;
+    /**
+     * Opens a cursor over the records matching query, ordered by direction. If query is null, all records in store are matched.
+     * 
+     * If successful, request's result will be an IDBCursorWithValue pointing at the first matching record, or null if there were no matching records.
+     */
+    openCursor(query?: IDBValidKey | IDBKeyRange | null, direction?: IDBCursorDirection): IDBRequest<IDBCursorWithValue | null>;
+    /**
+     * Opens a cursor with key only flag set over the records matching query, ordered by direction. If query is null, all records in store are matched.
+     * 
+     * If successful, request's result will be an IDBCursor pointing at the first matching record, or null if there were no matching records.
+     */
+    openKeyCursor(query?: IDBValidKey | IDBKeyRange | null, direction?: IDBCursorDirection): IDBRequest<IDBCursor | null>;
+    /**
+     * Adds or updates a record in store with the given value and key.
+     * 
+     * If the store uses in-line keys and key is specified a "DataError" DOMException will be thrown.
+     * 
+     * If put() is used, any existing record with the key will be replaced. If add() is used, and if a record with the key already exists the request will fail, with request's error set to a "ConstraintError" DOMException.
+     * 
+     * If successful, request's result will be the record's key.
+     */
+    put(value: any, key?: IDBValidKey): IDBRequest<IDBValidKey>;
+}
+
+declare var IDBObjectStore: {
+    prototype: IDBObjectStore;
+    new(): IDBObjectStore;
+};
+
+interface IDBOpenDBRequestEventMap extends IDBRequestEventMap {
+    "blocked": Event;
+    "upgradeneeded": IDBVersionChangeEvent;
+}
+
+/** Also inherits methods from its parents IDBRequest and EventTarget. */
+interface IDBOpenDBRequest extends IDBRequest<IDBDatabase> {
+    onblocked: ((this: IDBOpenDBRequest, ev: Event) => any) | null;
+    onupgradeneeded: ((this: IDBOpenDBRequest, ev: IDBVersionChangeEvent) => any) | null;
+    addEventListener<K extends keyof IDBOpenDBRequestEventMap>(type: K, listener: (this: IDBOpenDBRequest, ev: IDBOpenDBRequestEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+    addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+    removeEventListener<K extends keyof IDBOpenDBRequestEventMap>(type: K, listener: (this: IDBOpenDBRequest, ev: IDBOpenDBRequestEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+    removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+}
+
+declare var IDBOpenDBRequest: {
+    prototype: IDBOpenDBRequest;
+    new(): IDBOpenDBRequest;
+};
+
+interface IDBRequestEventMap {
+    "error": Event;
+    "success": Event;
+}
+
+/** The request object does not initially contain any information about the result of the operation, but once information becomes available, an event is fired on the request, and the information becomes available through the properties of the IDBRequest instance. */
+interface IDBRequest<T = any> extends EventTarget {
+    /**
+     * When a request is completed, returns the error (a DOMException), or null if the request succeeded. Throws a "InvalidStateError" DOMException if the request is still pending.
+     */
+    readonly error: DOMException | null;
+    onerror: ((this: IDBRequest<T>, ev: Event) => any) | null;
+    onsuccess: ((this: IDBRequest<T>, ev: Event) => any) | null;
+    /**
+     * Returns "pending" until a request is complete, then returns "done".
+     */
+    readonly readyState: IDBRequestReadyState;
+    /**
+     * When a request is completed, returns the result, or undefined if the request failed. Throws a "InvalidStateError" DOMException if the request is still pending.
+     */
+    readonly result: T;
+    /**
+     * Returns the IDBObjectStore, IDBIndex, or IDBCursor the request was made against, or null if is was an open request.
+     */
+    readonly source: IDBObjectStore | IDBIndex | IDBCursor;
+    /**
+     * Returns the IDBTransaction the request was made within. If this as an open request, then it returns an upgrade transaction while it is running, or null otherwise.
+     */
+    readonly transaction: IDBTransaction | null;
+    addEventListener<K extends keyof IDBRequestEventMap>(type: K, listener: (this: IDBRequest<T>, ev: IDBRequestEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+    addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+    removeEventListener<K extends keyof IDBRequestEventMap>(type: K, listener: (this: IDBRequest<T>, ev: IDBRequestEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+    removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+}
+
+declare var IDBRequest: {
+    prototype: IDBRequest;
+    new(): IDBRequest;
+};
+
+interface IDBTransactionEventMap {
+    "abort": Event;
+    "complete": Event;
+    "error": Event;
+}
+
+interface IDBTransaction extends EventTarget {
+    /**
+     * Returns the transaction's connection.
+     */
+    readonly db: IDBDatabase;
+    /**
+     * If the transaction was aborted, returns the error (a DOMException) providing the reason.
+     */
+    readonly error: DOMException;
+    /**
+     * Returns the mode the transaction was created with ("readonly" or "readwrite"), or "versionchange" for an upgrade transaction.
+     */
+    readonly mode: IDBTransactionMode;
+    /**
+     * Returns a list of the names of object stores in the transaction's scope. For an upgrade transaction this is all object stores in the database.
+     */
+    readonly objectStoreNames: DOMStringList;
+    onabort: ((this: IDBTransaction, ev: Event) => any) | null;
+    oncomplete: ((this: IDBTransaction, ev: Event) => any) | null;
+    onerror: ((this: IDBTransaction, ev: Event) => any) | null;
+    /**
+     * Aborts the transaction. All pending requests will fail with a "AbortError" DOMException and all changes made to the database will be reverted.
+     */
+    abort(): void;
+    /**
+     * Returns an IDBObjectStore in the transaction's scope.
+     */
+    objectStore(name: string): IDBObjectStore;
+    addEventListener<K extends keyof IDBTransactionEventMap>(type: K, listener: (this: IDBTransaction, ev: IDBTransactionEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+    addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+    removeEventListener<K extends keyof IDBTransactionEventMap>(type: K, listener: (this: IDBTransaction, ev: IDBTransactionEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+    removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+}
+
+declare var IDBTransaction: {
+    prototype: IDBTransaction;
+    new(): IDBTransaction;
+};
+
+/** This IndexedDB API interface indicates that the version of the database has changed, as the result of an IDBOpenDBRequest.onupgradeneeded event handler function. */
+interface IDBVersionChangeEvent extends Event {
+    readonly newVersion: number | null;
+    readonly oldVersion: number;
+}
+
+declare var IDBVersionChangeEvent: {
+    prototype: IDBVersionChangeEvent;
+    new(type: string, eventInitDict?: IDBVersionChangeEventInit): IDBVersionChangeEvent;
+};
+
+interface ImageBitmap {
+    /**
+     * Returns the intrinsic height of the image, in CSS pixels.
+     */
+    readonly height: number;
+    /**
+     * Returns the intrinsic width of the image, in CSS pixels.
+     */
+    readonly width: number;
+    /**
+     * Releases imageBitmap's underlying bitmap data.
+     */
+    close(): void;
+}
+
+declare var ImageBitmap: {
+    prototype: ImageBitmap;
+    new(): ImageBitmap;
+};
+
+interface ImageBitmapRenderingContext {
+    /**
+     * Returns the canvas element that the context is bound to.
+     */
+    readonly canvas: OffscreenCanvas;
+    /**
+     * Transfers the underlying bitmap data from imageBitmap to context, and the bitmap becomes the contents of the canvas element to which context is bound.
+     */
+    transferFromImageBitmap(bitmap: ImageBitmap | null): void;
+}
+
+declare var ImageBitmapRenderingContext: {
+    prototype: ImageBitmapRenderingContext;
+    new(): ImageBitmapRenderingContext;
+};
+
+/** The underlying pixel data of an area of a <canvas> element. It is created using the ImageData() constructor or creator methods on the CanvasRenderingContext2D object associated with a canvas: createImageData() and getImageData(). It can also be used to set a part of the canvas by using putImageData(). */
+interface ImageData {
+    /**
+     * Returns the one-dimensional array containing the data in RGBA order, as integers in the range 0 to 255.
+     */
+    readonly data: Uint8ClampedArray;
+    /**
+     * Returns the actual dimensions of the data in the ImageData object, in pixels.
+     */
+    readonly height: number;
+    /**
+     * Returns the actual dimensions of the data in the ImageData object, in pixels.
+     */
+    readonly width: number;
+}
+
+declare var ImageData: {
+    prototype: ImageData;
+    new(sw: number, sh: number): ImageData;
+    new(data: Uint8ClampedArray, sw: number, sh?: number): ImageData;
+};
+
+/** This Channel Messaging API interface allows us to create a new message channel and send data through it via its two MessagePort properties. */
+interface MessageChannel {
+    /**
+     * Returns the first MessagePort object.
+     */
+    readonly port1: MessagePort;
+    /**
+     * Returns the second MessagePort object.
+     */
+    readonly port2: MessagePort;
+}
+
+declare var MessageChannel: {
+    prototype: MessageChannel;
+    new(): MessageChannel;
+};
+
+/** A message received by a target object. */
+interface MessageEvent<T = any> extends Event {
+    /**
+     * Returns the data of the message.
+     */
+    readonly data: T;
+    /**
+     * Returns the last event ID string, for server-sent events.
+     */
+    readonly lastEventId: string;
+    /**
+     * Returns the origin of the message, for server-sent events and cross-document messaging.
+     */
+    readonly origin: string;
+    /**
+     * Returns the MessagePort array sent with the message, for cross-document messaging and channel messaging.
+     */
+    readonly ports: ReadonlyArray<MessagePort>;
+    /**
+     * Returns the WindowProxy of the source window, for cross-document messaging, and the MessagePort being attached, in the connect event fired at SharedWorkerGlobalScope objects.
+     */
+    readonly source: MessageEventSource | null;
+}
+
+declare var MessageEvent: {
+    prototype: MessageEvent;
+    new<T>(type: string, eventInitDict?: MessageEventInit<T>): MessageEvent<T>;
+};
+
+interface MessagePortEventMap {
+    "message": MessageEvent;
+    "messageerror": MessageEvent;
+}
+
+/** This Channel Messaging API interface represents one of the two ports of a MessageChannel, allowing messages to be sent from one port and listening out for them arriving at the other. */
+interface MessagePort extends EventTarget {
+    onmessage: ((this: MessagePort, ev: MessageEvent) => any) | null;
+    onmessageerror: ((this: MessagePort, ev: MessageEvent) => any) | null;
+    /**
+     * Disconnects the port, so that it is no longer active.
+     */
+    close(): void;
+    /**
+     * Posts a message through the channel. Objects listed in transfer are transferred, not just cloned, meaning that they are no longer usable on the sending side.
+     * 
+     * Throws a "DataCloneError" DOMException if transfer contains duplicate objects or port, or if message could not be cloned.
+     */
+    postMessage(message: any, transfer: Transferable[]): void;
+    postMessage(message: any, options?: PostMessageOptions): void;
+    /**
+     * Begins dispatching messages received on the port.
+     */
+    start(): void;
+    addEventListener<K extends keyof MessagePortEventMap>(type: K, listener: (this: MessagePort, ev: MessagePortEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+    addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+    removeEventListener<K extends keyof MessagePortEventMap>(type: K, listener: (this: MessagePort, ev: MessagePortEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+    removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+}
+
+declare var MessagePort: {
+    prototype: MessagePort;
+    new(): MessagePort;
+};
+
+interface NavigationPreloadManager {
+    disable(): Promise<void>;
+    enable(): Promise<void>;
+    getState(): Promise<NavigationPreloadState>;
+    setHeaderValue(value: string): Promise<void>;
+}
+
+declare var NavigationPreloadManager: {
+    prototype: NavigationPreloadManager;
+    new(): NavigationPreloadManager;
+};
+
+interface NavigatorConcurrentHardware {
+    readonly hardwareConcurrency: number;
+}
+
+interface NavigatorID {
+    readonly appCodeName: string;
+    readonly appName: string;
+    readonly appVersion: string;
+    readonly platform: string;
+    readonly product: string;
+    readonly userAgent: string;
+}
+
+interface NavigatorLanguage {
+    readonly language: string;
+    readonly languages: ReadonlyArray<string>;
+}
+
+interface NavigatorOnLine {
+    readonly onLine: boolean;
+}
+
+interface NavigatorStorage {
+    readonly storage: StorageManager;
+}
+
+interface NotificationEventMap {
+    "click": Event;
+    "close": Event;
+    "error": Event;
+    "show": Event;
+}
+
+/** This Notifications API interface is used to configure and display desktop notifications to the user. */
+interface Notification extends EventTarget {
+    readonly actions: ReadonlyArray<NotificationAction>;
+    readonly badge: string;
+    readonly body: string;
+    readonly data: any;
+    readonly dir: NotificationDirection;
+    readonly icon: string;
+    readonly image: string;
+    readonly lang: string;
+    onclick: ((this: Notification, ev: Event) => any) | null;
+    onclose: ((this: Notification, ev: Event) => any) | null;
+    onerror: ((this: Notification, ev: Event) => any) | null;
+    onshow: ((this: Notification, ev: Event) => any) | null;
+    readonly renotify: boolean;
+    readonly requireInteraction: boolean;
+    readonly silent: boolean;
+    readonly tag: string;
+    readonly timestamp: number;
+    readonly title: string;
+    readonly vibrate: ReadonlyArray<number>;
+    close(): void;
+    addEventListener<K extends keyof NotificationEventMap>(type: K, listener: (this: Notification, ev: NotificationEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+    addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+    removeEventListener<K extends keyof NotificationEventMap>(type: K, listener: (this: Notification, ev: NotificationEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+    removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+}
+
+declare var Notification: {
+    prototype: Notification;
+    new(title: string, options?: NotificationOptions): Notification;
+    readonly maxActions: number;
+    readonly permission: NotificationPermission;
+};
+
+/** The parameter passed into the onnotificationclick handler, the NotificationEvent interface represents a notification click event that is dispatched on the ServiceWorkerGlobalScope of a ServiceWorker. */
+interface NotificationEvent extends ExtendableEvent {
+    readonly action: string;
+    readonly notification: Notification;
+}
+
+declare var NotificationEvent: {
+    prototype: NotificationEvent;
+    new(type: string, eventInitDict: NotificationEventInit): NotificationEvent;
+};
+
+/** The OES_element_index_uint extension is part of the WebGL API and adds support for gl.UNSIGNED_INT types to WebGLRenderingContext.drawElements(). */
+interface OES_element_index_uint {
+}
+
+/** The OES_standard_derivatives extension is part of the WebGL API and adds the GLSL derivative functions dFdx, dFdy, and fwidth. */
+interface OES_standard_derivatives {
+    readonly FRAGMENT_SHADER_DERIVATIVE_HINT_OES: GLenum;
+}
+
+/** The OES_texture_float extension is part of the WebGL API and exposes floating-point pixel types for textures. */
+interface OES_texture_float {
+}
+
+/** The OES_texture_float_linear extension is part of the WebGL API and allows linear filtering with floating-point pixel types for textures. */
+interface OES_texture_float_linear {
+}
+
+/** The OES_texture_half_float extension is part of the WebGL API and adds texture formats with 16- (aka half float) and 32-bit floating-point components. */
+interface OES_texture_half_float {
+    readonly HALF_FLOAT_OES: GLenum;
+}
+
+/** The OES_texture_half_float_linear extension is part of the WebGL API and allows linear filtering with half floating-point pixel types for textures. */
+interface OES_texture_half_float_linear {
+}
+
+interface OES_vertex_array_object {
+    bindVertexArrayOES(arrayObject: WebGLVertexArrayObjectOES | null): void;
+    createVertexArrayOES(): WebGLVertexArrayObjectOES | null;
+    deleteVertexArrayOES(arrayObject: WebGLVertexArrayObjectOES | null): void;
+    isVertexArrayOES(arrayObject: WebGLVertexArrayObjectOES | null): GLboolean;
+    readonly VERTEX_ARRAY_BINDING_OES: GLenum;
+}
+
+interface OffscreenCanvas extends EventTarget {
+    /**
+     * These attributes return the dimensions of the OffscreenCanvas object's bitmap.
+     * 
+     * They can be set, to replace the bitmap with a new, transparent black bitmap of the specified dimensions (effectively resizing it).
+     */
+    height: number;
+    /**
+     * These attributes return the dimensions of the OffscreenCanvas object's bitmap.
+     * 
+     * They can be set, to replace the bitmap with a new, transparent black bitmap of the specified dimensions (effectively resizing it).
+     */
+    width: number;
+    /**
+     * Returns a promise that will fulfill with a new Blob object representing a file containing the image in the OffscreenCanvas object.
+     * 
+     * The argument, if provided, is a dictionary that controls the encoding options of the image file to be created. The type field specifies the file format and has a default value of "image/png"; that type is also used if the requested type isn't supported. If the image format supports variable quality (such as "image/jpeg"), then the quality field is a number in the range 0.0 to 1.0 inclusive indicating the desired quality level for the resulting image.
+     */
+    convertToBlob(options?: ImageEncodeOptions): Promise<Blob>;
+    /**
+     * Returns an object that exposes an API for drawing on the OffscreenCanvas object. contextId specifies the desired API: "2d", "bitmaprenderer", "webgl", or "webgl2". options is handled by that API.
+     * 
+     * This specification defines the "2d" context below, which is similar but distinct from the "2d" context that is created from a canvas element. The WebGL specifications define the "webgl" and "webgl2" contexts. [WEBGL]
+     * 
+     * Returns null if the canvas has already been initialized with another context type (e.g., trying to get a "2d" context after getting a "webgl" context).
+     */
+    getContext(contextId: "2d", options?: CanvasRenderingContext2DSettings): OffscreenCanvasRenderingContext2D | null;
+    getContext(contextId: "bitmaprenderer", options?: ImageBitmapRenderingContextSettings): ImageBitmapRenderingContext | null;
+    getContext(contextId: "webgl", options?: WebGLContextAttributes): WebGLRenderingContext | null;
+    getContext(contextId: "webgl2", options?: WebGLContextAttributes): WebGL2RenderingContext | null;
+    getContext(contextId: OffscreenRenderingContextId, options?: any): OffscreenRenderingContext | null;
+    /**
+     * Returns a newly created ImageBitmap object with the image in the OffscreenCanvas object. The image in the OffscreenCanvas object is replaced with a new blank image.
+     */
+    transferToImageBitmap(): ImageBitmap;
+}
+
+declare var OffscreenCanvas: {
+    prototype: OffscreenCanvas;
+    new(width: number, height: number): OffscreenCanvas;
+};
+
+interface OffscreenCanvasRenderingContext2D extends CanvasCompositing, CanvasDrawImage, CanvasDrawPath, CanvasFillStrokeStyles, CanvasFilters, CanvasImageData, CanvasImageSmoothing, CanvasPath, CanvasPathDrawingStyles, CanvasRect, CanvasShadowStyles, CanvasState, CanvasText, CanvasTextDrawingStyles, CanvasTransform {
+    readonly canvas: OffscreenCanvas;
+    commit(): void;
+}
+
+declare var OffscreenCanvasRenderingContext2D: {
+    prototype: OffscreenCanvasRenderingContext2D;
+    new(): OffscreenCanvasRenderingContext2D;
+};
+
+/** This Canvas 2D API interface is used to declare a path that can then be used on a CanvasRenderingContext2D object. The path methods of the CanvasRenderingContext2D interface are also present on this interface, which gives you the convenience of being able to retain and replay your path whenever desired. */
+interface Path2D extends CanvasPath {
+    /**
+     * Adds to the path the path given by the argument.
+     */
+    addPath(path: Path2D, transform?: DOMMatrix2DInit): void;
+}
+
+declare var Path2D: {
+    prototype: Path2D;
+    new(path?: Path2D | string): Path2D;
+};
+
+interface PerformanceEventMap {
+    "resourcetimingbufferfull": Event;
+}
+
+/** Provides access to performance-related information for the current page. It's part of the High Resolution Time API, but is enhanced by the Performance Timeline API, the Navigation Timing API, the User Timing API, and the Resource Timing API. */
+interface Performance extends EventTarget {
+    onresourcetimingbufferfull: ((this: Performance, ev: Event) => any) | null;
+    readonly timeOrigin: number;
+    clearMarks(markName?: string): void;
+    clearMeasures(measureName?: string): void;
+    clearResourceTimings(): void;
+    getEntries(): PerformanceEntryList;
+    getEntriesByName(name: string, type?: string): PerformanceEntryList;
+    getEntriesByType(type: string): PerformanceEntryList;
+    mark(markName: string): void;
+    measure(measureName: string, startMark?: string, endMark?: string): void;
+    now(): number;
+    setResourceTimingBufferSize(maxSize: number): void;
+    toJSON(): any;
+    addEventListener<K extends keyof PerformanceEventMap>(type: K, listener: (this: Performance, ev: PerformanceEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+    addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+    removeEventListener<K extends keyof PerformanceEventMap>(type: K, listener: (this: Performance, ev: PerformanceEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+    removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+}
+
+declare var Performance: {
+    prototype: Performance;
+    new(): Performance;
+};
+
+/** Encapsulates a single performance metric that is part of the performance timeline. A performance entry can be directly created by making a performance mark or measure (for example by calling the mark() method) at an explicit point in an application. Performance entries are also created in indirect ways such as loading a resource (such as an image). */
+interface PerformanceEntry {
+    readonly duration: number;
+    readonly entryType: string;
+    readonly name: string;
+    readonly startTime: number;
+    toJSON(): any;
+}
+
+declare var PerformanceEntry: {
+    prototype: PerformanceEntry;
+    new(): PerformanceEntry;
+};
+
+/** PerformanceMark is an abstract interface for PerformanceEntry objects with an entryType of "mark". Entries of this type are created by calling performance.mark() to add a named DOMHighResTimeStamp (the mark) to the browser's performance timeline. */
+interface PerformanceMark extends PerformanceEntry {
+}
+
+declare var PerformanceMark: {
+    prototype: PerformanceMark;
+    new(): PerformanceMark;
+};
+
+/** PerformanceMeasure is an abstract interface for PerformanceEntry objects with an entryType of "measure". Entries of this type are created by calling performance.measure() to add a named DOMHighResTimeStamp (the measure) between two marks to the browser's performance timeline. */
+interface PerformanceMeasure extends PerformanceEntry {
+}
+
+declare var PerformanceMeasure: {
+    prototype: PerformanceMeasure;
+    new(): PerformanceMeasure;
+};
+
+interface PerformanceObserver {
+    disconnect(): void;
+    observe(options?: PerformanceObserverInit): void;
+    takeRecords(): PerformanceEntryList;
+}
+
+declare var PerformanceObserver: {
+    prototype: PerformanceObserver;
+    new(callback: PerformanceObserverCallback): PerformanceObserver;
+    readonly supportedEntryTypes: ReadonlyArray<string>;
+};
+
+interface PerformanceObserverEntryList {
+    getEntries(): PerformanceEntryList;
+    getEntriesByName(name: string, type?: string): PerformanceEntryList;
+    getEntriesByType(type: string): PerformanceEntryList;
+}
+
+declare var PerformanceObserverEntryList: {
+    prototype: PerformanceObserverEntryList;
+    new(): PerformanceObserverEntryList;
+};
+
+/** Enables retrieval and analysis of detailed network timing data regarding the loading of an application's resources. An application can use the timing metrics to determine, for example, the length of time it takes to fetch a specific resource, such as an XMLHttpRequest, <SVG>, image, or script. */
+interface PerformanceResourceTiming extends PerformanceEntry {
+    readonly connectEnd: number;
+    readonly connectStart: number;
+    readonly decodedBodySize: number;
+    readonly domainLookupEnd: number;
+    readonly domainLookupStart: number;
+    readonly encodedBodySize: number;
+    readonly fetchStart: number;
+    readonly initiatorType: string;
+    readonly nextHopProtocol: string;
+    readonly redirectEnd: number;
+    readonly redirectStart: number;
+    readonly requestStart: number;
+    readonly responseEnd: number;
+    readonly responseStart: number;
+    readonly secureConnectionStart: number;
+    readonly transferSize: number;
+    readonly workerStart: number;
+    toJSON(): any;
+}
+
+declare var PerformanceResourceTiming: {
+    prototype: PerformanceResourceTiming;
+    new(): PerformanceResourceTiming;
+};
+
+interface PermissionStatusEventMap {
+    "change": Event;
+}
+
+interface PermissionStatus extends EventTarget {
+    onchange: ((this: PermissionStatus, ev: Event) => any) | null;
+    readonly state: PermissionState;
+    addEventListener<K extends keyof PermissionStatusEventMap>(type: K, listener: (this: PermissionStatus, ev: PermissionStatusEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+    addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+    removeEventListener<K extends keyof PermissionStatusEventMap>(type: K, listener: (this: PermissionStatus, ev: PermissionStatusEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+    removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+}
+
+declare var PermissionStatus: {
+    prototype: PermissionStatus;
+    new(): PermissionStatus;
+};
+
+interface Permissions {
+    query(permissionDesc: PermissionDescriptor | DevicePermissionDescriptor | MidiPermissionDescriptor | PushPermissionDescriptor): Promise<PermissionStatus>;
+}
+
+declare var Permissions: {
+    prototype: Permissions;
+    new(): Permissions;
+};
+
+/** Events measuring progress of an underlying process, like an HTTP request (for an XMLHttpRequest, or the loading of the underlying resource of an <img>, <audio>, <video>, <style> or <link>). */
+interface ProgressEvent<T extends EventTarget = EventTarget> extends Event {
+    readonly lengthComputable: boolean;
+    readonly loaded: number;
+    readonly target: T | null;
+    readonly total: number;
+}
+
+declare var ProgressEvent: {
+    prototype: ProgressEvent;
+    new(type: string, eventInitDict?: ProgressEventInit): ProgressEvent;
+};
+
+interface PromiseRejectionEvent extends Event {
+    readonly promise: Promise<any>;
+    readonly reason: any;
+}
+
+declare var PromiseRejectionEvent: {
+    prototype: PromiseRejectionEvent;
+    new(type: string, eventInitDict: PromiseRejectionEventInit): PromiseRejectionEvent;
+};
+
+/** This Push API interface represents a push message that has been received. This event is sent to the global scope of a ServiceWorker. It contains the information sent from an application server to a PushSubscription. */
+interface PushEvent extends ExtendableEvent {
+    readonly data: PushMessageData | null;
+}
+
+declare var PushEvent: {
+    prototype: PushEvent;
+    new(type: string, eventInitDict?: PushEventInit): PushEvent;
+};
+
+/** This Push API interface provides a way to receive notifications from third-party servers as well as request URLs for push notifications. */
+interface PushManager {
+    getSubscription(): Promise<PushSubscription | null>;
+    permissionState(options?: PushSubscriptionOptionsInit): Promise<PushPermissionState>;
+    subscribe(options?: PushSubscriptionOptionsInit): Promise<PushSubscription>;
+}
+
+declare var PushManager: {
+    prototype: PushManager;
+    new(): PushManager;
+    readonly supportedContentEncodings: ReadonlyArray<string>;
+};
+
+/** This Push API interface provides methods which let you retrieve the push data sent by a server in various formats. */
+interface PushMessageData {
+    arrayBuffer(): ArrayBuffer;
+    blob(): Blob;
+    json(): any;
+    text(): string;
+}
+
+declare var PushMessageData: {
+    prototype: PushMessageData;
+    new(): PushMessageData;
+};
+
+/** This Push API interface provides a subcription's URL endpoint and allows unsubscription from a push service. */
+interface PushSubscription {
+    readonly endpoint: string;
+    readonly expirationTime: number | null;
+    readonly options: PushSubscriptionOptions;
+    getKey(name: PushEncryptionKeyName): ArrayBuffer | null;
+    toJSON(): PushSubscriptionJSON;
+    unsubscribe(): Promise<boolean>;
+}
+
+declare var PushSubscription: {
+    prototype: PushSubscription;
+    new(): PushSubscription;
+};
+
+interface PushSubscriptionChangeEvent extends ExtendableEvent {
+    readonly newSubscription: PushSubscription | null;
+    readonly oldSubscription: PushSubscription | null;
+}
+
+declare var PushSubscriptionChangeEvent: {
+    prototype: PushSubscriptionChangeEvent;
+    new(type: string, eventInitDict?: PushSubscriptionChangeEventInit): PushSubscriptionChangeEvent;
+};
+
+interface PushSubscriptionOptions {
+    readonly applicationServerKey: ArrayBuffer | null;
+    readonly userVisibleOnly: boolean;
+}
+
+declare var PushSubscriptionOptions: {
+    prototype: PushSubscriptionOptions;
+    new(): PushSubscriptionOptions;
+};
+
+interface ReadableByteStreamController {
+    readonly byobRequest: ReadableStreamBYOBRequest | undefined;
+    readonly desiredSize: number | null;
+    close(): void;
+    enqueue(chunk: ArrayBufferView): void;
+    error(error?: any): void;
+}
+
+declare var ReadableByteStreamController: {
+    prototype: ReadableByteStreamController;
+    new(): ReadableByteStreamController;
+};
+
+/** This Streams API interface represents a readable stream of byte data. The Fetch API offers a concrete instance of a ReadableStream through the body property of a Response object. */
+interface ReadableStream<R = any> {
+    readonly locked: boolean;
+    cancel(reason?: any): Promise<void>;
+    getReader(options: { mode: "byob" }): ReadableStreamBYOBReader;
+    getReader(): ReadableStreamDefaultReader<R>;
+    pipeThrough<T>({ writable, readable }: { writable: WritableStream<R>, readable: ReadableStream<T> }, options?: PipeOptions): ReadableStream<T>;
+    pipeTo(dest: WritableStream<R>, options?: PipeOptions): Promise<void>;
+    tee(): [ReadableStream<R>, ReadableStream<R>];
+}
+
+declare var ReadableStream: {
+    prototype: ReadableStream;
+    new(underlyingSource: UnderlyingByteSource, strategy?: { highWaterMark?: number, size?: undefined }): ReadableStream<Uint8Array>;
+    new<R = any>(underlyingSource?: UnderlyingSource<R>, strategy?: QueuingStrategy<R>): ReadableStream<R>;
+};
+
+interface ReadableStreamBYOBReader {
+    readonly closed: Promise<void>;
+    cancel(reason?: any): Promise<void>;
+    read<T extends ArrayBufferView>(view: T): Promise<ReadableStreamReadResult<T>>;
+    releaseLock(): void;
+}
+
+declare var ReadableStreamBYOBReader: {
+    prototype: ReadableStreamBYOBReader;
+    new(): ReadableStreamBYOBReader;
+};
+
+interface ReadableStreamBYOBRequest {
+    readonly view: ArrayBufferView;
+    respond(bytesWritten: number): void;
+    respondWithNewView(view: ArrayBufferView): void;
+}
+
+declare var ReadableStreamBYOBRequest: {
+    prototype: ReadableStreamBYOBRequest;
+    new(): ReadableStreamBYOBRequest;
+};
+
+interface ReadableStreamDefaultController<R = any> {
+    readonly desiredSize: number | null;
+    close(): void;
+    enqueue(chunk: R): void;
+    error(error?: any): void;
+}
+
+declare var ReadableStreamDefaultController: {
+    prototype: ReadableStreamDefaultController;
+    new(): ReadableStreamDefaultController;
+};
+
+interface ReadableStreamDefaultReader<R = any> {
+    readonly closed: Promise<void>;
+    cancel(reason?: any): Promise<void>;
+    read(): Promise<ReadableStreamReadResult<R>>;
+    releaseLock(): void;
+}
+
+declare var ReadableStreamDefaultReader: {
+    prototype: ReadableStreamDefaultReader;
+    new(): ReadableStreamDefaultReader;
+};
+
+interface ReadableStreamReader<R = any> {
+    cancel(): Promise<void>;
+    read(): Promise<ReadableStreamReadResult<R>>;
+    releaseLock(): void;
+}
+
+declare var ReadableStreamReader: {
+    prototype: ReadableStreamReader;
+    new(): ReadableStreamReader;
+};
+
+/** This Fetch API interface represents a resource request. */
+interface Request extends Body {
+    /**
+     * Returns the cache mode associated with request, which is a string indicating how the request will interact with the browser's cache when fetching.
+     */
+    readonly cache: RequestCache;
+    /**
+     * Returns the credentials mode associated with request, which is a string indicating whether credentials will be sent with the request always, never, or only when sent to a same-origin URL.
+     */
+    readonly credentials: RequestCredentials;
+    /**
+     * Returns the kind of resource requested by request, e.g., "document" or "script".
+     */
+    readonly destination: RequestDestination;
+    /**
+     * Returns a Headers object consisting of the headers associated with request. Note that headers added in the network layer by the user agent will not be accounted for in this object, e.g., the "Host" header.
+     */
+    readonly headers: Headers;
+    /**
+     * Returns request's subresource integrity metadata, which is a cryptographic hash of the resource being fetched. Its value consists of multiple hashes separated by whitespace. [SRI]
+     */
+    readonly integrity: string;
+    /**
+     * Returns a boolean indicating whether or not request is for a history navigation (a.k.a. back-foward navigation).
+     */
+    readonly isHistoryNavigation: boolean;
+    /**
+     * Returns a boolean indicating whether or not request is for a reload navigation.
+     */
+    readonly isReloadNavigation: boolean;
+    /**
+     * Returns a boolean indicating whether or not request can outlive the global in which it was created.
+     */
+    readonly keepalive: boolean;
+    /**
+     * Returns request's HTTP method, which is "GET" by default.
+     */
+    readonly method: string;
+    /**
+     * Returns the mode associated with request, which is a string indicating whether the request will use CORS, or will be restricted to same-origin URLs.
+     */
+    readonly mode: RequestMode;
+    /**
+     * Returns the redirect mode associated with request, which is a string indicating how redirects for the request will be handled during fetching. A request will follow redirects by default.
+     */
+    readonly redirect: RequestRedirect;
+    /**
+     * Returns the referrer of request. Its value can be a same-origin URL if explicitly set in init, the empty string to indicate no referrer, and "about:client" when defaulting to the global's default. This is used during fetching to determine the value of the \`Referer\` header of the request being made.
+     */
+    readonly referrer: string;
+    /**
+     * Returns the referrer policy associated with request. This is used during fetching to compute the value of the request's referrer.
+     */
+    readonly referrerPolicy: ReferrerPolicy;
+    /**
+     * Returns the signal associated with request, which is an AbortSignal object indicating whether or not request has been aborted, and its abort event handler.
+     */
+    readonly signal: AbortSignal;
+    /**
+     * Returns the URL of request as a string.
+     */
+    readonly url: string;
+    clone(): Request;
+}
+
+declare var Request: {
+    prototype: Request;
+    new(input: RequestInfo, init?: RequestInit): Request;
+};
+
+/** This Fetch API interface represents the response to a request. */
+interface Response extends Body {
+    readonly headers: Headers;
+    readonly ok: boolean;
+    readonly redirected: boolean;
+    readonly status: number;
+    readonly statusText: string;
+    readonly trailer: Promise<Headers>;
+    readonly type: ResponseType;
+    readonly url: string;
+    clone(): Response;
+}
+
+declare var Response: {
+    prototype: Response;
+    new(body?: BodyInit | null, init?: ResponseInit): Response;
+    error(): Response;
+    redirect(url: string, status?: number): Response;
+};
+
+interface ServiceWorkerEventMap extends AbstractWorkerEventMap {
+    "statechange": Event;
+}
+
+/** This ServiceWorker API interface provides a reference to a service worker. Multiple browsing contexts (e.g. pages, workers, etc.) can be associated with the same service worker, each through a unique ServiceWorker object. */
+interface ServiceWorker extends EventTarget, AbstractWorker {
+    onstatechange: ((this: ServiceWorker, ev: Event) => any) | null;
+    readonly scriptURL: string;
+    readonly state: ServiceWorkerState;
+    postMessage(message: any, transfer: Transferable[]): void;
+    postMessage(message: any, options?: PostMessageOptions): void;
+    addEventListener<K extends keyof ServiceWorkerEventMap>(type: K, listener: (this: ServiceWorker, ev: ServiceWorkerEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+    addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+    removeEventListener<K extends keyof ServiceWorkerEventMap>(type: K, listener: (this: ServiceWorker, ev: ServiceWorkerEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+    removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+}
+
+declare var ServiceWorker: {
+    prototype: ServiceWorker;
+    new(): ServiceWorker;
+};
+
+interface ServiceWorkerContainerEventMap {
+    "controllerchange": Event;
+    "message": MessageEvent;
+    "messageerror": MessageEvent;
+}
+
+/** The ServiceWorkerContainer interface of the ServiceWorker API provides an object representing the service worker as an overall unit in the network ecosystem, including facilities to register, unregister and update service workers, and access the state of service workers and their registrations. */
+interface ServiceWorkerContainer extends EventTarget {
+    readonly controller: ServiceWorker | null;
+    oncontrollerchange: ((this: ServiceWorkerContainer, ev: Event) => any) | null;
+    onmessage: ((this: ServiceWorkerContainer, ev: MessageEvent) => any) | null;
+    onmessageerror: ((this: ServiceWorkerContainer, ev: MessageEvent) => any) | null;
+    readonly ready: Promise<ServiceWorkerRegistration>;
+    getRegistration(clientURL?: string): Promise<ServiceWorkerRegistration | undefined>;
+    getRegistrations(): Promise<ReadonlyArray<ServiceWorkerRegistration>>;
+    register(scriptURL: string, options?: RegistrationOptions): Promise<ServiceWorkerRegistration>;
+    startMessages(): void;
+    addEventListener<K extends keyof ServiceWorkerContainerEventMap>(type: K, listener: (this: ServiceWorkerContainer, ev: ServiceWorkerContainerEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+    addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+    removeEventListener<K extends keyof ServiceWorkerContainerEventMap>(type: K, listener: (this: ServiceWorkerContainer, ev: ServiceWorkerContainerEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+    removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+}
+
+declare var ServiceWorkerContainer: {
+    prototype: ServiceWorkerContainer;
+    new(): ServiceWorkerContainer;
+};
+
+interface ServiceWorkerGlobalScopeEventMap extends WorkerGlobalScopeEventMap {
+    "activate": ExtendableEvent;
+    "fetch": FetchEvent;
+    "install": ExtendableEvent;
+    "message": ExtendableMessageEvent;
+    "messageerror": MessageEvent;
+    "notificationclick": NotificationEvent;
+    "notificationclose": NotificationEvent;
+    "push": PushEvent;
+    "pushsubscriptionchange": PushSubscriptionChangeEvent;
+    "sync": SyncEvent;
+}
+
+/** This ServiceWorker API interface represents the global execution context of a service worker. */
+interface ServiceWorkerGlobalScope extends WorkerGlobalScope {
+    readonly clients: Clients;
+    onactivate: ((this: ServiceWorkerGlobalScope, ev: ExtendableEvent) => any) | null;
+    onfetch: ((this: ServiceWorkerGlobalScope, ev: FetchEvent) => any) | null;
+    oninstall: ((this: ServiceWorkerGlobalScope, ev: ExtendableEvent) => any) | null;
+    onmessage: ((this: ServiceWorkerGlobalScope, ev: ExtendableMessageEvent) => any) | null;
+    onmessageerror: ((this: ServiceWorkerGlobalScope, ev: MessageEvent) => any) | null;
+    onnotificationclick: ((this: ServiceWorkerGlobalScope, ev: NotificationEvent) => any) | null;
+    onnotificationclose: ((this: ServiceWorkerGlobalScope, ev: NotificationEvent) => any) | null;
+    onpush: ((this: ServiceWorkerGlobalScope, ev: PushEvent) => any) | null;
+    onpushsubscriptionchange: ((this: ServiceWorkerGlobalScope, ev: PushSubscriptionChangeEvent) => any) | null;
+    onsync: ((this: ServiceWorkerGlobalScope, ev: SyncEvent) => any) | null;
+    readonly registration: ServiceWorkerRegistration;
+    readonly serviceWorker: ServiceWorker;
+    skipWaiting(): Promise<void>;
+    addEventListener<K extends keyof ServiceWorkerGlobalScopeEventMap>(type: K, listener: (this: ServiceWorkerGlobalScope, ev: ServiceWorkerGlobalScopeEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+    addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+    removeEventListener<K extends keyof ServiceWorkerGlobalScopeEventMap>(type: K, listener: (this: ServiceWorkerGlobalScope, ev: ServiceWorkerGlobalScopeEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+    removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+}
+
+declare var ServiceWorkerGlobalScope: {
+    prototype: ServiceWorkerGlobalScope;
+    new(): ServiceWorkerGlobalScope;
+};
+
+interface ServiceWorkerRegistrationEventMap {
+    "updatefound": Event;
+}
+
+/** This ServiceWorker API interface represents the service worker registration. You register a service worker to control one or more pages that share the same origin. */
+interface ServiceWorkerRegistration extends EventTarget {
+    readonly active: ServiceWorker | null;
+    readonly installing: ServiceWorker | null;
+    readonly navigationPreload: NavigationPreloadManager;
+    onupdatefound: ((this: ServiceWorkerRegistration, ev: Event) => any) | null;
+    readonly pushManager: PushManager;
+    readonly scope: string;
+    readonly sync: SyncManager;
+    readonly updateViaCache: ServiceWorkerUpdateViaCache;
+    readonly waiting: ServiceWorker | null;
+    getNotifications(filter?: GetNotificationOptions): Promise<Notification[]>;
+    showNotification(title: string, options?: NotificationOptions): Promise<void>;
+    unregister(): Promise<boolean>;
+    update(): Promise<void>;
+    addEventListener<K extends keyof ServiceWorkerRegistrationEventMap>(type: K, listener: (this: ServiceWorkerRegistration, ev: ServiceWorkerRegistrationEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+    addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+    removeEventListener<K extends keyof ServiceWorkerRegistrationEventMap>(type: K, listener: (this: ServiceWorkerRegistration, ev: ServiceWorkerRegistrationEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+    removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+}
+
+declare var ServiceWorkerRegistration: {
+    prototype: ServiceWorkerRegistration;
+    new(): ServiceWorkerRegistration;
+};
+
+interface SharedWorker extends EventTarget, AbstractWorker {
+    /**
+     * Returns sharedWorker's MessagePort object which can be used to communicate with the global environment.
+     */
+    readonly port: MessagePort;
+    addEventListener<K extends keyof AbstractWorkerEventMap>(type: K, listener: (this: SharedWorker, ev: AbstractWorkerEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+    addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+    removeEventListener<K extends keyof AbstractWorkerEventMap>(type: K, listener: (this: SharedWorker, ev: AbstractWorkerEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+    removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+}
+
+declare var SharedWorker: {
+    prototype: SharedWorker;
+    new(scriptURL: string, options?: string | WorkerOptions): SharedWorker;
+};
+
+interface SharedWorkerGlobalScopeEventMap extends WorkerGlobalScopeEventMap {
+    "connect": MessageEvent;
+}
+
+interface SharedWorkerGlobalScope extends WorkerGlobalScope {
+    /**
+     * Returns sharedWorkerGlobal's name, i.e. the value given to the SharedWorker constructor. Multiple SharedWorker objects can correspond to the same shared worker (and SharedWorkerGlobalScope), by reusing the same name.
+     */
+    readonly name: string;
+    onconnect: ((this: SharedWorkerGlobalScope, ev: MessageEvent) => any) | null;
+    /**
+     * Aborts sharedWorkerGlobal.
+     */
+    close(): void;
+    addEventListener<K extends keyof SharedWorkerGlobalScopeEventMap>(type: K, listener: (this: SharedWorkerGlobalScope, ev: SharedWorkerGlobalScopeEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+    addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+    removeEventListener<K extends keyof SharedWorkerGlobalScopeEventMap>(type: K, listener: (this: SharedWorkerGlobalScope, ev: SharedWorkerGlobalScopeEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+    removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+}
+
+declare var SharedWorkerGlobalScope: {
+    prototype: SharedWorkerGlobalScope;
+    new(): SharedWorkerGlobalScope;
+};
+
+interface StorageManager {
+    estimate(): Promise<StorageEstimate>;
+    persisted(): Promise<boolean>;
+}
+
+declare var StorageManager: {
+    prototype: StorageManager;
+    new(): StorageManager;
+};
+
+/** This Web Crypto API interface provides a number of low-level cryptographic functions. It is accessed via the Crypto.subtle properties available in a window context (via Window.crypto). */
+interface SubtleCrypto {
+    decrypt(algorithm: AlgorithmIdentifier | RsaOaepParams | AesCtrParams | AesCbcParams | AesCmacParams | AesGcmParams | AesCfbParams, key: CryptoKey, data: Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | Float32Array | Float64Array | DataView | ArrayBuffer): Promise<ArrayBuffer>;
+    deriveBits(algorithm: AlgorithmIdentifier | EcdhKeyDeriveParams | DhKeyDeriveParams | ConcatParams | HkdfParams | Pbkdf2Params, baseKey: CryptoKey, length: number): Promise<ArrayBuffer>;
+    deriveKey(algorithm: AlgorithmIdentifier | EcdhKeyDeriveParams | DhKeyDeriveParams | ConcatParams | HkdfParams | Pbkdf2Params, baseKey: CryptoKey, derivedKeyType: string | AesDerivedKeyParams | HmacImportParams | ConcatParams | HkdfParams | Pbkdf2Params, extractable: boolean, keyUsages: KeyUsage[]): Promise<CryptoKey>;
+    digest(algorithm: AlgorithmIdentifier, data: Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | Float32Array | Float64Array | DataView | ArrayBuffer): Promise<ArrayBuffer>;
+    encrypt(algorithm: AlgorithmIdentifier | RsaOaepParams | AesCtrParams | AesCbcParams | AesCmacParams | AesGcmParams | AesCfbParams, key: CryptoKey, data: Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | Float32Array | Float64Array | DataView | ArrayBuffer): Promise<ArrayBuffer>;
+    exportKey(format: "jwk", key: CryptoKey): Promise<JsonWebKey>;
+    exportKey(format: "raw" | "pkcs8" | "spki", key: CryptoKey): Promise<ArrayBuffer>;
+    exportKey(format: string, key: CryptoKey): Promise<JsonWebKey | ArrayBuffer>;
+    generateKey(algorithm: RsaHashedKeyGenParams | EcKeyGenParams | DhKeyGenParams, extractable: boolean, keyUsages: KeyUsage[]): Promise<CryptoKeyPair>;
+    generateKey(algorithm: AesKeyGenParams | HmacKeyGenParams | Pbkdf2Params, extractable: boolean, keyUsages: KeyUsage[]): Promise<CryptoKey>;
+    generateKey(algorithm: AlgorithmIdentifier, extractable: boolean, keyUsages: KeyUsage[]): Promise<CryptoKeyPair | CryptoKey>;
+    importKey(format: "jwk", keyData: JsonWebKey, algorithm: AlgorithmIdentifier | RsaHashedImportParams | EcKeyImportParams | HmacImportParams | DhImportKeyParams | AesKeyAlgorithm, extractable: boolean, keyUsages: KeyUsage[]): Promise<CryptoKey>;
+    importKey(format: "raw" | "pkcs8" | "spki", keyData: Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | Float32Array | Float64Array | DataView | ArrayBuffer, algorithm: AlgorithmIdentifier | RsaHashedImportParams | EcKeyImportParams | HmacImportParams | DhImportKeyParams | AesKeyAlgorithm, extractable: boolean, keyUsages: KeyUsage[]): Promise<CryptoKey>;
+    importKey(format: string, keyData: JsonWebKey | Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | Float32Array | Float64Array | DataView | ArrayBuffer, algorithm: AlgorithmIdentifier | RsaHashedImportParams | EcKeyImportParams | HmacImportParams | DhImportKeyParams | AesKeyAlgorithm, extractable: boolean, keyUsages: KeyUsage[]): Promise<CryptoKey>;
+    sign(algorithm: AlgorithmIdentifier | RsaPssParams | EcdsaParams | AesCmacParams, key: CryptoKey, data: Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | Float32Array | Float64Array | DataView | ArrayBuffer): Promise<ArrayBuffer>;
+    unwrapKey(format: "raw" | "pkcs8" | "spki" | "jwk" | string, wrappedKey: Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | Float32Array | Float64Array | DataView | ArrayBuffer, unwrappingKey: CryptoKey, unwrapAlgorithm: AlgorithmIdentifier | RsaOaepParams | AesCtrParams | AesCbcParams | AesCmacParams | AesGcmParams | AesCfbParams, unwrappedKeyAlgorithm: AlgorithmIdentifier | RsaHashedImportParams | EcKeyImportParams | HmacImportParams | DhImportKeyParams | AesKeyAlgorithm, extractable: boolean, keyUsages: KeyUsage[]): Promise<CryptoKey>;
+    verify(algorithm: AlgorithmIdentifier | RsaPssParams | EcdsaParams | AesCmacParams, key: CryptoKey, signature: Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | Float32Array | Float64Array | DataView | ArrayBuffer, data: Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | Float32Array | Float64Array | DataView | ArrayBuffer): Promise<boolean>;
+    wrapKey(format: "raw" | "pkcs8" | "spki" | "jwk" | string, key: CryptoKey, wrappingKey: CryptoKey, wrapAlgorithm: AlgorithmIdentifier | RsaOaepParams | AesCtrParams | AesCbcParams | AesCmacParams | AesGcmParams | AesCfbParams): Promise<ArrayBuffer>;
+}
+
+declare var SubtleCrypto: {
+    prototype: SubtleCrypto;
+    new(): SubtleCrypto;
+};
+
+/** A sync action that is dispatched on the ServiceWorkerGlobalScope of a ServiceWorker.  */
+interface SyncEvent extends ExtendableEvent {
+    readonly lastChance: boolean;
+    readonly tag: string;
+}
+
+declare var SyncEvent: {
+    prototype: SyncEvent;
+    new(type: string, init: SyncEventInit): SyncEvent;
+};
+
+/** This ServiceWorker API interface provides an interface for registering and listing sync registrations. */
+interface SyncManager {
+    getTags(): Promise<string[]>;
+    register(tag: string): Promise<void>;
+}
+
+declare var SyncManager: {
+    prototype: SyncManager;
+    new(): SyncManager;
+};
+
+/** A decoder for a specific method, that is a specific character encoding, like utf-8, iso-8859-2, koi8, cp1261, gbk, etc. A decoder takes a stream of bytes as input and emits a stream of code points. For a more scalable, non-native library, see StringView – a C-like representation of strings based on typed arrays. */
+interface TextDecoder extends TextDecoderCommon {
+    /**
+     * Returns the result of running encoding's decoder. The method can be invoked zero or more times with options's stream set to true, and then once without options's stream (or set to false), to process a fragmented stream. If the invocation without options's stream (or set to false) has no input, it's clearest to omit both arguments.
+     * 
+     * \`\`\`
+     * var string = "", decoder = new TextDecoder(encoding), buffer;
+     * while(buffer = next_chunk()) {
+     *   string += decoder.decode(buffer, {stream:true});
+     * }
+     * string += decoder.decode(); // end-of-stream
+     * \`\`\`
+     * 
+     * If the error mode is "fatal" and encoding's decoder returns error, throws a TypeError.
+     */
+    decode(input?: BufferSource, options?: TextDecodeOptions): string;
+}
+
+declare var TextDecoder: {
+    prototype: TextDecoder;
+    new(label?: string, options?: TextDecoderOptions): TextDecoder;
+};
+
+interface TextDecoderCommon {
+    /**
+     * Returns encoding's name, lowercased.
+     */
+    readonly encoding: string;
+    /**
+     * Returns true if error mode is "fatal", and false otherwise.
+     */
+    readonly fatal: boolean;
+    /**
+     * Returns true if ignore BOM flag is set, and false otherwise.
+     */
+    readonly ignoreBOM: boolean;
+}
+
+interface TextDecoderStream extends GenericTransformStream, TextDecoderCommon {
+    readonly readable: ReadableStream<string>;
+    readonly writable: WritableStream<BufferSource>;
+}
+
+declare var TextDecoderStream: {
+    prototype: TextDecoderStream;
+    new(label?: string, options?: TextDecoderOptions): TextDecoderStream;
+};
+
+/** TextEncoder takes a stream of code points as input and emits a stream of bytes. For a more scalable, non-native library, see StringView – a C-like representation of strings based on typed arrays. */
+interface TextEncoder extends TextEncoderCommon {
+    /**
+     * Returns the result of running UTF-8's encoder.
+     */
+    encode(input?: string): Uint8Array;
+    /**
+     * Runs the UTF-8 encoder on source, stores the result of that operation into destination, and returns the progress made as a dictionary whereby read is the number of converted code units of source and written is the number of bytes modified in destination.
+     */
+    encodeInto(source: string, destination: Uint8Array): TextEncoderEncodeIntoResult;
+}
+
+declare var TextEncoder: {
+    prototype: TextEncoder;
+    new(): TextEncoder;
+};
+
+interface TextEncoderCommon {
+    /**
+     * Returns "utf-8".
+     */
+    readonly encoding: string;
+}
+
+interface TextEncoderStream extends GenericTransformStream, TextEncoderCommon {
+    readonly readable: ReadableStream<Uint8Array>;
+    readonly writable: WritableStream<string>;
+}
+
+declare var TextEncoderStream: {
+    prototype: TextEncoderStream;
+    new(): TextEncoderStream;
+};
+
+/** The dimensions of a piece of text in the canvas, as created by the CanvasRenderingContext2D.measureText() method. */
+interface TextMetrics {
+    /**
+     * Returns the measurement described below.
+     */
+    readonly actualBoundingBoxAscent: number;
+    /**
+     * Returns the measurement described below.
+     */
+    readonly actualBoundingBoxDescent: number;
+    /**
+     * Returns the measurement described below.
+     */
+    readonly actualBoundingBoxLeft: number;
+    /**
+     * Returns the measurement described below.
+     */
+    readonly actualBoundingBoxRight: number;
+    /**
+     * Returns the measurement described below.
+     */
+    readonly alphabeticBaseline: number;
+    /**
+     * Returns the measurement described below.
+     */
+    readonly emHeightAscent: number;
+    /**
+     * Returns the measurement described below.
+     */
+    readonly emHeightDescent: number;
+    /**
+     * Returns the measurement described below.
+     */
+    readonly fontBoundingBoxAscent: number;
+    /**
+     * Returns the measurement described below.
+     */
+    readonly fontBoundingBoxDescent: number;
+    /**
+     * Returns the measurement described below.
+     */
+    readonly hangingBaseline: number;
+    /**
+     * Returns the measurement described below.
+     */
+    readonly ideographicBaseline: number;
+    /**
+     * Returns the measurement described below.
+     */
+    readonly width: number;
+}
+
+declare var TextMetrics: {
+    prototype: TextMetrics;
+    new(): TextMetrics;
+};
+
+interface TransformStream<I = any, O = any> {
+    readonly readable: ReadableStream<O>;
+    readonly writable: WritableStream<I>;
+}
+
+declare var TransformStream: {
+    prototype: TransformStream;
+    new<I = any, O = any>(transformer?: Transformer<I, O>, writableStrategy?: QueuingStrategy<I>, readableStrategy?: QueuingStrategy<O>): TransformStream<I, O>;
+};
+
+interface TransformStreamDefaultController<O = any> {
+    readonly desiredSize: number | null;
+    enqueue(chunk: O): void;
+    error(reason?: any): void;
+    terminate(): void;
+}
+
+declare var TransformStreamDefaultController: {
+    prototype: TransformStreamDefaultController;
+    new(): TransformStreamDefaultController;
+};
+
+/** The URL interface represents an object providing static methods used for creating object URLs. */
+interface URL {
+    hash: string;
+    host: string;
+    hostname: string;
+    href: string;
+    toString(): string;
+    readonly origin: string;
+    password: string;
+    pathname: string;
+    port: string;
+    protocol: string;
+    search: string;
+    readonly searchParams: URLSearchParams;
+    username: string;
+    toJSON(): string;
+}
+
+declare var URL: {
+    prototype: URL;
+    new(url: string, base?: string | URL): URL;
+    createObjectURL(object: any): string;
+    revokeObjectURL(url: string): void;
+};
+
+interface URLSearchParams {
+    /**
+     * Appends a specified key/value pair as a new search parameter.
+     */
+    append(name: string, value: string): void;
+    /**
+     * Deletes the given search parameter, and its associated value, from the list of all search parameters.
+     */
+    delete(name: string): void;
+    /**
+     * Returns the first value associated to the given search parameter.
+     */
+    get(name: string): string | null;
+    /**
+     * Returns all the values association with a given search parameter.
+     */
+    getAll(name: string): string[];
+    /**
+     * Returns a Boolean indicating if such a search parameter exists.
+     */
+    has(name: string): boolean;
+    /**
+     * Sets the value associated to a given search parameter to the given value. If there were several values, delete the others.
+     */
+    set(name: string, value: string): void;
+    sort(): void;
+    /**
+     * Returns a string containing a query string suitable for use in a URL. Does not include the question mark.
+     */
+    toString(): string;
+    forEach(callbackfn: (value: string, key: string, parent: URLSearchParams) => void, thisArg?: any): void;
+}
+
+declare var URLSearchParams: {
+    prototype: URLSearchParams;
+    new(init?: string[][] | Record<string, string> | string | URLSearchParams): URLSearchParams;
+    toString(): string;
+};
+
+interface WEBGL_color_buffer_float {
+    readonly FRAMEBUFFER_ATTACHMENT_COMPONENT_TYPE_EXT: GLenum;
+    readonly RGBA32F_EXT: GLenum;
+    readonly UNSIGNED_NORMALIZED_EXT: GLenum;
+}
+
+interface WEBGL_compressed_texture_astc {
+    getSupportedProfiles(): string[];
+    readonly COMPRESSED_RGBA_ASTC_10x10_KHR: GLenum;
+    readonly COMPRESSED_RGBA_ASTC_10x5_KHR: GLenum;
+    readonly COMPRESSED_RGBA_ASTC_10x6_KHR: GLenum;
+    readonly COMPRESSED_RGBA_ASTC_10x8_KHR: GLenum;
+    readonly COMPRESSED_RGBA_ASTC_12x10_KHR: GLenum;
+    readonly COMPRESSED_RGBA_ASTC_12x12_KHR: GLenum;
+    readonly COMPRESSED_RGBA_ASTC_4x4_KHR: GLenum;
+    readonly COMPRESSED_RGBA_ASTC_5x4_KHR: GLenum;
+    readonly COMPRESSED_RGBA_ASTC_5x5_KHR: GLenum;
+    readonly COMPRESSED_RGBA_ASTC_6x5_KHR: GLenum;
+    readonly COMPRESSED_RGBA_ASTC_6x6_KHR: GLenum;
+    readonly COMPRESSED_RGBA_ASTC_8x5_KHR: GLenum;
+    readonly COMPRESSED_RGBA_ASTC_8x6_KHR: GLenum;
+    readonly COMPRESSED_RGBA_ASTC_8x8_KHR: GLenum;
+    readonly COMPRESSED_SRGB8_ALPHA8_ASTC_10x10_KHR: GLenum;
+    readonly COMPRESSED_SRGB8_ALPHA8_ASTC_10x5_KHR: GLenum;
+    readonly COMPRESSED_SRGB8_ALPHA8_ASTC_10x6_KHR: GLenum;
+    readonly COMPRESSED_SRGB8_ALPHA8_ASTC_10x8_KHR: GLenum;
+    readonly COMPRESSED_SRGB8_ALPHA8_ASTC_12x10_KHR: GLenum;
+    readonly COMPRESSED_SRGB8_ALPHA8_ASTC_12x12_KHR: GLenum;
+    readonly COMPRESSED_SRGB8_ALPHA8_ASTC_4x4_KHR: GLenum;
+    readonly COMPRESSED_SRGB8_ALPHA8_ASTC_5x4_KHR: GLenum;
+    readonly COMPRESSED_SRGB8_ALPHA8_ASTC_5x5_KHR: GLenum;
+    readonly COMPRESSED_SRGB8_ALPHA8_ASTC_6x5_KHR: GLenum;
+    readonly COMPRESSED_SRGB8_ALPHA8_ASTC_6x6_KHR: GLenum;
+    readonly COMPRESSED_SRGB8_ALPHA8_ASTC_8x5_KHR: GLenum;
+    readonly COMPRESSED_SRGB8_ALPHA8_ASTC_8x6_KHR: GLenum;
+    readonly COMPRESSED_SRGB8_ALPHA8_ASTC_8x8_KHR: GLenum;
+}
+
+/** The WEBGL_compressed_texture_s3tc extension is part of the WebGL API and exposes four S3TC compressed texture formats. */
+interface WEBGL_compressed_texture_s3tc {
+    readonly COMPRESSED_RGBA_S3TC_DXT1_EXT: GLenum;
+    readonly COMPRESSED_RGBA_S3TC_DXT3_EXT: GLenum;
+    readonly COMPRESSED_RGBA_S3TC_DXT5_EXT: GLenum;
+    readonly COMPRESSED_RGB_S3TC_DXT1_EXT: GLenum;
+}
+
+interface WEBGL_compressed_texture_s3tc_srgb {
+    readonly COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT: GLenum;
+    readonly COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT: GLenum;
+    readonly COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT: GLenum;
+    readonly COMPRESSED_SRGB_S3TC_DXT1_EXT: GLenum;
+}
+
+/** The WEBGL_debug_renderer_info extension is part of the WebGL API and exposes two constants with information about the graphics driver for debugging purposes. */
+interface WEBGL_debug_renderer_info {
+    readonly UNMASKED_RENDERER_WEBGL: GLenum;
+    readonly UNMASKED_VENDOR_WEBGL: GLenum;
+}
+
+interface WEBGL_debug_shaders {
+    getTranslatedShaderSource(shader: WebGLShader): string;
+}
+
+/** The WEBGL_depth_texture extension is part of the WebGL API and defines 2D depth and depth-stencil textures. */
+interface WEBGL_depth_texture {
+    readonly UNSIGNED_INT_24_8_WEBGL: GLenum;
+}
+
+interface WEBGL_draw_buffers {
+    drawBuffersWEBGL(buffers: GLenum[]): void;
+    readonly COLOR_ATTACHMENT0_WEBGL: GLenum;
+    readonly COLOR_ATTACHMENT10_WEBGL: GLenum;
+    readonly COLOR_ATTACHMENT11_WEBGL: GLenum;
+    readonly COLOR_ATTACHMENT12_WEBGL: GLenum;
+    readonly COLOR_ATTACHMENT13_WEBGL: GLenum;
+    readonly COLOR_ATTACHMENT14_WEBGL: GLenum;
+    readonly COLOR_ATTACHMENT15_WEBGL: GLenum;
+    readonly COLOR_ATTACHMENT1_WEBGL: GLenum;
+    readonly COLOR_ATTACHMENT2_WEBGL: GLenum;
+    readonly COLOR_ATTACHMENT3_WEBGL: GLenum;
+    readonly COLOR_ATTACHMENT4_WEBGL: GLenum;
+    readonly COLOR_ATTACHMENT5_WEBGL: GLenum;
+    readonly COLOR_ATTACHMENT6_WEBGL: GLenum;
+    readonly COLOR_ATTACHMENT7_WEBGL: GLenum;
+    readonly COLOR_ATTACHMENT8_WEBGL: GLenum;
+    readonly COLOR_ATTACHMENT9_WEBGL: GLenum;
+    readonly DRAW_BUFFER0_WEBGL: GLenum;
+    readonly DRAW_BUFFER10_WEBGL: GLenum;
+    readonly DRAW_BUFFER11_WEBGL: GLenum;
+    readonly DRAW_BUFFER12_WEBGL: GLenum;
+    readonly DRAW_BUFFER13_WEBGL: GLenum;
+    readonly DRAW_BUFFER14_WEBGL: GLenum;
+    readonly DRAW_BUFFER15_WEBGL: GLenum;
+    readonly DRAW_BUFFER1_WEBGL: GLenum;
+    readonly DRAW_BUFFER2_WEBGL: GLenum;
+    readonly DRAW_BUFFER3_WEBGL: GLenum;
+    readonly DRAW_BUFFER4_WEBGL: GLenum;
+    readonly DRAW_BUFFER5_WEBGL: GLenum;
+    readonly DRAW_BUFFER6_WEBGL: GLenum;
+    readonly DRAW_BUFFER7_WEBGL: GLenum;
+    readonly DRAW_BUFFER8_WEBGL: GLenum;
+    readonly DRAW_BUFFER9_WEBGL: GLenum;
+    readonly MAX_COLOR_ATTACHMENTS_WEBGL: GLenum;
+    readonly MAX_DRAW_BUFFERS_WEBGL: GLenum;
+}
+
+interface WEBGL_lose_context {
+    loseContext(): void;
+    restoreContext(): void;
+}
+
+interface WebGL2RenderingContext extends WebGL2RenderingContextBase, WebGL2RenderingContextOverloads, WebGLRenderingContextBase {
+}
+
+declare var WebGL2RenderingContext: {
+    prototype: WebGL2RenderingContext;
+    new(): WebGL2RenderingContext;
+    readonly ACTIVE_ATTRIBUTES: GLenum;
+    readonly ACTIVE_TEXTURE: GLenum;
+    readonly ACTIVE_UNIFORMS: GLenum;
+    readonly ALIASED_LINE_WIDTH_RANGE: GLenum;
+    readonly ALIASED_POINT_SIZE_RANGE: GLenum;
+    readonly ALPHA: GLenum;
+    readonly ALPHA_BITS: GLenum;
+    readonly ALWAYS: GLenum;
+    readonly ARRAY_BUFFER: GLenum;
+    readonly ARRAY_BUFFER_BINDING: GLenum;
+    readonly ATTACHED_SHADERS: GLenum;
+    readonly BACK: GLenum;
+    readonly BLEND: GLenum;
+    readonly BLEND_COLOR: GLenum;
+    readonly BLEND_DST_ALPHA: GLenum;
+    readonly BLEND_DST_RGB: GLenum;
+    readonly BLEND_EQUATION: GLenum;
+    readonly BLEND_EQUATION_ALPHA: GLenum;
+    readonly BLEND_EQUATION_RGB: GLenum;
+    readonly BLEND_SRC_ALPHA: GLenum;
+    readonly BLEND_SRC_RGB: GLenum;
+    readonly BLUE_BITS: GLenum;
+    readonly BOOL: GLenum;
+    readonly BOOL_VEC2: GLenum;
+    readonly BOOL_VEC3: GLenum;
+    readonly BOOL_VEC4: GLenum;
+    readonly BROWSER_DEFAULT_WEBGL: GLenum;
+    readonly BUFFER_SIZE: GLenum;
+    readonly BUFFER_USAGE: GLenum;
+    readonly BYTE: GLenum;
+    readonly CCW: GLenum;
+    readonly CLAMP_TO_EDGE: GLenum;
+    readonly COLOR_ATTACHMENT0: GLenum;
+    readonly COLOR_BUFFER_BIT: GLenum;
+    readonly COLOR_CLEAR_VALUE: GLenum;
+    readonly COLOR_WRITEMASK: GLenum;
+    readonly COMPILE_STATUS: GLenum;
+    readonly COMPRESSED_TEXTURE_FORMATS: GLenum;
+    readonly CONSTANT_ALPHA: GLenum;
+    readonly CONSTANT_COLOR: GLenum;
+    readonly CONTEXT_LOST_WEBGL: GLenum;
+    readonly CULL_FACE: GLenum;
+    readonly CULL_FACE_MODE: GLenum;
+    readonly CURRENT_PROGRAM: GLenum;
+    readonly CURRENT_VERTEX_ATTRIB: GLenum;
+    readonly CW: GLenum;
+    readonly DECR: GLenum;
+    readonly DECR_WRAP: GLenum;
+    readonly DELETE_STATUS: GLenum;
+    readonly DEPTH_ATTACHMENT: GLenum;
+    readonly DEPTH_BITS: GLenum;
+    readonly DEPTH_BUFFER_BIT: GLenum;
+    readonly DEPTH_CLEAR_VALUE: GLenum;
+    readonly DEPTH_COMPONENT: GLenum;
+    readonly DEPTH_COMPONENT16: GLenum;
+    readonly DEPTH_FUNC: GLenum;
+    readonly DEPTH_RANGE: GLenum;
+    readonly DEPTH_STENCIL: GLenum;
+    readonly DEPTH_STENCIL_ATTACHMENT: GLenum;
+    readonly DEPTH_TEST: GLenum;
+    readonly DEPTH_WRITEMASK: GLenum;
+    readonly DITHER: GLenum;
+    readonly DONT_CARE: GLenum;
+    readonly DST_ALPHA: GLenum;
+    readonly DST_COLOR: GLenum;
+    readonly DYNAMIC_DRAW: GLenum;
+    readonly ELEMENT_ARRAY_BUFFER: GLenum;
+    readonly ELEMENT_ARRAY_BUFFER_BINDING: GLenum;
+    readonly EQUAL: GLenum;
+    readonly FASTEST: GLenum;
+    readonly FLOAT: GLenum;
+    readonly FLOAT_MAT2: GLenum;
+    readonly FLOAT_MAT3: GLenum;
+    readonly FLOAT_MAT4: GLenum;
+    readonly FLOAT_VEC2: GLenum;
+    readonly FLOAT_VEC3: GLenum;
+    readonly FLOAT_VEC4: GLenum;
+    readonly FRAGMENT_SHADER: GLenum;
+    readonly FRAMEBUFFER: GLenum;
+    readonly FRAMEBUFFER_ATTACHMENT_OBJECT_NAME: GLenum;
+    readonly FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE: GLenum;
+    readonly FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE: GLenum;
+    readonly FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL: GLenum;
+    readonly FRAMEBUFFER_BINDING: GLenum;
+    readonly FRAMEBUFFER_COMPLETE: GLenum;
+    readonly FRAMEBUFFER_INCOMPLETE_ATTACHMENT: GLenum;
+    readonly FRAMEBUFFER_INCOMPLETE_DIMENSIONS: GLenum;
+    readonly FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT: GLenum;
+    readonly FRAMEBUFFER_UNSUPPORTED: GLenum;
+    readonly FRONT: GLenum;
+    readonly FRONT_AND_BACK: GLenum;
+    readonly FRONT_FACE: GLenum;
+    readonly FUNC_ADD: GLenum;
+    readonly FUNC_REVERSE_SUBTRACT: GLenum;
+    readonly FUNC_SUBTRACT: GLenum;
+    readonly GENERATE_MIPMAP_HINT: GLenum;
+    readonly GEQUAL: GLenum;
+    readonly GREATER: GLenum;
+    readonly GREEN_BITS: GLenum;
+    readonly HIGH_FLOAT: GLenum;
+    readonly HIGH_INT: GLenum;
+    readonly IMPLEMENTATION_COLOR_READ_FORMAT: GLenum;
+    readonly IMPLEMENTATION_COLOR_READ_TYPE: GLenum;
+    readonly INCR: GLenum;
+    readonly INCR_WRAP: GLenum;
+    readonly INT: GLenum;
+    readonly INT_VEC2: GLenum;
+    readonly INT_VEC3: GLenum;
+    readonly INT_VEC4: GLenum;
+    readonly INVALID_ENUM: GLenum;
+    readonly INVALID_FRAMEBUFFER_OPERATION: GLenum;
+    readonly INVALID_OPERATION: GLenum;
+    readonly INVALID_VALUE: GLenum;
+    readonly INVERT: GLenum;
+    readonly KEEP: GLenum;
+    readonly LEQUAL: GLenum;
+    readonly LESS: GLenum;
+    readonly LINEAR: GLenum;
+    readonly LINEAR_MIPMAP_LINEAR: GLenum;
+    readonly LINEAR_MIPMAP_NEAREST: GLenum;
+    readonly LINES: GLenum;
+    readonly LINE_LOOP: GLenum;
+    readonly LINE_STRIP: GLenum;
+    readonly LINE_WIDTH: GLenum;
+    readonly LINK_STATUS: GLenum;
+    readonly LOW_FLOAT: GLenum;
+    readonly LOW_INT: GLenum;
+    readonly LUMINANCE: GLenum;
+    readonly LUMINANCE_ALPHA: GLenum;
+    readonly MAX_COMBINED_TEXTURE_IMAGE_UNITS: GLenum;
+    readonly MAX_CUBE_MAP_TEXTURE_SIZE: GLenum;
+    readonly MAX_FRAGMENT_UNIFORM_VECTORS: GLenum;
+    readonly MAX_RENDERBUFFER_SIZE: GLenum;
+    readonly MAX_TEXTURE_IMAGE_UNITS: GLenum;
+    readonly MAX_TEXTURE_SIZE: GLenum;
+    readonly MAX_VARYING_VECTORS: GLenum;
+    readonly MAX_VERTEX_ATTRIBS: GLenum;
+    readonly MAX_VERTEX_TEXTURE_IMAGE_UNITS: GLenum;
+    readonly MAX_VERTEX_UNIFORM_VECTORS: GLenum;
+    readonly MAX_VIEWPORT_DIMS: GLenum;
+    readonly MEDIUM_FLOAT: GLenum;
+    readonly MEDIUM_INT: GLenum;
+    readonly MIRRORED_REPEAT: GLenum;
+    readonly NEAREST: GLenum;
+    readonly NEAREST_MIPMAP_LINEAR: GLenum;
+    readonly NEAREST_MIPMAP_NEAREST: GLenum;
+    readonly NEVER: GLenum;
+    readonly NICEST: GLenum;
+    readonly NONE: GLenum;
+    readonly NOTEQUAL: GLenum;
+    readonly NO_ERROR: GLenum;
+    readonly ONE: GLenum;
+    readonly ONE_MINUS_CONSTANT_ALPHA: GLenum;
+    readonly ONE_MINUS_CONSTANT_COLOR: GLenum;
+    readonly ONE_MINUS_DST_ALPHA: GLenum;
+    readonly ONE_MINUS_DST_COLOR: GLenum;
+    readonly ONE_MINUS_SRC_ALPHA: GLenum;
+    readonly ONE_MINUS_SRC_COLOR: GLenum;
+    readonly OUT_OF_MEMORY: GLenum;
+    readonly PACK_ALIGNMENT: GLenum;
+    readonly POINTS: GLenum;
+    readonly POLYGON_OFFSET_FACTOR: GLenum;
+    readonly POLYGON_OFFSET_FILL: GLenum;
+    readonly POLYGON_OFFSET_UNITS: GLenum;
+    readonly RED_BITS: GLenum;
+    readonly RENDERBUFFER: GLenum;
+    readonly RENDERBUFFER_ALPHA_SIZE: GLenum;
+    readonly RENDERBUFFER_BINDING: GLenum;
+    readonly RENDERBUFFER_BLUE_SIZE: GLenum;
+    readonly RENDERBUFFER_DEPTH_SIZE: GLenum;
+    readonly RENDERBUFFER_GREEN_SIZE: GLenum;
+    readonly RENDERBUFFER_HEIGHT: GLenum;
+    readonly RENDERBUFFER_INTERNAL_FORMAT: GLenum;
+    readonly RENDERBUFFER_RED_SIZE: GLenum;
+    readonly RENDERBUFFER_STENCIL_SIZE: GLenum;
+    readonly RENDERBUFFER_WIDTH: GLenum;
+    readonly RENDERER: GLenum;
+    readonly REPEAT: GLenum;
+    readonly REPLACE: GLenum;
+    readonly RGB: GLenum;
+    readonly RGB565: GLenum;
+    readonly RGB5_A1: GLenum;
+    readonly RGBA: GLenum;
+    readonly RGBA4: GLenum;
+    readonly SAMPLER_2D: GLenum;
+    readonly SAMPLER_CUBE: GLenum;
+    readonly SAMPLES: GLenum;
+    readonly SAMPLE_ALPHA_TO_COVERAGE: GLenum;
+    readonly SAMPLE_BUFFERS: GLenum;
+    readonly SAMPLE_COVERAGE: GLenum;
+    readonly SAMPLE_COVERAGE_INVERT: GLenum;
+    readonly SAMPLE_COVERAGE_VALUE: GLenum;
+    readonly SCISSOR_BOX: GLenum;
+    readonly SCISSOR_TEST: GLenum;
+    readonly SHADER_TYPE: GLenum;
+    readonly SHADING_LANGUAGE_VERSION: GLenum;
+    readonly SHORT: GLenum;
+    readonly SRC_ALPHA: GLenum;
+    readonly SRC_ALPHA_SATURATE: GLenum;
+    readonly SRC_COLOR: GLenum;
+    readonly STATIC_DRAW: GLenum;
+    readonly STENCIL_ATTACHMENT: GLenum;
+    readonly STENCIL_BACK_FAIL: GLenum;
+    readonly STENCIL_BACK_FUNC: GLenum;
+    readonly STENCIL_BACK_PASS_DEPTH_FAIL: GLenum;
+    readonly STENCIL_BACK_PASS_DEPTH_PASS: GLenum;
+    readonly STENCIL_BACK_REF: GLenum;
+    readonly STENCIL_BACK_VALUE_MASK: GLenum;
+    readonly STENCIL_BACK_WRITEMASK: GLenum;
+    readonly STENCIL_BITS: GLenum;
+    readonly STENCIL_BUFFER_BIT: GLenum;
+    readonly STENCIL_CLEAR_VALUE: GLenum;
+    readonly STENCIL_FAIL: GLenum;
+    readonly STENCIL_FUNC: GLenum;
+    readonly STENCIL_INDEX8: GLenum;
+    readonly STENCIL_PASS_DEPTH_FAIL: GLenum;
+    readonly STENCIL_PASS_DEPTH_PASS: GLenum;
+    readonly STENCIL_REF: GLenum;
+    readonly STENCIL_TEST: GLenum;
+    readonly STENCIL_VALUE_MASK: GLenum;
+    readonly STENCIL_WRITEMASK: GLenum;
+    readonly STREAM_DRAW: GLenum;
+    readonly SUBPIXEL_BITS: GLenum;
+    readonly TEXTURE: GLenum;
+    readonly TEXTURE0: GLenum;
+    readonly TEXTURE1: GLenum;
+    readonly TEXTURE10: GLenum;
+    readonly TEXTURE11: GLenum;
+    readonly TEXTURE12: GLenum;
+    readonly TEXTURE13: GLenum;
+    readonly TEXTURE14: GLenum;
+    readonly TEXTURE15: GLenum;
+    readonly TEXTURE16: GLenum;
+    readonly TEXTURE17: GLenum;
+    readonly TEXTURE18: GLenum;
+    readonly TEXTURE19: GLenum;
+    readonly TEXTURE2: GLenum;
+    readonly TEXTURE20: GLenum;
+    readonly TEXTURE21: GLenum;
+    readonly TEXTURE22: GLenum;
+    readonly TEXTURE23: GLenum;
+    readonly TEXTURE24: GLenum;
+    readonly TEXTURE25: GLenum;
+    readonly TEXTURE26: GLenum;
+    readonly TEXTURE27: GLenum;
+    readonly TEXTURE28: GLenum;
+    readonly TEXTURE29: GLenum;
+    readonly TEXTURE3: GLenum;
+    readonly TEXTURE30: GLenum;
+    readonly TEXTURE31: GLenum;
+    readonly TEXTURE4: GLenum;
+    readonly TEXTURE5: GLenum;
+    readonly TEXTURE6: GLenum;
+    readonly TEXTURE7: GLenum;
+    readonly TEXTURE8: GLenum;
+    readonly TEXTURE9: GLenum;
+    readonly TEXTURE_2D: GLenum;
+    readonly TEXTURE_BINDING_2D: GLenum;
+    readonly TEXTURE_BINDING_CUBE_MAP: GLenum;
+    readonly TEXTURE_CUBE_MAP: GLenum;
+    readonly TEXTURE_CUBE_MAP_NEGATIVE_X: GLenum;
+    readonly TEXTURE_CUBE_MAP_NEGATIVE_Y: GLenum;
+    readonly TEXTURE_CUBE_MAP_NEGATIVE_Z: GLenum;
+    readonly TEXTURE_CUBE_MAP_POSITIVE_X: GLenum;
+    readonly TEXTURE_CUBE_MAP_POSITIVE_Y: GLenum;
+    readonly TEXTURE_CUBE_MAP_POSITIVE_Z: GLenum;
+    readonly TEXTURE_MAG_FILTER: GLenum;
+    readonly TEXTURE_MIN_FILTER: GLenum;
+    readonly TEXTURE_WRAP_S: GLenum;
+    readonly TEXTURE_WRAP_T: GLenum;
+    readonly TRIANGLES: GLenum;
+    readonly TRIANGLE_FAN: GLenum;
+    readonly TRIANGLE_STRIP: GLenum;
+    readonly UNPACK_ALIGNMENT: GLenum;
+    readonly UNPACK_COLORSPACE_CONVERSION_WEBGL: GLenum;
+    readonly UNPACK_FLIP_Y_WEBGL: GLenum;
+    readonly UNPACK_PREMULTIPLY_ALPHA_WEBGL: GLenum;
+    readonly UNSIGNED_BYTE: GLenum;
+    readonly UNSIGNED_INT: GLenum;
+    readonly UNSIGNED_SHORT: GLenum;
+    readonly UNSIGNED_SHORT_4_4_4_4: GLenum;
+    readonly UNSIGNED_SHORT_5_5_5_1: GLenum;
+    readonly UNSIGNED_SHORT_5_6_5: GLenum;
+    readonly VALIDATE_STATUS: GLenum;
+    readonly VENDOR: GLenum;
+    readonly VERSION: GLenum;
+    readonly VERTEX_ATTRIB_ARRAY_BUFFER_BINDING: GLenum;
+    readonly VERTEX_ATTRIB_ARRAY_ENABLED: GLenum;
+    readonly VERTEX_ATTRIB_ARRAY_NORMALIZED: GLenum;
+    readonly VERTEX_ATTRIB_ARRAY_POINTER: GLenum;
+    readonly VERTEX_ATTRIB_ARRAY_SIZE: GLenum;
+    readonly VERTEX_ATTRIB_ARRAY_STRIDE: GLenum;
+    readonly VERTEX_ATTRIB_ARRAY_TYPE: GLenum;
+    readonly VERTEX_SHADER: GLenum;
+    readonly VIEWPORT: GLenum;
+    readonly ZERO: GLenum;
+    readonly ACTIVE_UNIFORM_BLOCKS: GLenum;
+    readonly ALREADY_SIGNALED: GLenum;
+    readonly ANY_SAMPLES_PASSED: GLenum;
+    readonly ANY_SAMPLES_PASSED_CONSERVATIVE: GLenum;
+    readonly COLOR: GLenum;
+    readonly COLOR_ATTACHMENT1: GLenum;
+    readonly COLOR_ATTACHMENT10: GLenum;
+    readonly COLOR_ATTACHMENT11: GLenum;
+    readonly COLOR_ATTACHMENT12: GLenum;
+    readonly COLOR_ATTACHMENT13: GLenum;
+    readonly COLOR_ATTACHMENT14: GLenum;
+    readonly COLOR_ATTACHMENT15: GLenum;
+    readonly COLOR_ATTACHMENT2: GLenum;
+    readonly COLOR_ATTACHMENT3: GLenum;
+    readonly COLOR_ATTACHMENT4: GLenum;
+    readonly COLOR_ATTACHMENT5: GLenum;
+    readonly COLOR_ATTACHMENT6: GLenum;
+    readonly COLOR_ATTACHMENT7: GLenum;
+    readonly COLOR_ATTACHMENT8: GLenum;
+    readonly COLOR_ATTACHMENT9: GLenum;
+    readonly COMPARE_REF_TO_TEXTURE: GLenum;
+    readonly CONDITION_SATISFIED: GLenum;
+    readonly COPY_READ_BUFFER: GLenum;
+    readonly COPY_READ_BUFFER_BINDING: GLenum;
+    readonly COPY_WRITE_BUFFER: GLenum;
+    readonly COPY_WRITE_BUFFER_BINDING: GLenum;
+    readonly CURRENT_QUERY: GLenum;
+    readonly DEPTH: GLenum;
+    readonly DEPTH24_STENCIL8: GLenum;
+    readonly DEPTH32F_STENCIL8: GLenum;
+    readonly DEPTH_COMPONENT24: GLenum;
+    readonly DEPTH_COMPONENT32F: GLenum;
+    readonly DRAW_BUFFER0: GLenum;
+    readonly DRAW_BUFFER1: GLenum;
+    readonly DRAW_BUFFER10: GLenum;
+    readonly DRAW_BUFFER11: GLenum;
+    readonly DRAW_BUFFER12: GLenum;
+    readonly DRAW_BUFFER13: GLenum;
+    readonly DRAW_BUFFER14: GLenum;
+    readonly DRAW_BUFFER15: GLenum;
+    readonly DRAW_BUFFER2: GLenum;
+    readonly DRAW_BUFFER3: GLenum;
+    readonly DRAW_BUFFER4: GLenum;
+    readonly DRAW_BUFFER5: GLenum;
+    readonly DRAW_BUFFER6: GLenum;
+    readonly DRAW_BUFFER7: GLenum;
+    readonly DRAW_BUFFER8: GLenum;
+    readonly DRAW_BUFFER9: GLenum;
+    readonly DRAW_FRAMEBUFFER: GLenum;
+    readonly DRAW_FRAMEBUFFER_BINDING: GLenum;
+    readonly DYNAMIC_COPY: GLenum;
+    readonly DYNAMIC_READ: GLenum;
+    readonly FLOAT_32_UNSIGNED_INT_24_8_REV: GLenum;
+    readonly FLOAT_MAT2x3: GLenum;
+    readonly FLOAT_MAT2x4: GLenum;
+    readonly FLOAT_MAT3x2: GLenum;
+    readonly FLOAT_MAT3x4: GLenum;
+    readonly FLOAT_MAT4x2: GLenum;
+    readonly FLOAT_MAT4x3: GLenum;
+    readonly FRAGMENT_SHADER_DERIVATIVE_HINT: GLenum;
+    readonly FRAMEBUFFER_ATTACHMENT_ALPHA_SIZE: GLenum;
+    readonly FRAMEBUFFER_ATTACHMENT_BLUE_SIZE: GLenum;
+    readonly FRAMEBUFFER_ATTACHMENT_COLOR_ENCODING: GLenum;
+    readonly FRAMEBUFFER_ATTACHMENT_COMPONENT_TYPE: GLenum;
+    readonly FRAMEBUFFER_ATTACHMENT_DEPTH_SIZE: GLenum;
+    readonly FRAMEBUFFER_ATTACHMENT_GREEN_SIZE: GLenum;
+    readonly FRAMEBUFFER_ATTACHMENT_RED_SIZE: GLenum;
+    readonly FRAMEBUFFER_ATTACHMENT_STENCIL_SIZE: GLenum;
+    readonly FRAMEBUFFER_ATTACHMENT_TEXTURE_LAYER: GLenum;
+    readonly FRAMEBUFFER_DEFAULT: GLenum;
+    readonly FRAMEBUFFER_INCOMPLETE_MULTISAMPLE: GLenum;
+    readonly HALF_FLOAT: GLenum;
+    readonly INTERLEAVED_ATTRIBS: GLenum;
+    readonly INT_2_10_10_10_REV: GLenum;
+    readonly INT_SAMPLER_2D: GLenum;
+    readonly INT_SAMPLER_2D_ARRAY: GLenum;
+    readonly INT_SAMPLER_3D: GLenum;
+    readonly INT_SAMPLER_CUBE: GLenum;
+    readonly INVALID_INDEX: GLenum;
+    readonly MAX: GLenum;
+    readonly MAX_3D_TEXTURE_SIZE: GLenum;
+    readonly MAX_ARRAY_TEXTURE_LAYERS: GLenum;
+    readonly MAX_CLIENT_WAIT_TIMEOUT_WEBGL: GLenum;
+    readonly MAX_COLOR_ATTACHMENTS: GLenum;
+    readonly MAX_COMBINED_FRAGMENT_UNIFORM_COMPONENTS: GLenum;
+    readonly MAX_COMBINED_UNIFORM_BLOCKS: GLenum;
+    readonly MAX_COMBINED_VERTEX_UNIFORM_COMPONENTS: GLenum;
+    readonly MAX_DRAW_BUFFERS: GLenum;
+    readonly MAX_ELEMENTS_INDICES: GLenum;
+    readonly MAX_ELEMENTS_VERTICES: GLenum;
+    readonly MAX_ELEMENT_INDEX: GLenum;
+    readonly MAX_FRAGMENT_INPUT_COMPONENTS: GLenum;
+    readonly MAX_FRAGMENT_UNIFORM_BLOCKS: GLenum;
+    readonly MAX_FRAGMENT_UNIFORM_COMPONENTS: GLenum;
+    readonly MAX_PROGRAM_TEXEL_OFFSET: GLenum;
+    readonly MAX_SAMPLES: GLenum;
+    readonly MAX_SERVER_WAIT_TIMEOUT: GLenum;
+    readonly MAX_TEXTURE_LOD_BIAS: GLenum;
+    readonly MAX_TRANSFORM_FEEDBACK_INTERLEAVED_COMPONENTS: GLenum;
+    readonly MAX_TRANSFORM_FEEDBACK_SEPARATE_ATTRIBS: GLenum;
+    readonly MAX_TRANSFORM_FEEDBACK_SEPARATE_COMPONENTS: GLenum;
+    readonly MAX_UNIFORM_BLOCK_SIZE: GLenum;
+    readonly MAX_UNIFORM_BUFFER_BINDINGS: GLenum;
+    readonly MAX_VARYING_COMPONENTS: GLenum;
+    readonly MAX_VERTEX_OUTPUT_COMPONENTS: GLenum;
+    readonly MAX_VERTEX_UNIFORM_BLOCKS: GLenum;
+    readonly MAX_VERTEX_UNIFORM_COMPONENTS: GLenum;
+    readonly MIN: GLenum;
+    readonly MIN_PROGRAM_TEXEL_OFFSET: GLenum;
+    readonly OBJECT_TYPE: GLenum;
+    readonly PACK_ROW_LENGTH: GLenum;
+    readonly PACK_SKIP_PIXELS: GLenum;
+    readonly PACK_SKIP_ROWS: GLenum;
+    readonly PIXEL_PACK_BUFFER: GLenum;
+    readonly PIXEL_PACK_BUFFER_BINDING: GLenum;
+    readonly PIXEL_UNPACK_BUFFER: GLenum;
+    readonly PIXEL_UNPACK_BUFFER_BINDING: GLenum;
+    readonly QUERY_RESULT: GLenum;
+    readonly QUERY_RESULT_AVAILABLE: GLenum;
+    readonly R11F_G11F_B10F: GLenum;
+    readonly R16F: GLenum;
+    readonly R16I: GLenum;
+    readonly R16UI: GLenum;
+    readonly R32F: GLenum;
+    readonly R32I: GLenum;
+    readonly R32UI: GLenum;
+    readonly R8: GLenum;
+    readonly R8I: GLenum;
+    readonly R8UI: GLenum;
+    readonly R8_SNORM: GLenum;
+    readonly RASTERIZER_DISCARD: GLenum;
+    readonly READ_BUFFER: GLenum;
+    readonly READ_FRAMEBUFFER: GLenum;
+    readonly READ_FRAMEBUFFER_BINDING: GLenum;
+    readonly RED: GLenum;
+    readonly RED_INTEGER: GLenum;
+    readonly RENDERBUFFER_SAMPLES: GLenum;
+    readonly RG: GLenum;
+    readonly RG16F: GLenum;
+    readonly RG16I: GLenum;
+    readonly RG16UI: GLenum;
+    readonly RG32F: GLenum;
+    readonly RG32I: GLenum;
+    readonly RG32UI: GLenum;
+    readonly RG8: GLenum;
+    readonly RG8I: GLenum;
+    readonly RG8UI: GLenum;
+    readonly RG8_SNORM: GLenum;
+    readonly RGB10_A2: GLenum;
+    readonly RGB10_A2UI: GLenum;
+    readonly RGB16F: GLenum;
+    readonly RGB16I: GLenum;
+    readonly RGB16UI: GLenum;
+    readonly RGB32F: GLenum;
+    readonly RGB32I: GLenum;
+    readonly RGB32UI: GLenum;
+    readonly RGB8: GLenum;
+    readonly RGB8I: GLenum;
+    readonly RGB8UI: GLenum;
+    readonly RGB8_SNORM: GLenum;
+    readonly RGB9_E5: GLenum;
+    readonly RGBA16F: GLenum;
+    readonly RGBA16I: GLenum;
+    readonly RGBA16UI: GLenum;
+    readonly RGBA32F: GLenum;
+    readonly RGBA32I: GLenum;
+    readonly RGBA32UI: GLenum;
+    readonly RGBA8: GLenum;
+    readonly RGBA8I: GLenum;
+    readonly RGBA8UI: GLenum;
+    readonly RGBA8_SNORM: GLenum;
+    readonly RGBA_INTEGER: GLenum;
+    readonly RGB_INTEGER: GLenum;
+    readonly RG_INTEGER: GLenum;
+    readonly SAMPLER_2D_ARRAY: GLenum;
+    readonly SAMPLER_2D_ARRAY_SHADOW: GLenum;
+    readonly SAMPLER_2D_SHADOW: GLenum;
+    readonly SAMPLER_3D: GLenum;
+    readonly SAMPLER_BINDING: GLenum;
+    readonly SAMPLER_CUBE_SHADOW: GLenum;
+    readonly SEPARATE_ATTRIBS: GLenum;
+    readonly SIGNALED: GLenum;
+    readonly SIGNED_NORMALIZED: GLenum;
+    readonly SRGB: GLenum;
+    readonly SRGB8: GLenum;
+    readonly SRGB8_ALPHA8: GLenum;
+    readonly STATIC_COPY: GLenum;
+    readonly STATIC_READ: GLenum;
+    readonly STENCIL: GLenum;
+    readonly STREAM_COPY: GLenum;
+    readonly STREAM_READ: GLenum;
+    readonly SYNC_CONDITION: GLenum;
+    readonly SYNC_FENCE: GLenum;
+    readonly SYNC_FLAGS: GLenum;
+    readonly SYNC_FLUSH_COMMANDS_BIT: GLenum;
+    readonly SYNC_GPU_COMMANDS_COMPLETE: GLenum;
+    readonly SYNC_STATUS: GLenum;
+    readonly TEXTURE_2D_ARRAY: GLenum;
+    readonly TEXTURE_3D: GLenum;
+    readonly TEXTURE_BASE_LEVEL: GLenum;
+    readonly TEXTURE_BINDING_2D_ARRAY: GLenum;
+    readonly TEXTURE_BINDING_3D: GLenum;
+    readonly TEXTURE_COMPARE_FUNC: GLenum;
+    readonly TEXTURE_COMPARE_MODE: GLenum;
+    readonly TEXTURE_IMMUTABLE_FORMAT: GLenum;
+    readonly TEXTURE_IMMUTABLE_LEVELS: GLenum;
+    readonly TEXTURE_MAX_LEVEL: GLenum;
+    readonly TEXTURE_MAX_LOD: GLenum;
+    readonly TEXTURE_MIN_LOD: GLenum;
+    readonly TEXTURE_WRAP_R: GLenum;
+    readonly TIMEOUT_EXPIRED: GLenum;
+    readonly TIMEOUT_IGNORED: GLint64;
+    readonly TRANSFORM_FEEDBACK: GLenum;
+    readonly TRANSFORM_FEEDBACK_ACTIVE: GLenum;
+    readonly TRANSFORM_FEEDBACK_BINDING: GLenum;
+    readonly TRANSFORM_FEEDBACK_BUFFER: GLenum;
+    readonly TRANSFORM_FEEDBACK_BUFFER_BINDING: GLenum;
+    readonly TRANSFORM_FEEDBACK_BUFFER_MODE: GLenum;
+    readonly TRANSFORM_FEEDBACK_BUFFER_SIZE: GLenum;
+    readonly TRANSFORM_FEEDBACK_BUFFER_START: GLenum;
+    readonly TRANSFORM_FEEDBACK_PAUSED: GLenum;
+    readonly TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN: GLenum;
+    readonly TRANSFORM_FEEDBACK_VARYINGS: GLenum;
+    readonly UNIFORM_ARRAY_STRIDE: GLenum;
+    readonly UNIFORM_BLOCK_ACTIVE_UNIFORMS: GLenum;
+    readonly UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES: GLenum;
+    readonly UNIFORM_BLOCK_BINDING: GLenum;
+    readonly UNIFORM_BLOCK_DATA_SIZE: GLenum;
+    readonly UNIFORM_BLOCK_INDEX: GLenum;
+    readonly UNIFORM_BLOCK_REFERENCED_BY_FRAGMENT_SHADER: GLenum;
+    readonly UNIFORM_BLOCK_REFERENCED_BY_VERTEX_SHADER: GLenum;
+    readonly UNIFORM_BUFFER: GLenum;
+    readonly UNIFORM_BUFFER_BINDING: GLenum;
+    readonly UNIFORM_BUFFER_OFFSET_ALIGNMENT: GLenum;
+    readonly UNIFORM_BUFFER_SIZE: GLenum;
+    readonly UNIFORM_BUFFER_START: GLenum;
+    readonly UNIFORM_IS_ROW_MAJOR: GLenum;
+    readonly UNIFORM_MATRIX_STRIDE: GLenum;
+    readonly UNIFORM_OFFSET: GLenum;
+    readonly UNIFORM_SIZE: GLenum;
+    readonly UNIFORM_TYPE: GLenum;
+    readonly UNPACK_IMAGE_HEIGHT: GLenum;
+    readonly UNPACK_ROW_LENGTH: GLenum;
+    readonly UNPACK_SKIP_IMAGES: GLenum;
+    readonly UNPACK_SKIP_PIXELS: GLenum;
+    readonly UNPACK_SKIP_ROWS: GLenum;
+    readonly UNSIGNALED: GLenum;
+    readonly UNSIGNED_INT_10F_11F_11F_REV: GLenum;
+    readonly UNSIGNED_INT_24_8: GLenum;
+    readonly UNSIGNED_INT_2_10_10_10_REV: GLenum;
+    readonly UNSIGNED_INT_5_9_9_9_REV: GLenum;
+    readonly UNSIGNED_INT_SAMPLER_2D: GLenum;
+    readonly UNSIGNED_INT_SAMPLER_2D_ARRAY: GLenum;
+    readonly UNSIGNED_INT_SAMPLER_3D: GLenum;
+    readonly UNSIGNED_INT_SAMPLER_CUBE: GLenum;
+    readonly UNSIGNED_INT_VEC2: GLenum;
+    readonly UNSIGNED_INT_VEC3: GLenum;
+    readonly UNSIGNED_INT_VEC4: GLenum;
+    readonly UNSIGNED_NORMALIZED: GLenum;
+    readonly VERTEX_ARRAY_BINDING: GLenum;
+    readonly VERTEX_ATTRIB_ARRAY_DIVISOR: GLenum;
+    readonly VERTEX_ATTRIB_ARRAY_INTEGER: GLenum;
+    readonly WAIT_FAILED: GLenum;
+};
+
+interface WebGL2RenderingContextBase {
+    beginQuery(target: GLenum, query: WebGLQuery): void;
+    beginTransformFeedback(primitiveMode: GLenum): void;
+    bindBufferBase(target: GLenum, index: GLuint, buffer: WebGLBuffer | null): void;
+    bindBufferRange(target: GLenum, index: GLuint, buffer: WebGLBuffer | null, offset: GLintptr, size: GLsizeiptr): void;
+    bindSampler(unit: GLuint, sampler: WebGLSampler | null): void;
+    bindTransformFeedback(target: GLenum, tf: WebGLTransformFeedback | null): void;
+    bindVertexArray(array: WebGLVertexArrayObject | null): void;
+    blitFramebuffer(srcX0: GLint, srcY0: GLint, srcX1: GLint, srcY1: GLint, dstX0: GLint, dstY0: GLint, dstX1: GLint, dstY1: GLint, mask: GLbitfield, filter: GLenum): void;
+    clearBufferfi(buffer: GLenum, drawbuffer: GLint, depth: GLfloat, stencil: GLint): void;
+    clearBufferfv(buffer: GLenum, drawbuffer: GLint, values: Float32List, srcOffset?: GLuint): void;
+    clearBufferiv(buffer: GLenum, drawbuffer: GLint, values: Int32List, srcOffset?: GLuint): void;
+    clearBufferuiv(buffer: GLenum, drawbuffer: GLint, values: Uint32List, srcOffset?: GLuint): void;
+    clientWaitSync(sync: WebGLSync, flags: GLbitfield, timeout: GLuint64): GLenum;
+    compressedTexImage3D(target: GLenum, level: GLint, internalformat: GLenum, width: GLsizei, height: GLsizei, depth: GLsizei, border: GLint, imageSize: GLsizei, offset: GLintptr): void;
+    compressedTexImage3D(target: GLenum, level: GLint, internalformat: GLenum, width: GLsizei, height: GLsizei, depth: GLsizei, border: GLint, srcData: ArrayBufferView, srcOffset?: GLuint, srcLengthOverride?: GLuint): void;
+    compressedTexSubImage3D(target: GLenum, level: GLint, xoffset: GLint, yoffset: GLint, zoffset: GLint, width: GLsizei, height: GLsizei, depth: GLsizei, format: GLenum, imageSize: GLsizei, offset: GLintptr): void;
+    compressedTexSubImage3D(target: GLenum, level: GLint, xoffset: GLint, yoffset: GLint, zoffset: GLint, width: GLsizei, height: GLsizei, depth: GLsizei, format: GLenum, srcData: ArrayBufferView, srcOffset?: GLuint, srcLengthOverride?: GLuint): void;
+    copyBufferSubData(readTarget: GLenum, writeTarget: GLenum, readOffset: GLintptr, writeOffset: GLintptr, size: GLsizeiptr): void;
+    copyTexSubImage3D(target: GLenum, level: GLint, xoffset: GLint, yoffset: GLint, zoffset: GLint, x: GLint, y: GLint, width: GLsizei, height: GLsizei): void;
+    createQuery(): WebGLQuery | null;
+    createSampler(): WebGLSampler | null;
+    createTransformFeedback(): WebGLTransformFeedback | null;
+    createVertexArray(): WebGLVertexArrayObject | null;
+    deleteQuery(query: WebGLQuery | null): void;
+    deleteSampler(sampler: WebGLSampler | null): void;
+    deleteSync(sync: WebGLSync | null): void;
+    deleteTransformFeedback(tf: WebGLTransformFeedback | null): void;
+    deleteVertexArray(vertexArray: WebGLVertexArrayObject | null): void;
+    drawArraysInstanced(mode: GLenum, first: GLint, count: GLsizei, instanceCount: GLsizei): void;
+    drawBuffers(buffers: GLenum[]): void;
+    drawElementsInstanced(mode: GLenum, count: GLsizei, type: GLenum, offset: GLintptr, instanceCount: GLsizei): void;
+    drawRangeElements(mode: GLenum, start: GLuint, end: GLuint, count: GLsizei, type: GLenum, offset: GLintptr): void;
+    endQuery(target: GLenum): void;
+    endTransformFeedback(): void;
+    fenceSync(condition: GLenum, flags: GLbitfield): WebGLSync | null;
+    framebufferTextureLayer(target: GLenum, attachment: GLenum, texture: WebGLTexture | null, level: GLint, layer: GLint): void;
+    getActiveUniformBlockName(program: WebGLProgram, uniformBlockIndex: GLuint): string | null;
+    getActiveUniformBlockParameter(program: WebGLProgram, uniformBlockIndex: GLuint, pname: GLenum): any;
+    getActiveUniforms(program: WebGLProgram, uniformIndices: GLuint[], pname: GLenum): any;
+    getBufferSubData(target: GLenum, srcByteOffset: GLintptr, dstBuffer: ArrayBufferView, dstOffset?: GLuint, length?: GLuint): void;
+    getFragDataLocation(program: WebGLProgram, name: string): GLint;
+    getIndexedParameter(target: GLenum, index: GLuint): any;
+    getInternalformatParameter(target: GLenum, internalformat: GLenum, pname: GLenum): any;
+    getQuery(target: GLenum, pname: GLenum): WebGLQuery | null;
+    getQueryParameter(query: WebGLQuery, pname: GLenum): any;
+    getSamplerParameter(sampler: WebGLSampler, pname: GLenum): any;
+    getSyncParameter(sync: WebGLSync, pname: GLenum): any;
+    getTransformFeedbackVarying(program: WebGLProgram, index: GLuint): WebGLActiveInfo | null;
+    getUniformBlockIndex(program: WebGLProgram, uniformBlockName: string): GLuint;
+    getUniformIndices(program: WebGLProgram, uniformNames: string[]): GLuint[] | null;
+    invalidateFramebuffer(target: GLenum, attachments: GLenum[]): void;
+    invalidateSubFramebuffer(target: GLenum, attachments: GLenum[], x: GLint, y: GLint, width: GLsizei, height: GLsizei): void;
+    isQuery(query: WebGLQuery | null): GLboolean;
+    isSampler(sampler: WebGLSampler | null): GLboolean;
+    isSync(sync: WebGLSync | null): GLboolean;
+    isTransformFeedback(tf: WebGLTransformFeedback | null): GLboolean;
+    isVertexArray(vertexArray: WebGLVertexArrayObject | null): GLboolean;
+    pauseTransformFeedback(): void;
+    readBuffer(src: GLenum): void;
+    renderbufferStorageMultisample(target: GLenum, samples: GLsizei, internalformat: GLenum, width: GLsizei, height: GLsizei): void;
+    resumeTransformFeedback(): void;
+    samplerParameterf(sampler: WebGLSampler, pname: GLenum, param: GLfloat): void;
+    samplerParameteri(sampler: WebGLSampler, pname: GLenum, param: GLint): void;
+    texImage3D(target: GLenum, level: GLint, internalformat: GLint, width: GLsizei, height: GLsizei, depth: GLsizei, border: GLint, format: GLenum, type: GLenum, pboOffset: GLintptr): void;
+    texImage3D(target: GLenum, level: GLint, internalformat: GLint, width: GLsizei, height: GLsizei, depth: GLsizei, border: GLint, format: GLenum, type: GLenum, source: TexImageSource): void;
+    texImage3D(target: GLenum, level: GLint, internalformat: GLint, width: GLsizei, height: GLsizei, depth: GLsizei, border: GLint, format: GLenum, type: GLenum, srcData: ArrayBufferView | null): void;
+    texImage3D(target: GLenum, level: GLint, internalformat: GLint, width: GLsizei, height: GLsizei, depth: GLsizei, border: GLint, format: GLenum, type: GLenum, srcData: ArrayBufferView, srcOffset: GLuint): void;
+    texStorage2D(target: GLenum, levels: GLsizei, internalformat: GLenum, width: GLsizei, height: GLsizei): void;
+    texStorage3D(target: GLenum, levels: GLsizei, internalformat: GLenum, width: GLsizei, height: GLsizei, depth: GLsizei): void;
+    texSubImage3D(target: GLenum, level: GLint, xoffset: GLint, yoffset: GLint, zoffset: GLint, width: GLsizei, height: GLsizei, depth: GLsizei, format: GLenum, type: GLenum, pboOffset: GLintptr): void;
+    texSubImage3D(target: GLenum, level: GLint, xoffset: GLint, yoffset: GLint, zoffset: GLint, width: GLsizei, height: GLsizei, depth: GLsizei, format: GLenum, type: GLenum, source: TexImageSource): void;
+    texSubImage3D(target: GLenum, level: GLint, xoffset: GLint, yoffset: GLint, zoffset: GLint, width: GLsizei, height: GLsizei, depth: GLsizei, format: GLenum, type: GLenum, srcData: ArrayBufferView | null, srcOffset?: GLuint): void;
+    transformFeedbackVaryings(program: WebGLProgram, varyings: string[], bufferMode: GLenum): void;
+    uniform1ui(location: WebGLUniformLocation | null, v0: GLuint): void;
+    uniform1uiv(location: WebGLUniformLocation | null, data: Uint32List, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniform2ui(location: WebGLUniformLocation | null, v0: GLuint, v1: GLuint): void;
+    uniform2uiv(location: WebGLUniformLocation | null, data: Uint32List, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniform3ui(location: WebGLUniformLocation | null, v0: GLuint, v1: GLuint, v2: GLuint): void;
+    uniform3uiv(location: WebGLUniformLocation | null, data: Uint32List, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniform4ui(location: WebGLUniformLocation | null, v0: GLuint, v1: GLuint, v2: GLuint, v3: GLuint): void;
+    uniform4uiv(location: WebGLUniformLocation | null, data: Uint32List, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniformBlockBinding(program: WebGLProgram, uniformBlockIndex: GLuint, uniformBlockBinding: GLuint): void;
+    uniformMatrix2x3fv(location: WebGLUniformLocation | null, transpose: GLboolean, data: Float32List, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniformMatrix2x4fv(location: WebGLUniformLocation | null, transpose: GLboolean, data: Float32List, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniformMatrix3x2fv(location: WebGLUniformLocation | null, transpose: GLboolean, data: Float32List, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniformMatrix3x4fv(location: WebGLUniformLocation | null, transpose: GLboolean, data: Float32List, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniformMatrix4x2fv(location: WebGLUniformLocation | null, transpose: GLboolean, data: Float32List, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniformMatrix4x3fv(location: WebGLUniformLocation | null, transpose: GLboolean, data: Float32List, srcOffset?: GLuint, srcLength?: GLuint): void;
+    vertexAttribDivisor(index: GLuint, divisor: GLuint): void;
+    vertexAttribI4i(index: GLuint, x: GLint, y: GLint, z: GLint, w: GLint): void;
+    vertexAttribI4iv(index: GLuint, values: Int32List): void;
+    vertexAttribI4ui(index: GLuint, x: GLuint, y: GLuint, z: GLuint, w: GLuint): void;
+    vertexAttribI4uiv(index: GLuint, values: Uint32List): void;
+    vertexAttribIPointer(index: GLuint, size: GLint, type: GLenum, stride: GLsizei, offset: GLintptr): void;
+    waitSync(sync: WebGLSync, flags: GLbitfield, timeout: GLint64): void;
+    readonly ACTIVE_UNIFORM_BLOCKS: GLenum;
+    readonly ALREADY_SIGNALED: GLenum;
+    readonly ANY_SAMPLES_PASSED: GLenum;
+    readonly ANY_SAMPLES_PASSED_CONSERVATIVE: GLenum;
+    readonly COLOR: GLenum;
+    readonly COLOR_ATTACHMENT1: GLenum;
+    readonly COLOR_ATTACHMENT10: GLenum;
+    readonly COLOR_ATTACHMENT11: GLenum;
+    readonly COLOR_ATTACHMENT12: GLenum;
+    readonly COLOR_ATTACHMENT13: GLenum;
+    readonly COLOR_ATTACHMENT14: GLenum;
+    readonly COLOR_ATTACHMENT15: GLenum;
+    readonly COLOR_ATTACHMENT2: GLenum;
+    readonly COLOR_ATTACHMENT3: GLenum;
+    readonly COLOR_ATTACHMENT4: GLenum;
+    readonly COLOR_ATTACHMENT5: GLenum;
+    readonly COLOR_ATTACHMENT6: GLenum;
+    readonly COLOR_ATTACHMENT7: GLenum;
+    readonly COLOR_ATTACHMENT8: GLenum;
+    readonly COLOR_ATTACHMENT9: GLenum;
+    readonly COMPARE_REF_TO_TEXTURE: GLenum;
+    readonly CONDITION_SATISFIED: GLenum;
+    readonly COPY_READ_BUFFER: GLenum;
+    readonly COPY_READ_BUFFER_BINDING: GLenum;
+    readonly COPY_WRITE_BUFFER: GLenum;
+    readonly COPY_WRITE_BUFFER_BINDING: GLenum;
+    readonly CURRENT_QUERY: GLenum;
+    readonly DEPTH: GLenum;
+    readonly DEPTH24_STENCIL8: GLenum;
+    readonly DEPTH32F_STENCIL8: GLenum;
+    readonly DEPTH_COMPONENT24: GLenum;
+    readonly DEPTH_COMPONENT32F: GLenum;
+    readonly DRAW_BUFFER0: GLenum;
+    readonly DRAW_BUFFER1: GLenum;
+    readonly DRAW_BUFFER10: GLenum;
+    readonly DRAW_BUFFER11: GLenum;
+    readonly DRAW_BUFFER12: GLenum;
+    readonly DRAW_BUFFER13: GLenum;
+    readonly DRAW_BUFFER14: GLenum;
+    readonly DRAW_BUFFER15: GLenum;
+    readonly DRAW_BUFFER2: GLenum;
+    readonly DRAW_BUFFER3: GLenum;
+    readonly DRAW_BUFFER4: GLenum;
+    readonly DRAW_BUFFER5: GLenum;
+    readonly DRAW_BUFFER6: GLenum;
+    readonly DRAW_BUFFER7: GLenum;
+    readonly DRAW_BUFFER8: GLenum;
+    readonly DRAW_BUFFER9: GLenum;
+    readonly DRAW_FRAMEBUFFER: GLenum;
+    readonly DRAW_FRAMEBUFFER_BINDING: GLenum;
+    readonly DYNAMIC_COPY: GLenum;
+    readonly DYNAMIC_READ: GLenum;
+    readonly FLOAT_32_UNSIGNED_INT_24_8_REV: GLenum;
+    readonly FLOAT_MAT2x3: GLenum;
+    readonly FLOAT_MAT2x4: GLenum;
+    readonly FLOAT_MAT3x2: GLenum;
+    readonly FLOAT_MAT3x4: GLenum;
+    readonly FLOAT_MAT4x2: GLenum;
+    readonly FLOAT_MAT4x3: GLenum;
+    readonly FRAGMENT_SHADER_DERIVATIVE_HINT: GLenum;
+    readonly FRAMEBUFFER_ATTACHMENT_ALPHA_SIZE: GLenum;
+    readonly FRAMEBUFFER_ATTACHMENT_BLUE_SIZE: GLenum;
+    readonly FRAMEBUFFER_ATTACHMENT_COLOR_ENCODING: GLenum;
+    readonly FRAMEBUFFER_ATTACHMENT_COMPONENT_TYPE: GLenum;
+    readonly FRAMEBUFFER_ATTACHMENT_DEPTH_SIZE: GLenum;
+    readonly FRAMEBUFFER_ATTACHMENT_GREEN_SIZE: GLenum;
+    readonly FRAMEBUFFER_ATTACHMENT_RED_SIZE: GLenum;
+    readonly FRAMEBUFFER_ATTACHMENT_STENCIL_SIZE: GLenum;
+    readonly FRAMEBUFFER_ATTACHMENT_TEXTURE_LAYER: GLenum;
+    readonly FRAMEBUFFER_DEFAULT: GLenum;
+    readonly FRAMEBUFFER_INCOMPLETE_MULTISAMPLE: GLenum;
+    readonly HALF_FLOAT: GLenum;
+    readonly INTERLEAVED_ATTRIBS: GLenum;
+    readonly INT_2_10_10_10_REV: GLenum;
+    readonly INT_SAMPLER_2D: GLenum;
+    readonly INT_SAMPLER_2D_ARRAY: GLenum;
+    readonly INT_SAMPLER_3D: GLenum;
+    readonly INT_SAMPLER_CUBE: GLenum;
+    readonly INVALID_INDEX: GLenum;
+    readonly MAX: GLenum;
+    readonly MAX_3D_TEXTURE_SIZE: GLenum;
+    readonly MAX_ARRAY_TEXTURE_LAYERS: GLenum;
+    readonly MAX_CLIENT_WAIT_TIMEOUT_WEBGL: GLenum;
+    readonly MAX_COLOR_ATTACHMENTS: GLenum;
+    readonly MAX_COMBINED_FRAGMENT_UNIFORM_COMPONENTS: GLenum;
+    readonly MAX_COMBINED_UNIFORM_BLOCKS: GLenum;
+    readonly MAX_COMBINED_VERTEX_UNIFORM_COMPONENTS: GLenum;
+    readonly MAX_DRAW_BUFFERS: GLenum;
+    readonly MAX_ELEMENTS_INDICES: GLenum;
+    readonly MAX_ELEMENTS_VERTICES: GLenum;
+    readonly MAX_ELEMENT_INDEX: GLenum;
+    readonly MAX_FRAGMENT_INPUT_COMPONENTS: GLenum;
+    readonly MAX_FRAGMENT_UNIFORM_BLOCKS: GLenum;
+    readonly MAX_FRAGMENT_UNIFORM_COMPONENTS: GLenum;
+    readonly MAX_PROGRAM_TEXEL_OFFSET: GLenum;
+    readonly MAX_SAMPLES: GLenum;
+    readonly MAX_SERVER_WAIT_TIMEOUT: GLenum;
+    readonly MAX_TEXTURE_LOD_BIAS: GLenum;
+    readonly MAX_TRANSFORM_FEEDBACK_INTERLEAVED_COMPONENTS: GLenum;
+    readonly MAX_TRANSFORM_FEEDBACK_SEPARATE_ATTRIBS: GLenum;
+    readonly MAX_TRANSFORM_FEEDBACK_SEPARATE_COMPONENTS: GLenum;
+    readonly MAX_UNIFORM_BLOCK_SIZE: GLenum;
+    readonly MAX_UNIFORM_BUFFER_BINDINGS: GLenum;
+    readonly MAX_VARYING_COMPONENTS: GLenum;
+    readonly MAX_VERTEX_OUTPUT_COMPONENTS: GLenum;
+    readonly MAX_VERTEX_UNIFORM_BLOCKS: GLenum;
+    readonly MAX_VERTEX_UNIFORM_COMPONENTS: GLenum;
+    readonly MIN: GLenum;
+    readonly MIN_PROGRAM_TEXEL_OFFSET: GLenum;
+    readonly OBJECT_TYPE: GLenum;
+    readonly PACK_ROW_LENGTH: GLenum;
+    readonly PACK_SKIP_PIXELS: GLenum;
+    readonly PACK_SKIP_ROWS: GLenum;
+    readonly PIXEL_PACK_BUFFER: GLenum;
+    readonly PIXEL_PACK_BUFFER_BINDING: GLenum;
+    readonly PIXEL_UNPACK_BUFFER: GLenum;
+    readonly PIXEL_UNPACK_BUFFER_BINDING: GLenum;
+    readonly QUERY_RESULT: GLenum;
+    readonly QUERY_RESULT_AVAILABLE: GLenum;
+    readonly R11F_G11F_B10F: GLenum;
+    readonly R16F: GLenum;
+    readonly R16I: GLenum;
+    readonly R16UI: GLenum;
+    readonly R32F: GLenum;
+    readonly R32I: GLenum;
+    readonly R32UI: GLenum;
+    readonly R8: GLenum;
+    readonly R8I: GLenum;
+    readonly R8UI: GLenum;
+    readonly R8_SNORM: GLenum;
+    readonly RASTERIZER_DISCARD: GLenum;
+    readonly READ_BUFFER: GLenum;
+    readonly READ_FRAMEBUFFER: GLenum;
+    readonly READ_FRAMEBUFFER_BINDING: GLenum;
+    readonly RED: GLenum;
+    readonly RED_INTEGER: GLenum;
+    readonly RENDERBUFFER_SAMPLES: GLenum;
+    readonly RG: GLenum;
+    readonly RG16F: GLenum;
+    readonly RG16I: GLenum;
+    readonly RG16UI: GLenum;
+    readonly RG32F: GLenum;
+    readonly RG32I: GLenum;
+    readonly RG32UI: GLenum;
+    readonly RG8: GLenum;
+    readonly RG8I: GLenum;
+    readonly RG8UI: GLenum;
+    readonly RG8_SNORM: GLenum;
+    readonly RGB10_A2: GLenum;
+    readonly RGB10_A2UI: GLenum;
+    readonly RGB16F: GLenum;
+    readonly RGB16I: GLenum;
+    readonly RGB16UI: GLenum;
+    readonly RGB32F: GLenum;
+    readonly RGB32I: GLenum;
+    readonly RGB32UI: GLenum;
+    readonly RGB8: GLenum;
+    readonly RGB8I: GLenum;
+    readonly RGB8UI: GLenum;
+    readonly RGB8_SNORM: GLenum;
+    readonly RGB9_E5: GLenum;
+    readonly RGBA16F: GLenum;
+    readonly RGBA16I: GLenum;
+    readonly RGBA16UI: GLenum;
+    readonly RGBA32F: GLenum;
+    readonly RGBA32I: GLenum;
+    readonly RGBA32UI: GLenum;
+    readonly RGBA8: GLenum;
+    readonly RGBA8I: GLenum;
+    readonly RGBA8UI: GLenum;
+    readonly RGBA8_SNORM: GLenum;
+    readonly RGBA_INTEGER: GLenum;
+    readonly RGB_INTEGER: GLenum;
+    readonly RG_INTEGER: GLenum;
+    readonly SAMPLER_2D_ARRAY: GLenum;
+    readonly SAMPLER_2D_ARRAY_SHADOW: GLenum;
+    readonly SAMPLER_2D_SHADOW: GLenum;
+    readonly SAMPLER_3D: GLenum;
+    readonly SAMPLER_BINDING: GLenum;
+    readonly SAMPLER_CUBE_SHADOW: GLenum;
+    readonly SEPARATE_ATTRIBS: GLenum;
+    readonly SIGNALED: GLenum;
+    readonly SIGNED_NORMALIZED: GLenum;
+    readonly SRGB: GLenum;
+    readonly SRGB8: GLenum;
+    readonly SRGB8_ALPHA8: GLenum;
+    readonly STATIC_COPY: GLenum;
+    readonly STATIC_READ: GLenum;
+    readonly STENCIL: GLenum;
+    readonly STREAM_COPY: GLenum;
+    readonly STREAM_READ: GLenum;
+    readonly SYNC_CONDITION: GLenum;
+    readonly SYNC_FENCE: GLenum;
+    readonly SYNC_FLAGS: GLenum;
+    readonly SYNC_FLUSH_COMMANDS_BIT: GLenum;
+    readonly SYNC_GPU_COMMANDS_COMPLETE: GLenum;
+    readonly SYNC_STATUS: GLenum;
+    readonly TEXTURE_2D_ARRAY: GLenum;
+    readonly TEXTURE_3D: GLenum;
+    readonly TEXTURE_BASE_LEVEL: GLenum;
+    readonly TEXTURE_BINDING_2D_ARRAY: GLenum;
+    readonly TEXTURE_BINDING_3D: GLenum;
+    readonly TEXTURE_COMPARE_FUNC: GLenum;
+    readonly TEXTURE_COMPARE_MODE: GLenum;
+    readonly TEXTURE_IMMUTABLE_FORMAT: GLenum;
+    readonly TEXTURE_IMMUTABLE_LEVELS: GLenum;
+    readonly TEXTURE_MAX_LEVEL: GLenum;
+    readonly TEXTURE_MAX_LOD: GLenum;
+    readonly TEXTURE_MIN_LOD: GLenum;
+    readonly TEXTURE_WRAP_R: GLenum;
+    readonly TIMEOUT_EXPIRED: GLenum;
+    readonly TIMEOUT_IGNORED: GLint64;
+    readonly TRANSFORM_FEEDBACK: GLenum;
+    readonly TRANSFORM_FEEDBACK_ACTIVE: GLenum;
+    readonly TRANSFORM_FEEDBACK_BINDING: GLenum;
+    readonly TRANSFORM_FEEDBACK_BUFFER: GLenum;
+    readonly TRANSFORM_FEEDBACK_BUFFER_BINDING: GLenum;
+    readonly TRANSFORM_FEEDBACK_BUFFER_MODE: GLenum;
+    readonly TRANSFORM_FEEDBACK_BUFFER_SIZE: GLenum;
+    readonly TRANSFORM_FEEDBACK_BUFFER_START: GLenum;
+    readonly TRANSFORM_FEEDBACK_PAUSED: GLenum;
+    readonly TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN: GLenum;
+    readonly TRANSFORM_FEEDBACK_VARYINGS: GLenum;
+    readonly UNIFORM_ARRAY_STRIDE: GLenum;
+    readonly UNIFORM_BLOCK_ACTIVE_UNIFORMS: GLenum;
+    readonly UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES: GLenum;
+    readonly UNIFORM_BLOCK_BINDING: GLenum;
+    readonly UNIFORM_BLOCK_DATA_SIZE: GLenum;
+    readonly UNIFORM_BLOCK_INDEX: GLenum;
+    readonly UNIFORM_BLOCK_REFERENCED_BY_FRAGMENT_SHADER: GLenum;
+    readonly UNIFORM_BLOCK_REFERENCED_BY_VERTEX_SHADER: GLenum;
+    readonly UNIFORM_BUFFER: GLenum;
+    readonly UNIFORM_BUFFER_BINDING: GLenum;
+    readonly UNIFORM_BUFFER_OFFSET_ALIGNMENT: GLenum;
+    readonly UNIFORM_BUFFER_SIZE: GLenum;
+    readonly UNIFORM_BUFFER_START: GLenum;
+    readonly UNIFORM_IS_ROW_MAJOR: GLenum;
+    readonly UNIFORM_MATRIX_STRIDE: GLenum;
+    readonly UNIFORM_OFFSET: GLenum;
+    readonly UNIFORM_SIZE: GLenum;
+    readonly UNIFORM_TYPE: GLenum;
+    readonly UNPACK_IMAGE_HEIGHT: GLenum;
+    readonly UNPACK_ROW_LENGTH: GLenum;
+    readonly UNPACK_SKIP_IMAGES: GLenum;
+    readonly UNPACK_SKIP_PIXELS: GLenum;
+    readonly UNPACK_SKIP_ROWS: GLenum;
+    readonly UNSIGNALED: GLenum;
+    readonly UNSIGNED_INT_10F_11F_11F_REV: GLenum;
+    readonly UNSIGNED_INT_24_8: GLenum;
+    readonly UNSIGNED_INT_2_10_10_10_REV: GLenum;
+    readonly UNSIGNED_INT_5_9_9_9_REV: GLenum;
+    readonly UNSIGNED_INT_SAMPLER_2D: GLenum;
+    readonly UNSIGNED_INT_SAMPLER_2D_ARRAY: GLenum;
+    readonly UNSIGNED_INT_SAMPLER_3D: GLenum;
+    readonly UNSIGNED_INT_SAMPLER_CUBE: GLenum;
+    readonly UNSIGNED_INT_VEC2: GLenum;
+    readonly UNSIGNED_INT_VEC3: GLenum;
+    readonly UNSIGNED_INT_VEC4: GLenum;
+    readonly UNSIGNED_NORMALIZED: GLenum;
+    readonly VERTEX_ARRAY_BINDING: GLenum;
+    readonly VERTEX_ATTRIB_ARRAY_DIVISOR: GLenum;
+    readonly VERTEX_ATTRIB_ARRAY_INTEGER: GLenum;
+    readonly WAIT_FAILED: GLenum;
+}
+
+interface WebGL2RenderingContextOverloads {
+    bufferData(target: GLenum, size: GLsizeiptr, usage: GLenum): void;
+    bufferData(target: GLenum, srcData: BufferSource | null, usage: GLenum): void;
+    bufferData(target: GLenum, srcData: ArrayBufferView, usage: GLenum, srcOffset: GLuint, length?: GLuint): void;
+    bufferSubData(target: GLenum, dstByteOffset: GLintptr, srcData: BufferSource): void;
+    bufferSubData(target: GLenum, dstByteOffset: GLintptr, srcData: ArrayBufferView, srcOffset: GLuint, length?: GLuint): void;
+    compressedTexImage2D(target: GLenum, level: GLint, internalformat: GLenum, width: GLsizei, height: GLsizei, border: GLint, imageSize: GLsizei, offset: GLintptr): void;
+    compressedTexImage2D(target: GLenum, level: GLint, internalformat: GLenum, width: GLsizei, height: GLsizei, border: GLint, srcData: ArrayBufferView, srcOffset?: GLuint, srcLengthOverride?: GLuint): void;
+    compressedTexSubImage2D(target: GLenum, level: GLint, xoffset: GLint, yoffset: GLint, width: GLsizei, height: GLsizei, format: GLenum, imageSize: GLsizei, offset: GLintptr): void;
+    compressedTexSubImage2D(target: GLenum, level: GLint, xoffset: GLint, yoffset: GLint, width: GLsizei, height: GLsizei, format: GLenum, srcData: ArrayBufferView, srcOffset?: GLuint, srcLengthOverride?: GLuint): void;
+    readPixels(x: GLint, y: GLint, width: GLsizei, height: GLsizei, format: GLenum, type: GLenum, dstData: ArrayBufferView | null): void;
+    readPixels(x: GLint, y: GLint, width: GLsizei, height: GLsizei, format: GLenum, type: GLenum, offset: GLintptr): void;
+    readPixels(x: GLint, y: GLint, width: GLsizei, height: GLsizei, format: GLenum, type: GLenum, dstData: ArrayBufferView, dstOffset: GLuint): void;
+    texImage2D(target: GLenum, level: GLint, internalformat: GLint, width: GLsizei, height: GLsizei, border: GLint, format: GLenum, type: GLenum, pixels: ArrayBufferView | null): void;
+    texImage2D(target: GLenum, level: GLint, internalformat: GLint, format: GLenum, type: GLenum, source: TexImageSource): void;
+    texImage2D(target: GLenum, level: GLint, internalformat: GLint, width: GLsizei, height: GLsizei, border: GLint, format: GLenum, type: GLenum, pboOffset: GLintptr): void;
+    texImage2D(target: GLenum, level: GLint, internalformat: GLint, width: GLsizei, height: GLsizei, border: GLint, format: GLenum, type: GLenum, source: TexImageSource): void;
+    texImage2D(target: GLenum, level: GLint, internalformat: GLint, width: GLsizei, height: GLsizei, border: GLint, format: GLenum, type: GLenum, srcData: ArrayBufferView, srcOffset: GLuint): void;
+    texSubImage2D(target: GLenum, level: GLint, xoffset: GLint, yoffset: GLint, width: GLsizei, height: GLsizei, format: GLenum, type: GLenum, pixels: ArrayBufferView | null): void;
+    texSubImage2D(target: GLenum, level: GLint, xoffset: GLint, yoffset: GLint, format: GLenum, type: GLenum, source: TexImageSource): void;
+    texSubImage2D(target: GLenum, level: GLint, xoffset: GLint, yoffset: GLint, width: GLsizei, height: GLsizei, format: GLenum, type: GLenum, pboOffset: GLintptr): void;
+    texSubImage2D(target: GLenum, level: GLint, xoffset: GLint, yoffset: GLint, width: GLsizei, height: GLsizei, format: GLenum, type: GLenum, source: TexImageSource): void;
+    texSubImage2D(target: GLenum, level: GLint, xoffset: GLint, yoffset: GLint, width: GLsizei, height: GLsizei, format: GLenum, type: GLenum, srcData: ArrayBufferView, srcOffset: GLuint): void;
+    uniform1fv(location: WebGLUniformLocation | null, data: Float32List, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniform1iv(location: WebGLUniformLocation | null, data: Int32List, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniform2fv(location: WebGLUniformLocation | null, data: Float32List, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniform2iv(location: WebGLUniformLocation | null, data: Int32List, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniform3fv(location: WebGLUniformLocation | null, data: Float32List, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniform3iv(location: WebGLUniformLocation | null, data: Int32List, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniform4fv(location: WebGLUniformLocation | null, data: Float32List, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniform4iv(location: WebGLUniformLocation | null, data: Int32List, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniformMatrix2fv(location: WebGLUniformLocation | null, transpose: GLboolean, data: Float32List, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniformMatrix3fv(location: WebGLUniformLocation | null, transpose: GLboolean, data: Float32List, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniformMatrix4fv(location: WebGLUniformLocation | null, transpose: GLboolean, data: Float32List, srcOffset?: GLuint, srcLength?: GLuint): void;
+}
+
+/** Part of the WebGL API and represents the information returned by calling the WebGLRenderingContext.getActiveAttrib() and WebGLRenderingContext.getActiveUniform() methods. */
+interface WebGLActiveInfo {
+    readonly name: string;
+    readonly size: GLint;
+    readonly type: GLenum;
+}
+
+declare var WebGLActiveInfo: {
+    prototype: WebGLActiveInfo;
+    new(): WebGLActiveInfo;
+};
+
+/** Part of the WebGL API and represents an opaque buffer object storing data such as vertices or colors. */
+interface WebGLBuffer extends WebGLObject {
+}
+
+declare var WebGLBuffer: {
+    prototype: WebGLBuffer;
+    new(): WebGLBuffer;
+};
+
+/** The WebContextEvent interface is part of the WebGL API and is an interface for an event that is generated in response to a status change to the WebGL rendering context. */
+interface WebGLContextEvent extends Event {
+    readonly statusMessage: string;
+}
+
+declare var WebGLContextEvent: {
+    prototype: WebGLContextEvent;
+    new(type: string, eventInit?: WebGLContextEventInit): WebGLContextEvent;
+};
+
+/** Part of the WebGL API and represents a collection of buffers that serve as a rendering destination. */
+interface WebGLFramebuffer extends WebGLObject {
+}
+
+declare var WebGLFramebuffer: {
+    prototype: WebGLFramebuffer;
+    new(): WebGLFramebuffer;
+};
+
+interface WebGLObject {
+}
+
+declare var WebGLObject: {
+    prototype: WebGLObject;
+    new(): WebGLObject;
+};
+
+/** The WebGLProgram is part of the WebGL API and is a combination of two compiled WebGLShaders consisting of a vertex shader and a fragment shader (both written in GLSL). */
+interface WebGLProgram extends WebGLObject {
+}
+
+declare var WebGLProgram: {
+    prototype: WebGLProgram;
+    new(): WebGLProgram;
+};
+
+interface WebGLQuery extends WebGLObject {
+}
+
+declare var WebGLQuery: {
+    prototype: WebGLQuery;
+    new(): WebGLQuery;
+};
+
+/** Part of the WebGL API and represents a buffer that can contain an image, or can be source or target of an rendering operation. */
+interface WebGLRenderbuffer extends WebGLObject {
+}
+
+declare var WebGLRenderbuffer: {
+    prototype: WebGLRenderbuffer;
+    new(): WebGLRenderbuffer;
+};
+
+/** Provides an interface to the OpenGL ES 2.0 graphics rendering context for the drawing surface of an HTML <canvas> element. */
+interface WebGLRenderingContext extends WebGLRenderingContextBase, WebGLRenderingContextOverloads {
+}
+
+declare var WebGLRenderingContext: {
+    prototype: WebGLRenderingContext;
+    new(): WebGLRenderingContext;
+    readonly ACTIVE_ATTRIBUTES: GLenum;
+    readonly ACTIVE_TEXTURE: GLenum;
+    readonly ACTIVE_UNIFORMS: GLenum;
+    readonly ALIASED_LINE_WIDTH_RANGE: GLenum;
+    readonly ALIASED_POINT_SIZE_RANGE: GLenum;
+    readonly ALPHA: GLenum;
+    readonly ALPHA_BITS: GLenum;
+    readonly ALWAYS: GLenum;
+    readonly ARRAY_BUFFER: GLenum;
+    readonly ARRAY_BUFFER_BINDING: GLenum;
+    readonly ATTACHED_SHADERS: GLenum;
+    readonly BACK: GLenum;
+    readonly BLEND: GLenum;
+    readonly BLEND_COLOR: GLenum;
+    readonly BLEND_DST_ALPHA: GLenum;
+    readonly BLEND_DST_RGB: GLenum;
+    readonly BLEND_EQUATION: GLenum;
+    readonly BLEND_EQUATION_ALPHA: GLenum;
+    readonly BLEND_EQUATION_RGB: GLenum;
+    readonly BLEND_SRC_ALPHA: GLenum;
+    readonly BLEND_SRC_RGB: GLenum;
+    readonly BLUE_BITS: GLenum;
+    readonly BOOL: GLenum;
+    readonly BOOL_VEC2: GLenum;
+    readonly BOOL_VEC3: GLenum;
+    readonly BOOL_VEC4: GLenum;
+    readonly BROWSER_DEFAULT_WEBGL: GLenum;
+    readonly BUFFER_SIZE: GLenum;
+    readonly BUFFER_USAGE: GLenum;
+    readonly BYTE: GLenum;
+    readonly CCW: GLenum;
+    readonly CLAMP_TO_EDGE: GLenum;
+    readonly COLOR_ATTACHMENT0: GLenum;
+    readonly COLOR_BUFFER_BIT: GLenum;
+    readonly COLOR_CLEAR_VALUE: GLenum;
+    readonly COLOR_WRITEMASK: GLenum;
+    readonly COMPILE_STATUS: GLenum;
+    readonly COMPRESSED_TEXTURE_FORMATS: GLenum;
+    readonly CONSTANT_ALPHA: GLenum;
+    readonly CONSTANT_COLOR: GLenum;
+    readonly CONTEXT_LOST_WEBGL: GLenum;
+    readonly CULL_FACE: GLenum;
+    readonly CULL_FACE_MODE: GLenum;
+    readonly CURRENT_PROGRAM: GLenum;
+    readonly CURRENT_VERTEX_ATTRIB: GLenum;
+    readonly CW: GLenum;
+    readonly DECR: GLenum;
+    readonly DECR_WRAP: GLenum;
+    readonly DELETE_STATUS: GLenum;
+    readonly DEPTH_ATTACHMENT: GLenum;
+    readonly DEPTH_BITS: GLenum;
+    readonly DEPTH_BUFFER_BIT: GLenum;
+    readonly DEPTH_CLEAR_VALUE: GLenum;
+    readonly DEPTH_COMPONENT: GLenum;
+    readonly DEPTH_COMPONENT16: GLenum;
+    readonly DEPTH_FUNC: GLenum;
+    readonly DEPTH_RANGE: GLenum;
+    readonly DEPTH_STENCIL: GLenum;
+    readonly DEPTH_STENCIL_ATTACHMENT: GLenum;
+    readonly DEPTH_TEST: GLenum;
+    readonly DEPTH_WRITEMASK: GLenum;
+    readonly DITHER: GLenum;
+    readonly DONT_CARE: GLenum;
+    readonly DST_ALPHA: GLenum;
+    readonly DST_COLOR: GLenum;
+    readonly DYNAMIC_DRAW: GLenum;
+    readonly ELEMENT_ARRAY_BUFFER: GLenum;
+    readonly ELEMENT_ARRAY_BUFFER_BINDING: GLenum;
+    readonly EQUAL: GLenum;
+    readonly FASTEST: GLenum;
+    readonly FLOAT: GLenum;
+    readonly FLOAT_MAT2: GLenum;
+    readonly FLOAT_MAT3: GLenum;
+    readonly FLOAT_MAT4: GLenum;
+    readonly FLOAT_VEC2: GLenum;
+    readonly FLOAT_VEC3: GLenum;
+    readonly FLOAT_VEC4: GLenum;
+    readonly FRAGMENT_SHADER: GLenum;
+    readonly FRAMEBUFFER: GLenum;
+    readonly FRAMEBUFFER_ATTACHMENT_OBJECT_NAME: GLenum;
+    readonly FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE: GLenum;
+    readonly FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE: GLenum;
+    readonly FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL: GLenum;
+    readonly FRAMEBUFFER_BINDING: GLenum;
+    readonly FRAMEBUFFER_COMPLETE: GLenum;
+    readonly FRAMEBUFFER_INCOMPLETE_ATTACHMENT: GLenum;
+    readonly FRAMEBUFFER_INCOMPLETE_DIMENSIONS: GLenum;
+    readonly FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT: GLenum;
+    readonly FRAMEBUFFER_UNSUPPORTED: GLenum;
+    readonly FRONT: GLenum;
+    readonly FRONT_AND_BACK: GLenum;
+    readonly FRONT_FACE: GLenum;
+    readonly FUNC_ADD: GLenum;
+    readonly FUNC_REVERSE_SUBTRACT: GLenum;
+    readonly FUNC_SUBTRACT: GLenum;
+    readonly GENERATE_MIPMAP_HINT: GLenum;
+    readonly GEQUAL: GLenum;
+    readonly GREATER: GLenum;
+    readonly GREEN_BITS: GLenum;
+    readonly HIGH_FLOAT: GLenum;
+    readonly HIGH_INT: GLenum;
+    readonly IMPLEMENTATION_COLOR_READ_FORMAT: GLenum;
+    readonly IMPLEMENTATION_COLOR_READ_TYPE: GLenum;
+    readonly INCR: GLenum;
+    readonly INCR_WRAP: GLenum;
+    readonly INT: GLenum;
+    readonly INT_VEC2: GLenum;
+    readonly INT_VEC3: GLenum;
+    readonly INT_VEC4: GLenum;
+    readonly INVALID_ENUM: GLenum;
+    readonly INVALID_FRAMEBUFFER_OPERATION: GLenum;
+    readonly INVALID_OPERATION: GLenum;
+    readonly INVALID_VALUE: GLenum;
+    readonly INVERT: GLenum;
+    readonly KEEP: GLenum;
+    readonly LEQUAL: GLenum;
+    readonly LESS: GLenum;
+    readonly LINEAR: GLenum;
+    readonly LINEAR_MIPMAP_LINEAR: GLenum;
+    readonly LINEAR_MIPMAP_NEAREST: GLenum;
+    readonly LINES: GLenum;
+    readonly LINE_LOOP: GLenum;
+    readonly LINE_STRIP: GLenum;
+    readonly LINE_WIDTH: GLenum;
+    readonly LINK_STATUS: GLenum;
+    readonly LOW_FLOAT: GLenum;
+    readonly LOW_INT: GLenum;
+    readonly LUMINANCE: GLenum;
+    readonly LUMINANCE_ALPHA: GLenum;
+    readonly MAX_COMBINED_TEXTURE_IMAGE_UNITS: GLenum;
+    readonly MAX_CUBE_MAP_TEXTURE_SIZE: GLenum;
+    readonly MAX_FRAGMENT_UNIFORM_VECTORS: GLenum;
+    readonly MAX_RENDERBUFFER_SIZE: GLenum;
+    readonly MAX_TEXTURE_IMAGE_UNITS: GLenum;
+    readonly MAX_TEXTURE_SIZE: GLenum;
+    readonly MAX_VARYING_VECTORS: GLenum;
+    readonly MAX_VERTEX_ATTRIBS: GLenum;
+    readonly MAX_VERTEX_TEXTURE_IMAGE_UNITS: GLenum;
+    readonly MAX_VERTEX_UNIFORM_VECTORS: GLenum;
+    readonly MAX_VIEWPORT_DIMS: GLenum;
+    readonly MEDIUM_FLOAT: GLenum;
+    readonly MEDIUM_INT: GLenum;
+    readonly MIRRORED_REPEAT: GLenum;
+    readonly NEAREST: GLenum;
+    readonly NEAREST_MIPMAP_LINEAR: GLenum;
+    readonly NEAREST_MIPMAP_NEAREST: GLenum;
+    readonly NEVER: GLenum;
+    readonly NICEST: GLenum;
+    readonly NONE: GLenum;
+    readonly NOTEQUAL: GLenum;
+    readonly NO_ERROR: GLenum;
+    readonly ONE: GLenum;
+    readonly ONE_MINUS_CONSTANT_ALPHA: GLenum;
+    readonly ONE_MINUS_CONSTANT_COLOR: GLenum;
+    readonly ONE_MINUS_DST_ALPHA: GLenum;
+    readonly ONE_MINUS_DST_COLOR: GLenum;
+    readonly ONE_MINUS_SRC_ALPHA: GLenum;
+    readonly ONE_MINUS_SRC_COLOR: GLenum;
+    readonly OUT_OF_MEMORY: GLenum;
+    readonly PACK_ALIGNMENT: GLenum;
+    readonly POINTS: GLenum;
+    readonly POLYGON_OFFSET_FACTOR: GLenum;
+    readonly POLYGON_OFFSET_FILL: GLenum;
+    readonly POLYGON_OFFSET_UNITS: GLenum;
+    readonly RED_BITS: GLenum;
+    readonly RENDERBUFFER: GLenum;
+    readonly RENDERBUFFER_ALPHA_SIZE: GLenum;
+    readonly RENDERBUFFER_BINDING: GLenum;
+    readonly RENDERBUFFER_BLUE_SIZE: GLenum;
+    readonly RENDERBUFFER_DEPTH_SIZE: GLenum;
+    readonly RENDERBUFFER_GREEN_SIZE: GLenum;
+    readonly RENDERBUFFER_HEIGHT: GLenum;
+    readonly RENDERBUFFER_INTERNAL_FORMAT: GLenum;
+    readonly RENDERBUFFER_RED_SIZE: GLenum;
+    readonly RENDERBUFFER_STENCIL_SIZE: GLenum;
+    readonly RENDERBUFFER_WIDTH: GLenum;
+    readonly RENDERER: GLenum;
+    readonly REPEAT: GLenum;
+    readonly REPLACE: GLenum;
+    readonly RGB: GLenum;
+    readonly RGB565: GLenum;
+    readonly RGB5_A1: GLenum;
+    readonly RGBA: GLenum;
+    readonly RGBA4: GLenum;
+    readonly SAMPLER_2D: GLenum;
+    readonly SAMPLER_CUBE: GLenum;
+    readonly SAMPLES: GLenum;
+    readonly SAMPLE_ALPHA_TO_COVERAGE: GLenum;
+    readonly SAMPLE_BUFFERS: GLenum;
+    readonly SAMPLE_COVERAGE: GLenum;
+    readonly SAMPLE_COVERAGE_INVERT: GLenum;
+    readonly SAMPLE_COVERAGE_VALUE: GLenum;
+    readonly SCISSOR_BOX: GLenum;
+    readonly SCISSOR_TEST: GLenum;
+    readonly SHADER_TYPE: GLenum;
+    readonly SHADING_LANGUAGE_VERSION: GLenum;
+    readonly SHORT: GLenum;
+    readonly SRC_ALPHA: GLenum;
+    readonly SRC_ALPHA_SATURATE: GLenum;
+    readonly SRC_COLOR: GLenum;
+    readonly STATIC_DRAW: GLenum;
+    readonly STENCIL_ATTACHMENT: GLenum;
+    readonly STENCIL_BACK_FAIL: GLenum;
+    readonly STENCIL_BACK_FUNC: GLenum;
+    readonly STENCIL_BACK_PASS_DEPTH_FAIL: GLenum;
+    readonly STENCIL_BACK_PASS_DEPTH_PASS: GLenum;
+    readonly STENCIL_BACK_REF: GLenum;
+    readonly STENCIL_BACK_VALUE_MASK: GLenum;
+    readonly STENCIL_BACK_WRITEMASK: GLenum;
+    readonly STENCIL_BITS: GLenum;
+    readonly STENCIL_BUFFER_BIT: GLenum;
+    readonly STENCIL_CLEAR_VALUE: GLenum;
+    readonly STENCIL_FAIL: GLenum;
+    readonly STENCIL_FUNC: GLenum;
+    readonly STENCIL_INDEX8: GLenum;
+    readonly STENCIL_PASS_DEPTH_FAIL: GLenum;
+    readonly STENCIL_PASS_DEPTH_PASS: GLenum;
+    readonly STENCIL_REF: GLenum;
+    readonly STENCIL_TEST: GLenum;
+    readonly STENCIL_VALUE_MASK: GLenum;
+    readonly STENCIL_WRITEMASK: GLenum;
+    readonly STREAM_DRAW: GLenum;
+    readonly SUBPIXEL_BITS: GLenum;
+    readonly TEXTURE: GLenum;
+    readonly TEXTURE0: GLenum;
+    readonly TEXTURE1: GLenum;
+    readonly TEXTURE10: GLenum;
+    readonly TEXTURE11: GLenum;
+    readonly TEXTURE12: GLenum;
+    readonly TEXTURE13: GLenum;
+    readonly TEXTURE14: GLenum;
+    readonly TEXTURE15: GLenum;
+    readonly TEXTURE16: GLenum;
+    readonly TEXTURE17: GLenum;
+    readonly TEXTURE18: GLenum;
+    readonly TEXTURE19: GLenum;
+    readonly TEXTURE2: GLenum;
+    readonly TEXTURE20: GLenum;
+    readonly TEXTURE21: GLenum;
+    readonly TEXTURE22: GLenum;
+    readonly TEXTURE23: GLenum;
+    readonly TEXTURE24: GLenum;
+    readonly TEXTURE25: GLenum;
+    readonly TEXTURE26: GLenum;
+    readonly TEXTURE27: GLenum;
+    readonly TEXTURE28: GLenum;
+    readonly TEXTURE29: GLenum;
+    readonly TEXTURE3: GLenum;
+    readonly TEXTURE30: GLenum;
+    readonly TEXTURE31: GLenum;
+    readonly TEXTURE4: GLenum;
+    readonly TEXTURE5: GLenum;
+    readonly TEXTURE6: GLenum;
+    readonly TEXTURE7: GLenum;
+    readonly TEXTURE8: GLenum;
+    readonly TEXTURE9: GLenum;
+    readonly TEXTURE_2D: GLenum;
+    readonly TEXTURE_BINDING_2D: GLenum;
+    readonly TEXTURE_BINDING_CUBE_MAP: GLenum;
+    readonly TEXTURE_CUBE_MAP: GLenum;
+    readonly TEXTURE_CUBE_MAP_NEGATIVE_X: GLenum;
+    readonly TEXTURE_CUBE_MAP_NEGATIVE_Y: GLenum;
+    readonly TEXTURE_CUBE_MAP_NEGATIVE_Z: GLenum;
+    readonly TEXTURE_CUBE_MAP_POSITIVE_X: GLenum;
+    readonly TEXTURE_CUBE_MAP_POSITIVE_Y: GLenum;
+    readonly TEXTURE_CUBE_MAP_POSITIVE_Z: GLenum;
+    readonly TEXTURE_MAG_FILTER: GLenum;
+    readonly TEXTURE_MIN_FILTER: GLenum;
+    readonly TEXTURE_WRAP_S: GLenum;
+    readonly TEXTURE_WRAP_T: GLenum;
+    readonly TRIANGLES: GLenum;
+    readonly TRIANGLE_FAN: GLenum;
+    readonly TRIANGLE_STRIP: GLenum;
+    readonly UNPACK_ALIGNMENT: GLenum;
+    readonly UNPACK_COLORSPACE_CONVERSION_WEBGL: GLenum;
+    readonly UNPACK_FLIP_Y_WEBGL: GLenum;
+    readonly UNPACK_PREMULTIPLY_ALPHA_WEBGL: GLenum;
+    readonly UNSIGNED_BYTE: GLenum;
+    readonly UNSIGNED_INT: GLenum;
+    readonly UNSIGNED_SHORT: GLenum;
+    readonly UNSIGNED_SHORT_4_4_4_4: GLenum;
+    readonly UNSIGNED_SHORT_5_5_5_1: GLenum;
+    readonly UNSIGNED_SHORT_5_6_5: GLenum;
+    readonly VALIDATE_STATUS: GLenum;
+    readonly VENDOR: GLenum;
+    readonly VERSION: GLenum;
+    readonly VERTEX_ATTRIB_ARRAY_BUFFER_BINDING: GLenum;
+    readonly VERTEX_ATTRIB_ARRAY_ENABLED: GLenum;
+    readonly VERTEX_ATTRIB_ARRAY_NORMALIZED: GLenum;
+    readonly VERTEX_ATTRIB_ARRAY_POINTER: GLenum;
+    readonly VERTEX_ATTRIB_ARRAY_SIZE: GLenum;
+    readonly VERTEX_ATTRIB_ARRAY_STRIDE: GLenum;
+    readonly VERTEX_ATTRIB_ARRAY_TYPE: GLenum;
+    readonly VERTEX_SHADER: GLenum;
+    readonly VIEWPORT: GLenum;
+    readonly ZERO: GLenum;
+};
+
+interface WebGLRenderingContextBase {
+    readonly canvas: OffscreenCanvas;
+    readonly drawingBufferHeight: GLsizei;
+    readonly drawingBufferWidth: GLsizei;
+    activeTexture(texture: GLenum): void;
+    attachShader(program: WebGLProgram, shader: WebGLShader): void;
+    bindAttribLocation(program: WebGLProgram, index: GLuint, name: string): void;
+    bindBuffer(target: GLenum, buffer: WebGLBuffer | null): void;
+    bindFramebuffer(target: GLenum, framebuffer: WebGLFramebuffer | null): void;
+    bindRenderbuffer(target: GLenum, renderbuffer: WebGLRenderbuffer | null): void;
+    bindTexture(target: GLenum, texture: WebGLTexture | null): void;
+    blendColor(red: GLclampf, green: GLclampf, blue: GLclampf, alpha: GLclampf): void;
+    blendEquation(mode: GLenum): void;
+    blendEquationSeparate(modeRGB: GLenum, modeAlpha: GLenum): void;
+    blendFunc(sfactor: GLenum, dfactor: GLenum): void;
+    blendFuncSeparate(srcRGB: GLenum, dstRGB: GLenum, srcAlpha: GLenum, dstAlpha: GLenum): void;
+    checkFramebufferStatus(target: GLenum): GLenum;
+    clear(mask: GLbitfield): void;
+    clearColor(red: GLclampf, green: GLclampf, blue: GLclampf, alpha: GLclampf): void;
+    clearDepth(depth: GLclampf): void;
+    clearStencil(s: GLint): void;
+    colorMask(red: GLboolean, green: GLboolean, blue: GLboolean, alpha: GLboolean): void;
+    compileShader(shader: WebGLShader): void;
+    copyTexImage2D(target: GLenum, level: GLint, internalformat: GLenum, x: GLint, y: GLint, width: GLsizei, height: GLsizei, border: GLint): void;
+    copyTexSubImage2D(target: GLenum, level: GLint, xoffset: GLint, yoffset: GLint, x: GLint, y: GLint, width: GLsizei, height: GLsizei): void;
+    createBuffer(): WebGLBuffer | null;
+    createFramebuffer(): WebGLFramebuffer | null;
+    createProgram(): WebGLProgram | null;
+    createRenderbuffer(): WebGLRenderbuffer | null;
+    createShader(type: GLenum): WebGLShader | null;
+    createTexture(): WebGLTexture | null;
+    cullFace(mode: GLenum): void;
+    deleteBuffer(buffer: WebGLBuffer | null): void;
+    deleteFramebuffer(framebuffer: WebGLFramebuffer | null): void;
+    deleteProgram(program: WebGLProgram | null): void;
+    deleteRenderbuffer(renderbuffer: WebGLRenderbuffer | null): void;
+    deleteShader(shader: WebGLShader | null): void;
+    deleteTexture(texture: WebGLTexture | null): void;
+    depthFunc(func: GLenum): void;
+    depthMask(flag: GLboolean): void;
+    depthRange(zNear: GLclampf, zFar: GLclampf): void;
+    detachShader(program: WebGLProgram, shader: WebGLShader): void;
+    disable(cap: GLenum): void;
+    disableVertexAttribArray(index: GLuint): void;
+    drawArrays(mode: GLenum, first: GLint, count: GLsizei): void;
+    drawElements(mode: GLenum, count: GLsizei, type: GLenum, offset: GLintptr): void;
+    enable(cap: GLenum): void;
+    enableVertexAttribArray(index: GLuint): void;
+    finish(): void;
+    flush(): void;
+    framebufferRenderbuffer(target: GLenum, attachment: GLenum, renderbuffertarget: GLenum, renderbuffer: WebGLRenderbuffer | null): void;
+    framebufferTexture2D(target: GLenum, attachment: GLenum, textarget: GLenum, texture: WebGLTexture | null, level: GLint): void;
+    frontFace(mode: GLenum): void;
+    generateMipmap(target: GLenum): void;
+    getActiveAttrib(program: WebGLProgram, index: GLuint): WebGLActiveInfo | null;
+    getActiveUniform(program: WebGLProgram, index: GLuint): WebGLActiveInfo | null;
+    getAttachedShaders(program: WebGLProgram): WebGLShader[] | null;
+    getAttribLocation(program: WebGLProgram, name: string): GLint;
+    getBufferParameter(target: GLenum, pname: GLenum): any;
+    getContextAttributes(): WebGLContextAttributes | null;
+    getError(): GLenum;
+    getExtension(extensionName: "EXT_blend_minmax"): EXT_blend_minmax | null;
+    getExtension(extensionName: "EXT_texture_filter_anisotropic"): EXT_texture_filter_anisotropic | null;
+    getExtension(extensionName: "EXT_frag_depth"): EXT_frag_depth | null;
+    getExtension(extensionName: "EXT_shader_texture_lod"): EXT_shader_texture_lod | null;
+    getExtension(extensionName: "EXT_sRGB"): EXT_sRGB | null;
+    getExtension(extensionName: "OES_vertex_array_object"): OES_vertex_array_object | null;
+    getExtension(extensionName: "WEBGL_color_buffer_float"): WEBGL_color_buffer_float | null;
+    getExtension(extensionName: "WEBGL_compressed_texture_astc"): WEBGL_compressed_texture_astc | null;
+    getExtension(extensionName: "WEBGL_compressed_texture_s3tc_srgb"): WEBGL_compressed_texture_s3tc_srgb | null;
+    getExtension(extensionName: "WEBGL_debug_shaders"): WEBGL_debug_shaders | null;
+    getExtension(extensionName: "WEBGL_draw_buffers"): WEBGL_draw_buffers | null;
+    getExtension(extensionName: "WEBGL_lose_context"): WEBGL_lose_context | null;
+    getExtension(extensionName: "WEBGL_depth_texture"): WEBGL_depth_texture | null;
+    getExtension(extensionName: "WEBGL_debug_renderer_info"): WEBGL_debug_renderer_info | null;
+    getExtension(extensionName: "WEBGL_compressed_texture_s3tc"): WEBGL_compressed_texture_s3tc | null;
+    getExtension(extensionName: "OES_texture_half_float_linear"): OES_texture_half_float_linear | null;
+    getExtension(extensionName: "OES_texture_half_float"): OES_texture_half_float | null;
+    getExtension(extensionName: "OES_texture_float_linear"): OES_texture_float_linear | null;
+    getExtension(extensionName: "OES_texture_float"): OES_texture_float | null;
+    getExtension(extensionName: "OES_standard_derivatives"): OES_standard_derivatives | null;
+    getExtension(extensionName: "OES_element_index_uint"): OES_element_index_uint | null;
+    getExtension(extensionName: "ANGLE_instanced_arrays"): ANGLE_instanced_arrays | null;
+    getExtension(extensionName: string): any;
+    getFramebufferAttachmentParameter(target: GLenum, attachment: GLenum, pname: GLenum): any;
+    getParameter(pname: GLenum): any;
+    getProgramInfoLog(program: WebGLProgram): string | null;
+    getProgramParameter(program: WebGLProgram, pname: GLenum): any;
+    getRenderbufferParameter(target: GLenum, pname: GLenum): any;
+    getShaderInfoLog(shader: WebGLShader): string | null;
+    getShaderParameter(shader: WebGLShader, pname: GLenum): any;
+    getShaderPrecisionFormat(shadertype: GLenum, precisiontype: GLenum): WebGLShaderPrecisionFormat | null;
+    getShaderSource(shader: WebGLShader): string | null;
+    getSupportedExtensions(): string[] | null;
+    getTexParameter(target: GLenum, pname: GLenum): any;
+    getUniform(program: WebGLProgram, location: WebGLUniformLocation): any;
+    getUniformLocation(program: WebGLProgram, name: string): WebGLUniformLocation | null;
+    getVertexAttrib(index: GLuint, pname: GLenum): any;
+    getVertexAttribOffset(index: GLuint, pname: GLenum): GLintptr;
+    hint(target: GLenum, mode: GLenum): void;
+    isBuffer(buffer: WebGLBuffer | null): GLboolean;
+    isContextLost(): boolean;
+    isEnabled(cap: GLenum): GLboolean;
+    isFramebuffer(framebuffer: WebGLFramebuffer | null): GLboolean;
+    isProgram(program: WebGLProgram | null): GLboolean;
+    isRenderbuffer(renderbuffer: WebGLRenderbuffer | null): GLboolean;
+    isShader(shader: WebGLShader | null): GLboolean;
+    isTexture(texture: WebGLTexture | null): GLboolean;
+    lineWidth(width: GLfloat): void;
+    linkProgram(program: WebGLProgram): void;
+    pixelStorei(pname: GLenum, param: GLint | GLboolean): void;
+    polygonOffset(factor: GLfloat, units: GLfloat): void;
+    renderbufferStorage(target: GLenum, internalformat: GLenum, width: GLsizei, height: GLsizei): void;
+    sampleCoverage(value: GLclampf, invert: GLboolean): void;
+    scissor(x: GLint, y: GLint, width: GLsizei, height: GLsizei): void;
+    shaderSource(shader: WebGLShader, source: string): void;
+    stencilFunc(func: GLenum, ref: GLint, mask: GLuint): void;
+    stencilFuncSeparate(face: GLenum, func: GLenum, ref: GLint, mask: GLuint): void;
+    stencilMask(mask: GLuint): void;
+    stencilMaskSeparate(face: GLenum, mask: GLuint): void;
+    stencilOp(fail: GLenum, zfail: GLenum, zpass: GLenum): void;
+    stencilOpSeparate(face: GLenum, fail: GLenum, zfail: GLenum, zpass: GLenum): void;
+    texParameterf(target: GLenum, pname: GLenum, param: GLfloat): void;
+    texParameteri(target: GLenum, pname: GLenum, param: GLint): void;
+    uniform1f(location: WebGLUniformLocation | null, x: GLfloat): void;
+    uniform1i(location: WebGLUniformLocation | null, x: GLint): void;
+    uniform2f(location: WebGLUniformLocation | null, x: GLfloat, y: GLfloat): void;
+    uniform2i(location: WebGLUniformLocation | null, x: GLint, y: GLint): void;
+    uniform3f(location: WebGLUniformLocation | null, x: GLfloat, y: GLfloat, z: GLfloat): void;
+    uniform3i(location: WebGLUniformLocation | null, x: GLint, y: GLint, z: GLint): void;
+    uniform4f(location: WebGLUniformLocation | null, x: GLfloat, y: GLfloat, z: GLfloat, w: GLfloat): void;
+    uniform4i(location: WebGLUniformLocation | null, x: GLint, y: GLint, z: GLint, w: GLint): void;
+    useProgram(program: WebGLProgram | null): void;
+    validateProgram(program: WebGLProgram): void;
+    vertexAttrib1f(index: GLuint, x: GLfloat): void;
+    vertexAttrib1fv(index: GLuint, values: Float32List): void;
+    vertexAttrib2f(index: GLuint, x: GLfloat, y: GLfloat): void;
+    vertexAttrib2fv(index: GLuint, values: Float32List): void;
+    vertexAttrib3f(index: GLuint, x: GLfloat, y: GLfloat, z: GLfloat): void;
+    vertexAttrib3fv(index: GLuint, values: Float32List): void;
+    vertexAttrib4f(index: GLuint, x: GLfloat, y: GLfloat, z: GLfloat, w: GLfloat): void;
+    vertexAttrib4fv(index: GLuint, values: Float32List): void;
+    vertexAttribPointer(index: GLuint, size: GLint, type: GLenum, normalized: GLboolean, stride: GLsizei, offset: GLintptr): void;
+    viewport(x: GLint, y: GLint, width: GLsizei, height: GLsizei): void;
+    readonly ACTIVE_ATTRIBUTES: GLenum;
+    readonly ACTIVE_TEXTURE: GLenum;
+    readonly ACTIVE_UNIFORMS: GLenum;
+    readonly ALIASED_LINE_WIDTH_RANGE: GLenum;
+    readonly ALIASED_POINT_SIZE_RANGE: GLenum;
+    readonly ALPHA: GLenum;
+    readonly ALPHA_BITS: GLenum;
+    readonly ALWAYS: GLenum;
+    readonly ARRAY_BUFFER: GLenum;
+    readonly ARRAY_BUFFER_BINDING: GLenum;
+    readonly ATTACHED_SHADERS: GLenum;
+    readonly BACK: GLenum;
+    readonly BLEND: GLenum;
+    readonly BLEND_COLOR: GLenum;
+    readonly BLEND_DST_ALPHA: GLenum;
+    readonly BLEND_DST_RGB: GLenum;
+    readonly BLEND_EQUATION: GLenum;
+    readonly BLEND_EQUATION_ALPHA: GLenum;
+    readonly BLEND_EQUATION_RGB: GLenum;
+    readonly BLEND_SRC_ALPHA: GLenum;
+    readonly BLEND_SRC_RGB: GLenum;
+    readonly BLUE_BITS: GLenum;
+    readonly BOOL: GLenum;
+    readonly BOOL_VEC2: GLenum;
+    readonly BOOL_VEC3: GLenum;
+    readonly BOOL_VEC4: GLenum;
+    readonly BROWSER_DEFAULT_WEBGL: GLenum;
+    readonly BUFFER_SIZE: GLenum;
+    readonly BUFFER_USAGE: GLenum;
+    readonly BYTE: GLenum;
+    readonly CCW: GLenum;
+    readonly CLAMP_TO_EDGE: GLenum;
+    readonly COLOR_ATTACHMENT0: GLenum;
+    readonly COLOR_BUFFER_BIT: GLenum;
+    readonly COLOR_CLEAR_VALUE: GLenum;
+    readonly COLOR_WRITEMASK: GLenum;
+    readonly COMPILE_STATUS: GLenum;
+    readonly COMPRESSED_TEXTURE_FORMATS: GLenum;
+    readonly CONSTANT_ALPHA: GLenum;
+    readonly CONSTANT_COLOR: GLenum;
+    readonly CONTEXT_LOST_WEBGL: GLenum;
+    readonly CULL_FACE: GLenum;
+    readonly CULL_FACE_MODE: GLenum;
+    readonly CURRENT_PROGRAM: GLenum;
+    readonly CURRENT_VERTEX_ATTRIB: GLenum;
+    readonly CW: GLenum;
+    readonly DECR: GLenum;
+    readonly DECR_WRAP: GLenum;
+    readonly DELETE_STATUS: GLenum;
+    readonly DEPTH_ATTACHMENT: GLenum;
+    readonly DEPTH_BITS: GLenum;
+    readonly DEPTH_BUFFER_BIT: GLenum;
+    readonly DEPTH_CLEAR_VALUE: GLenum;
+    readonly DEPTH_COMPONENT: GLenum;
+    readonly DEPTH_COMPONENT16: GLenum;
+    readonly DEPTH_FUNC: GLenum;
+    readonly DEPTH_RANGE: GLenum;
+    readonly DEPTH_STENCIL: GLenum;
+    readonly DEPTH_STENCIL_ATTACHMENT: GLenum;
+    readonly DEPTH_TEST: GLenum;
+    readonly DEPTH_WRITEMASK: GLenum;
+    readonly DITHER: GLenum;
+    readonly DONT_CARE: GLenum;
+    readonly DST_ALPHA: GLenum;
+    readonly DST_COLOR: GLenum;
+    readonly DYNAMIC_DRAW: GLenum;
+    readonly ELEMENT_ARRAY_BUFFER: GLenum;
+    readonly ELEMENT_ARRAY_BUFFER_BINDING: GLenum;
+    readonly EQUAL: GLenum;
+    readonly FASTEST: GLenum;
+    readonly FLOAT: GLenum;
+    readonly FLOAT_MAT2: GLenum;
+    readonly FLOAT_MAT3: GLenum;
+    readonly FLOAT_MAT4: GLenum;
+    readonly FLOAT_VEC2: GLenum;
+    readonly FLOAT_VEC3: GLenum;
+    readonly FLOAT_VEC4: GLenum;
+    readonly FRAGMENT_SHADER: GLenum;
+    readonly FRAMEBUFFER: GLenum;
+    readonly FRAMEBUFFER_ATTACHMENT_OBJECT_NAME: GLenum;
+    readonly FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE: GLenum;
+    readonly FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE: GLenum;
+    readonly FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL: GLenum;
+    readonly FRAMEBUFFER_BINDING: GLenum;
+    readonly FRAMEBUFFER_COMPLETE: GLenum;
+    readonly FRAMEBUFFER_INCOMPLETE_ATTACHMENT: GLenum;
+    readonly FRAMEBUFFER_INCOMPLETE_DIMENSIONS: GLenum;
+    readonly FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT: GLenum;
+    readonly FRAMEBUFFER_UNSUPPORTED: GLenum;
+    readonly FRONT: GLenum;
+    readonly FRONT_AND_BACK: GLenum;
+    readonly FRONT_FACE: GLenum;
+    readonly FUNC_ADD: GLenum;
+    readonly FUNC_REVERSE_SUBTRACT: GLenum;
+    readonly FUNC_SUBTRACT: GLenum;
+    readonly GENERATE_MIPMAP_HINT: GLenum;
+    readonly GEQUAL: GLenum;
+    readonly GREATER: GLenum;
+    readonly GREEN_BITS: GLenum;
+    readonly HIGH_FLOAT: GLenum;
+    readonly HIGH_INT: GLenum;
+    readonly IMPLEMENTATION_COLOR_READ_FORMAT: GLenum;
+    readonly IMPLEMENTATION_COLOR_READ_TYPE: GLenum;
+    readonly INCR: GLenum;
+    readonly INCR_WRAP: GLenum;
+    readonly INT: GLenum;
+    readonly INT_VEC2: GLenum;
+    readonly INT_VEC3: GLenum;
+    readonly INT_VEC4: GLenum;
+    readonly INVALID_ENUM: GLenum;
+    readonly INVALID_FRAMEBUFFER_OPERATION: GLenum;
+    readonly INVALID_OPERATION: GLenum;
+    readonly INVALID_VALUE: GLenum;
+    readonly INVERT: GLenum;
+    readonly KEEP: GLenum;
+    readonly LEQUAL: GLenum;
+    readonly LESS: GLenum;
+    readonly LINEAR: GLenum;
+    readonly LINEAR_MIPMAP_LINEAR: GLenum;
+    readonly LINEAR_MIPMAP_NEAREST: GLenum;
+    readonly LINES: GLenum;
+    readonly LINE_LOOP: GLenum;
+    readonly LINE_STRIP: GLenum;
+    readonly LINE_WIDTH: GLenum;
+    readonly LINK_STATUS: GLenum;
+    readonly LOW_FLOAT: GLenum;
+    readonly LOW_INT: GLenum;
+    readonly LUMINANCE: GLenum;
+    readonly LUMINANCE_ALPHA: GLenum;
+    readonly MAX_COMBINED_TEXTURE_IMAGE_UNITS: GLenum;
+    readonly MAX_CUBE_MAP_TEXTURE_SIZE: GLenum;
+    readonly MAX_FRAGMENT_UNIFORM_VECTORS: GLenum;
+    readonly MAX_RENDERBUFFER_SIZE: GLenum;
+    readonly MAX_TEXTURE_IMAGE_UNITS: GLenum;
+    readonly MAX_TEXTURE_SIZE: GLenum;
+    readonly MAX_VARYING_VECTORS: GLenum;
+    readonly MAX_VERTEX_ATTRIBS: GLenum;
+    readonly MAX_VERTEX_TEXTURE_IMAGE_UNITS: GLenum;
+    readonly MAX_VERTEX_UNIFORM_VECTORS: GLenum;
+    readonly MAX_VIEWPORT_DIMS: GLenum;
+    readonly MEDIUM_FLOAT: GLenum;
+    readonly MEDIUM_INT: GLenum;
+    readonly MIRRORED_REPEAT: GLenum;
+    readonly NEAREST: GLenum;
+    readonly NEAREST_MIPMAP_LINEAR: GLenum;
+    readonly NEAREST_MIPMAP_NEAREST: GLenum;
+    readonly NEVER: GLenum;
+    readonly NICEST: GLenum;
+    readonly NONE: GLenum;
+    readonly NOTEQUAL: GLenum;
+    readonly NO_ERROR: GLenum;
+    readonly ONE: GLenum;
+    readonly ONE_MINUS_CONSTANT_ALPHA: GLenum;
+    readonly ONE_MINUS_CONSTANT_COLOR: GLenum;
+    readonly ONE_MINUS_DST_ALPHA: GLenum;
+    readonly ONE_MINUS_DST_COLOR: GLenum;
+    readonly ONE_MINUS_SRC_ALPHA: GLenum;
+    readonly ONE_MINUS_SRC_COLOR: GLenum;
+    readonly OUT_OF_MEMORY: GLenum;
+    readonly PACK_ALIGNMENT: GLenum;
+    readonly POINTS: GLenum;
+    readonly POLYGON_OFFSET_FACTOR: GLenum;
+    readonly POLYGON_OFFSET_FILL: GLenum;
+    readonly POLYGON_OFFSET_UNITS: GLenum;
+    readonly RED_BITS: GLenum;
+    readonly RENDERBUFFER: GLenum;
+    readonly RENDERBUFFER_ALPHA_SIZE: GLenum;
+    readonly RENDERBUFFER_BINDING: GLenum;
+    readonly RENDERBUFFER_BLUE_SIZE: GLenum;
+    readonly RENDERBUFFER_DEPTH_SIZE: GLenum;
+    readonly RENDERBUFFER_GREEN_SIZE: GLenum;
+    readonly RENDERBUFFER_HEIGHT: GLenum;
+    readonly RENDERBUFFER_INTERNAL_FORMAT: GLenum;
+    readonly RENDERBUFFER_RED_SIZE: GLenum;
+    readonly RENDERBUFFER_STENCIL_SIZE: GLenum;
+    readonly RENDERBUFFER_WIDTH: GLenum;
+    readonly RENDERER: GLenum;
+    readonly REPEAT: GLenum;
+    readonly REPLACE: GLenum;
+    readonly RGB: GLenum;
+    readonly RGB565: GLenum;
+    readonly RGB5_A1: GLenum;
+    readonly RGBA: GLenum;
+    readonly RGBA4: GLenum;
+    readonly SAMPLER_2D: GLenum;
+    readonly SAMPLER_CUBE: GLenum;
+    readonly SAMPLES: GLenum;
+    readonly SAMPLE_ALPHA_TO_COVERAGE: GLenum;
+    readonly SAMPLE_BUFFERS: GLenum;
+    readonly SAMPLE_COVERAGE: GLenum;
+    readonly SAMPLE_COVERAGE_INVERT: GLenum;
+    readonly SAMPLE_COVERAGE_VALUE: GLenum;
+    readonly SCISSOR_BOX: GLenum;
+    readonly SCISSOR_TEST: GLenum;
+    readonly SHADER_TYPE: GLenum;
+    readonly SHADING_LANGUAGE_VERSION: GLenum;
+    readonly SHORT: GLenum;
+    readonly SRC_ALPHA: GLenum;
+    readonly SRC_ALPHA_SATURATE: GLenum;
+    readonly SRC_COLOR: GLenum;
+    readonly STATIC_DRAW: GLenum;
+    readonly STENCIL_ATTACHMENT: GLenum;
+    readonly STENCIL_BACK_FAIL: GLenum;
+    readonly STENCIL_BACK_FUNC: GLenum;
+    readonly STENCIL_BACK_PASS_DEPTH_FAIL: GLenum;
+    readonly STENCIL_BACK_PASS_DEPTH_PASS: GLenum;
+    readonly STENCIL_BACK_REF: GLenum;
+    readonly STENCIL_BACK_VALUE_MASK: GLenum;
+    readonly STENCIL_BACK_WRITEMASK: GLenum;
+    readonly STENCIL_BITS: GLenum;
+    readonly STENCIL_BUFFER_BIT: GLenum;
+    readonly STENCIL_CLEAR_VALUE: GLenum;
+    readonly STENCIL_FAIL: GLenum;
+    readonly STENCIL_FUNC: GLenum;
+    readonly STENCIL_INDEX8: GLenum;
+    readonly STENCIL_PASS_DEPTH_FAIL: GLenum;
+    readonly STENCIL_PASS_DEPTH_PASS: GLenum;
+    readonly STENCIL_REF: GLenum;
+    readonly STENCIL_TEST: GLenum;
+    readonly STENCIL_VALUE_MASK: GLenum;
+    readonly STENCIL_WRITEMASK: GLenum;
+    readonly STREAM_DRAW: GLenum;
+    readonly SUBPIXEL_BITS: GLenum;
+    readonly TEXTURE: GLenum;
+    readonly TEXTURE0: GLenum;
+    readonly TEXTURE1: GLenum;
+    readonly TEXTURE10: GLenum;
+    readonly TEXTURE11: GLenum;
+    readonly TEXTURE12: GLenum;
+    readonly TEXTURE13: GLenum;
+    readonly TEXTURE14: GLenum;
+    readonly TEXTURE15: GLenum;
+    readonly TEXTURE16: GLenum;
+    readonly TEXTURE17: GLenum;
+    readonly TEXTURE18: GLenum;
+    readonly TEXTURE19: GLenum;
+    readonly TEXTURE2: GLenum;
+    readonly TEXTURE20: GLenum;
+    readonly TEXTURE21: GLenum;
+    readonly TEXTURE22: GLenum;
+    readonly TEXTURE23: GLenum;
+    readonly TEXTURE24: GLenum;
+    readonly TEXTURE25: GLenum;
+    readonly TEXTURE26: GLenum;
+    readonly TEXTURE27: GLenum;
+    readonly TEXTURE28: GLenum;
+    readonly TEXTURE29: GLenum;
+    readonly TEXTURE3: GLenum;
+    readonly TEXTURE30: GLenum;
+    readonly TEXTURE31: GLenum;
+    readonly TEXTURE4: GLenum;
+    readonly TEXTURE5: GLenum;
+    readonly TEXTURE6: GLenum;
+    readonly TEXTURE7: GLenum;
+    readonly TEXTURE8: GLenum;
+    readonly TEXTURE9: GLenum;
+    readonly TEXTURE_2D: GLenum;
+    readonly TEXTURE_BINDING_2D: GLenum;
+    readonly TEXTURE_BINDING_CUBE_MAP: GLenum;
+    readonly TEXTURE_CUBE_MAP: GLenum;
+    readonly TEXTURE_CUBE_MAP_NEGATIVE_X: GLenum;
+    readonly TEXTURE_CUBE_MAP_NEGATIVE_Y: GLenum;
+    readonly TEXTURE_CUBE_MAP_NEGATIVE_Z: GLenum;
+    readonly TEXTURE_CUBE_MAP_POSITIVE_X: GLenum;
+    readonly TEXTURE_CUBE_MAP_POSITIVE_Y: GLenum;
+    readonly TEXTURE_CUBE_MAP_POSITIVE_Z: GLenum;
+    readonly TEXTURE_MAG_FILTER: GLenum;
+    readonly TEXTURE_MIN_FILTER: GLenum;
+    readonly TEXTURE_WRAP_S: GLenum;
+    readonly TEXTURE_WRAP_T: GLenum;
+    readonly TRIANGLES: GLenum;
+    readonly TRIANGLE_FAN: GLenum;
+    readonly TRIANGLE_STRIP: GLenum;
+    readonly UNPACK_ALIGNMENT: GLenum;
+    readonly UNPACK_COLORSPACE_CONVERSION_WEBGL: GLenum;
+    readonly UNPACK_FLIP_Y_WEBGL: GLenum;
+    readonly UNPACK_PREMULTIPLY_ALPHA_WEBGL: GLenum;
+    readonly UNSIGNED_BYTE: GLenum;
+    readonly UNSIGNED_INT: GLenum;
+    readonly UNSIGNED_SHORT: GLenum;
+    readonly UNSIGNED_SHORT_4_4_4_4: GLenum;
+    readonly UNSIGNED_SHORT_5_5_5_1: GLenum;
+    readonly UNSIGNED_SHORT_5_6_5: GLenum;
+    readonly VALIDATE_STATUS: GLenum;
+    readonly VENDOR: GLenum;
+    readonly VERSION: GLenum;
+    readonly VERTEX_ATTRIB_ARRAY_BUFFER_BINDING: GLenum;
+    readonly VERTEX_ATTRIB_ARRAY_ENABLED: GLenum;
+    readonly VERTEX_ATTRIB_ARRAY_NORMALIZED: GLenum;
+    readonly VERTEX_ATTRIB_ARRAY_POINTER: GLenum;
+    readonly VERTEX_ATTRIB_ARRAY_SIZE: GLenum;
+    readonly VERTEX_ATTRIB_ARRAY_STRIDE: GLenum;
+    readonly VERTEX_ATTRIB_ARRAY_TYPE: GLenum;
+    readonly VERTEX_SHADER: GLenum;
+    readonly VIEWPORT: GLenum;
+    readonly ZERO: GLenum;
+}
+
+interface WebGLRenderingContextOverloads {
+    bufferData(target: GLenum, size: GLsizeiptr, usage: GLenum): void;
+    bufferData(target: GLenum, data: BufferSource | null, usage: GLenum): void;
+    bufferSubData(target: GLenum, offset: GLintptr, data: BufferSource): void;
+    compressedTexImage2D(target: GLenum, level: GLint, internalformat: GLenum, width: GLsizei, height: GLsizei, border: GLint, data: ArrayBufferView): void;
+    compressedTexSubImage2D(target: GLenum, level: GLint, xoffset: GLint, yoffset: GLint, width: GLsizei, height: GLsizei, format: GLenum, data: ArrayBufferView): void;
+    readPixels(x: GLint, y: GLint, width: GLsizei, height: GLsizei, format: GLenum, type: GLenum, pixels: ArrayBufferView | null): void;
+    texImage2D(target: GLenum, level: GLint, internalformat: GLint, width: GLsizei, height: GLsizei, border: GLint, format: GLenum, type: GLenum, pixels: ArrayBufferView | null): void;
+    texImage2D(target: GLenum, level: GLint, internalformat: GLint, format: GLenum, type: GLenum, source: TexImageSource): void;
+    texSubImage2D(target: GLenum, level: GLint, xoffset: GLint, yoffset: GLint, width: GLsizei, height: GLsizei, format: GLenum, type: GLenum, pixels: ArrayBufferView | null): void;
+    texSubImage2D(target: GLenum, level: GLint, xoffset: GLint, yoffset: GLint, format: GLenum, type: GLenum, source: TexImageSource): void;
+    uniform1fv(location: WebGLUniformLocation | null, v: Float32List): void;
+    uniform1iv(location: WebGLUniformLocation | null, v: Int32List): void;
+    uniform2fv(location: WebGLUniformLocation | null, v: Float32List): void;
+    uniform2iv(location: WebGLUniformLocation | null, v: Int32List): void;
+    uniform3fv(location: WebGLUniformLocation | null, v: Float32List): void;
+    uniform3iv(location: WebGLUniformLocation | null, v: Int32List): void;
+    uniform4fv(location: WebGLUniformLocation | null, v: Float32List): void;
+    uniform4iv(location: WebGLUniformLocation | null, v: Int32List): void;
+    uniformMatrix2fv(location: WebGLUniformLocation | null, transpose: GLboolean, value: Float32List): void;
+    uniformMatrix3fv(location: WebGLUniformLocation | null, transpose: GLboolean, value: Float32List): void;
+    uniformMatrix4fv(location: WebGLUniformLocation | null, transpose: GLboolean, value: Float32List): void;
+}
+
+interface WebGLSampler extends WebGLObject {
+}
+
+declare var WebGLSampler: {
+    prototype: WebGLSampler;
+    new(): WebGLSampler;
+};
+
+/** The WebGLShader is part of the WebGL API and can either be a vertex or a fragment shader. A WebGLProgram requires both types of shaders. */
+interface WebGLShader extends WebGLObject {
+}
+
+declare var WebGLShader: {
+    prototype: WebGLShader;
+    new(): WebGLShader;
+};
+
+/** Part of the WebGL API and represents the information returned by calling the WebGLRenderingContext.getShaderPrecisionFormat() method. */
+interface WebGLShaderPrecisionFormat {
+    readonly precision: GLint;
+    readonly rangeMax: GLint;
+    readonly rangeMin: GLint;
+}
+
+declare var WebGLShaderPrecisionFormat: {
+    prototype: WebGLShaderPrecisionFormat;
+    new(): WebGLShaderPrecisionFormat;
+};
+
+interface WebGLSync extends WebGLObject {
+}
+
+declare var WebGLSync: {
+    prototype: WebGLSync;
+    new(): WebGLSync;
+};
+
+/** Part of the WebGL API and represents an opaque texture object providing storage and state for texturing operations. */
+interface WebGLTexture extends WebGLObject {
+}
+
+declare var WebGLTexture: {
+    prototype: WebGLTexture;
+    new(): WebGLTexture;
+};
+
+interface WebGLTransformFeedback extends WebGLObject {
+}
+
+declare var WebGLTransformFeedback: {
+    prototype: WebGLTransformFeedback;
+    new(): WebGLTransformFeedback;
+};
+
+/** Part of the WebGL API and represents the location of a uniform variable in a shader program. */
+interface WebGLUniformLocation {
+}
+
+declare var WebGLUniformLocation: {
+    prototype: WebGLUniformLocation;
+    new(): WebGLUniformLocation;
+};
+
+interface WebGLVertexArrayObject extends WebGLObject {
+}
+
+declare var WebGLVertexArrayObject: {
+    prototype: WebGLVertexArrayObject;
+    new(): WebGLVertexArrayObject;
+};
+
+interface WebGLVertexArrayObjectOES extends WebGLObject {
+}
+
+interface WebSocketEventMap {
+    "close": CloseEvent;
+    "error": Event;
+    "message": MessageEvent;
+    "open": Event;
+}
+
+/** Provides the API for creating and managing a WebSocket connection to a server, as well as for sending and receiving data on the connection. */
+interface WebSocket extends EventTarget {
+    /**
+     * Returns a string that indicates how binary data from the WebSocket object is exposed to scripts:
+     * 
+     * Can be set, to change how binary data is returned. The default is "blob".
+     */
+    binaryType: BinaryType;
+    /**
+     * Returns the number of bytes of application data (UTF-8 text and binary data) that have been queued using send() but not yet been transmitted to the network.
+     * 
+     * If the WebSocket connection is closed, this attribute's value will only increase with each call to the send() method. (The number does not reset to zero once the connection closes.)
+     */
+    readonly bufferedAmount: number;
+    /**
+     * Returns the extensions selected by the server, if any.
+     */
+    readonly extensions: string;
+    onclose: ((this: WebSocket, ev: CloseEvent) => any) | null;
+    onerror: ((this: WebSocket, ev: Event) => any) | null;
+    onmessage: ((this: WebSocket, ev: MessageEvent) => any) | null;
+    onopen: ((this: WebSocket, ev: Event) => any) | null;
+    /**
+     * Returns the subprotocol selected by the server, if any. It can be used in conjunction with the array form of the constructor's second argument to perform subprotocol negotiation.
+     */
+    readonly protocol: string;
+    /**
+     * Returns the state of the WebSocket object's connection. It can have the values described below.
+     */
+    readonly readyState: number;
+    /**
+     * Returns the URL that was used to establish the WebSocket connection.
+     */
+    readonly url: string;
+    /**
+     * Closes the WebSocket connection, optionally using code as the the WebSocket connection close code and reason as the the WebSocket connection close reason.
+     */
+    close(code?: number, reason?: string): void;
+    /**
+     * Transmits data using the WebSocket connection. data can be a string, a Blob, an ArrayBuffer, or an ArrayBufferView.
+     */
+    send(data: string | ArrayBufferLike | Blob | ArrayBufferView): void;
+    readonly CLOSED: number;
+    readonly CLOSING: number;
+    readonly CONNECTING: number;
+    readonly OPEN: number;
+    addEventListener<K extends keyof WebSocketEventMap>(type: K, listener: (this: WebSocket, ev: WebSocketEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+    addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+    removeEventListener<K extends keyof WebSocketEventMap>(type: K, listener: (this: WebSocket, ev: WebSocketEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+    removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+}
+
+declare var WebSocket: {
+    prototype: WebSocket;
+    new(url: string, protocols?: string | string[]): WebSocket;
+    readonly CLOSED: number;
+    readonly CLOSING: number;
+    readonly CONNECTING: number;
+    readonly OPEN: number;
+};
+
+/** This ServiceWorker API interface represents the scope of a service worker client that is a document in a browser context, controlled by an active worker. The service worker client independently selects and uses a service worker for its own loading and sub-resources. */
+interface WindowClient extends Client {
+    readonly ancestorOrigins: ReadonlyArray<string>;
+    readonly focused: boolean;
+    readonly visibilityState: VisibilityState;
+    focus(): Promise<WindowClient>;
+    navigate(url: string): Promise<WindowClient | null>;
+}
+
+declare var WindowClient: {
+    prototype: WindowClient;
+    new(): WindowClient;
+};
+
+interface WindowOrWorkerGlobalScope {
+    readonly caches: CacheStorage;
+    readonly crypto: Crypto;
+    readonly indexedDB: IDBFactory;
+    readonly isSecureContext: boolean;
+    readonly origin: string;
+    readonly performance: Performance;
+    atob(data: string): string;
+    btoa(data: string): string;
+    clearInterval(handle?: number): void;
+    clearTimeout(handle?: number): void;
+    createImageBitmap(image: ImageBitmapSource, options?: ImageBitmapOptions): Promise<ImageBitmap>;
+    createImageBitmap(image: ImageBitmapSource, sx: number, sy: number, sw: number, sh: number, options?: ImageBitmapOptions): Promise<ImageBitmap>;
+    fetch(input: RequestInfo, init?: RequestInit): Promise<Response>;
+    queueMicrotask(callback: VoidFunction): void;
+    setInterval(handler: TimerHandler, timeout?: number, ...arguments: any[]): number;
+    setTimeout(handler: TimerHandler, timeout?: number, ...arguments: any[]): number;
+}
+
+interface WorkerEventMap extends AbstractWorkerEventMap {
+    "message": MessageEvent;
+    "messageerror": MessageEvent;
+}
+
+/** This Web Workers API interface represents a background task that can be easily created and can send messages back to its creator. Creating a worker is as simple as calling the Worker() constructor and specifying a script to be run in the worker thread. */
+interface Worker extends EventTarget, AbstractWorker {
+    onmessage: ((this: Worker, ev: MessageEvent) => any) | null;
+    onmessageerror: ((this: Worker, ev: MessageEvent) => any) | null;
+    /**
+     * Clones message and transmits it to worker's global environment. transfer can be passed as a list of objects that are to be transferred rather than cloned.
+     */
+    postMessage(message: any, transfer: Transferable[]): void;
+    postMessage(message: any, options?: PostMessageOptions): void;
+    /**
+     * Aborts worker's associated global environment.
+     */
+    terminate(): void;
+    addEventListener<K extends keyof WorkerEventMap>(type: K, listener: (this: Worker, ev: WorkerEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+    addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+    removeEventListener<K extends keyof WorkerEventMap>(type: K, listener: (this: Worker, ev: WorkerEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+    removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+}
+
+declare var Worker: {
+    prototype: Worker;
+    new(stringUrl: string | URL, options?: WorkerOptions): Worker;
+};
+
+interface WorkerGlobalScopeEventMap {
+    "error": ErrorEvent;
+    "languagechange": Event;
+    "offline": Event;
+    "online": Event;
+    "rejectionhandled": PromiseRejectionEvent;
+    "unhandledrejection": PromiseRejectionEvent;
+}
+
+/** This Web Workers API interface is an interface representing the scope of any worker. Workers have no browsing context; this scope contains the information usually conveyed by Window objects — in this case event handlers, the console or the associated WorkerNavigator object. Each WorkerGlobalScope has its own event loop. */
+interface WorkerGlobalScope extends EventTarget, WindowOrWorkerGlobalScope {
+    /**
+     * Returns workerGlobal's WorkerLocation object.
+     */
+    readonly location: WorkerLocation;
+    readonly navigator: WorkerNavigator;
+    onerror: ((this: WorkerGlobalScope, ev: ErrorEvent) => any) | null;
+    onlanguagechange: ((this: WorkerGlobalScope, ev: Event) => any) | null;
+    onoffline: ((this: WorkerGlobalScope, ev: Event) => any) | null;
+    ononline: ((this: WorkerGlobalScope, ev: Event) => any) | null;
+    onrejectionhandled: ((this: WorkerGlobalScope, ev: PromiseRejectionEvent) => any) | null;
+    onunhandledrejection: ((this: WorkerGlobalScope, ev: PromiseRejectionEvent) => any) | null;
+    /**
+     * Returns workerGlobal.
+     */
+    readonly self: WorkerGlobalScope & typeof globalThis;
+    /**
+     * Fetches each URL in urls, executes them one-by-one in the order they are passed, and then returns (or throws if something went amiss).
+     */
+    importScripts(...urls: string[]): void;
+    addEventListener<K extends keyof WorkerGlobalScopeEventMap>(type: K, listener: (this: WorkerGlobalScope, ev: WorkerGlobalScopeEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+    addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+    removeEventListener<K extends keyof WorkerGlobalScopeEventMap>(type: K, listener: (this: WorkerGlobalScope, ev: WorkerGlobalScopeEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+    removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+}
+
+declare var WorkerGlobalScope: {
+    prototype: WorkerGlobalScope;
+    new(): WorkerGlobalScope;
+};
+
+/** The absolute location of the script executed by the Worker. Such an object is initialized for each worker and is available via the WorkerGlobalScope.location property obtained by calling self.location. */
+interface WorkerLocation {
+    readonly hash: string;
+    readonly host: string;
+    readonly hostname: string;
+    readonly href: string;
+    toString(): string;
+    readonly origin: string;
+    readonly pathname: string;
+    readonly port: string;
+    readonly protocol: string;
+    readonly search: string;
+}
+
+declare var WorkerLocation: {
+    prototype: WorkerLocation;
+    new(): WorkerLocation;
+};
+
+/** A subset of the Navigator interface allowed to be accessed from a Worker. Such an object is initialized for each worker and is available via the WorkerGlobalScope.navigator property obtained by calling window.self.navigator. */
+interface WorkerNavigator extends NavigatorConcurrentHardware, NavigatorID, NavigatorLanguage, NavigatorOnLine, NavigatorStorage {
+    readonly permissions: Permissions;
+    readonly serviceWorker: ServiceWorkerContainer;
+}
+
+declare var WorkerNavigator: {
+    prototype: WorkerNavigator;
+    new(): WorkerNavigator;
+};
+
+/** This Streams API interface provides a standard abstraction for writing streaming data to a destination, known as a sink. This object comes with built-in backpressure and queuing. */
+interface WritableStream<W = any> {
+    readonly locked: boolean;
+    abort(reason?: any): Promise<void>;
+    getWriter(): WritableStreamDefaultWriter<W>;
+}
+
+declare var WritableStream: {
+    prototype: WritableStream;
+    new<W = any>(underlyingSink?: UnderlyingSink<W>, strategy?: QueuingStrategy<W>): WritableStream<W>;
+};
+
+/** This Streams API interface represents a controller allowing control of a WritableStream's state. When constructing a WritableStream, the underlying sink is given a corresponding WritableStreamDefaultController instance to manipulate. */
+interface WritableStreamDefaultController {
+    error(error?: any): void;
+}
+
+declare var WritableStreamDefaultController: {
+    prototype: WritableStreamDefaultController;
+    new(): WritableStreamDefaultController;
+};
+
+/** This Streams API interface is the object returned by WritableStream.getWriter() and once created locks the < writer to the WritableStream ensuring that no other streams can write to the underlying sink. */
+interface WritableStreamDefaultWriter<W = any> {
+    readonly closed: Promise<void>;
+    readonly desiredSize: number | null;
+    readonly ready: Promise<void>;
+    abort(reason?: any): Promise<void>;
+    close(): Promise<void>;
+    releaseLock(): void;
+    write(chunk: W): Promise<void>;
+}
+
+declare var WritableStreamDefaultWriter: {
+    prototype: WritableStreamDefaultWriter;
+    new(): WritableStreamDefaultWriter;
+};
+
+interface XMLHttpRequestEventMap extends XMLHttpRequestEventTargetEventMap {
+    "readystatechange": Event;
+}
+
+/** Use XMLHttpRequest (XHR) objects to interact with servers. You can retrieve data from a URL without having to do a full page refresh. This enables a Web page to update just part of a page without disrupting what the user is doing. */
+interface XMLHttpRequest extends XMLHttpRequestEventTarget {
+    onreadystatechange: ((this: XMLHttpRequest, ev: Event) => any) | null;
+    /**
+     * Returns client's state.
+     */
+    readonly readyState: number;
+    /**
+     * Returns the response's body.
+     */
+    readonly response: any;
+    /**
+     * Returns the text response.
+     * 
+     * Throws an "InvalidStateError" DOMException if responseType is not the empty string or "text".
+     */
+    readonly responseText: string;
+    /**
+     * Returns the response type.
+     * 
+     * Can be set to change the response type. Values are: the empty string (default), "arraybuffer", "blob", "document", "json", and "text".
+     * 
+     * When set: setting to "document" is ignored if current global object is not a Window object.
+     * 
+     * When set: throws an "InvalidStateError" DOMException if state is loading or done.
+     * 
+     * When set: throws an "InvalidAccessError" DOMException if the synchronous flag is set and current global object is a Window object.
+     */
+    responseType: XMLHttpRequestResponseType;
+    readonly responseURL: string;
+    readonly status: number;
+    readonly statusText: string;
+    /**
+     * Can be set to a time in milliseconds. When set to a non-zero value will cause fetching to terminate after the given time has passed. When the time has passed, the request has not yet completed, and the synchronous flag is unset, a timeout event will then be dispatched, or a "TimeoutError" DOMException will be thrown otherwise (for the send() method).
+     * 
+     * When set: throws an "InvalidAccessError" DOMException if the synchronous flag is set and current global object is a Window object.
+     */
+    timeout: number;
+    /**
+     * Returns the associated XMLHttpRequestUpload object. It can be used to gather transmission information when data is transferred to a server.
+     */
+    readonly upload: XMLHttpRequestUpload;
+    /**
+     * True when credentials are to be included in a cross-origin request. False when they are to be excluded in a cross-origin request and when cookies are to be ignored in its response. Initially false.
+     * 
+     * When set: throws an "InvalidStateError" DOMException if state is not unsent or opened, or if the send() flag is set.
+     */
+    withCredentials: boolean;
+    /**
+     * Cancels any network activity.
+     */
+    abort(): void;
+    getAllResponseHeaders(): string;
+    getResponseHeader(name: string): string | null;
+    /**
+     * Sets the request method, request URL, and synchronous flag.
+     * 
+     * Throws a "SyntaxError" DOMException if either method is not a valid HTTP method or url cannot be parsed.
+     * 
+     * Throws a "SecurityError" DOMException if method is a case-insensitive match for \`CONNECT\`, \`TRACE\`, or \`TRACK\`.
+     * 
+     * Throws an "InvalidAccessError" DOMException if async is false, current global object is a Window object, and the timeout attribute is not zero or the responseType attribute is not the empty string.
+     */
+    open(method: string, url: string): void;
+    open(method: string, url: string, async: boolean, username?: string | null, password?: string | null): void;
+    /**
+     * Acts as if the \`Content-Type\` header value for response is mime. (It does not actually change the header though.)
+     * 
+     * Throws an "InvalidStateError" DOMException if state is loading or done.
+     */
+    overrideMimeType(mime: string): void;
+    /**
+     * Initiates the request. The body argument provides the request body, if any, and is ignored if the request method is GET or HEAD.
+     * 
+     * Throws an "InvalidStateError" DOMException if either state is not opened or the send() flag is set.
+     */
+    send(body?: BodyInit | null): void;
+    /**
+     * Combines a header in author request headers.
+     * 
+     * Throws an "InvalidStateError" DOMException if either state is not opened or the send() flag is set.
+     * 
+     * Throws a "SyntaxError" DOMException if name is not a header name or if value is not a header value.
+     */
+    setRequestHeader(name: string, value: string): void;
+    readonly DONE: number;
+    readonly HEADERS_RECEIVED: number;
+    readonly LOADING: number;
+    readonly OPENED: number;
+    readonly UNSENT: number;
+    addEventListener<K extends keyof XMLHttpRequestEventMap>(type: K, listener: (this: XMLHttpRequest, ev: XMLHttpRequestEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+    addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+    removeEventListener<K extends keyof XMLHttpRequestEventMap>(type: K, listener: (this: XMLHttpRequest, ev: XMLHttpRequestEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+    removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+}
+
+declare var XMLHttpRequest: {
+    prototype: XMLHttpRequest;
+    new(): XMLHttpRequest;
+    readonly DONE: number;
+    readonly HEADERS_RECEIVED: number;
+    readonly LOADING: number;
+    readonly OPENED: number;
+    readonly UNSENT: number;
+};
+
+interface XMLHttpRequestEventTargetEventMap {
+    "abort": ProgressEvent<XMLHttpRequestEventTarget>;
+    "error": ProgressEvent<XMLHttpRequestEventTarget>;
+    "load": ProgressEvent<XMLHttpRequestEventTarget>;
+    "loadend": ProgressEvent<XMLHttpRequestEventTarget>;
+    "loadstart": ProgressEvent<XMLHttpRequestEventTarget>;
+    "progress": ProgressEvent<XMLHttpRequestEventTarget>;
+    "timeout": ProgressEvent<XMLHttpRequestEventTarget>;
+}
+
+interface XMLHttpRequestEventTarget extends EventTarget {
+    onabort: ((this: XMLHttpRequest, ev: ProgressEvent) => any) | null;
+    onerror: ((this: XMLHttpRequest, ev: ProgressEvent) => any) | null;
+    onload: ((this: XMLHttpRequest, ev: ProgressEvent) => any) | null;
+    onloadend: ((this: XMLHttpRequest, ev: ProgressEvent) => any) | null;
+    onloadstart: ((this: XMLHttpRequest, ev: ProgressEvent) => any) | null;
+    onprogress: ((this: XMLHttpRequest, ev: ProgressEvent) => any) | null;
+    ontimeout: ((this: XMLHttpRequest, ev: ProgressEvent) => any) | null;
+    addEventListener<K extends keyof XMLHttpRequestEventTargetEventMap>(type: K, listener: (this: XMLHttpRequestEventTarget, ev: XMLHttpRequestEventTargetEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+    addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+    removeEventListener<K extends keyof XMLHttpRequestEventTargetEventMap>(type: K, listener: (this: XMLHttpRequestEventTarget, ev: XMLHttpRequestEventTargetEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+    removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+}
+
+declare var XMLHttpRequestEventTarget: {
+    prototype: XMLHttpRequestEventTarget;
+    new(): XMLHttpRequestEventTarget;
+};
+
+interface XMLHttpRequestUpload extends XMLHttpRequestEventTarget {
+    addEventListener<K extends keyof XMLHttpRequestEventTargetEventMap>(type: K, listener: (this: XMLHttpRequestUpload, ev: XMLHttpRequestEventTargetEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+    addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+    removeEventListener<K extends keyof XMLHttpRequestEventTargetEventMap>(type: K, listener: (this: XMLHttpRequestUpload, ev: XMLHttpRequestEventTargetEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+    removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+}
+
+declare var XMLHttpRequestUpload: {
+    prototype: XMLHttpRequestUpload;
+    new(): XMLHttpRequestUpload;
+};
+
+declare type EventListenerOrEventListenerObject = EventListener | EventListenerObject;
+
+interface Console {
+    memory: any;
+    assert(condition?: boolean, ...data: any[]): void;
+    clear(): void;
+    count(label?: string): void;
+    countReset(label?: string): void;
+    debug(...data: any[]): void;
+    dir(item?: any, options?: any): void;
+    dirxml(...data: any[]): void;
+    error(...data: any[]): void;
+    exception(message?: string, ...optionalParams: any[]): void;
+    group(...data: any[]): void;
+    groupCollapsed(...data: any[]): void;
+    groupEnd(): void;
+    info(...data: any[]): void;
+    log(...data: any[]): void;
+    table(tabularData?: any, properties?: string[]): void;
+    time(label?: string): void;
+    timeEnd(label?: string): void;
+    timeLog(label?: string, ...data: any[]): void;
+    timeStamp(label?: string): void;
+    trace(...data: any[]): void;
+    warn(...data: any[]): void;
+}
+
+declare var console: Console;
+
+declare namespace WebAssembly {
+    interface Global {
+        value: any;
+        valueOf(): any;
+    }
+    
+    var Global: {
+        prototype: Global;
+        new(descriptor: GlobalDescriptor, v?: any): Global;
+    };
+    
+    interface Instance {
+        readonly exports: Exports;
+    }
+    
+    var Instance: {
+        prototype: Instance;
+        new(module: Module, importObject?: Imports): Instance;
+    };
+    
+    interface Memory {
+        readonly buffer: ArrayBuffer;
+        grow(delta: number): number;
+    }
+    
+    var Memory: {
+        prototype: Memory;
+        new(descriptor: MemoryDescriptor): Memory;
+    };
+    
+    interface Module {
+    }
+    
+    var Module: {
+        prototype: Module;
+        new(bytes: BufferSource): Module;
+        customSections(moduleObject: Module, sectionName: string): ArrayBuffer[];
+        exports(moduleObject: Module): ModuleExportDescriptor[];
+        imports(moduleObject: Module): ModuleImportDescriptor[];
+    };
+    
+    interface Table {
+        readonly length: number;
+        get(index: number): Function | null;
+        grow(delta: number): number;
+        set(index: number, value: Function | null): void;
+    }
+    
+    var Table: {
+        prototype: Table;
+        new(descriptor: TableDescriptor): Table;
+    };
+    
+    interface GlobalDescriptor {
+        mutable?: boolean;
+        value: ValueType;
+    }
+    
+    interface MemoryDescriptor {
+        initial: number;
+        maximum?: number;
+    }
+    
+    interface ModuleExportDescriptor {
+        kind: ImportExportKind;
+        name: string;
+    }
+    
+    interface ModuleImportDescriptor {
+        kind: ImportExportKind;
+        module: string;
+        name: string;
+    }
+    
+    interface TableDescriptor {
+        element: TableKind;
+        initial: number;
+        maximum?: number;
+    }
+    
+    interface WebAssemblyInstantiatedSource {
+        instance: Instance;
+        module: Module;
+    }
+    
+    type ImportExportKind = "function" | "global" | "memory" | "table";
+    type TableKind = "anyfunc";
+    type ValueType = "f32" | "f64" | "i32" | "i64";
+    type ExportValue = Function | Global | Memory | Table;
+    type Exports = Record<string, ExportValue>;
+    type ImportValue = ExportValue | number;
+    type ModuleImports = Record<string, ImportValue>;
+    type Imports = Record<string, ModuleImports>;
+    function compile(bytes: BufferSource): Promise<Module>;
+    function compileStreaming(source: Response | Promise<Response>): Promise<Module>;
+    function instantiate(bytes: BufferSource, importObject?: Imports): Promise<WebAssemblyInstantiatedSource>;
+    function instantiate(moduleObject: Module, importObject?: Imports): Promise<Instance>;
+    function instantiateStreaming(response: Response | PromiseLike<Response>, importObject?: Imports): Promise<WebAssemblyInstantiatedSource>;
+    function validate(bytes: BufferSource): boolean;
+}
+
+interface FrameRequestCallback {
+    (time: number): void;
+}
+
+interface OnErrorEventHandlerNonNull {
+    (event: Event | string, source?: string, lineno?: number, colno?: number, error?: Error): any;
+}
+
+interface PerformanceObserverCallback {
+    (entries: PerformanceObserverEntryList, observer: PerformanceObserver): void;
+}
+
+interface QueuingStrategySizeCallback<T = any> {
+    (chunk: T): number;
+}
+
+interface ReadableByteStreamControllerCallback {
+    (controller: ReadableByteStreamController): void | PromiseLike<void>;
+}
+
+interface ReadableStreamDefaultControllerCallback<R> {
+    (controller: ReadableStreamDefaultController<R>): void | PromiseLike<void>;
+}
+
+interface ReadableStreamErrorCallback {
+    (reason: any): void | PromiseLike<void>;
+}
+
+interface TransformStreamDefaultControllerCallback<O> {
+    (controller: TransformStreamDefaultController<O>): void | PromiseLike<void>;
+}
+
+interface TransformStreamDefaultControllerTransformCallback<I, O> {
+    (chunk: I, controller: TransformStreamDefaultController<O>): void | PromiseLike<void>;
+}
+
+interface VoidFunction {
+    (): void;
+}
+
+interface WritableStreamDefaultControllerCloseCallback {
+    (): void | PromiseLike<void>;
+}
+
+interface WritableStreamDefaultControllerStartCallback {
+    (controller: WritableStreamDefaultController): void | PromiseLike<void>;
+}
+
+interface WritableStreamDefaultControllerWriteCallback<W> {
+    (chunk: W, controller: WritableStreamDefaultController): void | PromiseLike<void>;
+}
+
+interface WritableStreamErrorCallback {
+    (reason: any): void | PromiseLike<void>;
+}
+
+/**
+ * Returns dedicatedWorkerGlobal's name, i.e. the value given to the Worker constructor. Primarily useful for debugging.
+ */
+declare var name: string;
+declare var onmessage: ((this: DedicatedWorkerGlobalScope, ev: MessageEvent) => any) | null;
+declare var onmessageerror: ((this: DedicatedWorkerGlobalScope, ev: MessageEvent) => any) | null;
+/**
+ * Aborts dedicatedWorkerGlobal.
+ */
+declare function close(): void;
+/**
+ * Clones message and transmits it to the Worker object associated with dedicatedWorkerGlobal. transfer can be passed as a list of objects that are to be transferred rather than cloned.
+ */
+declare function postMessage(message: any, transfer: Transferable[]): void;
+declare function postMessage(message: any, options?: PostMessageOptions): void;
+/**
+ * Dispatches a synthetic event event to target and returns true if either event's cancelable attribute value is false or its preventDefault() method was not invoked, and false otherwise.
+ */
+declare function dispatchEvent(event: Event): boolean;
+/**
+ * Returns workerGlobal's WorkerLocation object.
+ */
+declare var location: WorkerLocation;
+declare var navigator: WorkerNavigator;
+declare var onerror: ((this: DedicatedWorkerGlobalScope, ev: ErrorEvent) => any) | null;
+declare var onlanguagechange: ((this: DedicatedWorkerGlobalScope, ev: Event) => any) | null;
+declare var onoffline: ((this: DedicatedWorkerGlobalScope, ev: Event) => any) | null;
+declare var ononline: ((this: DedicatedWorkerGlobalScope, ev: Event) => any) | null;
+declare var onrejectionhandled: ((this: DedicatedWorkerGlobalScope, ev: PromiseRejectionEvent) => any) | null;
+declare var onunhandledrejection: ((this: DedicatedWorkerGlobalScope, ev: PromiseRejectionEvent) => any) | null;
+/**
+ * Returns workerGlobal.
+ */
+declare var self: WorkerGlobalScope & typeof globalThis;
+/**
+ * Fetches each URL in urls, executes them one-by-one in the order they are passed, and then returns (or throws if something went amiss).
+ */
+declare function importScripts(...urls: string[]): void;
+/**
+ * Dispatches a synthetic event event to target and returns true if either event's cancelable attribute value is false or its preventDefault() method was not invoked, and false otherwise.
+ */
+declare function dispatchEvent(event: Event): boolean;
+declare var caches: CacheStorage;
+declare var crypto: Crypto;
+declare var indexedDB: IDBFactory;
+declare var isSecureContext: boolean;
+declare var origin: string;
+declare var performance: Performance;
+declare function atob(data: string): string;
+declare function btoa(data: string): string;
+declare function clearInterval(handle?: number): void;
+declare function clearTimeout(handle?: number): void;
+declare function createImageBitmap(image: ImageBitmapSource, options?: ImageBitmapOptions): Promise<ImageBitmap>;
+declare function createImageBitmap(image: ImageBitmapSource, sx: number, sy: number, sw: number, sh: number, options?: ImageBitmapOptions): Promise<ImageBitmap>;
+declare function fetch(input: RequestInfo, init?: RequestInit): Promise<Response>;
+declare function queueMicrotask(callback: VoidFunction): void;
+declare function setInterval(handler: TimerHandler, timeout?: number, ...arguments: any[]): number;
+declare function setTimeout(handler: TimerHandler, timeout?: number, ...arguments: any[]): number;
+declare function cancelAnimationFrame(handle: number): void;
+declare function requestAnimationFrame(callback: FrameRequestCallback): number;
+declare function addEventListener<K extends keyof DedicatedWorkerGlobalScopeEventMap>(type: K, listener: (this: DedicatedWorkerGlobalScope, ev: DedicatedWorkerGlobalScopeEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+declare function addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+declare function removeEventListener<K extends keyof DedicatedWorkerGlobalScopeEventMap>(type: K, listener: (this: DedicatedWorkerGlobalScope, ev: DedicatedWorkerGlobalScopeEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+declare function removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+type HeadersInit = Headers | string[][] | Record<string, string>;
+type BodyInit = Blob | BufferSource | FormData | URLSearchParams | ReadableStream<Uint8Array> | string;
+type RequestInfo = Request | string;
+type BlobPart = BufferSource | Blob | string;
+type DOMHighResTimeStamp = number;
+type CanvasImageSource = ImageBitmap | OffscreenCanvas;
+type OffscreenRenderingContext = OffscreenCanvasRenderingContext2D | ImageBitmapRenderingContext | WebGLRenderingContext | WebGL2RenderingContext;
+type MessageEventSource = MessagePort | ServiceWorker;
+type ImageBitmapSource = CanvasImageSource | Blob | ImageData;
+type OnErrorEventHandler = OnErrorEventHandlerNonNull | null;
+type TimerHandler = string | Function;
+type PerformanceEntryList = PerformanceEntry[];
+type PushMessageDataInit = BufferSource | string;
+type ReadableStreamReadResult<T> = ReadableStreamReadValueResult<T> | ReadableStreamReadDoneResult<T>;
+type VibratePattern = number | number[];
+type AlgorithmIdentifier = string | Algorithm;
+type HashAlgorithmIdentifier = AlgorithmIdentifier;
+type BigInteger = Uint8Array;
+type NamedCurve = string;
+type GLenum = number;
+type GLboolean = boolean;
+type GLbitfield = number;
+type GLint = number;
+type GLsizei = number;
+type GLintptr = number;
+type GLsizeiptr = number;
+type GLuint = number;
+type GLfloat = number;
+type GLclampf = number;
+type TexImageSource = ImageBitmap | ImageData | OffscreenCanvas;
+type Float32List = Float32Array | GLfloat[];
+type Int32List = Int32Array | GLint[];
+type GLint64 = number;
+type GLuint64 = number;
+type Uint32List = Uint32Array | GLuint[];
+type BufferSource = ArrayBufferView | ArrayBuffer;
+type DOMTimeStamp = number;
+type FormDataEntryValue = File | string;
+type IDBValidKey = number | string | Date | BufferSource | IDBArrayKey;
+type Transferable = ArrayBuffer | MessagePort | ImageBitmap | OffscreenCanvas;
+type BinaryType = "arraybuffer" | "blob";
+type CanvasDirection = "inherit" | "ltr" | "rtl";
+type CanvasFillRule = "evenodd" | "nonzero";
+type CanvasLineCap = "butt" | "round" | "square";
+type CanvasLineJoin = "bevel" | "miter" | "round";
+type CanvasTextAlign = "center" | "end" | "left" | "right" | "start";
+type CanvasTextBaseline = "alphabetic" | "bottom" | "hanging" | "ideographic" | "middle" | "top";
+type ClientTypes = "all" | "sharedworker" | "window" | "worker";
+type ColorSpaceConversion = "default" | "none";
+type EndingType = "native" | "transparent";
+type FrameType = "auxiliary" | "nested" | "none" | "top-level";
+type IDBCursorDirection = "next" | "nextunique" | "prev" | "prevunique";
+type IDBRequestReadyState = "done" | "pending";
+type IDBTransactionMode = "readonly" | "readwrite" | "versionchange";
+type ImageOrientation = "flipY" | "none";
+type ImageSmoothingQuality = "high" | "low" | "medium";
+type KeyFormat = "jwk" | "pkcs8" | "raw" | "spki";
+type KeyType = "private" | "public" | "secret";
+type KeyUsage = "decrypt" | "deriveBits" | "deriveKey" | "encrypt" | "sign" | "unwrapKey" | "verify" | "wrapKey";
+type NotificationDirection = "auto" | "ltr" | "rtl";
+type NotificationPermission = "default" | "denied" | "granted";
+type OffscreenRenderingContextId = "2d" | "bitmaprenderer" | "webgl" | "webgl2";
+type PermissionName = "accelerometer" | "ambient-light-sensor" | "background-sync" | "bluetooth" | "camera" | "clipboard" | "device-info" | "geolocation" | "gyroscope" | "magnetometer" | "microphone" | "midi" | "notifications" | "persistent-storage" | "push" | "speaker";
+type PermissionState = "denied" | "granted" | "prompt";
+type PremultiplyAlpha = "default" | "none" | "premultiply";
+type PushEncryptionKeyName = "auth" | "p256dh";
+type PushPermissionState = "denied" | "granted" | "prompt";
+type ReferrerPolicy = "" | "no-referrer" | "no-referrer-when-downgrade" | "origin" | "origin-when-cross-origin" | "same-origin" | "strict-origin" | "strict-origin-when-cross-origin" | "unsafe-url";
+type RequestCache = "default" | "force-cache" | "no-cache" | "no-store" | "only-if-cached" | "reload";
+type RequestCredentials = "include" | "omit" | "same-origin";
+type RequestDestination = "" | "audio" | "audioworklet" | "document" | "embed" | "font" | "image" | "manifest" | "object" | "paintworklet" | "report" | "script" | "sharedworker" | "style" | "track" | "video" | "worker" | "xslt";
+type RequestMode = "cors" | "navigate" | "no-cors" | "same-origin";
+type RequestRedirect = "error" | "follow" | "manual";
+type ResizeQuality = "high" | "low" | "medium" | "pixelated";
+type ResponseType = "basic" | "cors" | "default" | "error" | "opaque" | "opaqueredirect";
+type ServiceWorkerState = "activated" | "activating" | "installed" | "installing" | "parsed" | "redundant";
+type ServiceWorkerUpdateViaCache = "all" | "imports" | "none";
+type VisibilityState = "hidden" | "visible";
+type WebGLPowerPreference = "default" | "high-performance" | "low-power";
+type WorkerType = "classic" | "module";
+type XMLHttpRequestResponseType = "" | "arraybuffer" | "blob" | "document" | "json" | "text";
+`,
+    "lib.webworker.importscripts.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+
+/////////////////////////////
+/// WorkerGlobalScope APIs
+/////////////////////////////
+// These are only available in a Web Worker
+declare function importScripts(...urls: string[]): void;
+`,
+    "lib.webworker.iterable.d.ts": `/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
+/////////////////////////////
+/// Worker Iterable APIs
+/////////////////////////////
+
+interface Cache {
+    addAll(requests: Iterable<RequestInfo>): Promise<void>;
+}
+
+interface CanvasPathDrawingStyles {
+    setLineDash(segments: Iterable<number>): void;
+}
+
+interface DOMStringList {
+    [Symbol.iterator](): IterableIterator<string>;
+}
+
+interface FileList {
+    [Symbol.iterator](): IterableIterator<File>;
+}
+
+interface FormData {
+    [Symbol.iterator](): IterableIterator<[string, FormDataEntryValue]>;
+    /**
+     * Returns an array of key, value pairs for every entry in the list.
+     */
+    entries(): IterableIterator<[string, FormDataEntryValue]>;
+    /**
+     * Returns a list of keys in the list.
+     */
+    keys(): IterableIterator<string>;
+    /**
+     * Returns a list of values in the list.
+     */
+    values(): IterableIterator<FormDataEntryValue>;
+}
+
+interface Headers {
+    [Symbol.iterator](): IterableIterator<[string, string]>;
+    /**
+     * Returns an iterator allowing to go through all key/value pairs contained in this object.
+     */
+    entries(): IterableIterator<[string, string]>;
+    /**
+     * Returns an iterator allowing to go through all keys of the key/value pairs contained in this object.
+     */
+    keys(): IterableIterator<string>;
+    /**
+     * Returns an iterator allowing to go through all values of the key/value pairs contained in this object.
+     */
+    values(): IterableIterator<string>;
+}
+
+interface IDBDatabase {
+    /**
+     * Returns a new transaction with the given mode ("readonly" or "readwrite") and scope which can be a single object store name or an array of names.
+     */
+    transaction(storeNames: string | Iterable<string>, mode?: IDBTransactionMode): IDBTransaction;
+}
+
+interface IDBObjectStore {
+    /**
+     * Creates a new index in store with the given name, keyPath and options and returns a new IDBIndex. If the keyPath and options define constraints that cannot be satisfied with the data already in store the upgrade transaction will abort with a "ConstraintError" DOMException.
+     * 
+     * Throws an "InvalidStateError" DOMException if not called within an upgrade transaction.
+     */
+    createIndex(name: string, keyPath: string | Iterable<string>, options?: IDBIndexParameters): IDBIndex;
+}
+
+interface URLSearchParams {
+    [Symbol.iterator](): IterableIterator<[string, string]>;
+    /**
+     * Returns an array of key, value pairs for every entry in the search params.
+     */
+    entries(): IterableIterator<[string, string]>;
+    /**
+     * Returns a list of keys in the search params.
+     */
+    keys(): IterableIterator<string>;
+    /**
+     * Returns a list of values in the search params.
+     */
+    values(): IterableIterator<string>;
+}
+
+interface WEBGL_draw_buffers {
+    drawBuffersWEBGL(buffers: Iterable<GLenum>): void;
+}
+
+interface WebGL2RenderingContextBase {
+    clearBufferfv(buffer: GLenum, drawbuffer: GLint, values: Iterable<GLfloat>, srcOffset?: GLuint): void;
+    clearBufferiv(buffer: GLenum, drawbuffer: GLint, values: Iterable<GLint>, srcOffset?: GLuint): void;
+    clearBufferuiv(buffer: GLenum, drawbuffer: GLint, values: Iterable<GLuint>, srcOffset?: GLuint): void;
+    drawBuffers(buffers: Iterable<GLenum>): void;
+    getActiveUniforms(program: WebGLProgram, uniformIndices: Iterable<GLuint>, pname: GLenum): any;
+    getUniformIndices(program: WebGLProgram, uniformNames: Iterable<string>): Iterable<GLuint> | null;
+    invalidateFramebuffer(target: GLenum, attachments: Iterable<GLenum>): void;
+    invalidateSubFramebuffer(target: GLenum, attachments: Iterable<GLenum>, x: GLint, y: GLint, width: GLsizei, height: GLsizei): void;
+    transformFeedbackVaryings(program: WebGLProgram, varyings: Iterable<string>, bufferMode: GLenum): void;
+    uniform1uiv(location: WebGLUniformLocation | null, data: Iterable<GLuint>, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniform2uiv(location: WebGLUniformLocation | null, data: Iterable<GLuint>, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniform3uiv(location: WebGLUniformLocation | null, data: Iterable<GLuint>, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniform4uiv(location: WebGLUniformLocation | null, data: Iterable<GLuint>, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniformMatrix2x3fv(location: WebGLUniformLocation | null, transpose: GLboolean, data: Iterable<GLfloat>, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniformMatrix2x4fv(location: WebGLUniformLocation | null, transpose: GLboolean, data: Iterable<GLfloat>, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniformMatrix3x2fv(location: WebGLUniformLocation | null, transpose: GLboolean, data: Iterable<GLfloat>, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniformMatrix3x4fv(location: WebGLUniformLocation | null, transpose: GLboolean, data: Iterable<GLfloat>, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniformMatrix4x2fv(location: WebGLUniformLocation | null, transpose: GLboolean, data: Iterable<GLfloat>, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniformMatrix4x3fv(location: WebGLUniformLocation | null, transpose: GLboolean, data: Iterable<GLfloat>, srcOffset?: GLuint, srcLength?: GLuint): void;
+    vertexAttribI4iv(index: GLuint, values: Iterable<GLint>): void;
+    vertexAttribI4uiv(index: GLuint, values: Iterable<GLuint>): void;
+}
+
+interface WebGL2RenderingContextOverloads {
+    uniform1fv(location: WebGLUniformLocation | null, data: Iterable<GLfloat>, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniform1iv(location: WebGLUniformLocation | null, data: Iterable<GLint>, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniform2fv(location: WebGLUniformLocation | null, data: Iterable<GLfloat>, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniform2iv(location: WebGLUniformLocation | null, data: Iterable<GLint>, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniform3fv(location: WebGLUniformLocation | null, data: Iterable<GLfloat>, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniform3iv(location: WebGLUniformLocation | null, data: Iterable<GLint>, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniform4fv(location: WebGLUniformLocation | null, data: Iterable<GLfloat>, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniform4iv(location: WebGLUniformLocation | null, data: Iterable<GLint>, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniformMatrix2fv(location: WebGLUniformLocation | null, transpose: GLboolean, data: Iterable<GLfloat>, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniformMatrix3fv(location: WebGLUniformLocation | null, transpose: GLboolean, data: Iterable<GLfloat>, srcOffset?: GLuint, srcLength?: GLuint): void;
+    uniformMatrix4fv(location: WebGLUniformLocation | null, transpose: GLboolean, data: Iterable<GLfloat>, srcOffset?: GLuint, srcLength?: GLuint): void;
+}
+
+interface WebGLRenderingContextBase {
+    vertexAttrib1fv(index: GLuint, values: Iterable<GLfloat>): void;
+    vertexAttrib2fv(index: GLuint, values: Iterable<GLfloat>): void;
+    vertexAttrib3fv(index: GLuint, values: Iterable<GLfloat>): void;
+    vertexAttrib4fv(index: GLuint, values: Iterable<GLfloat>): void;
+}
+
+interface WebGLRenderingContextOverloads {
+    uniform1fv(location: WebGLUniformLocation | null, v: Iterable<GLfloat>): void;
+    uniform1iv(location: WebGLUniformLocation | null, v: Iterable<GLint>): void;
+    uniform2fv(location: WebGLUniformLocation | null, v: Iterable<GLfloat>): void;
+    uniform2iv(location: WebGLUniformLocation | null, v: Iterable<GLint>): void;
+    uniform3fv(location: WebGLUniformLocation | null, v: Iterable<GLfloat>): void;
+    uniform3iv(location: WebGLUniformLocation | null, v: Iterable<GLint>): void;
+    uniform4fv(location: WebGLUniformLocation | null, v: Iterable<GLfloat>): void;
+    uniform4iv(location: WebGLUniformLocation | null, v: Iterable<GLint>): void;
+    uniformMatrix2fv(location: WebGLUniformLocation | null, transpose: GLboolean, value: Iterable<GLfloat>): void;
+    uniformMatrix3fv(location: WebGLUniformLocation | null, transpose: GLboolean, value: Iterable<GLfloat>): void;
+    uniformMatrix4fv(location: WebGLUniformLocation | null, transpose: GLboolean, value: Iterable<GLfloat>): void;
+}
+`,
+
 };

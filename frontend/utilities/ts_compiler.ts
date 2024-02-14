@@ -93,9 +93,9 @@ export function compile(code: string, libs: string[]): CompilationResult {
     options.noImplicitAny = true;
     options.inlineSources = true;
     options.inlineSourceMap = true;
-    options.target = 99;
+    options.target = ts.ScriptTarget.ES2015;
     options.removeComments = false;
-    options.module = ts.ModuleKind.ESNext;
+    options.module = ts.ModuleKind.ES2015; // ESNEXT?
 
     const realHost = ts.createCompilerHost(options, true);
 
@@ -103,7 +103,8 @@ export function compile(code: string, libs: string[]): CompilationResult {
     const dummySourceFile = ts.createSourceFile(dummyFilePath, code, ts.ScriptTarget.Latest);
     let outputCode: string | undefined = undefined;
     const otherFakeFiles: Record<string, string> = RAW_D_TS_FILES;
-    otherFakeFiles['kettle.d.ts'] = KETTLE_JEST_D_TS;
+    const KETTLE_D_TS_FILENAME = 'kettle.d.ts';
+    otherFakeFiles[KETTLE_D_TS_FILENAME] = KETTLE_JEST_D_TS;
 
     const host: ts.CompilerHost = {
         fileExists: filePath => filePath === dummyFilePath || realHost.fileExists(filePath),
@@ -132,7 +133,7 @@ export function compile(code: string, libs: string[]): CompilationResult {
         },
     };
 
-    const rootNames = Object.keys(otherFakeFiles); //libs.map(lib => require.resolve(`typescript/lib/lib.${lib}.d.ts`));
+    const rootNames = [KETTLE_D_TS_FILENAME]; // Object.keys(otherFakeFiles); //libs.map(lib => require.resolve(`typescript/lib/lib.${lib}.d.ts`));
     const program = ts.createProgram(rootNames.concat([dummyFilePath]), options, host);
     //console.log("P",program);
     const emitResult = program.emit(undefined, undefined, undefined, undefined, {

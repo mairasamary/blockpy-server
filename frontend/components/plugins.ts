@@ -66,6 +66,7 @@ ko.bindingHandlers.jsoneditor = {
         let initialValue = ko.unwrap(valueAccessor());
         let options =  {
             onChangeText:  function (newValue: any) {
+                initialValue = ko.unwrap(valueAccessor());
                 element.flag = true;
                 initialValue.value(newValue);
             },
@@ -120,8 +121,11 @@ ko.bindingHandlers.markdowneditor = {
             indentWithTabs: false,
             tabSize: 4,
         });
+        console.log("CREATING EDITOR AGAIN");
         element.editor.codemirror.on("change", (newValue: any) => {
-            element.flag = true;
+            initialValue = ko.unwrap(valueAccessor());
+            console.log("CHANGE EVENT", element.flag, element.editor.value(), initialValue.value());
+            //element.flag = true;
             initialValue.value(element.editor.value());
         })
         element.editor.value(initialValue.value());
@@ -134,10 +138,14 @@ ko.bindingHandlers.markdowneditor = {
     },
     update: function (element, valueAccessor) {
         let value = ko.toJS(valueAccessor()).value;
+        console.log("MDE Update", element, valueAccessor, value, element.flag);
         if (element.flag) {
             element.flag = false;
         } else {
+            const cur = element.editor.codemirror.getCursor();
             element.editor.value(value);
+            element.editor.codemirror.setCursor(cur);
+            //element.editor.refresh();
         }
     }
 };

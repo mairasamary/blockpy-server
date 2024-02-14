@@ -7,6 +7,7 @@ declare global {
     var $blockPyUrls: Record<string, string>;
     var $blockPyUserData: Record<string, string>;
     var accessToken: string;
+    var kettleIframeLoadError: boolean;
 }
 
 export function ajax_get(url: string, data: any) {

@@ -165,6 +165,7 @@ def serve_kettle_iframe():
     response = make_response(render_template('blockpy/kettle_iframe.html'))
     response.headers.set('Content-Security-Policy', "sandbox allow-scripts")
     response.headers.set('Access-Control-Allow-Origin', "*")
+    #return abort(500)
     return response
 
 @blueprint_blockpy.route('/load_assignment/', methods=['GET', 'POST'])

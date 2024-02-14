@@ -15,6 +15,7 @@
             parent.postMessage({type: 'error', message: error.message}, '*');
         }
         function executeCode(code) {
+            parent.postMessage({type: 'execution.begun', message: "Executing code"}, '*');
             const blob = new Blob([code], {type: 'application/javascript'});
             const worker = new Worker(URL.createObjectURL(blob));
             // Proxy messages back to parent

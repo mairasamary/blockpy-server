@@ -534,6 +534,7 @@ export class Kettle extends AssignmentInterface {
 
     timeClock: NodeJS.Timeout | null;
     throttleSaving: NodeJS.Timeout | null;
+    executionConfirmation: NodeJS.Timeout | null;
     SAVE_DELAY: number = 1000;
     private latestListener: EventListener;
 
@@ -563,6 +564,7 @@ export class Kettle extends AssignmentInterface {
         }, 3000);
 
         this.throttleSaving = null;
+        this.executionConfirmation = null;
 
         this.subscriptions.currentAssignmentId = this.currentAssignmentId.subscribe((newId) => {
             this.loadExecutionEngine(newId);
@@ -658,6 +660,9 @@ export class Kettle extends AssignmentInterface {
             }
             return false;
         })
+        if (event.data.type === "execution.begun") {
+            clearTimeout(this.executionConfirmation);
+        }
         if (event.data.type === "execution.error") {
             const data = event.data.contents as KettleEngineSystemError;
             this.updateStatus(`${data.category} ${data.place} Error`, false);
@@ -753,11 +758,32 @@ export class Kettle extends AssignmentInterface {
         this.restoreRunButtons();
         this.isExecuting(false);
         this.executionTimer.stop();
+        clearTimeout(this.executionConfirmation);
         this.updateStatus(reason, false);
         this.logExecution();
     }
 
-    executeRequest(request: FeedbackExecutionRequest) {
+    possibleExecutionFailure(request: FeedbackExecutionRequest, attempts: number) {
+        if (attempts <= 0) {
+            this.console.error("The execution engine failed to load after several attempts. Please notify the instructor.");
+            this.updateFeedback("The execution engine failed to load. Please notify the instructor.");
+            this.handleExecutionStopped("Execution Failure");
+        } else {
+            this.console.error(`The execution engine failed to load. Trying to restart (${attempts} attempts left).`);
+            this.iframe.onload = () => {
+                this.executeRequest(request, attempts-1);
+            };
+            // Trigger page reload
+            this.iframe.src = this.iframe.src;
+        }
+    }
+
+    executeRequest(request: FeedbackExecutionRequest, attempts=3) {
+        clearTimeout(this.executionConfirmation);
+        // Check that the iframe is okay
+        this.executionConfirmation = setTimeout(() => {
+            this.possibleExecutionFailure(request, attempts);
+        }, 5000);
         // Clear out any existing listeners
         if (this.latestListener !== null) {
             window.removeEventListener('message', this.latestListener);
@@ -852,6 +878,7 @@ export class Kettle extends AssignmentInterface {
                         this.parseAdditionalSettings();
                         this.latestTestScore = this.submission().score()/100;
                         this.startEditor();
+                        console.log(assignment, this.assignment());
                     } else {
                         console.error("Failed to load", response);
                         this.assignment(null);
@@ -1030,7 +1057,7 @@ export const EDITOR_HTML = `
         <h6>Instructions</h6>
         <textarea data-bind="textInput: assignment().instructions" style="width: 100%; height: 300px"></textarea><br>
         <h6>On Run (Feedback Code)</h6>
-        <textarea data-bind="textInput: assignment().on_run" style="width: 100%; height: 300px"></textarea><br>
+        <textarea data-bind="textInput: assignment().onRun" style="width: 100%; height: 300px"></textarea><br>
         <h6>Settings</h6>
         <textarea data-bind="textInput: assignment().settings" style="width: 100%; height: 300px"></textarea><br>
         <h6>Submission</h6>
