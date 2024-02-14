@@ -93,7 +93,7 @@ export function compile(code: string, libs: string[]): CompilationResult {
     options.noImplicitAny = true;
     options.inlineSources = true;
     options.inlineSourceMap = true;
-    options.target = ts.ScriptTarget.ES2015;
+    options.target = ts.ScriptTarget.ES2016;
     options.removeComments = false;
     options.module = ts.ModuleKind.ES2015; // ESNEXT?
 
