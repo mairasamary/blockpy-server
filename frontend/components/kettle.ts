@@ -11,6 +11,7 @@ import {formatClock, pad, titleCase} from "../utilities/text";
 import {CompilationResult, compile, delint} from "../utilities/ts_compiler";
 import * as ts from "typescript";
 import {decode} from "../utilities/vlq";
+import {QuizPoolRandomness} from "./quizzes/quiz";
 
 export const CONSOLE_API_COMMAND_LIST = ["log", "error", "info", "warning", "table", "clear"];
 export type ConsoleAPICommand = "log" | "error" | "info" | "warning" | "table" | "clear";
@@ -32,6 +33,16 @@ declare global {
     interface Crypto {
         randomUUID: () => string;
     }
+}
+
+export function extractFromPool(pool: string, splitter: RegExp, seed: number): string {
+    const pools = pool.split(splitter);
+    if (pools.length <= 2) {
+        return "// Invalid Pool - remember to include header and footer!";
+    }
+    const chosenPool = pools[1 + (seed % (pools.length-2))];
+    const poolParts = [pools[0], chosenPool, pools[pools.length-1]];
+    return poolParts.join('\n');
 }
 
 interface KettleInterfaceJson extends AssignmentInterfaceJson {
@@ -321,6 +332,11 @@ const EXECUTION_FOOTER = `// Execution Footer
 parentPost("instructor.tests", _results);
 })();
 parentPost("execution.finished", []);
+close();
+`;
+const EXECUTION_FOOTER_WITHOUT_TESTS = `// Execution Footer
+parentPost("execution.finished", []);
+close();
 `;
 
 interface ProgramExecutionRequest {
@@ -423,6 +439,8 @@ export function makeExecutionRequest(studentCode: string, instructorCode: string
             original: instructorCode,
             sourceCodeMapping: extractSourceCodeMap(instructorResults.code)
         };
+    } else {
+        assemblage.push(EXECUTION_FOOTER_WITHOUT_TESTS);
     }
     const assembled = assemblage.join("\n");
 
@@ -508,6 +526,11 @@ interface TestSuite {
     status: string;
 }
 
+const POOL_SEPARATORS = {
+    TESTS: /\/\*{4,}# .+ #\*{4,}\//,
+    INSTRUCTIONS: /<!-{4,}# .+ #-{4,}>/
+};
+
 
 export class Kettle extends AssignmentInterface {
     errorMessage: ko.Observable<string>;
@@ -519,12 +542,19 @@ export class Kettle extends AssignmentInterface {
     currentTime: ko.Observable<string>;
     executionTimer: Timer;
 
+    seed: ko.Observable<number>;
+    poolRandomness: ko.Observable<QuizPoolRandomness>;
+
     console: KettleConsole | null;
     iframe: HTMLIFrameElement | null;
     latestErrors: string[];
     latestFeedback: string;
     // Decimal score
     latestTestScore: number;
+
+    // Visuals from Pools
+    poolInstructions: ko.PureComputed<string>;
+    poolTests: ko.PureComputed<string>;
 
     subscriptions: {
         currentAssignmentId: ko.Subscription;
@@ -550,6 +580,9 @@ export class Kettle extends AssignmentInterface {
         // For internal development
         this.isDebugMode = ko.observable(false);
 
+        this.poolRandomness = ko.observable<QuizPoolRandomness>(QuizPoolRandomness.SEED);
+        this.seed = ko.observable<number>(0);
+
         this.console = null;
         this.iframe = null;
         this.latestErrors = [];
@@ -571,6 +604,7 @@ export class Kettle extends AssignmentInterface {
         }, this);
 
         this.subscriptions.submission = this.submission.subscribe((submission) => {
+            this.seed(submission.id);
             if (this.subscriptions.code) {
                 this.subscriptions.code.dispose();
             }
@@ -579,6 +613,22 @@ export class Kettle extends AssignmentInterface {
             }, this);
         }, this);
 
+        this.poolTests = ko.pureComputed(() => {
+            const onRun = this.assignment().onRun();
+            if (this.poolRandomness() === QuizPoolRandomness.SEED) {
+                return extractFromPool(onRun, POOL_SEPARATORS.TESTS, this.seed());
+            } else {
+                return onRun;
+            }
+        });
+        this.poolInstructions = ko.pureComputed(() => {
+            const instructions = this.assignment().instructions();
+            if (this.poolRandomness() === QuizPoolRandomness.SEED) {
+                return extractFromPool(instructions, POOL_SEPARATORS.INSTRUCTIONS, this.seed());
+            } else {
+                return instructions;
+            }
+        });
 
         this.loadExecutionEngine(this.currentAssignmentId());
     }
@@ -837,7 +887,8 @@ export class Kettle extends AssignmentInterface {
         this.updateStatus("Compiling");
         this.logCompilation();
         const request = makeExecutionRequest(this.submission().code(),
-            instructor ? this.assignment().onRun() : false);
+            instructor ? this.poolTests()
+                : false);
         if (request.noErrors) {
             this.updateStatus("Starting execution");
             this.executeRequest(request);
@@ -905,6 +956,9 @@ export class Kettle extends AssignmentInterface {
     parseAdditionalSettings() {
         let settingsRaw = this.assignment().settings();
         let settings = JSON.parse(settingsRaw || "{}");
+        if (settings.poolRandomness) {
+            this.poolRandomness(settings.poolRandomness);
+        }
     }
 
     dispose() {
@@ -1115,7 +1169,16 @@ export const KETTLE_HTML = `
 <div><style>.kettle-student-editor .CodeMirror { resize: vertical} </style>
     ${EDITOR_HTML}
     <!-- ko if: assignment -->
-    <div data-bind="markdowned: {value: assignment().instructions()}"></div>
+    <div data-bind="markdowned: {value: poolInstructions()}"></div>
+    <div data-bind="visible: isInstructor">
+        <div class="form-group">
+            <label for="kettle-seed-editor">
+                Current Seed:
+                <input type="text" id="kettle-seed-editor" name="kettle-seed-editor"
+                    class="form-control" data-bind="value: seed">
+            </label>
+        </div>
+    </div>
     <!-- /ko -->
     <!-- Body -->
      <div id='ide'>
