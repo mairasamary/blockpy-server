@@ -152,7 +152,7 @@ ko.bindingHandlers.markdowneditor = {
 
 // Highlighted Code Area
 hljs.configure({
-    languages: ["python"]
+    languages: ["python", "javascript", "typescript"]
 })
 ko.bindingHandlers.highlightedCode = {
     update: function (element, valueAccessor) {
