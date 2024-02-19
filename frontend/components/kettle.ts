@@ -580,7 +580,7 @@ export class Kettle extends AssignmentInterface {
         // For internal development
         this.isDebugMode = ko.observable(false);
 
-        this.poolRandomness = ko.observable<QuizPoolRandomness>(QuizPoolRandomness.SEED);
+        this.poolRandomness = ko.observable<QuizPoolRandomness>(QuizPoolRandomness.NONE);
         this.seed = ko.observable<number>(0);
 
         this.console = null;
@@ -958,6 +958,8 @@ export class Kettle extends AssignmentInterface {
         let settings = JSON.parse(settingsRaw || "{}");
         if (settings.poolRandomness) {
             this.poolRandomness(settings.poolRandomness);
+        } else {
+            this.poolRandomness(QuizPoolRandomness.NONE);
         }
     }
 

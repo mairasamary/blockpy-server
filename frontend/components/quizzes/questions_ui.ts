@@ -58,12 +58,12 @@ export const QUESTIONS_SUBMISSION_UI = `
                         <div data-bind="case: 'multiple_choice_question'">
                             <!-- ko foreach: answers -->
                             <div class="form-check">
-                              <label data-bind="attr: {for: 'question-mcq-'+$index()}" class="form-check-label">
+                              <label data-bind="attr: {for: 'question-mcq-'+$parentContext.$index()+'-'+$index()}" class="form-check-label">
                                   <input data-bind="checked: $parent.student,
                                                     value: $data,
                                                     disable: $component.isReadOnly(),
-                                                    attr: {name: 'question-mcq-'+$parentContext.$index(),
-                                                           id: 'question-mcq-'+$parentContext.$index()}"
+                                                    attr: {name: 'question-mcq-'+$parentContext.$index()+'-'+$index(),
+                                                           id: 'question-mcq-'+$parentContext.$index()+'-'+$index()}"
                                     class="form-check-input" type="radio">
                                     <span data-bind="html: $data"></span>
                               </label>
