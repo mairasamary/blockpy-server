@@ -46,6 +46,7 @@ def date_description(date):
         return "Never"
     #print(date, date.tzinfo, date.astimezone(), date.astimezone().utcoffset(), sep=" | ")
     date = (date + date.astimezone().utcoffset())
+    # TODO: Handle dates in the future
     is_today = date > datetime.now().replace(hour=0, minute=0)
     if is_today:
         return "Today, " + date.strftime("%I:%M") + date.strftime("%p").lower()
@@ -131,6 +132,23 @@ def check_quiz_answer(question, feedback, student, check, is_grader, part=None):
             return False
 
 
+POOL_SEPARATORS = {
+    "TESTS": r"\/\*{4,}# .+ #\*{4,}\/",
+    "INSTRUCTIONS": r"<!-{4,}# .+ #-{4,}>"
+}
+
+
+def extract_kettle_instructions(instructions, submission, assignment):
+    if not instructions:
+        return ""
+    pool_randomness = assignment.get_setting('poolRandomness', 'NONE')
+    if pool_randomness == 'SEED':
+        submission_id = submission.id
+        instructions = re.split(POOL_SEPARATORS["INSTRUCTIONS"], instructions)
+        instructions = instructions[submission_id % len(instructions)]
+    return instructions
+
+
 def setup_jinja_filters(app):
     app.jinja_env.filters['markdown'] = Markdown(extensions=['fenced_code']).convert
     app.jinja_env.filters['zip'] = zip
@@ -150,3 +168,4 @@ def setup_jinja_filters(app):
     app.jinja_env.filters['make_readonly_form'] = make_readonly_form
     app.jinja_env.filters['make_readonly_quiz_body'] = make_readonly_quiz_body
     app.jinja_env.filters['check_quiz_answer'] = check_quiz_answer
+    app.jinja_env.filters['extract_kettle_instructions'] = extract_kettle_instructions

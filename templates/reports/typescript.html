@@ -7,7 +7,7 @@
 
 <div>
     {% if is_grader or not hiding %}
-    {{ assignment.instructions|safe }}
+    {{ assignment.instructions|extract_kettle_instructions(submission, assignment)|safe }}
     {% endif  %}
 </div>
 <hr>
