@@ -20,3 +20,10 @@ def handle_401(error):
     return render_template('lti/lti_error.html', message=
                            "Unauthorized Error: "+str(error)+"\n<br>Please reload the page and try again."
     ), 401
+
+
+@current_app.errorhandler(403)
+def handle_403(error):
+    return render_template('errors/forbidden.html', message=
+                           str(error)+"\n<br>Please reload the page and try again."
+    ), 403
