@@ -145,7 +145,8 @@ def extract_kettle_instructions(instructions, submission, assignment):
     if pool_randomness == 'SEED':
         submission_id = submission.id
         instructions = re.split(POOL_SEPARATORS["INSTRUCTIONS"], instructions)
-        instructions = instructions[submission_id % len(instructions)]
+        chosen = instructions[1 + (submission_id % (len(instructions)-2))]
+        return [instructions[0], chosen, instructions[-1]].join('\n')
     return instructions
 
 
