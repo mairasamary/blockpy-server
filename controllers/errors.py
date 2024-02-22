@@ -25,5 +25,5 @@ def handle_401(error):
 @current_app.errorhandler(403)
 def handle_403(error):
     return render_template('errors/forbidden.html', message=
-                           str(error)+"\n<br>Please reload the page and try again."
+                           str(error)
     ), 403

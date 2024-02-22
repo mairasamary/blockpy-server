@@ -3,10 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <title>BlockPy Forbidden Error</title>
+    {% assets "libs_css" %}
+        <link rel="stylesheet" href="{{ ASSET_URL }}"/>
+    {% endassets %}
 </head>
 <body>
 
-<h1>BlockPy Server Error</h1>
+<h1>BlockPy: Forbidden Page Access</h1>
 
 {% with messages = get_flashed_messages() %}
     {% if messages %}
