@@ -8,9 +8,10 @@ from flask.views import MethodView
 from slugify import slugify
 from natsort import natsorted
 
-from flask import Blueprint, url_for, session, request, jsonify, g, render_template, redirect, current_app
+from flask import Blueprint, url_for, session, request, jsonify, g, render_template, redirect, current_app, flash
 
 from controllers.pylti.common import LTIPostMessageException
+from models import Report
 from models.assignment import Assignment
 from models.course import Course
 
@@ -25,8 +26,114 @@ from controllers.helpers import (ajax_failure, parse_assignment_load, require_re
                                  login_required, require_course_instructor, require_course_grader, maybe_bool,
                                  make_log_entry)
 from models.user import User
+from tasks import tasks
 
 blueprint_quizzes = Blueprint('quizzes', __name__, url_prefix='/quizzes')
+
+
+@blueprint_quizzes.route('/report/', methods=['GET', 'POST'])
+@blueprint_quizzes.route('/report', methods=['GET', 'POST'])
+def quiz_report():
+    """
+    Get the report for a given quiz.
+
+    Across multiple courses
+    - limit by students, by roles, by courses
+
+    Close open quizzes
+    - After a certain start time
+    - That are past due
+    - All of them
+
+    Regrade quizzes
+    - "Do not lower scores"
+    - "Do not regrade already graded quizzes"
+    - "Do not send to LMS"
+
+    ---
+
+    Report changes
+    - Closed quizzes
+    - Changed scores (whether the change was sent, successful)
+
+    Get statistics
+    - Difficulty
+    - Time spent
+    - Discrimination
+    - Most Common distractors (for some questions)
+
+
+    :return:
+    """
+    # Check this course for any quizzes, or any submitted quizzes
+    # Allow them to also add in submissions from "adjacent" courses that they have rights to
+
+    # Get parameters
+    user, user_id = get_user()
+    course_id = get_course_id()
+    assignment_id = maybe_int(request.values.get('assignment_id'))
+    # Get resources
+    course = Course.by_id(course_id)
+    # Verify user can see the submission
+    require_course_grader(user, course_id)
+    # Get the possible quizzes
+    # List[(Assignments, AssignmentGroups)]
+    quizzes = course.get_submitted_assignments_grouped('quiz')
+    # Look for adjacent possible courses that could have submissions for each quiz
+    # AssignmentId => List[Course]
+    adjacent_courses = {}
+    all_possible_courses = set()
+    groups = {}
+    for (quiz, quiz_group) in quizzes:
+        submissions = Submission.all_by_assignment(quiz.id)
+        course_ids = {s.course_id for s in submissions}
+        available_course_ids = [c for c in course_ids if user.is_instructor(c)]
+        adjacent_courses[quiz.id] = available_course_ids
+        all_possible_courses.update(available_course_ids)
+        if quiz_group not in groups:
+            groups[quiz_group] = []
+        groups[quiz_group].append(quiz)
+    all_possible_courses = [Course.by_id(course_id) for course_id in all_possible_courses]
+    # Now either process or display the form
+    if request.method == 'POST':
+        # Get the chosen quiz, validate permissions
+        if not assignment_id:
+            flash("No assignment selected")
+            return redirect(request.url)
+        if assignment_id not in {a.id for (a, g) in quizzes}:
+            flash(f"Not allowed to access quiz: {assignment_id}")
+            return redirect(request.url)
+        # Validate their adjacent_quiz choices
+        adjacent_quizzes_chosen = request.form.getlist('adjacent-quiz[]')
+        adjacent_courses_chosen = []
+        for other_course_id in adjacent_quizzes_chosen:
+            other_course_id = maybe_int(other_course_id)
+            if other_course_id is None:
+                flash(f"Invalid course id: {other_course_id}")
+                return redirect(request.url)
+            if other_course_id not in adjacent_courses[assignment_id]:
+                flash(f"You do not have access to course {other_course_id} for assignment {assignment_id}")
+                return redirect(request.url)
+            adjacent_courses_chosen.append(other_course_id)
+        # Get the user roles chosen
+        included_roles = request.form.getlist('include-users[]')
+        # Handle open quizzes and regrading
+        close_open_quizzes = request.form.get('open_quizzes', "no")
+        regrade_quizzes = request.form.get('regrade_quizzes', "no")
+        lower_scores = request.form.get('regrade-lower-scores', "false") == "true"
+        task = tasks.quiz_report(user_id, assignment_id, course_id,
+                                 adjacent_courses=adjacent_courses_chosen,
+                                 included_roles=included_roles,
+                                 close_open_quizzes=close_open_quizzes,
+                                 regrade_quizzes=regrade_quizzes,
+                                 lower_scores=lower_scores)
+        flash(f"Started a new quiz report, which may not appear until you reload the page: {task}")
+        return redirect(request.url)
+    existing_reports = Report.by_course(course_id, "quiz_report")
+    return render_template('courses/quizzes.html', course_id=course_id,
+                           course=course, quizzes=quizzes, groups=groups, adjacent_courses=adjacent_courses,
+                           existing_reports=existing_reports, assignment_id=assignment_id,
+                           all_possible_courses=all_possible_courses)
 
 
 @blueprint_quizzes.route('/static/<path:path>', methods=['GET', 'POST'])

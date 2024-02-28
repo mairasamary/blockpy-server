@@ -3,10 +3,12 @@ import re
 from pprint import pprint
 import sys
 import json
+from dataclasses import dataclass
 
 from common.text import compare_string_equality
 
 
+@dataclass
 class QuizResult:
     score: float
     correct: bool

@@ -180,24 +180,26 @@ class Course(Base):
                 .order_by(models.Assignment.name) # , models.AssignmentGroupMembership.position)
                 .distinct())
 
-    def get_submitted_assignments_grouped(self):
+    def get_submitted_assignments_grouped(self, by_type=None):
         # https://docs.sqlalchemy.org/en/20/changelog/migration_20.html#using-distinct-with-additional-columns-but-only-select-the-entity
         # No longer sorting based on AssignmentGroupMembership.position due to the above
         # This feature was never actually used anyway
         assignments = (models.Submission.query.with_entities(models.Submission.assignment_id)
                        .filter_by(course_id=self.id)
                        .distinct().subquery())
-        return (db.session.query(models.Assignment, models.AssignmentGroup)
-                .join(models.AssignmentGroupMembership,
-                      models.AssignmentGroupMembership.assignment_id == models.Assignment.id, isouter=True)
-                .join(models.AssignmentGroup,
-                      models.AssignmentGroupMembership.assignment_group_id == models.AssignmentGroup.id, isouter=True)
-                .filter(models.Assignment.id.in_(assignments),
-                        or_(models.AssignmentGroup.course_id == self.id,
-                            models.AssignmentGroup.course_id == models.Assignment.course_id,
-                            models.AssignmentGroup.id.is_(None)))
-                .order_by(models.Assignment.name) # , models.AssignmentGroupMembership.position)
-                .distinct())
+        query = (db.session.query(models.Assignment, models.AssignmentGroup)
+                 .join(models.AssignmentGroupMembership,
+                       models.AssignmentGroupMembership.assignment_id == models.Assignment.id, isouter=True)
+                 .join(models.AssignmentGroup,
+                       models.AssignmentGroupMembership.assignment_group_id == models.AssignmentGroup.id, isouter=True)
+                 .filter(models.Assignment.id.in_(assignments),
+                         or_(models.AssignmentGroup.course_id == self.id,
+                             models.AssignmentGroup.course_id == models.Assignment.course_id,
+                             models.AssignmentGroup.id.is_(None))))
+        if by_type is not None:
+            query = query.filter(models.Assignment.type == by_type)
+        return (query.order_by(models.Assignment.name) # , models.AssignmentGroupMembership.position)
+                     .distinct())
 
     def get_assignments_grouped(self):
         return (db.session.query(models.Assignment, models.AssignmentGroup)

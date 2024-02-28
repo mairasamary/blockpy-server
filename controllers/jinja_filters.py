@@ -98,16 +98,20 @@ def make_readonly_form(assignment, submission, is_grader):
 # export const matchKeyInBrackets = (key: string) => new RegExp(`(?<!\\\))(\\[${key}\\])(?!\\()`);
 
 
+def check_entered_string(value, check, key):
+    if 'correct' in check:
+        return compare_string_equality(value, check.get('correct', {}).get(key, []))
+    elif 'correct_exact' in check:
+        return compare_string_equality(value, check.get('correct_exact', {}).get(key, []))
+    elif 'correct_regex' in check:
+        return any(re.match(str(reg), value) for reg in check.get('correct_regex', {}).get(key, ""))
+
+
 def make_readonly_quiz_body(question, feedback, student, check, is_grader):
     text = question['body']
     if question['type'] in ('multiple_dropdowns_question', 'fill_in_multiple_blanks_question'):
         for key, value in student.items():
-            if 'correct' in check:
-                correct = check.get('correct', {}).get(key) == value
-            elif 'correct_exact' in check:
-                correct = compare_string_equality(value, check.get('correct_exact', {}).get(key, []))
-            elif 'correct_regex' in check:
-                correct = any(re.match(str(reg), value) for reg in check.get('correct_regex', {}).get(key, ""))
+            correct = check_entered_string(value, check)
             text = re.sub(rf"(?<!\\)(\[{key}\])(?!\()",
                           f"<span class='mdq mdq-{correct if is_grader else 'unknown'}'>{value}</span>",
                           text)
@@ -125,11 +129,13 @@ def check_quiz_answer(question, feedback, student, check, is_grader, part=None):
         return student == check.get('correct')
     elif question['type'] in ("short_answer_question", "numerical_question"):
         if 'correct_exact' in check:
-            return student in check['correct_exact']
+            return compare_string_equality(student, check['correct_exact'])
         elif 'correct_regex' in check:
             return any(re.match(reg, student) for reg in check['correct_regex'])
         else:
             return False
+    elif question['type'] in ('multiple_dropdowns_question', 'fill_in_multiple_blanks_question'):
+        return check_entered_string(student, check, part)
 
 
 POOL_SEPARATORS = {

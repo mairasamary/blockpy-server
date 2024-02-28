@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="BlockPy">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>Quiz Report</title>
+</head>
+<body>
+    <div class="container-fluid" role='main'>
+        {% for question_id, question in stats.items() %}
+            <div>
+                <h3>{{ question_id }}</h3>
+                <div style="margin-left: 2em; border: 1px solid lightgray; padding: 4px">
+                    <div>{{ question.body|safe }}</div>
+                </div>
+                <p>
+                    <strong>Type: </strong> {{ question.type }}<br>
+                    <strong>Points: </strong> {{ question.points }}<br>
+                    <strong>Submissions: </strong> {{ question.scores|length }}<br>
+                    <strong>Difficulty: </strong> {{ question.difficulty }}<br>
+                    <strong>Discrimination: </strong> {{ question.discrimination }}<br>
+                </p>
+                <ul>
+                {% if question.per_part_stats %}
+                {% for key, values in question.per_part_stats.items() %}
+                    <li><code>{{ key }}</code><ul>
+                        {% for value, outcome in values.items() %}
+                            <li>{{ value }}: {{ outcome[1] }} ({{ outcome[0] }})</li>
+                        {% endfor %}
+                     </ul></li>
+                {% endfor %}
+                {% endif %}
+                </ul>
+            </div>
+        {% endfor %}
+    </div>
+</body>
+</html>

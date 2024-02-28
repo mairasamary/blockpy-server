@@ -9,7 +9,7 @@ from itertools import combinations, zip_longest
 from dataclasses import asdict
 
 from thefuzz import fuzz
-from flask import current_app
+from flask import current_app, render_template
 
 from common.filesystem import ensure_dirs
 from controllers.helpers import make_log_entry
@@ -17,6 +17,7 @@ from controllers.pylti.common import LTIPostMessageException
 from controllers.pylti.flask import LTI
 from controllers.pylti.post_grade import TransmissionStatuses
 from models import User
+from models.data_formats.quiz_analysis import process_quizzes
 from models.log import Log
 from models.report import Report
 from models.assignment import Assignment
@@ -426,3 +427,55 @@ def diff_positions(a, b):
     for i, (x, y) in enumerate(zip_longest(a, b, fillvalue="")):
         if x != y:
             yield i
+
+
+@current_app.huey.context_task(ctx, context=True)
+def quiz_report(user_id, assignment_id, course_id,
+                adjacent_courses, included_roles,
+                close_open_quizzes, regrade_quizzes, lower_scores,
+                task=None):
+    """
+
+    :param assignment_id:
+    :param exclude_courses:
+    :return:
+    """
+    report = Report.new('quiz_report', json.dumps(
+        dict(assignment_id=assignment_id, adjacent_courses=adjacent_courses,
+             included_roles=included_roles, close_open_quizzes=close_open_quizzes, regrade_quizzes=regrade_quizzes,
+             lower_scores=lower_scores)
+    ), owner_id=user_id, course_id=course_id, assignment_id=assignment_id)
+    report.start()
+
+    report.update_progress(message="Getting all the submissions relevant to the quiz.")
+    assignment: Assignment = Assignment.by_id(assignment_id)
+    # TODO: Check that the assignment exists
+    # TODO: Check permissions
+    submissions = Submission.all_by_assignment(assignment_id)
+    report.update_progress(message="Filtering for the given courses")
+    included = [submission for submission in submissions if submission.course_id in adjacent_courses]
+    report.update_progress(message="Filtering for the given roles")
+    print(included, included_roles, adjacent_courses)
+    submissions = []
+    for submission in included:
+        if 'anonymous' not in included_roles and submission.user.anonymous:
+            pass # Do not keep anonymous users in this case
+        if 'test' not in included_roles and submission.user.is_test_user(submission.course_id):
+            pass # Do not include test users
+        elif 'instructors' in included_roles and submission.user.is_instructor(submission.course_id):
+            submissions.append(submission)
+        elif 'students' in included_roles and submission.user.is_student(submission.course_id):
+            submissions.append(submission)
+        elif 'graders' in included_roles and submission.user.is_grader(submission.course_id):
+            submissions.append(submission)
+    # TODO: Handle other parameters
+    report.update_progress(message="Setting up the final report space")
+    directory = report.get_report_folder()
+    ensure_dirs(directory)
+    report.update_progress(message="Processing quiz submissions")
+    processed = process_quizzes(assignment, submissions, directory)
+    with open(os.path.join(directory, "index.html"), "w") as out:
+        out.write(render_template("reports/quiz_summary.html", stats=processed))
+    report.finish(result="index.html",
+                  message=f"Task finished. Processed {len(submissions)} quiz submissions.")
+    return processed

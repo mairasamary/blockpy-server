@@ -178,6 +178,12 @@ class User(Base, UserMixin):
                                  if role.course_id == course_id}
         return 'learner' in {role.name.lower() for role in self.roles}
 
+    def is_test_user(self, course_id=None):
+        # TODO: YIKES, this is not okay. We need a flag for the test user!
+        if self.first_name == 'Test' and self.last_name == 'Student':
+            return True
+        return False
+
     def add_role(self, name, course_id):
         if name in [id for id, _ in models.Role.CHOICES]:
             new_role = models.Role(name=name, user_id=self.id, course_id=course_id)
