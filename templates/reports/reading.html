@@ -8,7 +8,7 @@
     <a href="{{ url_for('assignments.load_reading', path=assignment.url, embed=True) }}" target="_blank">View reading</a>
 {% endif %}
 
-{{ report_tools.render_submission_details(submission) }}
+{{ report_tools.render_submission_details(submission, is_grader) }}
 
 {% if is_grader or not hiding %}
     <div>Full Submission: <a href="{{ url_for('blockpy.load_assignment',

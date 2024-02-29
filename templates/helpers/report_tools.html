@@ -1,4 +1,4 @@
-{% macro render_submission_details(submission) %}
+{% macro render_submission_details(submission, is_grader) %}
 
 <table class="table table-sm table-bordered table-condensed table-striped table-hover">
 <thead>
@@ -17,7 +17,7 @@
 <tr>
     <td id="summary-submission-status-{{ submission.id }}">{{ submission.human_submission_status() }}</td>
     <td id="summary-grading-status-{{ submission.id }}">{{ submission.human_grading_status() }}</td>
-    <td id="summary-score-status-{{ submission.id }}">{{ submission.full_status() }}</td>
+    <td id="summary-score-status-{{ submission.id }}">{{ submission.full_status(not is_grader) }}</td>
     <td title="{{ submission.date_created }}">{{ submission.date_created| date_description }}</td>
     <td title="{{ submission.date_modified }}">{{ submission.date_modified| date_description }}</td>
     <td title="{{ submission.date_submitted }}">{{ submission.date_submitted| date_description }}</td>

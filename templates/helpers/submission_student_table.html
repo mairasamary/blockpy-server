@@ -47,7 +47,7 @@
             {% endif %}
         </td>
         <td>
-            {{ submission.full_status() }}
+            {{ submission.full_status(not is_grader) }}
         </td>
         <td>
             <span title="{{ submission.date_modified }}">

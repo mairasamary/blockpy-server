@@ -74,7 +74,7 @@
 <div>Contents:
     <ol>
         {% for assignment, submission in group %}
-            <li><a href='#{{ assignment.slug() }}'>{{ assignment.name }}</a> - {{ submission.full_status() }}</li>
+            <li><a href='#{{ assignment.slug() }}'>{{ assignment.name }}</a> - {{ submission.full_status(not is_grader) }}</li>
         {% endfor %}
     </ol>
 </div>

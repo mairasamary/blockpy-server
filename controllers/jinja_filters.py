@@ -111,7 +111,7 @@ def make_readonly_quiz_body(question, feedback, student, check, is_grader):
     text = question['body']
     if question['type'] in ('multiple_dropdowns_question', 'fill_in_multiple_blanks_question'):
         for key, value in student.items():
-            correct = check_entered_string(value, check)
+            correct = check_entered_string(value, check, key)
             text = re.sub(rf"(?<!\\)(\[{key}\])(?!\()",
                           f"<span class='mdq mdq-{correct if is_grader else 'unknown'}'>{value}</span>",
                           text)
@@ -152,7 +152,7 @@ def extract_kettle_instructions(instructions, submission, assignment):
         submission_id = submission.id
         instructions = re.split(POOL_SEPARATORS["INSTRUCTIONS"], instructions)
         chosen = instructions[1 + (submission_id % (len(instructions)-2))]
-        return [instructions[0], chosen, instructions[-1]].join('\n')
+        return '\n'.join([instructions[0], chosen, instructions[-1]])
     return instructions
 
 

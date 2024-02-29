@@ -3,9 +3,9 @@
 
 <div xml:lang="en">
     <h2 id='{{ assignment.slug() }}'>Quiz {{ assignment.name }}</h2>
-    <strong>Status:</strong><span> {{ submission.full_status() }}</span>
+    <strong>Status:</strong><span> {{ submission.full_status(not is_grader) }}</span>
 
-    {{ report_tools.render_submission_details(submission) }}
+    {{ report_tools.render_submission_details(submission, is_grader) }}
 
     {% set hiding = assignment.hidden or assignment.get_setting('hide_submission', False) %}
 

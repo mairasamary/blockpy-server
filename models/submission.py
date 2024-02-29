@@ -281,7 +281,7 @@ class Submission(EnhancedBase):
         if allow_hide and self.assignment.hidden:
             return "???? (Status Hidden)"
         elif self.correct:
-            return "Complete"
+            return "Complete (100%)"
         elif self.assignment.reviewed:
             if self.grading_status == "PendingManual":
                 return "Pending review"
