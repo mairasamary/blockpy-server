@@ -85,7 +85,8 @@ def process_quiz(body: dict, checks: dict, submission_body: dict) -> QuizResult:
             feedbacks[question_id] = { 'message': message, 'correct': correct, 'score': score, 'status': 'graded' }
     # Report back the final score and feedback objects
     #print(total_score, total_points)
-    return QuizResult(total_score / total_points, total_correct, total_points, feedbacks, True, submission_body, None)
+    return QuizResult(total_score / total_points if total_points else 0,
+                      total_correct, total_points, feedbacks, True, submission_body, None)
 
 
 def check_quiz_question(question, check, student) -> (float, bool, list):
