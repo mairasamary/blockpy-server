@@ -579,11 +579,11 @@ def process_quizzes(assignment, submissions, directory):
             question = body.get('questions', {}).get(question_id, {})
             check = checks.get(question_id, {})
             feedback = feedbacks.get(question_id, {})
-            keys, values, parts = [], [], []
+            keys, values, parts, s_answers = [], [], [], []
             if question.get('type') == 'multiple_answers_question':
                 for potential_answer in question['answers']:
                     keys.append(potential_answer)
-                    values.append(potential_answer in student)
+                    values.append(tuple(student))
                     parts.append(potential_answer)
             elif question.get('type') == 'matching_question':
                 for index, (statement, answer) in enumerate(zip(question['statements'], student)):
@@ -598,7 +598,7 @@ def process_quizzes(assignment, submissions, directory):
             else:
                 keys, values, parts = [None], [student], [None]
             for key, value, part in zip(keys, values, parts):
-                correctness = check_quiz_answer(question, feedback, student, check, True, part)
+                correctness = check_quiz_answer(question, feedback, value, check, True, part)
                 questions[question_id].parts.append(QuizQuestionPart(
                     key=key,
                     value=value,
