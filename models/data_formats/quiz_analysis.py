@@ -13,25 +13,10 @@ import re
 from html.parser import HTMLParser
 from math import isnan
 
+from common.stats import correlation, binconf
 from controllers.jinja_filters import make_readonly_quiz_body, check_quiz_answer
 from models.data_formats.quizzes import process_quiz_str, try_parse_file
 
-
-# NOTE: In the future (3.10), can use built-in statistics.correlation
-# from statistics import correlation
-def correlation(x, y):
-    # Assume len(x) == len(y)
-    n = len(x)
-    sum_x = float(sum(x))
-    sum_y = float(sum(y))
-    sum_x_sq = sum(xi * xi for xi in x)
-    sum_y_sq = sum(yi * yi for yi in y)
-    psum = sum(xi * yi for xi, yi in zip(x, y))
-    num = psum - (sum_x * sum_y / n)
-    den = pow((sum_x_sq - pow(sum_x, 2) / n) * (sum_y_sq - pow(sum_y, 2) / n), 0.5)
-    if den == 0:
-        return 0
-    return num / den
 
 
 class MLStripper(HTMLParser):
@@ -637,6 +622,10 @@ def process_quizzes(assignment, submissions, directory):
         for key, values in result.items():
             scored[key] = {}
             for value, corrects in values.items():
-                scored[key][value] = (sum(corrects) / len(corrects), len(corrects))
+                scored[key][value] = (str(corrects[0]) if corrects else "Unknown",
+                                      len(corrects),
+                                      float(len(corrects))/len(question.scores),
+                                      binconf(len(corrects), len(question.scores))
+                                      )
         question.per_part_stats = scored
     return questions
