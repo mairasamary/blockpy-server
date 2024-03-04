@@ -7,7 +7,7 @@ from textwrap import indent
 from pprint import pprint
 
 from markdown import Markdown
-from scipy.stats import pearsonr
+#from scipy.stats import pearsonr
 from dataclasses import dataclass
 import re
 
