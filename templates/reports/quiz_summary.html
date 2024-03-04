@@ -21,7 +21,7 @@
         </tr>
     </thead>
     <tbody>
-    {% for value, outcome in values.items() %}
+    {% for value, outcome in values.items()|sort(attribute='1.1') %}
         <tr>
             <td><code>{{ value }}</code></td>
             <td>{{ outcome[0] }}</td>
