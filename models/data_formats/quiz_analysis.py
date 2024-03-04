@@ -7,7 +7,6 @@ from textwrap import indent
 from pprint import pprint
 
 from markdown import Markdown
-#from scipy.stats import pearsonr
 from dataclasses import dataclass
 import re
 
@@ -16,6 +15,23 @@ from math import isnan
 
 from controllers.jinja_filters import make_readonly_quiz_body, check_quiz_answer
 from models.data_formats.quizzes import process_quiz_str, try_parse_file
+
+
+# NOTE: In the future (3.10), can use built-in statistics.correlation
+# from statistics import correlation
+def correlation(x, y):
+    # Assume len(x) == len(y)
+    n = len(x)
+    sum_x = float(sum(x))
+    sum_y = float(sum(y))
+    sum_x_sq = sum(xi * xi for xi in x)
+    sum_y_sq = sum(yi * yi for yi in y)
+    psum = sum(xi * yi for xi, yi in zip(x, y))
+    num = psum - (sum_x * sum_y / n)
+    den = pow((sum_x_sq - pow(sum_x, 2) / n) * (sum_y_sq - pow(sum_y, 2) / n), 0.5)
+    if den == 0:
+        return 0
+    return num / den
 
 
 class MLStripper(HTMLParser):
@@ -248,9 +264,9 @@ class QuizQuestionType:
                 if user_id in self.course_scores:
                     course = self.course_scores[user_id]
                     initial_courses.append((submission, course))
-        quiz, _ = pearsonr(*zip(*initial_quizzes))
+        quiz, _ = correlation(*zip(*initial_quizzes))
         if initial_courses:
-            course, _ = pearsonr(*zip(*initial_courses))
+            course, _ = correlation(*zip(*initial_courses))
         else:
             course = float('nan')
         return quiz, course
@@ -608,8 +624,8 @@ def process_quizzes(assignment, submissions, directory):
         if question.scores:
             question.difficulty = sum(score.score for score in question.scores) / len(question.scores)
         if len(question.scores) >= 2:
-            question.discrimination = pearsonr([score.overall_score for score in question.scores],
-                                               [score.score for score in question.scores])
+            question.discrimination = correlation([score.overall_score for score in question.scores],
+                                                  [score.score for score in question.scores])
         result = {}
         for part in question.parts:
             if part.key not in result:
