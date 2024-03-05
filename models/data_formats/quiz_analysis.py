@@ -574,6 +574,9 @@ def process_quizzes(assignment, submissions, directory):
                 score=feedback['score'],
                 overall_score=quiz_result.score
             ))
+        if 'studentAnswers' not in quiz_result.submission_body:
+            print("Error: quiz submission did not have student answers")
+            continue
         student_answers = quiz_result.submission_body['studentAnswers']
         for question_id, student in student_answers.items():
             question = body.get('questions', {}).get(question_id, {})
