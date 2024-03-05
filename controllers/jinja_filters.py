@@ -126,6 +126,8 @@ def check_quiz_answer(question, feedback, student, check, is_grader, part=None):
     elif question['type'] == 'matching_question':
         return student == check.get('correct', [])[part]
     elif question['type'] == 'multiple_choice_question':
+        if isinstance(check.get('correct'), list):
+            return student in check.get('correct')
         return student == check.get('correct')
     elif question['type'] in ("short_answer_question", "numerical_question"):
         if 'correct_exact' in check:

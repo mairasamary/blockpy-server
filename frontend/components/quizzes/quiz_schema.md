@@ -102,7 +102,7 @@ The actual feedback and correct structure varies depending on the question type.
 
 ### `multiple_choice_question`
 
-* `"correct"`: The exact string to compare the students' answer against. If the student selects this answer, then they get the question correct. If they do not, then they get the question wrong.
+* `"correct"`: The exact string to compare the students' answer against. If the student selects this answer, then they get the question correct. If they do not, then they get the question wrong. This can also now be a list of possible answers, if you want to allow incorrect answers to be counted as correct.
 * `"feedback"`: An object mapping potential answers to the HTML feedback string presented if they pick that answer. So you can potentially provide feedback on every possible answer.
 
 ### `multiple_answers_question`

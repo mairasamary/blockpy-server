@@ -101,8 +101,11 @@ def check_quiz_question(question, check, student) -> (float, bool, list):
         message = "\n<br>".join(map(str, feedbacks)) if any(map(bool, feedbacks)) else ("Correct" if all(corrects) else 'Incorrect')
         return sum(corrects)/len(corrects) if corrects else 0, all(corrects), message
     elif question.get('type') == 'multiple_choice_question':
-        correct = student == check.get('correct')
-        return correct, correct, check.get('feedback', {}).get(student) if not correct else "Correct"
+        if isinstance(check.get('correct'), list):
+            correct = student in check.get('correct')
+        else:
+            correct = student == check.get('correct')
+        return correct, correct, check.get('feedback', {}).get(student, 'Incorrect') if not correct else "Correct"
     elif question.get('type') == 'multiple_answers_question':
         answers = question.get('answers', [])
         correct = {s for s in student if s in answers} == {s for s in check.get('correct', []) if s in answers}
