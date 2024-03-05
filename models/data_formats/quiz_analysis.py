@@ -604,7 +604,8 @@ def process_quizzes(assignment, submissions, directory):
                 correctness = check_quiz_answer(question, feedback, value, check, True, part)
                 questions[question_id].parts.append(QuizQuestionPart(
                     key=key,
-                    value=value,
+                    value=('Chosen' if part in value else 'Not Chosen')
+                        if question.get('type') == 'multiple_answers_question' else value,
                     correct=correctness
                 ))
     # Post process for difficulty and discrimination

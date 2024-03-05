@@ -23,7 +23,7 @@
     <tbody>
     {% for value, outcome in values.items()|sort(attribute='1.1') %}
         <tr>
-            <td><code>{{ value }}</code></td>
+            <td><code title="{{ value|escape }}">{{ value|safe }}</code></td>
             <td>{{ outcome[0] }}</td>
             <td>{{ outcome[1] }}</td>
             <td>{{ '%0.2f'|format(100*outcome[2]) }}%</td>
@@ -39,7 +39,7 @@
             <div>
                 <h3>{{ question_id }}</h3>
                 <div style="margin-left: 2em; border: 1px solid lightgray; padding: 4px">
-                    <div>{{ question.body|safe }}</div>
+                    <div title="{{ question.body|escape }}">{{ question.body|safe }}</div>
                 </div>
                 <p>
                     <strong>Type: </strong> {{ question.type }}<br>
@@ -54,7 +54,7 @@
                     <ul>
                     {% if question.per_part_stats %}
                     {% for key, values in question.per_part_stats.items() %}
-                        <li><code>{{ key }}</code>
+                        <li><code title="{{ key|escape  }}">{{ key|safe }}</code>
                         {{ answer_table(question, values)}}
                          </li>
                     {% endfor %}
