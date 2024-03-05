@@ -26,7 +26,7 @@
             <td><code title="{{ value|escape }}">{{ value|safe }}</code></td>
             <td>{{ outcome[0] }}</td>
             <td>{{ outcome[1] }}</td>
-            <td>{{ '%0.2f'|format(100 - 100*outcome[2]) }}%</td>
+            <td>{{ '%0.2f'|format(100*outcome[2]) }}%</td>
             <td>{{ '%0.2f'|format(100*outcome[3][0]) }}% - {{ '%0.2f'|format(100*outcome[3][1]) }}%</td>
         </tr>
     {% endfor %}
@@ -45,7 +45,7 @@
                     <strong>Type: </strong> {{ question.type }}<br>
                     <strong>Points: </strong> {{ question.points }}<br>
                     <strong>Submissions: </strong> {{ question.scores|length }}<br>
-                    <strong>Difficulty: </strong> {{ '%0.2f'|format(100*(question.difficulty or 0)) }}%<br>
+                    <strong>Difficulty: </strong> {{ '%0.2f'|format(100-100*(question.difficulty or 0)) }}%<br>
                     <strong>Discrimination: </strong> {{ '%0.2f'|format(100*(question.discrimination or 0)) }}%<br>
                 </p>
                 {% if question.per_part_stats|length == 1 and None in question.per_part_stats %}
