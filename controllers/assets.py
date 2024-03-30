@@ -88,6 +88,11 @@ def get_bundles(app):
             output='gen/designer.js'
         ),
 
+        'drafter_js': Bundle(
+            os.path.join(app.config['LIB_DRAFTER_DIR'], "skulpt-drafter.js"),
+            output='gen/drafter.js'
+        ),
+
         'blockpy_js': Bundle(
             "libs/block_mirror/block_mirror.js",
             #"libs/blockpy/blockpy.js",

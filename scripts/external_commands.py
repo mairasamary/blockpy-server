@@ -21,6 +21,7 @@ RELATIVE_SOURCE_FILES = {
     '../../pedal-edu/curriculum-sneks/dist-js/skulpt-curriculum-sneks.js': 'libs/pedal/',
     '../../gamedev/designer/dist-js/skulpt-designer.js': 'libs/designer/',
     '../../gamedev/designer/dist-js/skulpt-designer-files.js': 'libs/designer/',
+    '../../drafter-edu/drafter/dist-js/skulpt-drafter.js': 'libs/drafter/',
     '../blockly/blockly_uncompressed.js': 'blockly/',
     '../blockly/blockly_compressed.js': 'blockly/',
     '../blockly/blocks_compressed.js': 'blockly/',

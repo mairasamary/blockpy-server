@@ -38,6 +38,7 @@ class DefaultConfig:
     LIB_CURRICULUM_CTVT_DIR = os.path.join(STATIC_DIRECTORY, 'libs', 'pedal')
     LIB_CURRICULUM_SNEKS_DIR = os.path.join(STATIC_DIRECTORY, 'libs', 'pedal')
     LIB_DESIGNER_DIR = os.path.join(STATIC_DIRECTORY, 'libs', 'designer')
+    LIB_DRAFTER_DIR = os.path.join(STATIC_DIRECTORY, 'libs', 'drafter')
     LIB_BLOCKPY_DIR = os.path.join(STATIC_DIRECTORY, 'libs', 'blockpy')
     # External files settings
     BLOCKPY_SOURCE_DIR = None
