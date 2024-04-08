@@ -10,10 +10,22 @@ const KETTLE_JEST_D_TS = `
         toEqual: (expected: any) => void;
         not: Assertion;
     }
+    declare function instructor_log(...args: any[]): void;
     declare function describe(name: string, tests: any): void;
     declare function test(name: string, assertions: any): void;
     declare function expect(actual: any): Assertion;
     declare var student: Record<string, any>;
+    interface DocEntry {
+        name?: string,
+        fileName?: string,
+        documentation?: string,
+        type?: string,
+        constructors?: DocEntry[],
+        parameters?: DocEntry[],
+        returnType?: string,
+        modifiers?: string[]
+    }
+    declare var typeInformation: Record<string, DocEntry[]>;
 `;
 
 //
@@ -23,6 +35,7 @@ export interface CompilationResult {
     code?: string;
     diagnostics: ts.Diagnostic[];
     locals: Map<string, string>;
+    typeInformation: Record<string, DocEntry[]>;
 };
 
 function removeExports(context: ts.TransformationContext) {
@@ -45,6 +58,70 @@ function removeExports(context: ts.TransformationContext) {
 
         return ts.visitNode(sourceFile, visit);
     };
+}
+
+interface DocEntry {
+    name?: string,
+    fileName?: string,
+    documentation?: string,
+    type?: string,
+    constructors?: DocEntry[],
+    parameters?: DocEntry[],
+    returnType?: string,
+    modifiers?: string[]
+};
+
+
+
+function getClassDefinitions(program: ts.Program, locals: Map<string, ts.Symbol>): Record<string, DocEntry[]> {
+    const classMap: Record<string, DocEntry[]> = {};
+    const checker = program.getTypeChecker();
+    locals.forEach((value, key) => {
+        if ('members' in value) {
+            const classProperties: DocEntry[] = [];
+            value.members.forEach((type: ts.Symbol, name: ts.__String) => {
+                classProperties.push(serializeClass(type));
+            });
+            classMap[key] = classProperties;
+        }
+    });
+    return classMap;
+
+    /** Serialize a symbol into a json object */
+    function serializeSymbol(symbol: ts.Symbol): DocEntry {
+        const xyz = ts;
+        //const modifiers = getEffectiveModifierFlags(symbol.valueDeclaration);
+        let allModifiersAsStrings: string[] = [];
+        if ('valueDeclaration' in symbol) {
+            allModifiersAsStrings = Object.entries(ts.ModifierFlags).filter(([_, v]) => {
+                // @ts-ignore
+                return (ts.getSyntacticModifierFlags(symbol.valueDeclaration) & v as number) !== 0;
+            }).map(([k, _]) => k);
+        }
+        return {
+            name: symbol.getName(),
+            type: checker.typeToString(checker.getTypeOfSymbolAtLocation(symbol, symbol.valueDeclaration!)),
+            modifiers: allModifiersAsStrings,
+        };
+    }
+
+    /** Serialize a class symbol information */
+    function serializeClass(symbol: ts.Symbol) {
+        let details = serializeSymbol(symbol);
+
+        // Get the construct signatures
+        let constructorType = checker.getTypeOfSymbolAtLocation(symbol, symbol.valueDeclaration!);
+        details.constructors = constructorType.getConstructSignatures().map(serializeSignature);
+        return details;
+    }
+
+    /** Serialize a signature (call or construct) */
+    function serializeSignature(signature: ts.Signature) {
+        return {
+            parameters: signature.parameters.map(serializeSymbol),
+            returnType: checker.typeToString(signature.getReturnType())
+        };
+    }
 }
 
 //
@@ -144,7 +221,8 @@ export function compile(code: string, libs: string[]): CompilationResult {
     return {
         code: removeEmptyExports(outputCode),
         diagnostics: emitResult.diagnostics.concat(diagnostics),
-        locals: (dummySourceFile as any).locals
+        locals: (dummySourceFile as any).locals,
+        typeInformation: getClassDefinitions(program, (dummySourceFile as any).locals)
     };
 }
 

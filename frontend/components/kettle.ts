@@ -213,9 +213,9 @@ interface ParentPost {
 const EXECUTION_HEADER = `// Execution Header
 let silenceConsole = false;
 let _signedKey = null;
-const parentPost = (type, contents) => {
+const parentPost = (type, contents, override=false) => {
     //contents = JSON.parse(JSON.stringify(contents));
-    if (!silenceConsole) {
+    if (!silenceConsole || override) {
         postMessage({type: type, contents: contents});
     }
 };
@@ -258,6 +258,9 @@ const isDeepEqual = (object1, object2) => {
 const DEFAULT_SUITE = "__GLOBAL";
 let currentSuite = DEFAULT_SUITE, currentTest = null;
 let _results = {[DEFAULT_SUITE]: { status: "success", tests: {} }};
+const instructor_log = (...text) => {
+    parentPost("instructor.log", text, true);
+};
 const describe = (name, tests) => {
     currentSuite = name;
     if (name in _results) {
@@ -344,6 +347,7 @@ interface WrappedCode {
     offset: {
         syntax: number,
         runtime: number,
+        analyzer?: number
     };
     lineCount: number;
 }
@@ -374,20 +378,21 @@ try {
     }
 };
 
-const wrapInstructorCode = (code: string, signedKey: string, offset: number = 0): WrappedCode => {
+const wrapInstructorCode = (code: string, signedKey: string, offset: number = 0, typeInformation: string): WrappedCode => {
     //code = code.replace(/[\\`$]/g, '\\$&');
     const wrapped = `_updateStatus("Executing Instructor Code"); // Instructor Code
-_results['_signedKey'] = '${signedKey}';
+_results['_signedKey'] = '${signedKey}'; let typeInformation={}; try {typeInformation = ${typeInformation};} catch (e) {_kettleSystemError("instructor", "runtime", e);}
 try {
     ${code}
 } catch (e) {
     _kettleSystemError('instructor', "runtime", e);
-}`.trim();
+}
+`.trim();
     return {
         code: wrapped,
         offset: {
             syntax: 3 + offset,
-            runtime: 5 + offset
+            runtime: 5 + offset,
         },
         lineCount: wrapped.split("\n").length + offset
     }
@@ -410,7 +415,8 @@ export function makeExecutionRequest(studentCode: string, instructorCode: string
         instructorCode = instructorCode.replace("\n\n", "\n//\n");
         const instructorResults: CompilationResult = compile(instructorCode, ["es2015"]);
         const instructorHeaderOffset = EXECUTION_INSTRUCTOR.split("\n").length + wrappedStudent.lineCount;
-        const wrappedInstructor = wrapInstructorCode(instructorResults.code, signedKey, instructorHeaderOffset);
+        const studentTypeInformation = JSON.stringify(studentResults.typeInformation);
+        const wrappedInstructor = wrapInstructorCode(instructorResults.code, signedKey, instructorHeaderOffset, studentTypeInformation);
         assemblage.push(EXECUTION_INSTRUCTOR, wrappedInstructor.code, EXECUTION_FOOTER);
         instructor = {
             ...wrappedInstructor,
@@ -716,6 +722,8 @@ export class Kettle extends AssignmentInterface {
                 this.latestErrors.push(e.toString());
                 this.updateFeedback("There was an error handling the test results. Please notify the instructor.");
             }
+        } else if (event.data.type === 'instructor.log') {
+            this.console.log(...event.data.contents);
         } else if (!handled) {
             if (event.data.source === "react-devtools-content-script") {
                 return false;
