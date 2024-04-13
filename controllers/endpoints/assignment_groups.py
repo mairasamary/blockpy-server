@@ -1,17 +1,19 @@
 import json
 
 from flask import Blueprint, send_from_directory, Response, render_template, flash
-from flask import Flask, redirect, url_for, session, request, jsonify, g
+from flask import Flask, redirect, url_for, session, request, jsonify, g, current_app
 
+from common.maybe import maybe_bool
 from controllers.auth import get_user
 from controllers.helpers import (require_request_parameters, require_course_instructor, login_required,
                                  check_resource_exists, get_select_menu_link, get_course_id, ajax_success,
                                  maybe_int, require_course_grader, make_log_entry)
+from models import Course, Submission
 
 from models.assignment import Assignment
 from models.assignment_group import AssignmentGroup
 from models.assignment_group_membership import AssignmentGroupMembership
-from models.portation import export_bundle
+from models.portation import export_bundle, import_bundle, export_zip, export_pdf_zip
 
 blueprint_assignment_group = Blueprint('assignment_group', __name__, url_prefix='/assignment_group')
 
@@ -233,3 +235,46 @@ def merge_assignment_ranges(set_of_ranges):
                  for ip_range in ip_ranges.split(",")
                  if ip_range.strip()]
     return ",".join(list(set(ip_ranges)))
+
+
+@blueprint_assignment_group.route('/export_submissions/', methods=['GET', 'POST'])
+@blueprint_assignment_group.route('/export_submissions', methods=['GET', 'POST'])
+@login_required
+@require_request_parameters('assignment_group_id')
+def export_submissions():
+    assignment_group_id = int(request.values.get('assignment_group_id'))
+    with_history = maybe_bool(request.values.get('history', "false"))
+    assignment_group = AssignmentGroup.by_id(assignment_group_id)
+    course_id = get_course_id(True)
+    user, user_id = get_user()
+    # File format of results: {"pdf", "code"}
+    format = request.values.get("format", "code")
+    # Verify exists
+    check_resource_exists(assignment_group, "Assignment Group", assignment_group_id)
+    # Get associated assignments and memberships
+    assignments = assignment_group.get_assignments()
+    # Verify permissions
+    for assignment in assignments:
+        assignment_id = assignment.id
+        assignment = Assignment.by_id(int(assignment_id))
+        if course_id is None or not user.is_instructor(int(course_id)):
+            return "You are not an instructor or the owner of the assignment: " + str(assignment_id)
+    # Get data
+    course = Course.by_id(course_id)
+    submissions, users = set(), set()
+    for assignment in assignments:
+        suas = Submission.by_assignment(assignment.id, course_id)
+        assignment_submissions = [sua[0] for sua in suas]
+        assignment_users = [sua[1] for sua in suas]
+        submissions.update(assignment_submissions)
+        users.update(assignment_users)
+    # Generate the bundle
+    if format == "pdf":
+        bundle = export_pdf_zip(assignments=assignments, submissions=submissions, users=users,
+                                jinja_environment=current_app.jinja_env)
+    else:
+        bundle = export_zip(assignments=assignments, submissions=submissions,
+                            users=users, with_history=with_history)
+    filename = course.get_url_or_id() + '-' + assignment_group.get_filename(extension='.zip')
+    return Response(bundle, mimetype='application/zip',
+                    headers={'Content-Disposition': 'attachment;filename={}'.format(filename)})

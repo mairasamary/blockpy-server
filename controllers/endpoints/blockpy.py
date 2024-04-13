@@ -459,18 +459,18 @@ def update_submission():
     else:
         return ajax_failure(report.for_ajax())
 
+@blueprint_blockpy.route("/bulk_update_submission/", methods=['GET', 'POST'])
+@blueprint_blockpy.route("/bulk_update_submission", methods=['GET', 'POST'])
+def bulk_update_submission():
     """
-    log_params = {'assignment_id': submission.assignment_id,
-                  'assignment_version': submission.assignment_version,
-                  'course_id': course_id,
-                  'user_id': user_id,
-                  'file_path': "answer.py",
-                  'timestamp': request.values.get('timestamp'),
-                  'timezone': request.values.get('timezone')}
-    make_log_entry(**log_params, event_type="X-Submission.LMS.Failure", message=error)
-    queue_lti_post_grade(g.lti.to_json(), post_params,
-                         submission.id, assignment_group_id, submission.user_id, submission.course_id,
-                         3, log_params, score)
+    This endpoint is if the user has a JSON list of submission objects uploaded.
+    The submission objects must have the following fields:
+    - submission_id
+    - score
+    - correct
+    - log
+    It can optionally have:
+    - image
     """
 
 

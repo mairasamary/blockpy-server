@@ -61,6 +61,7 @@ function renameCourse() {
     <a href="{{ url_for('courses.submissions_grid', course_id=course.id) }}" class='btn btn-outline-secondary'>View Grid</a> See all your students' assignment submissions' status in a big table.<br><br>
     <a href="{{ url_for('courses.list_grading_failures', course_id=course.id) }}" class='btn btn-outline-secondary'>List Grading Failures</a> Review any students' submissions that triggered an error on the way to Canvas.<br><br>
     <a href="{{ url_for('courses.check_similar', course_id=course.id) }}" class='btn btn-outline-secondary'>Check for Similar Submissions</a> Review all students' submissions for similarity with other submissions (across all courses).<br><br>
+    <a href="{{ url_for('courses.bulk_groups', course_id=course.id) }}" class='btn btn-outline-secondary'>Bulk Group Editor</a> Experimental interface to allow bulk download/upload of student submissions with assignment groups.<br><br>
     </div>
     <h3>Your Assignments</h3>
     <small>Not visible to anyone else</small><br>

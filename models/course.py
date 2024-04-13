@@ -108,6 +108,9 @@ class Course(Base):
     def get_default():
         return Course.by_url('default')
 
+    def get_url_or_id(self):
+        return self.url or str(self.id)
+
     @staticmethod
     def get_public():
         return Course.query.filter_by(visibility=CourseVisibility.PUBLIC).all()

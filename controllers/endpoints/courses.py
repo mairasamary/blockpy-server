@@ -1018,3 +1018,24 @@ def check_similar():
                            course=course,
                            groups=groups,
                            existing_reports=existing_reports)
+
+@courses.route('/bulk_groups', methods=['GET', 'POST'])
+@courses.route('/bulk_groups/', methods=['GET', 'POST'])
+@login_required
+def bulk_groups():
+    user, user_id, course, course_id, groups = bulk_assignment_editor_setup()
+    # Perform action
+    if request.method == 'POST':
+        # request.values.get
+        # flash("Modified: "+", ".join(modified))
+        #if ip_ranges is not None:
+        #    for assignment in assignment_group.get_assignments():
+        #        assignment.edit(dict(ip_ranges=ip_ranges))
+        #        assignment.update_setting("passcode", passcode)
+        return redirect(request.url)
+    # Result
+    else:
+        return render_template('courses/export_groups.html',
+                               course_id=course_id,
+                               course=course,
+                               groups=groups)

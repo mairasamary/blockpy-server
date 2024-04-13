@@ -417,6 +417,7 @@ def export_submissions():
     if course_id is None or not user.is_instructor(int(course_id)):
         return "You are not an instructor or the owner of the assignment!"
     # Get data
+    course = Course.by_id(course_id)
     suas = Submission.by_assignment(assignment_id, course_id)
     submissions = [sua[0] for sua in suas]
     users = [sua[1] for sua in suas]
@@ -426,7 +427,7 @@ def export_submissions():
     else:
         bundle = export_zip(assignments=[assignment], submissions=submissions,
                             users=users, with_history=with_history)
-    filename = assignment.get_filename(extension='.zip')
+    filename = course.get_url_or_id() + '-' + assignment.get_filename(extension='.zip')
     return Response(bundle, mimetype='application/zip',
                     headers={'Content-Disposition': 'attachment;filename={}'.format(filename)})
 
