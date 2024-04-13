@@ -77,6 +77,9 @@ function getClassDefinitions(program: ts.Program, locals: Map<string, ts.Symbol>
     const classMap: Record<string, DocEntry[]> = {};
     const checker = program.getTypeChecker();
     locals.forEach((value, key) => {
+        if ("exportSymbol" in value) {
+            value = value['exportSymbol'] as ts.Symbol;
+        }
         if ('members' in value) {
             const classProperties: DocEntry[] = [];
             value.members.forEach((type: ts.Symbol, name: ts.__String) => {

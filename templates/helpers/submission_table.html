@@ -5,10 +5,25 @@
 </style>
 {% if is_instructor %}
 {% if criteria=="assignment" %}
-    <a href="{{ url_for("assignments.export_submissions",
-            assignment_id=search_key,
-            course_id=course_id) }}" target="_blank"
-        class="btn btn-outline-secondary mt-2">Bulk download all submissions for assignment</a><br>
+    <div class="btn-group  mt-2">
+        <a href="{{ url_for("assignments.export_submissions",
+                assignment_id=search_key,
+                course_id=course_id) }}" target="_blank"
+            class="btn btn-outline-secondary">Bulk download all submissions for assignment</a>
+        <!-- Dropdown -->
+        <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            <span class="caret"></span>
+            <span class="sr-only">Toggle Dropdown</span>
+        </button>
+        <!-- Extended buttons -->
+        <div class="dropdown-menu dropdown-menu-right">
+            <a href="{{ url_for("assignments.export_submissions",
+                assignment_id=search_key,
+                course_id=course_id, history=True) }}"
+                 class="dropdown-item" target="_blank">Download with history</a>
+        </div>
+    </div><br>
+
     <a href="{{  url_for("assignments.load",
                         assignment_id=search_key, course_id=course_id) }}"
        target="_blank" class="btn btn-outline-secondary mt-2 mb-2 ">Open assignment</a><br>

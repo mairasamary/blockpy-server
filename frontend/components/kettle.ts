@@ -535,7 +535,7 @@ export class Kettle extends AssignmentInterface {
     latestErrors: string[];
     latestFeedback: string;
     // Decimal score
-    latestTestScore: number;
+    latestTestScore: ko.Observable<number>;
 
     // Visuals from Pools
     poolInstructions: ko.PureComputed<string>;
@@ -572,7 +572,7 @@ export class Kettle extends AssignmentInterface {
         this.iframe = null;
         this.latestErrors = [];
         this.latestFeedback = "";
-        this.latestTestScore = 0;
+        this.latestTestScore = ko.observable(0);
         this.latestListener = null;
 
         this.executionTimer = new Timer(".kettle-clock");
@@ -711,7 +711,7 @@ export class Kettle extends AssignmentInterface {
         } else if (event.data.type === "execution.finished") {
             this.handleExecutionStopped("Execution Finished");
             if (feedbackRequest.mode === "evaluate") {
-                this.submit(this.latestTestScore, () => {});
+                this.submit(this.latestTestScore(), () => {});
             }
         } else if (event.data.type === "instructor.tests") {
             this.debugLog("Instructor Test Results", event.data.contents);
@@ -766,7 +766,8 @@ export class Kettle extends AssignmentInterface {
             (allPassed ? "All the tests are passing 100%. Good work!" :
                 `${totalPassed}/${totalTests} tests are currently passing. You are free to keep working.`)
         );
-        this.latestTestScore = Math.min(1, Math.max(0, totalPassed/totalTests));
+        const newestScore = Math.min(1, Math.max(0, totalPassed/totalTests));
+        this.latestTestScore(Math.max(this.latestTestScore(), newestScore));
     }
 
     logTypeScriptErrors(request: ProgramExecutionRequest, where: string = "") {
@@ -914,7 +915,7 @@ export class Kettle extends AssignmentInterface {
                         this.assignment(assignment);
                         this.submission(submission);
                         this.parseAdditionalSettings();
-                        this.latestTestScore = this.submission().score()/100;
+                        this.latestTestScore(this.submission().score());
                         this.startEditor();
                         console.log(assignment, this.assignment());
                     } else {
@@ -1015,6 +1016,17 @@ export class Kettle extends AssignmentInterface {
             this.logEvent("X-File.Reset", "kettle", "code_reset",
                 JSON.stringify({
                     "code": this.assignment().startingCode()
+                }), this.assignment().url(), () => {})
+        }
+    }
+
+    resetScore() {
+        if (confirm("Are you sure you want to reset your score back to 0?")) {
+            this.submission().score(0);
+            this.latestTestScore(0);
+            this.logEvent("X-File.Reset", "kettle", "score_reset",
+                JSON.stringify({
+                    "score": 0
                 }), this.assignment().url(), () => {})
         }
     }
@@ -1195,6 +1207,7 @@ export const KETTLE_HTML = `
       <span class="kettle-clock"></span>
       <span class="time-clock float-right" data-bind="text: currentTime"></span>
       <button class="btn btn-mini btn-xs btn-outline-secondary code-reset float-right mr-3" data-bind="click: resetStudent">Reset Code</button>
+      <span class="float-right mr-3" data-bind="visible: isInstructor, click: resetScore">Score: <span data-bind="text: latestTestScore"></span></span>
       <!-- ko if: isDirty() -->
         <small class="alert alert-info p-1 border rounded float-right">Saving changes</small>
       <!-- /ko -->

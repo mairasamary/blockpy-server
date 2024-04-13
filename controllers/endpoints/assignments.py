@@ -404,6 +404,7 @@ def assignments_static_images(path):
 @require_request_parameters('assignment_id')
 def export_submissions():
     assignment_id = int(request.values.get('assignment_id'))
+    with_history = maybe_bool(request.values.get('history', "false"))
     assignment = Assignment.by_id(assignment_id)
     course_id = get_course_id(True)
     user, user_id = get_user()
@@ -424,7 +425,7 @@ def export_submissions():
                                 jinja_environment=current_app.jinja_env)
     else:
         bundle = export_zip(assignments=[assignment], submissions=submissions,
-                            users=users)
+                            users=users, with_history=with_history)
     filename = assignment.get_filename(extension='.zip')
     return Response(bundle, mimetype='application/zip',
                     headers={'Content-Disposition': 'attachment;filename={}'.format(filename)})

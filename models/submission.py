@@ -80,7 +80,9 @@ def inject_code_part(existing_code, new_code, part_id):
 DEFAULT_FILENAME = 'answer.py'
 DEFAULT_FILENAMES_BY_TYPE = {
     'java': 'answer.java',
-    'quiz': 'answer.json'
+    'quiz': 'answer.json',
+    'typescript': 'answer.ts',
+    'kettle': 'answer.ts'
 }
 
 
@@ -144,14 +146,19 @@ class Submission(EnhancedBase):
             'date_locked': datetime_to_string(self.date_locked),
         }
 
-    def encode_human(self):
-        try:
-            extra_files = json.loads(self.extra_files)
-            if isinstance(extra_files, dict):
-                extra_files = {k: v for k, v in extra_files.items()}
-            else:
-                extra_files = {f['filename']: f['contents'] for f in extra_files}
-        except json.JSONDecodeError:
+    def encode_human(self, with_history=False):
+        if self.extra_files:
+            try:
+                extra_files = json.loads(self.extra_files)
+                if isinstance(extra_files, dict):
+                    extra_files = {k: v for k, v in extra_files.items()}
+                else:
+                    extra_files = {f['filename']: f['contents'] for f in extra_files}
+            except json.JSONDecodeError as e:
+                extra_files = {
+                    'errors.txt': 'Could not parse extra files: ' + str(e)
+                }
+        else:
             extra_files = {}
         if self.assignment:
             filename = DEFAULT_FILENAMES_BY_TYPE.get(self.assignment.type, DEFAULT_FILENAME)
@@ -191,6 +198,8 @@ class Submission(EnhancedBase):
                 'id': self.course.id,
                 'url': self.course.url,
             }
+        if with_history:
+            extra_files['history.json'] = json.dumps([history.encode_json() for history in self.get_logs()], indent=2)
         files = {
             filename: self.code,
             '_grade.json': json.dumps(_grade_data),

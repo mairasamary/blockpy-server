@@ -176,7 +176,7 @@ def export_peml():
 
 
 # noinspection PyTypeHints
-def export_zip(assignments=None, submissions=None, users=None):
+def export_zip(assignments=None, submissions=None, users=None, with_history=False):
     dumped = {}
     assignment_paths = {}
     if assignments:
@@ -192,7 +192,7 @@ def export_zip(assignments=None, submissions=None, users=None):
     dumped['users.txt'] = "\n".join(sorted(set(user_names)))
     if submissions:
         for submission in submissions:
-            files = submission.encode_human()
+            files = submission.encode_human(with_history=with_history)
             for filename, contents in files.items():
                 path = assignment_paths[submission.assignment_id]+'/'
                 path += user_paths[submission.user_id]+'/'

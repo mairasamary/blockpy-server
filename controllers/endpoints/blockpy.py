@@ -261,8 +261,10 @@ def save_student_file(filename, course_id, user):
     # TODO: What if submission's assignment version conflicts with current assignments' version?
     version_change = submission.assignment.version != submission.assignment_version
     new_code = submission.save_code(filename, code, part_id)
+    # TODO: What is a grader is uploading code for a student?
     make_log_entry(submission.assignment_id, submission.assignment_version,
-                   course_id, user.id, "File.Edit", filename + ("#" + part_id if part_id else ""), message=new_code)
+                   course_id, submission.user_id,
+                   "File.Edit", filename + ("#" + part_id if part_id else ""), message=new_code)
     return ajax_success({"version_change": version_change})
 
 
