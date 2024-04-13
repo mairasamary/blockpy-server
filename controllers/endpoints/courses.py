@@ -1023,7 +1023,7 @@ def check_similar():
 @courses.route('/bulk_groups/', methods=['GET', 'POST'])
 @login_required
 def bulk_groups():
-    user, user_id, course, course_id, groups = bulk_assignment_editor_setup()
+    user, user_id, course, course_id, groups = bulk_assignment_editor_setup(True)
     # Perform action
     if request.method == 'POST':
         # request.values.get
