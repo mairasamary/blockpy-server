@@ -10,7 +10,7 @@ from flask.views import MethodView
 from slugify import slugify
 from natsort import natsorted
 
-from flask import Blueprint, url_for, session, request, jsonify, g, render_template, redirect, make_response, current_app
+from flask import Blueprint, url_for, session, request, jsonify, g, render_template, redirect, make_response, current_app, flash
 
 from controllers.pylti.common import LTIPostMessageException
 from controllers.pylti.post_grade import grade_submission
@@ -209,6 +209,56 @@ def normalize_score(score: str) -> float:
         return float(score)
     except:
         return score
+
+
+
+@blueprint_grading.route("/bulk_update_submission/", methods=['GET', 'POST'])
+@blueprint_grading.route("/bulk_update_submission", methods=['GET', 'POST'])
+def bulk_update_submission():
+    """
+    This endpoint is if the user has a JSON list of submission objects uploaded.
+    The submission objects must have the following fields:
+    - submission_id
+    - score
+    - correct
+    """
+    if request.method == 'POST':
+        if 'file' not in request.files:
+            flash('No file part')
+            return redirect(request.url)
+        file = request.files['file']
+        if file.filename == '':
+            flash('No selected file')
+            return redirect(request.url)
+        if file:
+            bundle = json.loads(file.read().decode('utf-8'))
+            changed = 0
+            for submission_data in bundle:
+                if 'submission_id' not in submission_data or 'score' not in submission_data or 'correct' not in submission_data:
+                    flash("Submission object missing fields: " + str(submission_data))
+                    return redirect(request.url)
+                submission_id = submission_data['submission_id']
+                score = submission_data['score']
+                correct = submission_data['correct']
+                message = submission_data.get('message', "")
+                submission = Submission.by_id(submission_id)
+                if submission:
+                    grade_submission(submission_id, None, g.user, request.remote_addr,
+                                     score, correct, None, None, True, by_human=True, must_be_grader=True)
+                    make_log_entry(submission.assignment_id, submission.assignment_version,
+                                   submission.course_id, submission.user_id, "X-Grade.Instructor", message=json.dumps({
+                            "grader_id": g.user.id,
+                            "score": score,
+                            "correct": correct,
+                            "message": message
+                        }))
+                    changed += 1
+            flash(f"File uploaded successfully: {changed} submissions updated.")
+            return redirect(request.url)
+        flash("No file contents")
+        return redirect(request.url)
+    else:
+        return render_template("courses/bulk_update_submission.html")
 
 
 class ReviewAPI(MethodView):

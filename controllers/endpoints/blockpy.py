@@ -459,20 +459,6 @@ def update_submission():
     else:
         return ajax_failure(report.for_ajax())
 
-@blueprint_blockpy.route("/bulk_update_submission/", methods=['GET', 'POST'])
-@blueprint_blockpy.route("/bulk_update_submission", methods=['GET', 'POST'])
-def bulk_update_submission():
-    """
-    This endpoint is if the user has a JSON list of submission objects uploaded.
-    The submission objects must have the following fields:
-    - submission_id
-    - score
-    - correct
-    - log
-    It can optionally have:
-    - image
-    """
-
 
 @blueprint_blockpy.route('/update_submission_status/', methods=['GET', 'POST'])
 @blueprint_blockpy.route('/update_submission_status', methods=['GET', 'POST'])
