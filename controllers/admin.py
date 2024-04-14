@@ -408,6 +408,7 @@ class GradeHistoryView(RegularView):
         'grader': make_ajax_fields('first_name', 'last_name', 'email', 'id'),
         'submission': QueryAjaxModelLoader('submission', db.session, Submission, fields=['id'], page_size=10),
     }
+    column_filters = ('id', 'submission_id', 'grader_id', 'score', 'date_submitted')
 
 def setup_admin(app):
     admin = Admin(app)
