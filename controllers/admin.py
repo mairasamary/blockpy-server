@@ -27,6 +27,7 @@ from models.assignment_group_membership import AssignmentGroupMembership
 from models.assignment_tag import AssignmentTag
 from models.report import Report
 from models.invite import Invite
+from models.grade_history import GradeHistory
 
 
 def make_ajax_fields(*fields):
@@ -401,6 +402,13 @@ class SubmissionView(RegularView):
     form_excluded_columns = ('reviews', 'grade_history')
 
 
+class GradeHistoryView(RegularView):
+    can_export = True
+    form_ajax_refs = {
+        'grader': make_ajax_fields('first_name', 'last_name', 'email', 'id'),
+        'submission': QueryAjaxModelLoader('submission', db.session, Submission, fields=['id'], page_size=10),
+    }
+
 def setup_admin(app):
     admin = Admin(app)
     admin.add_view(UserView(User, db.session, category='Tables'))
@@ -417,6 +425,7 @@ def setup_admin(app):
     admin.add_view(ReviewView(Review, db.session, category='Tables'))
     admin.add_view(ReportView(Report, db.session, category='Tables'))
     admin.add_view(InviteView(Invite, db.session, category='Tables'))
+    admin.add_view(GradeHistoryView(GradeHistory, db.session, category='Tables'))
 
     # admin.add_view(FileAdmin(app.config['BLOCKPY_LOG_DIR'], base_url='/admin/code_logs/', name='Disk Logs'))
     # TODO: Add redis console
