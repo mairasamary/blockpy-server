@@ -714,7 +714,7 @@ class Submission(EnhancedBase):
             return 0, ["Late policy forbids submission"]
         # Create the list of grading events
         grade_changes = []
-        for event in self.grade_history:
+        for event in sorted(self.grade_history, key= lambda x: x.date_submitted):
             date_submitted = event.date_submitted
             offset = date_submitted.astimezone().utcoffset()
             grade_changes.append((date_submitted, offset, event.score))
