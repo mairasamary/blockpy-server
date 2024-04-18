@@ -544,9 +544,6 @@ class Assignment(EnhancedBase):
                 late_policy = settings['late_policy']
             else:
                 return None
-        # Check if no late policy
-        if late_policy.get('disabled', True):
-            return None
         # Return whatever we got
         return LatePolicy(late_policy.get('allowed', True),
                           late_policy.get('interval', 'hours'),
