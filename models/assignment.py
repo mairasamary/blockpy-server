@@ -540,7 +540,13 @@ class Assignment(EnhancedBase):
                 course_id = self.course_id
             course = models.Course.query.get(course_id)
             settings = json.loads(course.settings or "{}")
-            late_policy = settings.get('late_policy', {})
+            if 'late_policy' in settings:
+                late_policy = settings['late_policy']
+            else:
+                return None
+        # Check if no late policy
+        if late_policy.get('disabled', True):
+            return None
         # Return whatever we got
         return LatePolicy(late_policy.get('allowed', True),
                           late_policy.get('interval', 'hours'),
