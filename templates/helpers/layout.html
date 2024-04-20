@@ -438,7 +438,19 @@
             $(`#h-${submissionId}-start`).toggle(!showHide);
             $(`#h-${submissionId}-end`).toggle(showHide);
         }
+        function logAndAlert(error, args, context) {
+            message = "There was an error while transmitting a submission:\n" +
+                 context.join(", ") + "\n" +
+                (error instanceof String ? error : 
+                    (('message' in error ? error.message +"\n" : "") 
+                    + "\nFull response:\n" + JSON.stringify(error)));
+            console.error(error, args);
+            alert(message);
+        }
         function regrade(element, submission_id, hard) {
+            const assignmentName = element.getAttribute('data-assignment-name');
+            const userName = element.getAttribute('data-user-name');
+            console.log(assignmentName, userName);
             const firstChild = element.firstElementChild;
             let url = "{{ url_for('grading.update_grading_status') }}?submission_id="+submission_id;
             if (hard) {
@@ -459,15 +471,12 @@
                 } else {
                     firstChild.className = "red-x";
                     firstChild.innerHTML = "&#10060;"
-                    console.error(response);
-                    alert(response.message instanceof String ? response.message : JSON.stringify(response.message));
+                    logAndAlert(response.message, arguments, [userName, assignmentName]);
                 }
                 firstChild.style.backgroundColor = 'transparent';
             }).catch((error) => {
                 firstChild.style.backgroundColor = 'red';
-                console.error(error, arguments);
-                alert(error instanceof String ? error : JSON.stringify(error));
-            }).finally(() => {
+                logAndAlert(error, arguments, [userName, assignmentName]);
             });
         }
 

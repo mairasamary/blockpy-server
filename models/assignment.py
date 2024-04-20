@@ -308,15 +308,17 @@ class Assignment(EnhancedBase):
             'submission': None
         }
 
-    def for_editor(self, user_id: int, course_id: int, is_quiz: bool) -> dict:
+    def for_editor(self, user_id: int, course_id: int, is_quiz: bool, with_history=False) -> dict:
         """ Returns a JSON version of this assignment, including the submission. """
         # Trust the user for now that they belong here, and give them a submission
-        submission = (None if user_id is None else
-                      self.load_or_new_submission(user_id, course_id).encode_json())
-        return {
+        submission = (None if user_id is None else self.load_or_new_submission(user_id, course_id))
+        result = {
             'assignment': self.encode_json() if not is_quiz else self.encode_quiz_json(),
-            'submission': submission,
+            'submission': submission.encode_json() if submission else None,
         }
+        if with_history and submission:
+            result['history'] = [history.encode_json() for history in submission.get_logs()]
+        return result
 
     def save_file(self, filename: str, code: str):
         """

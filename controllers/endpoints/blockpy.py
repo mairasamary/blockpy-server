@@ -180,6 +180,7 @@ def load_assignment():
     user, user_id = get_user()
     force_download = maybe_bool(request.values.get('force_download', "false"))
     force_quiz = maybe_bool(request.values.get("force_quiz", "false"))
+    with_history = maybe_bool(request.values.get("with_history", "false"))
     # Verify exists
     check_resource_exists(assignment, "Assignment", assignment_id)
     # Verify permissions
@@ -189,7 +190,7 @@ def load_assignment():
     if course_id is None:
         editor_information = assignment.for_read_only_editor(student_id, is_quiz)
     else:
-        editor_information = assignment.for_editor(student_id, course_id, is_quiz)
+        editor_information = assignment.for_editor(student_id, course_id, is_quiz, with_history)
         browser_info = json.dumps({
             'platform': request.user_agent.platform,
             'browser': request.user_agent.browser,
@@ -213,7 +214,7 @@ def load_assignment():
     if force_download:
         student_filename = User.by_id(student_id).get_filename("")
         filename = assignment.get_filename("") + "_" + student_filename + '_submission.json'
-        return Response(json.dumps(editor_information), mimetype='application/json',
+        return Response(json.dumps(editor_information, indent=2), mimetype='application/json',
                         headers={'Content-Disposition': 'attachment;filename={}'.format(filename)})
     else:
         return ajax_success(editor_information)
