@@ -85,6 +85,9 @@ function getClassDefinitions(program: ts.Program, locals: Map<string, ts.Symbol>
             value.members.forEach((type: ts.Symbol, name: ts.__String) => {
                 classProperties.push(serializeClass(type));
             });
+            const serialized = serializeClass(value);
+            serialized.name = "";
+            classProperties.push(serialized);
             classMap[key] = classProperties;
         }
     });
