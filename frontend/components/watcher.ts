@@ -131,7 +131,25 @@ export class SubmissionState {
                 break;
             case "Run.Program":
                 this.lastRan = log.when();
-                this.system = `<strong>Run</strong><div>${log.message()}</div>`;
+                let message = "";
+                try {
+                    const data = JSON.parse(log.message());
+                    if ("output" in data) {
+                        const output = JSON.parse(data['output']);
+                        const outputBody = output.map((line: any) => `<code>${line.type}: ${line.contents}</code>`).join("\n");
+                        message += "<strong>Execution Output:</strong><pre>"+outputBody+"</pre>";
+                    }
+                    if ("errors" in data) {
+                        const errors = JSON.parse(data['errors']);
+                        const errorBody = errors.map((error: any) => `<code>${error}</code>`).join("\n");
+                        message += "<strong>Execution Errors:</strong><pre>"+errorBody+"</pre>";
+                    }
+                    message += `<strong>Run Details</strong><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                } catch (e) {
+                    console.error(e);
+                    message = `<strong>Run Details</strong><pre>${log.message()}</pre>`;
+                }
+                this.system = `${message}`;
                 break;
             case "Compile.Error":
                 this.system = `<strong>Compiler Error</strong><div>${log.message()}</div>`;
@@ -180,7 +198,7 @@ export class SubmissionHistory {
         this.user = user;
         this.assignment = assignment;
         this.watchMode = ko.observable(defaultWatchMode);
-        this.feedbackMode = ko.observable(FeedbackMode.FEEDBACK);
+        this.feedbackMode = ko.observable(FeedbackMode.BOTH);
         this.isVcrActive = ko.pureComputed(() => {
             return this.watchMode() !== WatchMode.SUMMARY;
         }, this);
@@ -333,7 +351,7 @@ export class SubmissionHistory {
         do {
             currentId -= 1;
             currentState = this.states()[currentId];
-        } while (currentId>0 && !currentState.log.isEditEvent());
+        } while (currentId>0 && currentState.log.isEditEvent());
         this.currentStateIndex(currentId);
     }
 
@@ -347,7 +365,7 @@ export class SubmissionHistory {
         do {
             currentId += 1;
             currentState = this.states()[currentId];
-        } while (currentId<this.states().length-1 && !currentState.log.isEditEvent());
+        } while (currentId<this.states().length-1 && currentState.log.isEditEvent());
         this.currentStateIndex(currentId);
     }
 
@@ -595,6 +613,7 @@ export class Watcher {
                 this.clearData();
                 this.addLogs(data.history);
                 this.addSubmissions(data.submissions);
+                setTimeout(() => this.refreshHistorySelectors(), 1);
             } else {
                 console.error("Loading history failed!", data);
             }
@@ -603,6 +622,12 @@ export class Watcher {
             this.hasFailed(true);
             this.isLoading(false);
         });
+    }
+
+    refreshHistorySelectors() {
+        for (let submissionId in this.cauToSubmission) {
+            this.cauToSubmission[submissionId].loadHistorySelector(null);
+        }
     }
 
     setGroupingMode() {
