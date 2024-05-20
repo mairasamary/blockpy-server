@@ -590,9 +590,15 @@ def process_quizzes(assignment, submissions, directory):
                     parts.append(potential_answer)
             elif question.get('type') == 'matching_question':
                 for index, (statement, answer) in enumerate(zip(question['statements'], student)):
-                    keys.append(statement)
-                    values.append(answer)
-                    parts.append(index)
+                    if isinstance(answer, list):
+                        for sub_answer in answer:
+                            keys.append(statement)
+                            values.append(sub_answer)
+                            parts.append(index)
+                    else:
+                        keys.append(statement)
+                        values.append(answer)
+                        parts.append(index)
             elif question.get('type') in ('multiple_dropdowns_question', 'fill_in_multiple_blanks_question'):
                 for key, value in student.items():
                     keys.append(key)

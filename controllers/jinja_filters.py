@@ -118,13 +118,19 @@ def make_readonly_quiz_body(question, feedback, student, check, is_grader):
     return Markdown(extensions=['fenced_code']).convert(text)
 
 
+def check_matching_question(student, check):
+    if isinstance(check, str):
+        return student == check
+    return student in check
+
+
 def check_quiz_answer(question, feedback, student, check, is_grader, part=None):
     if question['type'] == 'true_false_question':
         return student.lower() == str(check.get('correct')).lower() if is_grader else 'unknown'
     elif question['type'] == 'multiple_answers_question':
         return (part in check.get('correct', [])) == (part in student)
     elif question['type'] == 'matching_question':
-        return student == check.get('correct', [])[part]
+        return check_matching_question(student, check.get('correct', [])[part])
     elif question['type'] == 'multiple_choice_question':
         if isinstance(check.get('correct'), list):
             return student in check.get('correct')

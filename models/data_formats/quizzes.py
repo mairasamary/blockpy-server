@@ -89,12 +89,18 @@ def process_quiz(body: dict, checks: dict, submission_body: dict) -> QuizResult:
                       total_correct, total_points, feedbacks, True, submission_body, None)
 
 
+def check_matching_question(student_part, correct_part):
+    if isinstance(correct_part, list):
+        return student_part in correct_part
+    return student_part == correct_part
+
+
 def check_quiz_question(question, check, student) -> (float, bool, list):
     if question.get('type') == 'true_false_question':
         correct = student.lower() == str(check.get('correct')).lower()
         return correct, correct, check.get('wrong') if not correct else "Correct"
     elif question.get('type') == 'matching_question':
-        corrects = [student_part == correct_part
+        corrects = [check_matching_question(student_part, correct_part)
                     for student_part, correct_part in zip(student, check.get('correct', []))]
         feedbacks = [feedback.get(student_part)
                      for student_part, feedback in zip(student, check.get('feedback', []))]
