@@ -20,9 +20,9 @@ class AssignmentGroupMembership(EnhancedBase):
     assignment_group: Mapped[list["AssignmentGroup"]] = db.relationship(back_populates="memberships")
     assignment: Mapped[list["Assignment"]] = db.relationship(back_populates="memberships")
 
-    SCHEMA_V1_IGNORE_COLUMNS = Base.SCHEMA_V1_IGNORE_COLUMNS + ("assignment_group_url",
+    SCHEMA_V1_IGNORE_COLUMNS = EnhancedBase.SCHEMA_V1_IGNORE_COLUMNS + ("assignment_group_url",
                                                                 "assignment_url", "course_id")
-    SCHEMA_V2_IGNORE_COLUMNS = Base.SCHEMA_V2_IGNORE_COLUMNS + ("assignment_group_url",
+    SCHEMA_V2_IGNORE_COLUMNS = EnhancedBase.SCHEMA_V2_IGNORE_COLUMNS + ("assignment_group_url",
                                                                 "assignment_url", "course_id")
 
     @classmethod
@@ -86,6 +86,6 @@ class AssignmentGroupMembership(EnhancedBase):
         db.session.commit()
         return membership
 
-    def find_all_linked_resources(self) -> dict[str, list[Base]]:
+    def find_all_linked_resources(self) -> dict[str, list[EnhancedBase]]:
         resources = {}
         return resources
