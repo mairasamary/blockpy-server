@@ -6,12 +6,12 @@ from sqlalchemy import (event, Integer, Date, ForeignKey, Column, Table,
 from models.assignment import Assignment
 from models.assignment_group import AssignmentGroup
 from models.generics.models import db, ma
-from models.generics.base import Base
+from models.generics.base import EnhancedBase
 from common.dates import datetime_to_string, string_to_datetime
 import models
 
 
-class AssignmentGroupMembership(Base):
+class AssignmentGroupMembership(EnhancedBase):
     __tablename__ = 'assignment_group_membership'
     assignment_group_id: Mapped[int] = mapped_column(Integer(), ForeignKey('assignment_group.id'))
     assignment_id: Mapped[int] = mapped_column(Integer(), ForeignKey('assignment.id'))
