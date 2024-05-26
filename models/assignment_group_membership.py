@@ -27,7 +27,11 @@ class AssignmentGroupMembership(EnhancedBase):
 
     @classmethod
     def get_existing(cls, data):
-        group_url = data['assignment_group_url']
+        return (AssignmentGroupMembership.query
+                .filter_by(assignment_group_id=data['assignment_group_id'],
+                           assignment_id=data['assignment_id'])
+                .first())
+        """group_url = data['assignment_group_url']
         assignment_url = data['assignment_url']
         assignment = Assignment.by_url(assignment_url)
         group = AssignmentGroup.by_url(group_url)
@@ -36,7 +40,7 @@ class AssignmentGroupMembership(EnhancedBase):
         return (AssignmentGroupMembership.query
                 .filter_by(assignment_group_id=group.id,
                            assignment_id=assignment.id)
-                .first())
+                .first())"""
 
     def __str__(self):
         return "<Membership {} in {}>".format(self.assignment_id, self.assignment_group_id)
