@@ -59,7 +59,14 @@ def sorter(membership):
     return membership.get('assignment_group_url', ""), membership.get('assignment_url', "")
 
 
-def import_bundle(bundle, owner_id, course_id=None, update=True):
+def import_bundle(bundle, owner_id, course_id=None, update=True, can_force=False):
+    if 'settings' in bundle:
+        if 'force' in bundle['settings']:
+            if 'owner_id' in bundle['settings']['force']:
+                owner_id = bundle['settings']['force']['owner_id']
+            if 'course_id' in bundle['settings']['force']:
+                course_id = bundle['settings']['force']['course_id']
+
     # TODO: Modify to return the items that were updated!
     if 'course' in bundle:
         course = Course.decode_json(bundle['course'], owner_id=owner_id)
