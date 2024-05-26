@@ -97,7 +97,7 @@ The actual feedback and correct structure varies depending on the question type.
 
 ### `matching_question`
 
-* `"correct"`:  A list of strings in order of the correct answers. These values should match the exact order of the `statements` in the instructions, and their text content should exactly match the relevant answer in the `answers`. If the student matches the statement to the answer, then they get the question correct. If they do not, then they get the question wrong. Unlike Canvas, we award partial credit as `number correct / number of parts` with each statement weighted equally.
+* `"correct"`:  A list of strings in order of the correct answers. These values should match the exact order of the `statements` in the instructions, and their text content should exactly match the relevant answer in the `answers`. If the student matches the statement to the answer, then they get the question correct. If they do not, then they get the question wrong. Unlike Canvas, we award partial credit as `number correct / number of parts` with each statement weighted equally. A list of strings can be provided instead, in which case any of the possible answers will be accepted.
 * `"feedback"`: A list of objects in order of the feedback for each statement. These values should match the exact order of the `statements` in the instructions. Each object is a mapping of a potential answer to the HTML feedback string presented if they pick that answer. So you can potentially provide feedback on every possible answer for every possible statement.
 
 ### `multiple_choice_question`
