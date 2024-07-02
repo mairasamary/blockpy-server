@@ -366,7 +366,7 @@ class Assignment(EnhancedBase):
                                 owner_id=new_owner_id,
                                 course_id=new_course_id,
                                 version=0)
-        # TODO: Copy tags, sample_submissions, submissions
+        # TODO: Copy tags, sample_submissions, submissions, files
         db.session.add(assignment)
         db.session.commit()
         return assignment

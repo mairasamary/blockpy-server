@@ -235,6 +235,17 @@ def export_progsnap2(output, log_for_course, groups, exclude, format, overwrite,
     export_progsnap2(output.format(log_for_course), log_for_course, groups, exclude=exclude, log=True, format=format, overwrite=overwrite, partition=partition)
 
 
+@cli.command("visualize_db")
+def visualize_db():
+    from models import ALL_TABLES
+    from sqlalchemy_data_model_visualizer import generate_data_model_diagram, add_web_font_and_interactivity
+    from sqlalchemy import (Integer, Column, ForeignKey, Table)
+    models = [model for model in ALL_TABLES if not isinstance(model, Table)]
+    output_file_name = 'docs/blockpy_db_schema'
+    generate_data_model_diagram(models, output_file_name)
+    add_web_font_and_interactivity(output_file_name+'.svg', output_file_name+'_interactive.svg')
+
+
 @cli.command("clear_old_anonymous_users")
 @click.option("--days", '-d', "days", default=7,
               help="How old the users must be (in days) before they are eligible")
