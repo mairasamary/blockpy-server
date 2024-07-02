@@ -10650,7 +10650,7 @@ Sk.builtin.ascii = function ascii (x) {
     });
 };
 
-Sk.builtin.open = function open(filename, mode, bufsize) {
+Sk.builtin.open = function open(filename, mode, bufsize, encoding, errors, newline, closedf, opener) {
     if (mode === undefined) {
         mode = new Sk.builtin.str("r");
     }
@@ -10664,7 +10664,7 @@ Sk.builtin.open = function open(filename, mode, bufsize) {
         throw "todo; haven't implemented non-read opens";
     }
 
-    return new Sk.builtin.file(filename, mode, bufsize);
+    return new Sk.builtin.file(filename, mode, bufsize, encoding, errors, newline, closedf, opener);
 };
 
 
@@ -11775,12 +11775,14 @@ Sk.abstr.setUpModuleMethods("builtins", Sk.builtins, {
         $meth: Sk.builtin.open,
         $flags: {
             MinArgs: 1,
-            MaxArgs: 3,
-            //NamedArgs: ["file, mode, buffering, encoding, errors, newline, closefd, opener"],
-            //Defaults: [new Sk.builtin.str("r"), new Sk.builtin.int_(-1), Sk.builtin.none.none$, Sk.builtin.none.none$, Sk.builtin.none.none$, Sk.builtin.bool.true$, Sk.builtin.none.none$]
+            MaxArgs: 8,
+            NamedArgs: ["file", "mode", "buffering", "encoding", "errors", "newline", "closefd", "opener"],
+            Defaults: [new Sk.builtin.str("r"), new Sk.builtin.int_(-1),
+                       pyNone, pyNone, pyNone,
+                       Sk.builtin.bool.true$, pyNone]
         },
-        $textsig: null,
-        // $textsig: "($module, /, file, mode='r', buffering=-1, encoding=None,\n     errors=None, newline=None, closefd=True, opener=None)",
+        // $textsig: null,
+        $textsig: "($module, /, file, mode='r', buffering=-1, encoding=None,\n     errors=None, newline=None, closefd=True, opener=None)",
         // this is the python 2 documentation since we don't support the py3 version
         $doc:
             "open(name[, mode[, buffering]]) -> file object\n\nOpen a file using the file() type, returns a file object.  This is the\npreferred way to open a file.  See file.__doc__ for further information.",
@@ -11837,7 +11839,7 @@ Sk.abstr.setUpModuleMethods("builtins", Sk.builtins, {
         $meth: Sk.builtin.sorted,
         $flags: {
             NamedArgs: [null, "cmp", "key", "reverse"],
-            Defaults: [Sk.builtin.none.none$, Sk.builtin.none.none$, Sk.builtin.bool.false$],
+            Defaults: [pyNone, pyNone, Sk.builtin.bool.false$],
         }, // should be fast call leave for now
         $textsig: "($module, iterable, /, *, key=None, reverse=False)",
         $doc:
@@ -20569,7 +20571,7 @@ var STDERR_FILENO = 2;
  * @param {Sk.builtin.str} mode
  * @param {Object} buffering
  */
-Sk.builtin.file = function (name, mode, buffering) {
+Sk.builtin.file = function (name, mode, buffering, encoding, errors, newline, closefd, opener) {
     var i;
     var elem;
 
@@ -20579,6 +20581,16 @@ Sk.builtin.file = function (name, mode, buffering) {
 
     this.mode = mode;
     this.name = Sk.ffi.remapToJs(name);
+    this.buffering = Sk.ffi.remapToJs(buffering);
+    this.encoding = Sk.ffi.remapToJs(encoding);
+    this.errors = Sk.ffi.remapToJs(errors);
+    if (Sk.builtin.checkNone(newline)) {
+        this.newline = /\n/;
+    } else {
+        this.newline = Sk.ffi.remapToJs(newline);
+    }
+    this.closefd = Sk.ffi.remapToJs(closefd);
+    this.opener = Sk.ffi.remapToJs(opener);
     this.closed = false;
 
     if (this.name === "/dev/stdout") {
@@ -20592,18 +20604,11 @@ Sk.builtin.file = function (name, mode, buffering) {
         if (Sk.inBrowser) {  // todo:  Maybe provide a replaceable function for non-import files
             this.fileno = 10;
             this.data$ = Sk.inBrowser(this.name);
-            this.lineList = this.data$.split("\n");
         } else {
             this.fileno = 11;
             this.data$ = Sk.read(name.v);
-            this.lineList = this.data$.split("\n");
-            this.lineList = this.lineList.slice(0, -1);
         }
-
-        //for (i in this.lineList) {
-        for (let i=0; i < this.lineList.length-1; i+= 1) {
-            this.lineList[i] = this.lineList[i] + "\n";
-        }
+        this.lineList = splitLines(this.data$, this.newline, Sk.inBrowser);
         this.currentLine = 0;
     }
     this.pos$ = 0;
@@ -20617,6 +20622,20 @@ Sk.builtin.file = function (name, mode, buffering) {
 
     return this;
 };
+
+function splitLines(text, newline, inBrowser) {
+    if (newline === "") {
+        newline = "\n";
+    }
+    let lineList = text.split(newline);
+    if (inBrowser) {
+        lineList = lineList.slice(0, -1);
+    }
+    for (let i=0; i < lineList.length-1; i+= 1) {
+        lineList[i] = lineList[i] + newline;
+    }
+    return lineList;
+}
 
 Sk.abstr.setUpInheritance("file", Sk.builtin.file, Sk.builtin.object);
 Sk.abstr.setUpBuiltinMro(Sk.builtin.file);
@@ -20758,7 +20777,7 @@ Sk.builtin.file.prototype["readline"] = new Sk.builtin.func(function readline(se
 
 Sk.builtin.file.prototype["readlines"] = new Sk.builtin.func(function readlines(self, sizehint) {
     if (self.fileno === 0) {
-        return new Sk.builtin.NotImplementedError("readlines ins't implemented because the web doesn't support Ctrl+D");
+        return new Sk.builtin.NotImplementedError("readlines isn't implemented because the web doesn't support Ctrl+D");
     }
 
     var i;
@@ -37183,8 +37202,8 @@ function check_special_type_attr(type, value, pyName) {
 var Sk = {}; // jshint ignore:line
 
 Sk.build = {
-    githash: "7a6b8b5042a767a2f94b6908811c386e71b06541",
-    date: "2024-04-04T15:57:53.198Z"
+    githash: "318ea79ab8fda526919e71ae965f85e4602171cb",
+    date: "2024-07-02T17:34:22.130Z"
 };
 
 /**
