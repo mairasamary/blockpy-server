@@ -7,7 +7,9 @@ USER root
 RUN apt-get update && apt-get install -y python3-dev \
                       build-essential \
                       libc-dev \
-                      netcat-traditional
+                      netcat-traditional \
+                      libcpq-dev \
+                      gcc
 
 # set work directory
 WORKDIR /usr/src/app
@@ -18,6 +20,7 @@ ENV PYTHONUNBUFFERED 1
 
 # install dependencies
 RUN pip install --upgrade pip
+RUN pip install psycopg2-binary
 COPY ./requirements.txt .
 RUN pip wheel --no-cache-dir --no-deps --wheel-dir /usr/src/app/wheels -r requirements.txt
 
