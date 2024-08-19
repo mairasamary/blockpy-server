@@ -9,9 +9,9 @@ services:
       - ./:/usr/src/app
       - static_volume:/usr/src/app/static
       - certs_volume:/usr/src/app/certs
-      - logs_volume:/user/src/app/logs
-      - backups_volume:/user/src/app/backups
-      - instance_volume:/user/src/app/instance
+      - logs_volume:/usr/src/app/logs
+      - backups_volume:/usr/src/app/backups
+      - instance_volume:/usr/src/app/instance
       - ./instance/configuration.py:/usr/src/app/instance/configuration.py
       - ./uwsgi.ini.template:/etc/uwsgi/uwsgi.ini.template  # Mount the template
     expose:
@@ -45,8 +45,8 @@ services:
     working_dir: /usr/src/app
     volumes:
       - ./:/usr/src/app
-      - logs_volume:/user/src/app/logs
-      - instance_volume:/user/src/app/instance
+      - logs_volume:/usr/src/app/logs
+      - instance_volume:/usr/src/app/instance
       - static_volume:/usr/src/app/static
       - certs_volume:/usr/src/app/certs
       - ./instance/configuration.py:/usr/src/app/instance/configuration.py
