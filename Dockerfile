@@ -18,11 +18,14 @@ WORKDIR /usr/src/app
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
+# Create virtual environment
+RUN python3 -m venv /usr/src/app/venv
+
 # install dependencies
-RUN pip install --upgrade pip
-RUN pip install psycopg2
+RUN /usr/src/app/venv/bin/pip install --upgrade pip
+RUN /usr/src/app/venv/bin/pip install psycopg2
 COPY ./requirements.txt .
-RUN pip wheel --no-cache-dir --no-deps --wheel-dir /usr/src/app/wheels -r requirements.txt
+RUN /usr/src/app/venv/bin/pip wheel --no-cache-dir --no-deps --wheel-dir /usr/src/app/wheels -r requirements.txt
 
 
 #########
@@ -34,6 +37,9 @@ FROM python:3.9-slim
 RUN apt-get update && apt-get install -y netcat-traditional  \
     htop uwsgi uwsgi-plugin-python3 gettext-base \
     python3-dev libc-dev libpq-dev gcc postgresql-client
+
+# Copy the virtual environment from the builder stage
+COPY --from=builder /usr/src/app/venv /usr/src/app/venv
 
 # Create a list of directories and iterate over it to create them
 RUN DIRS="/run/uwsgi \
@@ -55,8 +61,8 @@ RUN DIRS="/run/uwsgi \
 # install dependencies
 COPY --from=builder /usr/src/app/wheels /wheels
 COPY --from=builder /usr/src/app/requirements.txt .
-RUN pip install psycopg2
-RUN pip install --no-cache /wheels/*
+RUN /usr/src/app/venv/bin/pip install psycopg2
+RUN /usr/src/app/venv/bin/pip install --no-cache /wheels/*
 
 # BlockPy's server has a few folders that it puts things in. 
 # Most of them can be created via the makefile:

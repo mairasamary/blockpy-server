@@ -53,9 +53,9 @@ if [ -f "$FLAG_FILE" ]; then
 else
   echo "Initializing the database"
   touch "$FLAG_FILE"
-  python /usr/src/app/manage.py create_db
-  python /usr/src/app/manage.py db upgrade
-  python /usr/src/app/manage.py populate_db
+  /usr/src/app/venv/bin/python /usr/src/app/manage.py create_db
+  /usr/src/app/venv/bin/python /usr/src/app/manage.py db upgrade
+  /usr/src/app/venv/bin/python /usr/src/app/manage.py populate_db
 fi
 
 # Substitute environment variables in the uWSGI configuration
