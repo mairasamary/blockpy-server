@@ -54,7 +54,7 @@ COPY . $APP_HOME
 
 # Copy the uWSGI template and entrypoint script
 COPY ./uwsgi.ini.template /etc/uwsgi/sites/uwsgi.ini.template
-COPY ./docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+COPY ./conf/entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # chown all the files to the app user
