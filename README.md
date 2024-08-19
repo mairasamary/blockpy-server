@@ -41,7 +41,8 @@ Since BlockPy's execution happens client-side, the difficulties are only:
 # Docker Installation
 
 The easiest way to get started with BlockPy is to use Docker.
-We have a Docker image that you can use: `blockpy/blockpy-server`.
+
+If you don't have Docker installed, you can follow the instructions here: <https://docs.docker.com/engine/install/ubuntu/>
 
 Once you have the project, you'll need to create a `instance/configuration.py` file.
 First `cp instance/configuration.py.template` to `instance/configuration.py`
@@ -66,7 +67,14 @@ trouble.
 
 The server will need to support SSL, so you should obtain an appropriate certificate. Some universities' or CS
 departments' tech staff can help you get a certificate. Otherwise, you could also use a site like Let's Encrypt (
-although we haven't tried that).
+although we haven't tried that). For development, it is often sufficient to self-sign your certificates.
+
+```bash
+$ openssl genrsa -out server.key 2048
+$ openssl req -new -key server.key -out server.csr
+$ openssl x509 -req -days 365 -in server.csr -signkey server.key -out server.crt
+$ cat server.crt server.key > server.pem
+```
 
 Make sure your server's firewall is configured to allow traffic for both HTTP and HTTPS. You may also need to configure
 ports for mail, SSH, and external database access - however, none of these are really required for managing the server.
@@ -83,7 +91,7 @@ hierarchy. It wasn't enough to make `blockpy-server/` readable, we had to make i
 
 You can download the server from our public GitHub repo:
 
-```console
+```bash
 $ git clone https://github.com/blockpy-edu/blockpy-server.git .
 ```
 
@@ -99,13 +107,13 @@ We put our `venv/` folder directly in the `/var/www/blockpy-server/` folder.
 
 Make sure you install the server's required libraries:
 
-```console
+```bash
 $ venv/bin/pip install -r requirements.txt
 ```
 
 We also need UWSGI to daemonize the server:
 
-```console
+```bash
 $ venv/bin/pip install uwsgi
 ```
 
@@ -113,7 +121,7 @@ $ venv/bin/pip install uwsgi
 
 BlockPy's server has a few folders that it puts things in. Most of them can be created via the makefile:
 
-```console
+```bash
 $ make create_directories 
 ```
 
@@ -323,32 +331,32 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO blockpy;
 Assuming things have gone well so far, you should be able to run the following command line script to create the
 relevant tables:
 
-```console
+```bash
 $ venv/bin/python manage.py create_db
 ```
 
 You'll want to run any migrations to keep the schema in sync with our own:
 
-```console
+```bash
 $ venv/bin/python manage.py db upgrade
 ```
 
 And the most basic default data can be added with:
 
-```console
+```bash
 $ venv/bin/python manage.py populate_db
 ```
 
 You might want to add the maze course too, though we're hoping to make it its own separate curriculum.
 
-```console
+```bash
 $ venv/bin/python manage.py add_maze_course_db
 ```
 
 In theory, you could now upload one of our curriculum's programming problems (e.g., PythonSneks or CT@VT). More
 information on that coming soon! For now, you can create some rudimentary database items if you want:
 
-```console
+```bash
 $ venv/bin/python manage.py add_test_users_db
 ```
 
@@ -373,13 +381,13 @@ eye on it and choose appropriate permissions for the users you choose.
 
 You can test your Nginx sites with:
 
-```console
+```bash
 $ nginx -t
 ```
 
 And reload them when they're ready:
 
-```console
+```bash
 $ nginx -s reload
 ```
 
@@ -415,7 +423,7 @@ and handle restarting on crash. Alternatively, you can rely on Docker for all th
 
 Don't forget to start/restart UWSGI (you'll do this when pulling new versions of the github repo too):
 
-```console
+```bash
 $ sudo systemctl restart uwsgi
 ```
 
@@ -425,7 +433,7 @@ We use Redis to handle our asynchronous tasks.
 
 Install Redis:
 
-```console
+```bash
 $ sudo apt-get update
 $ sudo apt-get install redis
 ```
@@ -433,7 +441,7 @@ $ sudo apt-get install redis
 Edit the `/etc/redis/redis.conf` file to require a password and change the supervised to `systemd`.
 Then, (re)start the Redis service.
 
-```console
+```bash
 $ sudo systemctl restart redis-server.service
 ```
 
@@ -441,7 +449,7 @@ You'll need to add your Tasks database password to `instance/configuration.py` (
 
 Then you just need to set up the Huey service with systemd:
 
-```console
+```bash
 $ sudo nano /etc/systemd/system/huey.service
 ```
 
@@ -461,7 +469,7 @@ Restart = always
 WantedBy = multi-user.target
 ```
 
-```console
+```bash
 $ sudo systemctl restart huey
 ```
 

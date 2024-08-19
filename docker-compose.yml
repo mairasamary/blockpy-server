@@ -52,14 +52,11 @@ services:
     depends_on:
       - "redis"
     env_file:
-        - ./conf/.env.dev
+      - ./conf/.env.dev
   nginx:
     build: ./conf/nginx
-    environment:
-      - SERVER_NAME=blockpy.cis.udel.edu
-      - CERTIFICATE_PEM_PATH=/etc/nginx/certs/certificate.pem
-      - CERTIFICATE_KEY_PATH=/etc/nginx/certs/certificate.key
-      - ALLOW_IPS="allow 128.175.0.0/16;\nallow 128.4.0.0/16;\ndeny all;"
+    env_file:
+      - ./conf/.env.dev
     volumes:
       - ./nginx.conf.template:/etc/nginx/nginx.conf.template
       - ./nginx.conf:/etc/nginx/nginx.conf

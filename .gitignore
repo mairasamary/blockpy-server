@@ -1,5 +1,11 @@
 .env
 
+conf/nginx/nginx.conf
+conf/.env.dev.db
+conf/.env.prod.db
+conf/.env.dev
+conf/.env.prod
+
 docs/~*
 
 # Prevent committing server-side files
