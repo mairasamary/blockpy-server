@@ -9,9 +9,9 @@ services:
       - ./:/usr/src/app
       - static_volume:/usr/src/app/static
       - certs_volume:/usr/src/app/certs
-      - logs_volume:/user/src/apps/logs
-      - backups_volume:/user/src/apps/backups
-      - instance_volume:/user/src/apps/instance
+      - logs_volume:/user/src/app/logs
+      - backups_volume:/user/src/app/backups
+      - instance_volume:/user/src/app/instance
       - ./instance/configuration.py:/usr/src/app/instance/configuration.py
       - ./uwsgi.ini.template:/etc/uwsgi/uwsgi.ini.template  # Mount the template
     expose:
@@ -37,7 +37,7 @@ services:
       - ./.env
     ports:
       - "6379:6379"
-    command: redis-server --requirepass $$REDIS_PASSWORD
+    command: sh -c 'redis-server --requirepass "$$REDIS_PASSWORD"'
   huey:
     build: ./
     command: /usr/src/app/venv/bin/python3 manage.py huey
@@ -45,8 +45,8 @@ services:
     working_dir: /usr/src/app
     volumes:
       - ./:/usr/src/app
-      - logs_volume:/user/src/apps/logs
-      - instance_volume:/user/src/apps/instance
+      - logs_volume:/user/src/app/logs
+      - instance_volume:/user/src/app/instance
       - static_volume:/usr/src/app/static
       - certs_volume:/usr/src/app/certs
       - ./instance/configuration.py:/usr/src/app/instance/configuration.py
@@ -76,4 +76,3 @@ volumes:
   logs_volume:
   backups_volume:
   instance_volume:
-  settings_volume:
