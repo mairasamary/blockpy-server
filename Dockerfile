@@ -31,7 +31,9 @@ RUN pip wheel --no-cache-dir --no-deps --wheel-dir /usr/src/app/wheels -r requir
 FROM python:3.9-slim
 
 # Install uWSGI and other necessary packages
-RUN apt-get update && apt-get install -y netcat-traditional htop uwsgi uwsgi-plugin-python3 gettext-base
+RUN apt-get update && apt-get install -y netcat-traditional  \
+    htop uwsgi uwsgi-plugin-python3 gettext-base \
+    libc-dev libpq-dev gcc
 
 # Create a list of directories and iterate over it to create them
 RUN DIRS="/run/uwsgi \
