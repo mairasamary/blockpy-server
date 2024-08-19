@@ -12,9 +12,11 @@ then
     echo "postgres started"
 fi
 
-mkdir -p /run/uwsgi
-chown -R www-data:www-data /run/uwsgi
-chmod 775 /run/uwsgi
+if [ ! -d /run/uwsgi ]; then
+    mkdir -p /run/uwsgi
+    chown -R www-data:www-data /run/uwsgi
+    chmod 775 /run/uwsgi
+fi
 
 mkdir -p /usr/src/app/static/uploads/
 mkdir -p /usr/src/app/static/reports/

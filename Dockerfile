@@ -33,6 +33,9 @@ FROM python:3.9-slim
 # Install uWSGI and other necessary packages
 RUN apt-get update && apt-get install -y netcat-traditional htop uwsgi uwsgi-plugin-python3 gettext-base
 
+# Create the /run/uwsgi directory with the correct permissions
+RUN mkdir -p /run/uwsgi && chown www-data:www-data /run/uwsgi && chmod 775 /run/uwsgi
+
 # create directory for the app user
 RUN mkdir -p /home/app
 
