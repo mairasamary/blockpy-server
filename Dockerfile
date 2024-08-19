@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y python3-dev \
                       build-essential \
                       libc-dev \
                       netcat-traditional \
-                      libcpq-dev \
+                      libpq-dev \
                       gcc
 
 # set work directory
