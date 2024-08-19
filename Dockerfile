@@ -53,6 +53,7 @@ RUN DIRS="/run/uwsgi \
 # install dependencies
 COPY --from=builder /usr/src/app/wheels /wheels
 COPY --from=builder /usr/src/app/requirements.txt .
+RUN pip install psycopg2
 RUN pip install --no-cache /wheels/*
 
 # BlockPy's server has a few folders that it puts things in. 
