@@ -40,9 +40,18 @@ touch /usr/src/app/logs/uwsgi_blockpy.log
 
 cd /usr/src/app
 
-python /usr/src/app/manage.py create_db
-python /usr/src/app/manage.py db upgrade
-python /usr/src/app/manage.py populate_db
+# Check if the database is already initialized by looking for an existing table
+DB_CHECK=$(psql -U "$SQL_USER" -h "$SQL_HOST" -d "$SQL_NAME" -c "SELECT to_regclass('public.submission_index');")
+
+# If the table does not exist, initialize the database
+if [ "$DB_CHECK" = " public.submission_index" ]; then
+  echo "Database already initialized"
+else
+  echo "Initializing the database"
+  python /usr/src/app/manage.py create_db
+  python /usr/src/app/manage.py db upgrade
+  python /usr/src/app/manage.py populate_db
+fi
 
 # Substitute environment variables in the uWSGI configuration
 envsubst < /etc/uwsgi/sites/uwsgi.ini.template > /etc/uwsgi/sites/uwsgi.ini
