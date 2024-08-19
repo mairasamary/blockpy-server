@@ -38,6 +38,8 @@ touch /usr/src/app/logs/uwsgi_blockpy.log
 # chown www-data:www-data /usr/src/app/logs/*.log
 # chmod 664 /usr/src/app/logs/*.log
 
+cd /usr/src/app
+
 python /usr/src/app/manage.py create_db
 python /usr/src/app/manage.py db upgrade
 python /usr/src/app/manage.py populate_db
