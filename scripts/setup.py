@@ -11,7 +11,7 @@ def create_cli_app():
     ctx = get_current_context(silent=True)
     if ctx:
         script_info = ctx.obj
-        if script_info.instance_config:
+        if hasattr(script_info, 'instance_config') and script_info.instance_config:
             return create_app(instance_config=script_info.instance_config)
     return create_app()
 
