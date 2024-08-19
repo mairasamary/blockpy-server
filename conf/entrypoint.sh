@@ -27,8 +27,6 @@ DIRS="/usr/src/app/logs \
 # Create directories if they don't exist
 for dir in $DIRS; do
     mkdir -p $dir
-    chown www-data:www-data $dir
-    chmod 775 $dir
 done
 
 touch /usr/src/app/logs/blockpy_errors.log
@@ -37,8 +35,8 @@ touch /usr/src/app/logs/blockpy_tasks.log
 touch /usr/src/app/logs/uwsgi_blockpy.log
 
 # Ensure log files have correct ownership and permissions
-chown www-data:www-data /usr/src/app/logs/*.log
-chmod 664 /usr/src/app/logs/*.log
+# chown www-data:www-data /usr/src/app/logs/*.log
+# chmod 664 /usr/src/app/logs/*.log
 
 python manage.py create_db 
 python manage.py db upgrade  
