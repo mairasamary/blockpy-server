@@ -33,20 +33,22 @@ FROM python:3.9-slim
 # Install uWSGI and other necessary packages
 RUN apt-get update && apt-get install -y netcat-traditional htop uwsgi uwsgi-plugin-python3 gettext-base
 
-# Create the /run/uwsgi directory with the correct permissions
-RUN mkdir -p /run/uwsgi && chown www-data:www-data /run/uwsgi && chmod 775 /run/uwsgi
-
-# create directory for the app user
-RUN mkdir -p /home/app
-
-# create the app user
-USER root
-RUN useradd --user-group --system --create-home --no-log-init app
-
-# create the appropriate directories
-ENV APP_HOME=/usr/src/app
-RUN mkdir $APP_HOME
-WORKDIR $APP_HOME
+# Create a list of directories and iterate over it to create them
+RUN DIRS="/run/uwsgi \
+    /usr/src/app/logs \
+    /usr/src/app/static/uploads \
+    /usr/src/app/static/reports \
+    /usr/src/app/static/gen \
+    /usr/src/app/static/.webassets-cache \
+    /usr/src/app/static/uploads/submission_blocks \
+    /usr/src/app/backups \
+    /usr/src/app/instance \
+    /usr/src/app/instance/certs" \
+    && for dir in $DIRS; do \
+        mkdir -p $dir; \
+        chown www-data:www-data $dir; \
+        chmod 775 $dir; \
+    done
 
 # install dependencies
 COPY --from=builder /usr/src/app/wheels /wheels
@@ -56,7 +58,7 @@ RUN pip install --no-cache /wheels/*
 # BlockPy's server has a few folders that it puts things in. 
 # Most of them can be created via the makefile:
 # add app
-COPY . $APP_HOME
+COPY . /usr/src/app
 
 # Copy the uWSGI template and entrypoint script
 COPY ./uwsgi.ini.template /etc/uwsgi/sites/uwsgi.ini.template
@@ -64,10 +66,10 @@ COPY ./conf/entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # chown all the files to the app user
-RUN chown -R app:app $APP_HOME
+RUN chown -R www-data:www-data /usr/src/app
 
 # change to the app user
-USER app
+USER www-data
 
 # run entrypoint.sh
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]

@@ -12,25 +12,33 @@ then
     echo "postgres started"
 fi
 
-if [ ! -d /run/uwsgi ]; then
-    mkdir -p /run/uwsgi
-    chown -R www-data:www-data /run/uwsgi
-    chmod 775 /run/uwsgi
-fi
+# List of directories to create
+DIRS="/usr/src/app/logs \
+    /usr/src/app/static/uploads \
+    /usr/src/app/static/reports \
+    /usr/src/app/static/gen \
+    /usr/src/app/static/.webassets-cache \
+    /usr/src/app/static/uploads/submission_blocks \
+    /usr/src/app/backups \
+    /usr/src/app/instance \
+    /run/uwsgi \
+    /usr/src/app/instance/certs"
 
-mkdir -p /usr/src/app/static/uploads/
-mkdir -p /usr/src/app/static/reports/
-mkdir -p /usr/src/app/static/gen/
-mkdir -p /usr/src/app/static/.webassets-cache/
-mkdir -p /usr/src/app/static/uploads/submission_blocks/
-mkdir -p /usr/src/app/logs/
-mkdir -p /usr/src/app/backups/
-mkdir -p /usr/src/app/instance/
-mkdir -p /usr/src/app/instance/certs/
+# Create directories if they don't exist
+for dir in $DIRS; do
+    mkdir -p $dir
+    chown www-data:www-data $dir
+    chmod 775 $dir
+done
+
 touch /usr/src/app/logs/blockpy_errors.log
 touch /usr/src/app/logs/blockpy_events.log
 touch /usr/src/app/logs/blockpy_tasks.log
 touch /usr/src/app/logs/uwsgi_blockpy.log
+
+# Ensure log files have correct ownership and permissions
+chown www-data:www-data /usr/src/app/logs/*.log
+chmod 664 /usr/src/app/logs/*.log
 
 python manage.py create_db 
 python manage.py db upgrade  
