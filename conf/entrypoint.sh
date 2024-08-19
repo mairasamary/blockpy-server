@@ -14,6 +14,7 @@ fi
 
 mkdir -p /run/uwsgi
 chown -R www-data:www-data /run/uwsgi
+chmod 775 /run/uwsgi
 
 mkdir -p /usr/src/app/static/uploads/
 mkdir -p /usr/src/app/static/reports/
