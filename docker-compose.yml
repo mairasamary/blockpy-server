@@ -59,8 +59,8 @@ services:
     env_file:
       - ./.env
     volumes:
-      - ./nginx.conf.template:/etc/nginx/nginx.conf.template
-      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./conf/nginx/nginx.conf.template:/etc/nginx/nginx.conf.template
+      - ./conf/nginx/nginx.conf:/etc/nginx/nginx.conf
     ports:
       - "80:80"
       - "443:443"
