@@ -7,7 +7,7 @@ USER root
 RUN apt-get update && apt-get install -y python3-dev \
                       build-essential \
                       libc-dev \
-                      netcat
+                      netcat-traditional
 
 # set work directory
 WORKDIR /usr/src/app
@@ -28,7 +28,7 @@ RUN pip wheel --no-cache-dir --no-deps --wheel-dir /usr/src/app/wheels -r requir
 FROM python:3.9-slim
 
 # Install uWSGI and other necessary packages
-RUN apt-get update && apt-get install -y netcat htop uwsgi uwsgi-plugin-python3 gettext-base
+RUN apt-get update && apt-get install -y netcat-traditional htop uwsgi uwsgi-plugin-python3 gettext-base
 
 # create directory for the app user
 RUN mkdir -p /home/app
