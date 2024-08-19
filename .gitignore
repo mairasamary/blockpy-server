@@ -5,6 +5,7 @@ conf/.env.dev.db
 conf/.env.prod.db
 conf/.env.dev
 conf/.env.prod
+conf/.env
 
 docs/~*
 
