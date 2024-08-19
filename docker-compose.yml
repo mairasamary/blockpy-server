@@ -1,8 +1,8 @@
-version: '3.7'
-
 services:
   web:
     build: ./
+    env_file:
+      - ./conf/.env.dev
     environment:
       - BASE_DIR=/usr/src/app
     volumes:
@@ -19,8 +19,6 @@ services:
     depends_on:
       - "db"
       - "redis"
-    env_file:
-      - ./conf/.env.dev
     restart: always
   db:
     image: postgres:16-bullseye
