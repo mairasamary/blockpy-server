@@ -2,12 +2,13 @@
 # BUILDER #
 ###########
 
-FROM python:3.8.0  as builder
+FROM python:3.9-slim  as builder
 USER root
 RUN apt-get update && apt-get install -y python3-dev \
                       build-essential \
                       libc-dev \
                       netcat
+
 # set work directory
 WORKDIR /usr/src/app
 
@@ -24,8 +25,10 @@ RUN pip wheel --no-cache-dir --no-deps --wheel-dir /usr/src/app/wheels -r requir
 #########
 # FINAL #
 #########
-FROM python:3.8.0
+FROM python:3.9-slim
 
+# Install uWSGI and other necessary packages
+RUN apt-get update && apt-get install -y netcat htop uwsgi uwsgi-plugin-python3 gettext-base
 
 # create directory for the app user
 RUN mkdir -p /home/app
@@ -40,7 +43,6 @@ RUN mkdir $APP_HOME
 WORKDIR $APP_HOME
 
 # install dependencies
-RUN apt-get update && apt-get install -y libmariadb-dev libvirt-dev netcat
 COPY --from=builder /usr/src/app/wheels /wheels
 COPY --from=builder /usr/src/app/requirements.txt .
 RUN pip install --no-cache /wheels/*
@@ -50,6 +52,11 @@ RUN pip install --no-cache /wheels/*
 # add app
 COPY . $APP_HOME
 
+# Copy the uWSGI template and entrypoint script
+COPY ./uwsgi.ini.template /etc/uwsgi/sites/uwsgi.ini.template
+COPY ./docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 # chown all the files to the app user
 RUN chown -R app:app $APP_HOME
 
@@ -57,4 +64,4 @@ RUN chown -R app:app $APP_HOME
 USER app
 
 # run entrypoint.sh
-ENTRYPOINT ["/usr/src/app/conf/entrypoint.sh"]
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]

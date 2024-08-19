@@ -8,16 +8,16 @@ processes = 5
 
 socket = /run/uwsgi/blockpy.sock
 chmod-socket = 664
-uid = nginx
-gid = nginx
+uid = www-data
+gid = www-data
 vacuum = true
 
 buffer-size = 16384
 die-on-term = true
 
-logto = /var/www/blockpy-server/log/uwsgi/%n.log
-chdir = /var/www/blockpy-server/
+logto = ${BASE_DIR}/logs/uwsgi_%n.log
+chdir = ${BASE_DIR}/
 
 # settings to deal with subdirectory
 manage-script-name=true
-mount=/blockpy=/var/www/blockpy-server/wsgi.py
+mount=/blockpy=${BASE_DIR}/wsgi.py
