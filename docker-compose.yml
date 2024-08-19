@@ -40,9 +40,8 @@ services:
       - "6379:6379"
     command: sh -c 'redis-server --requirepass "$$REDIS_PASSWORD"'
   huey:
-    build:
-      context: ./
-      dockerfile: Dockerfile
+    build: ./
+    entrypoint: []
     command: /usr/src/app/venv/bin/python3 manage.py huey
     user: www-data
     working_dir: /usr/src/app

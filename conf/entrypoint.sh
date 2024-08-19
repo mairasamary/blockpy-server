@@ -40,16 +40,19 @@ touch /usr/src/app/logs/uwsgi_blockpy.log
 
 cd /usr/src/app
 
-export PGPASSWORD="$SQL_PASSWORD"
+#export PGPASSWORD="$SQL_PASSWORD"
 
 # Check if the database is already initialized by looking for an existing table
-DB_CHECK=$(psql -U "$SQL_USER" -h "$SQL_HOST" -d "$SQL_NAME" -tAc "SELECT to_regclass('public.submission_index');")
+#DB_CHECK=$(psql -U "$SQL_USER" -h "$SQL_HOST" -d "$SQL_NAME" -tAc "SELECT to_regclass('public.submission_index');")
+
+FLAG_FILE="/usr/src/app/initialized.flag"
 
 # If the table does not exist, initialize the database
-if [ "$DB_CHECK" = " public.submission_index" ]; then
-  echo "Database already initialized"
+if [ -f "$FLAG_FILE" ]; then
+  echo "Database already being initialized, skipping initialization."
 else
   echo "Initializing the database"
+  touch "$FLAG_FILE"
   python /usr/src/app/manage.py create_db
   python /usr/src/app/manage.py db upgrade
   python /usr/src/app/manage.py populate_db
