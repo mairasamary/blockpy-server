@@ -40,8 +40,10 @@ touch /usr/src/app/logs/uwsgi_blockpy.log
 
 cd /usr/src/app
 
+export PGPASSWORD="$SQL_PASSWORD"
+
 # Check if the database is already initialized by looking for an existing table
-DB_CHECK=$(psql -U "$SQL_USER" -h "$SQL_HOST" -d "$SQL_NAME" -c "SELECT to_regclass('public.submission_index');")
+DB_CHECK=$(psql -U "$SQL_USER" -h "$SQL_HOST" -d "$SQL_NAME" -tAc "SELECT to_regclass('public.submission_index');")
 
 # If the table does not exist, initialize the database
 if [ "$DB_CHECK" = " public.submission_index" ]; then
