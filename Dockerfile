@@ -33,7 +33,7 @@ FROM python:3.9-slim
 # Install uWSGI and other necessary packages
 RUN apt-get update && apt-get install -y netcat-traditional  \
     htop uwsgi uwsgi-plugin-python3 gettext-base \
-    python3-dev libc-dev libpq-dev gcc
+    python3-dev libc-dev libpq-dev gcc postgresql-client
 
 # Create a list of directories and iterate over it to create them
 RUN DIRS="/run/uwsgi \
