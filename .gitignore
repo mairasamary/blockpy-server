@@ -7,6 +7,7 @@ kennel.sock
 
 # The per-installation config for flask
 instance/
+!instance/configuration.py.template
 
 # Frontend
 node_modules/
