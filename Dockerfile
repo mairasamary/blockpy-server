@@ -70,6 +70,7 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # chown all the files to the app user
 RUN chown -R www-data:www-data /usr/src/app
+RUN chmod -R 775 /usr/src/app
 
 # change to the app user
 USER www-data
