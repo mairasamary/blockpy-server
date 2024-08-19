@@ -48,8 +48,15 @@ Once you have the project, you'll need to create a `instance/configuration.py` f
 First `cp instance/configuration.py.template` to `instance/configuration.py`
 Then modify it with your own values!
 
-You'll also need to make sure to set the nginx values for your server.
-Provide them in the `.env.dev` file?
+You'll also need to make sure to set the nginx values for your server, the database settings, and so on.
+You'll want to do:
+
+```bash
+$ cp conf/.env.dev.example .env
+$ cp conf/.env.dev.db.example .env.db
+```
+
+And then modify their contents to match your server's settings.
 
 The instructions below are how we used to setup the server. They're relatively up-to-date as
 of the time of this writing, but they are the old-fashioned way.
