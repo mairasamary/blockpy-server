@@ -25,7 +25,7 @@ class GradeHistory(Base):
     submission: Mapped["Submission"] = db.relationship(back_populates="grade_history")
     grader: Mapped["User"] = db.relationship(back_populates="grade_history")
 
-    __table_args__ = (Index('submission_index', "submission_id", ),)
+    __table_args__ = (Index('grade_history_submission_id_index', "submission_id", ),)
 
     def encode_json(self):
         return {
