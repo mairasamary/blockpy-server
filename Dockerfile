@@ -40,6 +40,7 @@ RUN apt-get update && apt-get install -y netcat-traditional  \
 
 # Create a list of directories and iterate over it to create them
 RUN DIRS="/run/uwsgi \
+    /etc/uwsgi/sites \
     /usr/src/app/logs \
     /usr/src/app/static/uploads \
     /usr/src/app/static/reports \
