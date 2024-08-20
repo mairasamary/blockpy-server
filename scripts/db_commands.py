@@ -62,7 +62,7 @@ def populate_db():
                             url="default", visibility='public')
     db.session.add(default_course)
     db.session.flush()
-    db.session.add(Role(name='instructor', course_id=default_course.id, user_id=admin.id))
+    db.session.add(Role(name='instructor', course_id=default_course.id, user_id=admin.id, description=""))
 
     db.session.commit()
     click.echo("Populated database")
@@ -111,13 +111,13 @@ def add_test_user():
     teacher = User.new_from_instructor("klaus@acbart.com", "Klaus", "Bart", "password")
     db.session.add(teacher)
     db.session.flush()
-    db.session.add(Role(name='instructor', course_id=default_course.id, user_id=teacher.id))
+    db.session.add(Role(name='instructor', course_id=default_course.id, user_id=teacher.id, description=""))
 
     click.echo("Adding Student")
     student = User.new_from_instructor("ada@acbart.com", "Ada", "Bart", "password")
     db.session.add(student)
     db.session.flush()
-    db.session.add(Role(name='student', course_id=default_course.id, user_id=student.id))
+    db.session.add(Role(name='student', course_id=default_course.id, user_id=student.id, description=""))
 
     click.echo("Adding basic assignments")
     basic_group = AssignmentGroup(name="First Group", course_id=default_course.id, owner_id=teacher.id,
