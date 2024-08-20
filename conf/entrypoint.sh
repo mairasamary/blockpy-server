@@ -46,9 +46,6 @@ export PGPASSWORD="$SQL_PASSWORD"
 DB_CHECK=$(psql -U "$SQL_USER" -h "$SQL_HOST" -d "$SQL_NAME" -tAc "SELECT to_regclass('public.submission_index');")
 
 #FLAG_FILE="/usr/src/app/initialized.flag"
-ls /usr/src/app/
-ls -ld /usr/src/app/venv/
-ls -l /usr/src/app/venv/
 
 # If the table does not exist, initialize the database
 if [ -z "$DB_CHECK" ]; then
