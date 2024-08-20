@@ -11,7 +11,7 @@ class Role(Base):
     name: Mapped[str] = mapped_column(String(80))
     user_id: Mapped[int] = mapped_column(ForeignKey('user.id'))
     course_id: Mapped[int] = mapped_column(ForeignKey('course.id'), default=None, nullable=True)
-    description: Mapped[str] = mapped_column(String(255), default=None)
+    description: Mapped[str] = mapped_column(String(255), default=None, nullable=True)
 
     user: Mapped["User"] = db.relationship(back_populates='roles')
     course: Mapped["Course"] = db.relationship(back_populates='roles')

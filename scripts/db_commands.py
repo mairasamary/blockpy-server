@@ -53,8 +53,8 @@ def populate_db():
                            secrets.get("ADMIN_PASSWORD", "password"))
     db.session.add(admin)
     db.session.flush()
-    db.session.add(Role(name='instructor', user_id=admin.id))
-    db.session.add(Role(name='admin', user_id=admin.id))
+    db.session.add(Role(name='instructor', user_id=admin.id, description=""))
+    db.session.add(Role(name='admin', user_id=admin.id, description=""))
 
     click.echo("Adding default course")
     default_course = Course(name="Default Course", owner_id=admin.id,
