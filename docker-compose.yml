@@ -19,6 +19,7 @@ services:
     depends_on:
       - "db"
       - "redis"
+    user: www-data
     restart: always
     entrypoint: /usr/local/bin/docker-entrypoint.sh
   db:
