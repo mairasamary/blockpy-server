@@ -55,6 +55,7 @@ services:
       - ./instance/configuration.py:/usr/src/app/instance/configuration.py
     depends_on:
       - "redis"
+      - "web"
     env_file:
       - ./.env
   nginx:

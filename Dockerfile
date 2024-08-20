@@ -67,7 +67,7 @@ RUN /usr/src/app/venv/bin/pip install --no-cache /wheels/*
 # BlockPy's server has a few folders that it puts things in. 
 # Most of them can be created via the makefile:
 # add app
-COPY . /usr/src/app
+COPY --chown=root:www-data . /usr/src/app
 
 # Copy the uWSGI template and entrypoint script
 COPY ./uwsgi.ini.template /etc/uwsgi/sites/uwsgi.ini.template
@@ -75,8 +75,8 @@ COPY ./conf/entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # chown all the files to the app user
-RUN chmod -R 775 /usr/src/app
-RUN chown -R www-data:www-data /usr/src/app
+#RUN chmod -R 775 /usr/src/app
+#RUN chown -R www-data:www-data /usr/src/app
 
 # change to the app user
 USER www-data
