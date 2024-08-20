@@ -43,7 +43,7 @@ services:
   huey:
     build: ./
     entrypoint: []
-    command: /usr/src/app/venv/bin/python3 manage.py huey
+    command: python3 manage.py huey
     user: www-data
     working_dir: /usr/src/app
     volumes:

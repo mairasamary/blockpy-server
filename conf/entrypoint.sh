@@ -57,9 +57,9 @@ if [ -z "$DB_CHECK" ]; then
 else
   echo "Initializing the database"
   #touch "$FLAG_FILE"
-  /usr/src/app/venv/bin/python3 /usr/src/app/manage.py create_db
-  /usr/src/app/venv/bin/python3 /usr/src/app/manage.py db upgrade
-  /usr/src/app/venv/bin/python3 /usr/src/app/manage.py populate_db
+  python3 /usr/src/app/manage.py create_db
+  python3 /usr/src/app/manage.py db upgrade
+  python3 /usr/src/app/manage.py populate_db
   echo "Database initialized"
 fi
 
@@ -67,4 +67,4 @@ fi
 envsubst < /etc/uwsgi/sites/uwsgi.ini.template > /etc/uwsgi/sites/uwsgi.ini
 
 # Start the uWSGI Emperor
-exec /usr/src/app/venv/bin/uwsgi --emperor /etc/uwsgi/sites --uid www-data --gid www-data
+exec uwsgi --emperor /etc/uwsgi/sites --uid www-data --gid www-data
