@@ -55,7 +55,6 @@ else
   echo "Initializing the database"
   #touch "$FLAG_FILE"
   python3 /usr/src/app/manage.py create_db
-  python3 /usr/src/app/manage.py db upgrade
   python3 /usr/src/app/manage.py populate_db
   echo "Database initialized"
 fi
