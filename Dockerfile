@@ -41,8 +41,6 @@ RUN apt-get update && apt-get install -y netcat-traditional  \
 # Copy the virtual environment from the builder stage
 COPY --from=builder /usr/src/app/venv /usr/src/app/venv
 
-RUN ls -al /usr/src/app/venv
-
 # Create a list of directories and iterate over it to create them
 RUN DIRS="/run/uwsgi \
     /usr/src/app/logs \
@@ -70,6 +68,8 @@ RUN /usr/src/app/venv/bin/pip install --no-cache /wheels/*
 # Most of them can be created via the makefile:
 # add app
 COPY --chown=root:www-data . /usr/src/app
+
+RUN ls -al /usr/src/app/venv
 
 # Copy the uWSGI template and entrypoint script
 COPY ./uwsgi.ini.template /etc/uwsgi/sites/uwsgi.ini.template
