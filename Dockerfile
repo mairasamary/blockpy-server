@@ -69,8 +69,6 @@ RUN /usr/src/app/venv/bin/pip install --no-cache /wheels/*
 # add app
 COPY --chown=root:www-data . /usr/src/app
 
-RUN ls -al /usr/src/app/venv
-
 # Copy the uWSGI template and entrypoint script
 COPY ./uwsgi.ini.template /etc/uwsgi/sites/uwsgi.ini.template
 COPY ./conf/entrypoint.sh /usr/local/bin/docker-entrypoint.sh
@@ -82,6 +80,7 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # change to the app user
 USER www-data
+
 
 # run entrypoint.sh
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
