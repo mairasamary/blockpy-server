@@ -1,3 +1,4 @@
+from typing import Optional
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import (event, Integer, Date, ForeignKey, Column, Table,
                         String, Boolean, DateTime, Text, ForeignKeyConstraint,
@@ -15,7 +16,7 @@ class AssignmentGroupMembership(EnhancedBase):
     __tablename__ = 'assignment_group_membership'
     assignment_group_id: Mapped[int] = mapped_column(Integer(), ForeignKey('assignment_group.id'))
     assignment_id: Mapped[int] = mapped_column(Integer(), ForeignKey('assignment.id'))
-    position: Mapped[int] = mapped_column(Integer())
+    position: Mapped[Optional[int]] = mapped_column(Integer())
 
     assignment_group: Mapped[list["AssignmentGroup"]] = db.relationship(back_populates="memberships")
     assignment: Mapped[list["Assignment"]] = db.relationship(back_populates="memberships")

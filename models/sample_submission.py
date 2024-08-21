@@ -1,3 +1,4 @@
+from typing import Optional
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import Column, String, Integer, ForeignKey, func, Text, Table, Boolean
 
@@ -22,7 +23,7 @@ class SampleSubmission(VersionedBase):
     inputs: Mapped[str] = mapped_column(Text(), default="")
     feedback: Mapped[str] = mapped_column(Text(), default="")
 
-    forked_id: Mapped[int] = mapped_column(Integer(), ForeignKey('submission.id'))
+    forked_id: Mapped[Optional[int]] = mapped_column(Integer(), ForeignKey('submission.id'))
     forked_version: Mapped[int] = mapped_column(Integer(), default=0)
     owner_id: Mapped[int] = mapped_column(Integer(), ForeignKey('user.id'))
     assignment_id: Mapped[int] = mapped_column(Integer(), ForeignKey('assignment.id'))

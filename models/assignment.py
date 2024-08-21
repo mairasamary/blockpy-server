@@ -30,7 +30,7 @@ class Assignment(EnhancedBase):
     __tablename__ = "assignment"
 
     name: Mapped[str] = mapped_column(String(255), default="Untitled")
-    url: Mapped[str] = mapped_column(String(255), default=None, nullable=True)
+    url: Mapped[Optional[str]] = mapped_column(String(255), default=None, nullable=True)
 
     # Settings
     TYPES = ['blockpy', 'maze', 'reading',
@@ -50,7 +50,7 @@ class Assignment(EnhancedBase):
     # How many points is this assignment worth?
     points: Mapped[int] = mapped_column(Integer(), default=1)
     # Completely open-ended settings, stored as JSON
-    settings: Mapped[str] = mapped_column(Text())
+    settings: Mapped[Optional[str]] = mapped_column(Text())
 
     # Code columns
     on_run: Mapped[str] = mapped_column(Text(), default="")
@@ -61,8 +61,8 @@ class Assignment(EnhancedBase):
     extra_starting_files: Mapped[str] = mapped_column(Text(), default="")
 
     # Tracking
-    forked_id: Mapped[int] = mapped_column(Integer(), ForeignKey('assignment.id'), nullable=True)
-    forked_version: Mapped[int] = mapped_column(Integer(), nullable=True)
+    forked_id: Mapped[Optional[int]] = mapped_column(Integer(), ForeignKey('assignment.id'), nullable=True)
+    forked_version: Mapped[Optional[int]] = mapped_column(Integer(), nullable=True)
     owner_id: Mapped[int] = mapped_column(Integer(), ForeignKey('user.id'))
     course_id: Mapped[int] = mapped_column(Integer(), ForeignKey('course.id'))
     version: Mapped[int] = mapped_column(Integer(), default=0)

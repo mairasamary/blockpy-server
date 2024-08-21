@@ -6,7 +6,7 @@ from datetime import timedelta, datetime
 import re
 
 import base64
-from typing import Union
+from typing import Union, Optional
 
 from flask import url_for, current_app
 from sqlalchemy.orm import Mapped, mapped_column
@@ -97,10 +97,10 @@ class Submission(EnhancedBase):
     correct: Mapped[bool] = mapped_column(Boolean(), default=False)
     submission_status: Mapped[str] = mapped_column(String(255), default=SubmissionStatuses.STARTED)
     grading_status: Mapped[str] = mapped_column(String(255), default=GradingStatuses.NOT_READY)
-    date_submitted: Mapped[datetime] = mapped_column(DateTime(), default=None)
-    date_graded: Mapped[datetime] = mapped_column(DateTime(), default=None)
-    date_due: Mapped[datetime] = mapped_column(DateTime(), default=None)
-    date_locked: Mapped[datetime] = mapped_column(DateTime(), default=None)
+    date_submitted: Mapped[Optional[datetime]] = mapped_column(DateTime(), default=None)
+    date_graded: Mapped[Optional[datetime]] = mapped_column(DateTime(), default=None)
+    date_due: Mapped[Optional[datetime]] = mapped_column(DateTime(), default=None)
+    date_locked: Mapped[Optional[datetime]] = mapped_column(DateTime(), default=None)
     # Tracking
     assignment_id: Mapped[int] = mapped_column(Integer(), ForeignKey('assignment.id'))
     assignment_group_id: Mapped[int] = mapped_column(Integer(), ForeignKey('assignment_group.id'), nullable=True)

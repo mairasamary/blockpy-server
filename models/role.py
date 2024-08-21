@@ -1,3 +1,4 @@
+from typing import Optional
 from flask_security.models.fsqla_v3 import FsRoleMixin as RoleMixin
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import Column, String, Integer, ForeignKey
@@ -10,8 +11,8 @@ class Role(Base):
     __tablename__ = "role"
     name: Mapped[str] = mapped_column(String(80))
     user_id: Mapped[int] = mapped_column(ForeignKey('user.id'))
-    course_id: Mapped[int] = mapped_column(ForeignKey('course.id'), default=None, nullable=True)
-    description: Mapped[str] = mapped_column(String(255), default=None, nullable=True)
+    course_id: Mapped[Optional[int]] = mapped_column(ForeignKey('course.id'), default=None, nullable=True)
+    description: Mapped[Optional[str]] = mapped_column(String(255), default=None, nullable=True)
 
     user: Mapped["User"] = db.relationship(back_populates='roles')
     course: Mapped["Course"] = db.relationship(back_populates='roles')

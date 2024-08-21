@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 import time
 
 import base64
@@ -17,17 +18,17 @@ class Review(VersionedBase):
     comment: Mapped[str] = mapped_column(Text(), default="")
     location: Mapped[str] = mapped_column(Text(), default="")
     generic: Mapped[bool] = mapped_column(Boolean(), default=False)
-    tag_id: Mapped[int] = mapped_column(Integer(), ForeignKey('assignment_tag.id'), nullable=True)
+    tag_id: Mapped[Optional[int]] = mapped_column(Integer(), ForeignKey('assignment_tag.id'), nullable=True)
     # Should be treated as out of X/100
-    score: Mapped[int] = mapped_column(Integer(), nullable=True)
+    score: Mapped[Optional[int]] = mapped_column(Integer(), nullable=True)
     # Tracking
-    submission_id: Mapped[int] = mapped_column(Integer(), ForeignKey('submission.id'), nullable=True)
+    submission_id: Mapped[Optional[int]] = mapped_column(Integer(), ForeignKey('submission.id'), nullable=True)
     author_id: Mapped[int] = mapped_column(Integer(), ForeignKey('user.id'))
     assignment_version: Mapped[int] = mapped_column(Integer(), default=0)
     submission_version: Mapped[int] = mapped_column(Integer(), default=0)
     version: Mapped[int] = mapped_column(Integer(), default=0)
-    forked_id: Mapped[int] = mapped_column(Integer(), ForeignKey('review.id'), nullable=True)
-    forked_version: Mapped[int] = mapped_column(Integer(), nullable=True)
+    forked_id: Mapped[Optional[int]] = mapped_column(Integer(), ForeignKey('review.id'), nullable=True)
+    forked_version: Mapped[Optional[int]] = mapped_column(Integer(), nullable=True)
 
     tag: Mapped["AssignmentTag"] = db.relationship(back_populates="reviews")
     submission: Mapped["Submission"] = db.relationship(back_populates="reviews")

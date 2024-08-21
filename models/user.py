@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime, timedelta
+from typing import Optional
 
 from flask_security import UserMixin
 from flask_security.utils import hash_password
@@ -24,9 +25,9 @@ class User(Base, UserMixin):
 
     proof: Mapped[str] = mapped_column(String(255), default='')
     password: Mapped[str] = mapped_column(String(255))
-    active: Mapped[bool] = mapped_column(Boolean())
+    active: Mapped[Optional[bool]] = mapped_column(Boolean())
     anonymous: Mapped[bool] = mapped_column(Boolean(), default=False)
-    confirmed_at: Mapped[datetime] = mapped_column(DateTime())
+    confirmed_at: Mapped[Optional[datetime]] = mapped_column(DateTime())
 
     fs_uniquifier: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
 

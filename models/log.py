@@ -1,6 +1,7 @@
 import logging
 from collections import OrderedDict
 import time
+from typing import Optional
 import json
 from datetime import datetime, timedelta
 
@@ -24,7 +25,7 @@ class Log(Base):
     subject_id: Mapped[int] = mapped_column(Integer(), ForeignKey('user.id'))
     # Actual event data
     event_type: Mapped[str] = mapped_column(String(255))
-    file_path: Mapped[str] = mapped_column(String(255), default="", nullable=True)
+    file_path: Mapped[Optional[str]] = mapped_column(String(255), default="", nullable=True)
     category: Mapped[str] = mapped_column(String(255), default="")
     label: Mapped[str] = mapped_column(String(255), default="")
     # Message will be JSON encoded data

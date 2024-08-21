@@ -1,3 +1,4 @@
+from typing import Optional
 from datetime import datetime
 from flask_security import RoleMixin
 from sqlalchemy.orm import Mapped, mapped_column
@@ -11,10 +12,10 @@ from models.generics.base import Base
 class Invite(Base, RoleMixin):
     __tablename__ = "invite"
     url: Mapped[str] = mapped_column(String(80))
-    user_id: Mapped[int] = mapped_column(Integer(), ForeignKey('user.id'), default=None, nullable=True)
+    user_id: Mapped[Optional[int]] = mapped_column(Integer(), ForeignKey('user.id'), default=None, nullable=True)
     course_id: Mapped[int] = mapped_column(Integer(), ForeignKey('course.id'))
-    role: Mapped[str] = mapped_column(String(80))
-    expires: Mapped[datetime] = mapped_column(DateTime)
+    role: Mapped[Optional[str]] = mapped_column(String(80))
+    expires: Mapped[Optional[datetime]] = mapped_column(DateTime)
 
     course: Mapped["Course"] = db.relationship(back_populates="invites")
     user: Mapped["User"] = db.relationship(back_populates="invites")

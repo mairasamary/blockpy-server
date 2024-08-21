@@ -1,4 +1,5 @@
 import logging
+from typing import Optional
 import os
 from collections import OrderedDict
 import time
@@ -22,8 +23,8 @@ class Report(Base):
     status: Mapped[str] = mapped_column(String(255), default=ReportStatus.QUEUED)
     attempt: Mapped[int] = mapped_column(Integer(), default=0)
     result: Mapped[str] = mapped_column(String(255), default="output.html")
-    date_started: Mapped[datetime] = mapped_column(DateTime, default=None, nullable=True)
-    date_finished: Mapped[datetime] = mapped_column(DateTime, default=None, nullable=True)
+    date_started: Mapped[Optional[datetime]] = mapped_column(DateTime, default=None, nullable=True)
+    date_finished: Mapped[Optional[datetime]] = mapped_column(DateTime, default=None, nullable=True)
 
     #: An integer from 0 to 100 that indicates how far along things are.
     progress: Mapped[int] = mapped_column(Integer(), default=0)
@@ -40,11 +41,11 @@ class Report(Base):
     visibility: Mapped[str] = mapped_column(String(), default="private")
 
     #: Specific user that this Report originates from
-    owner_id: Mapped[int] = mapped_column(Integer(), ForeignKey('user.id'), nullable=True)
+    owner_id: Mapped[Optional[int]] = mapped_column(Integer(), ForeignKey('user.id'), nullable=True)
     #: Specific assignment that this Report originates from
-    assignment_id: Mapped[int] = mapped_column(Integer(), ForeignKey('assignment.id'), nullable=True)
+    assignment_id: Mapped[Optional[int]] = mapped_column(Integer(), ForeignKey('assignment.id'), nullable=True)
     #: Specific course that this Report originates from
-    course_id: Mapped[int] = mapped_column(Integer(), ForeignKey('course.id'), nullable=True)
+    course_id: Mapped[Optional[int]] = mapped_column(Integer(), ForeignKey('course.id'), nullable=True)
 
     assignment: Mapped["Assignment"] = db.relationship(back_populates="reports")
     owner: Mapped["User"] = db.relationship(back_populates="reports")

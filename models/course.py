@@ -1,4 +1,5 @@
 import json
+from typing import Optional
 
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import Column, String, Integer, ForeignKey, Text, or_, Boolean
@@ -32,7 +33,7 @@ class Course(Base):
     LOG_LEVELS = ['nothing', 'everything', 'errors']
 
     name: Mapped[str] = mapped_column(String(255))
-    url: Mapped[str] = mapped_column(String(255), default=None, nullable=True)
+    url: Mapped[Optional[str]] = mapped_column(String(255), default=None, nullable=True)
     owner_id: Mapped[int] = mapped_column(ForeignKey('user.id'))
 
     service: Mapped[str] = mapped_column(String(80), default="native")

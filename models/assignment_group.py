@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from flask import url_for
 from sqlalchemy.orm import Mapped, mapped_column
@@ -16,9 +16,9 @@ from common.databases import make_copy
 class AssignmentGroup(EnhancedBase):
     __tablename__ = 'assignment_group'
     name: Mapped[str] = mapped_column(String(255), default="Untitled")
-    url: Mapped[str] = mapped_column(String(255), nullable=True)
-    forked_id: Mapped[int] = mapped_column(Integer(), ForeignKey('assignment_group.id'), nullable=True)
-    forked_version: Mapped[int] = mapped_column(Integer(), nullable=True)
+    url: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    forked_id: Mapped[Optional[int]] = mapped_column(Integer(), ForeignKey('assignment_group.id'), nullable=True)
+    forked_version: Mapped[Optional[int]] = mapped_column(Integer(), nullable=True)
     owner_id: Mapped[int] = mapped_column(Integer(), ForeignKey('user.id'))
     course_id: Mapped[int] = mapped_column(Integer(), ForeignKey('course.id'))
     position: Mapped[int] = mapped_column(Integer(), default=0)

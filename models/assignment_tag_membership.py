@@ -1,6 +1,7 @@
 """
 Membership table between Assignment Tags and Assignments
 """
+from typing import Optional
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import (Integer, Column, ForeignKey, Table)
 from models.generics.models import ma
