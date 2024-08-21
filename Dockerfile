@@ -35,7 +35,8 @@ FROM python:3.11
 
 # Install uWSGI and other necessary packages
 RUN apt-get update && apt-get install -y netcat-traditional  \
-    htop uwsgi uwsgi-plugin-python3 gettext-base \
+    htop gettext-base \
+    uwsgi uwsgi-plugin-python3 \
     python3-dev libc-dev libpq-dev gcc postgresql-client \
     curl
 
