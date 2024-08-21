@@ -62,7 +62,7 @@ echo "Database ready"
 envsubst < /etc/uwsgi/sites/uwsgi.ini.template > /etc/uwsgi/sites/uwsgi.ini
 
 # Confirm that the environment variables were substituted
-cat /etc/uwsgi/sites/uwsgi.ini
+ls -l /etc/uwsgi/sites/uwsgi.ini
 
 # Start the uWSGI Emperor
 exec uwsgi --emperor /etc/uwsgi/sites --uid www-data --gid www-data
