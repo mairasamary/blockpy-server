@@ -65,9 +65,5 @@ rm /etc/uwsgi/sites/uwsgi.ini.template
 # Confirm that the environment variables were substituted
 ls -l /etc/uwsgi/sites/uwsgi.ini
 
-echo "Hello from entrypoint.sh" >> /usr/src/app/logs/uwsgi_uwsgi.log
-
 # Start the uWSGI Emperor
 exec uwsgi --emperor /etc/uwsgi/sites --uid www-data --gid www-data
-
-echo "Goodbye from entrypoint.sh" >> /usr/src/app/logs/uwsgi_uwsgi.log
