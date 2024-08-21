@@ -65,4 +65,4 @@ envsubst < /etc/uwsgi/sites/uwsgi.ini.template > /etc/uwsgi/sites/uwsgi.ini
 ls -l /etc/uwsgi/sites/uwsgi.ini
 
 # Start the uWSGI Emperor
-exec uwsgi --emperor /etc/uwsgi/sites --uid www-data --gid www-data
+exec uwsgi --emperor /etc/uwsgi/sites --uid www-data --gid www-data --log-level debug
