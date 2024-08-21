@@ -15,7 +15,9 @@ def create_app(test_config=None, instance_config="configuration.py") -> Flask:
     :return: a new instance of the BlockPy app.
     """
     # create and configure the app
-    app = Flask('blockpy', instance_relative_config=True, static_folder='static')
+    instance_path = os.path.join(os.path.dirname(__file__), './instance')
+    app = Flask('blockpy', instance_relative_config=True, static_folder='static',
+                instance_path=instance_path)
                 #static_url_path='/static')
     # load the test config if passed in
     if test_config is not None:
