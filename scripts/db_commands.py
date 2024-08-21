@@ -12,8 +12,8 @@ from models import db
 from models.generics.base import find_all_linked_resources, SAFE_DELETE_ORDER
 from scripts.setup import cli
 
-@cli.command("created_seeded_db")
-def created_seeded_db():
+@cli.command("create_seeded_db")
+def create_seeded_db():
     """Creates the database tables and populates them if they are empty"""
     create_db()
     from models.user import User

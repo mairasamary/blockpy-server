@@ -54,7 +54,7 @@ cd /usr/src/app
 #else
 echo "Checking if the database needs to be created and seeded"
 #touch "$FLAG_FILE"
-python3 /usr/src/app/manage.py created_seeded_db
+python3 /usr/src/app/manage.py create_seeded_db
 echo "Database ready"
 # fi
 
