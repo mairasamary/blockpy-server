@@ -12,6 +12,17 @@ from models import db
 from models.generics.base import find_all_linked_resources, SAFE_DELETE_ORDER
 from scripts.setup import cli
 
+@cli.command("created_seeded_db")
+def created_seeded_db():
+    """Creates the database tables and populates them if they are empty"""
+    create_db()
+    from models.user import User
+    check_user_exists = User.query.first()
+    if not check_user_exists:
+        populate_db(True)
+    else:
+        click.echo("Database already seeded with at least one user!")
+
 
 @cli.command("create_db")
 def create_db():
@@ -23,10 +34,11 @@ def create_db():
 
 
 @cli.command("reset_db")
-def reset_db():
+@click.option('--force', '-f', 'force', is_flag=True, default=False)
+def reset_db(force: bool):
     """Drops all tables and recreates them"""
     click.echo("This will delete all existing tables and recreate them. You will lose all existing data.")
-    if click.confirm("Do you want to continue?"):
+    if force or click.confirm("Do you want to continue?"):
         click.echo("Dropping database tables")
         db.drop_all()
         click.echo("Creating database tables")
@@ -34,13 +46,14 @@ def reset_db():
 
 
 @cli.command("populate_db")
-def populate_db():
+@click.option('--force', '-f', 'force', is_flag=True, default=False)
+def populate_db(force: bool):
     """ Fills in predefined data into DB """
     from models.user import User
     from models.course import Course
     from models.role import Role
 
-    if not click.confirm("This may delete existing data. Are you sure you want to continue?"):
+    if not force and not click.confirm("This may delete existing data. Are you sure you want to continue?"):
         click.echo("Aborting!")
         return
 

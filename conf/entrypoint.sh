@@ -40,24 +40,23 @@ touch /usr/src/app/logs/uwsgi_blockpy.log
 
 cd /usr/src/app
 
-export PGPASSWORD="$SQL_PASSWORD"
+# export PGPASSWORD="$SQL_PASSWORD"
 
 # Check if the database is already initialized by looking for an existing table
-DB_CHECK=$(psql -U "$SQL_USER" -h "$SQL_HOST" -d "$SQL_NAME" -tAc "SELECT to_regclass('public.submission_index');")
+# DB_CHECK=$(psql -U "$SQL_USER" -h "$SQL_HOST" -d "$SQL_NAME" -tAc "SELECT to_regclass('public.submission_index');")
 
 #FLAG_FILE="/usr/src/app/initialized.flag"
 
 # If the table does not exist, initialize the database
-if [ -z "$DB_CHECK" ]; then
+# if [ -z "$DB_CHECK" ]; then
 #if [ -f "$FLAG_FILE" ]; then
-  echo "Database already being initialized, skipping initialization."
-else
-  echo "Initializing the database"
-  #touch "$FLAG_FILE"
-  yes | python3 /usr/src/app/manage.py create_db
-  yes | python3 /usr/src/app/manage.py populate_db
-  echo "Database initialized"
-fi
+#  echo "Database already being initialized, skipping initialization."
+#else
+echo "Checking if the database needs to be created and seeded"
+#touch "$FLAG_FILE"
+python3 /usr/src/app/manage.py created_seeded_db
+echo "Database ready"
+# fi
 
 # Substitute environment variables in the uWSGI configuration
 envsubst < /etc/uwsgi/sites/uwsgi.ini.template > /etc/uwsgi/sites/uwsgi.ini
