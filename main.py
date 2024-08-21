@@ -28,6 +28,7 @@ def create_app(test_config=None, instance_config="configuration.py") -> Flask:
     else:
         print("Loading Production!")
         app.config.from_object('config.ProductionConfig')
+    print(f"Loading instance configuration from {instance_config!r}")
     app.config.from_pyfile(instance_config)
 
     # Additional settings being overridden here
