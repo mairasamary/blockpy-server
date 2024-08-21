@@ -14,7 +14,7 @@ services:
       - instance_volume:/usr/src/app/instance
       - ./instance/configuration.py:/usr/src/app/instance/configuration.py
       - ./uwsgi.ini.template:/etc/uwsgi/uwsgi.ini.template  # Mount the template
-      - /run/uwsgi:/run/uwsgi  # Mount the socket directory
+      - uwsgi_socket:/run/uwsgi  # Mount the socket directory
     expose:
       - 8888
     depends_on:
@@ -68,7 +68,7 @@ services:
       - ./certs:/etc/nginx/certs
       - ./static/public:/var/www/public
       - logs_volume:/var/log/nginx
-      - /run/uwsgi:/run/uwsgi  # Mount the socket directory
+      - uwsgi_socket:/run/uwsgi
     ports:
       - "80:80"
       - "443:443"
@@ -87,3 +87,4 @@ volumes:
   logs_volume:
   backups_volume:
   instance_volume:
+  uwsgi_socket:
