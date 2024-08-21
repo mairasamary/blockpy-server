@@ -80,10 +80,16 @@ departments' tech staff can help you get a certificate. Otherwise, you could als
 although we haven't tried that). For development, it is often sufficient to self-sign your certificates.
 
 ```bash
-$ openssl genrsa -out server.key 2048
-$ openssl req -new -key server.key -out server.csr
-$ openssl x509 -req -days 365 -in server.csr -signkey server.key -out server.crt
-$ cat server.crt server.key > server.pem
+$ openssl genrsa -out certs/server.key 2048
+$ openssl req -new -key certs/server.key -out certs/server.csr
+$ openssl x509 -req -days 365 -in certs/server.csr -signkey certs/server.key -out certs/server.crt
+$ cat certs/server.crt certs/server.key > certs/server.pem
+```
+
+You also need to setup the `ssl_dhparam` file:
+
+```bash
+$ openssl dhparam -out certs/dhparam.pem 2048
 ```
 
 Make sure your server's firewall is configured to allow traffic for both HTTP and HTTPS. You may also need to configure
