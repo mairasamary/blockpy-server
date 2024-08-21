@@ -36,6 +36,7 @@ bcrypt
 python-slugify~=8.0.1
 pytest
 natsort~=8.4.0
+psycopg
 psycopg2
 psycopg2-binary
 email-validator
