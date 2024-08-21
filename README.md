@@ -485,6 +485,15 @@ $ sudo systemctl restart huey
 
 And you should now be able to have long-running asynchronous background tasks!
 
+## Large public files
+
+BlockPy has some large public files that it serves. You'll need to create a `static/public/` folder to host these files.
+The docker image will map these to the `/var/www/public/` folder.
+Alternatively, you can just host these files in the `/var/www/public` folder directly, and then adjust your Nginx
+configuration to serve them.
+We use this for the videos in the Bakery curriculum.
+This avoids making BlockPy's python server handle the large files.
+
 # Using BlockPy
 
 At this point, in theory, your instance is now publicly accessible from the browser. If not, google and our Issue
