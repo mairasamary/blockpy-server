@@ -8,7 +8,7 @@ processes = 5
 
 # socket = /run/uwsgi/blockpy.sock
 # chmod-socket = 664
-socket = :8888
+http-socket = :8888
 # uid = www-data
 # gid = www-data
 vacuum = true
