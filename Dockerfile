@@ -68,7 +68,7 @@ RUN pip install --no-cache /wheels/*
 # BlockPy's server has a few folders that it puts things in. 
 # Most of them can be created via the makefile:
 # add app
-COPY --chown=root:www-data . /usr/src/app
+COPY --chown=www-data:www-data . /usr/src/app
 
 # Copy the uWSGI template and entrypoint script
 COPY ./uwsgi.ini.template /etc/uwsgi/sites/uwsgi.ini.template
