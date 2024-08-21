@@ -6,10 +6,11 @@ module = wsgi
 master = true
 processes = 5
 
-socket = /run/uwsgi/blockpy.sock
-chmod-socket = 664
-uid = www-data
-gid = www-data
+# socket = /run/uwsgi/blockpy.sock
+# chmod-socket = 664
+socket = :8888
+# uid = www-data
+# gid = www-data
 vacuum = true
 
 buffer-size = 16384
