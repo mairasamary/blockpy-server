@@ -63,6 +63,7 @@ echo "Database ready"
 # Substitute environment variables in the uWSGI configuration
 envsubst < /etc/uwsgi/sites/uwsgi.ini.template > /etc/uwsgi/sites/uwsgi.ini
 rm /etc/uwsgi/sites/uwsgi.ini.template
+cat /etc/uwsgi/sites/uwsgi.ini
 
 # Confirm that the environment variables were substituted
 ls -l /etc/uwsgi/sites/uwsgi.ini
