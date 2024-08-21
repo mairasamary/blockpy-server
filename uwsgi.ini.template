@@ -21,8 +21,8 @@ harakiri = 60
 logto = ${BASE_DIR}/logs/uwsgi_%n.log
 chdir = ${BASE_DIR}/
 
-plugins = python3
-home = /usr/local/bin/python3.11
+plugins = python311
+# home = /usr/local/bin/python3.11
 # pythonpath = /usr/local/lib/python3.11/site-packages
 
 # settings to deal with subdirectory
