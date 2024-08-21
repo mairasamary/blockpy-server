@@ -16,6 +16,8 @@ vacuum = true
 buffer-size = 16384
 die-on-term = true
 
+harakiri = 60
+
 logto = ${BASE_DIR}/logs/uwsgi_%n.log
 chdir = ${BASE_DIR}/
 
