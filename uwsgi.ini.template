@@ -13,7 +13,7 @@ socket = :8888
 # gid = www-data
 vacuum = true
 
-buffer-size = 16384
+buffer-size = 65535 # 16384
 die-on-term = true
 
 harakiri = 60
