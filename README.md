@@ -58,6 +58,9 @@ $ cp conf/.env.dev.db.example .env.db
 
 And then modify their contents to match your server's settings.
 
+You'll need to create a `static/public/` folder to host any large static public files,
+like the videos from the Bakery curriculum.
+
 The instructions below are how we used to setup the server. They're relatively up-to-date as
 of the time of this writing, but they are the old-fashioned way.
 

@@ -30,6 +30,7 @@ static/gen/
 static/uploads/
 static/canvas/
 static/reports/
+static/public/
 
 # Databases, logs, etc.
 database/

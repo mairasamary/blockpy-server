@@ -47,6 +47,7 @@ RUN DIRS="/run/uwsgi \
     /usr/src/app/static/gen \
     /usr/src/app/static/.webassets-cache \
     /usr/src/app/static/uploads/submission_blocks \
+    /usr/src/app/static/public \
     /usr/src/app/backups \
     /usr/src/app/instance \
     /usr/src/app/instance/certs" \
