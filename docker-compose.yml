@@ -1,6 +1,7 @@
 services:
   web:
     build: ./
+    container_name: blockpy
     env_file:
       - ./.env
     environment:
@@ -26,6 +27,7 @@ services:
   db:
     image: postgres:16-bullseye
     restart: always
+    container_name: blockpy_db
     env_file:
       - ./.env.db
     environment:
@@ -36,6 +38,7 @@ services:
   redis:
     image: redis:7.4-alpine
     restart: always
+    container_name: blockpy_redis
     env_file:
       - ./.env
     ports:
@@ -44,6 +47,7 @@ services:
   huey:
     build: ./
     entrypoint: []
+    container_name: blockpy_huey
     command: python3 manage.py huey
     user: www-data
     working_dir: /usr/src/app
@@ -61,6 +65,7 @@ services:
       - ./.env
   nginx:
     image: nginx:1.27-alpine
+    container_name: blockpy_nginx
     env_file:
       - ./.env
     volumes:
