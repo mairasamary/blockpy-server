@@ -15,7 +15,10 @@ from scripts.setup import cli
 @cli.command("create_seeded_db")
 def create_seeded_db():
     """Creates the database tables and populates them if they are empty"""
-    create_db()
+    click.echo("Creating database tables, if needed.")
+    db.engine.echo = True
+    r = db.create_all()
+    click.echo(r)
     from models.user import User
     check_user_exists = User.query.first()
     if not check_user_exists:
@@ -47,6 +50,9 @@ def reset_db(force: bool):
 
 @cli.command("populate_db")
 @click.option('--force', '-f', 'force', is_flag=True, default=False)
+def click_populate_db(force: bool):
+    return populate_db(force)
+
 def populate_db(force: bool):
     """ Fills in predefined data into DB """
     from models.user import User
