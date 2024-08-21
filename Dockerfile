@@ -2,7 +2,7 @@
 # BUILDER #
 ###########
 
-FROM python:3.11-slim  as builder
+FROM python:3.11  as builder
 USER root
 RUN apt-get update && apt-get install -y python3-dev \
                       build-essential \
@@ -31,7 +31,7 @@ RUN /usr/src/app/venv/bin/pip wheel --no-cache-dir --no-deps --wheel-dir /usr/sr
 #########
 # FINAL #
 #########
-FROM python:3.11-slim
+FROM python:3.11
 
 # Install uWSGI and other necessary packages
 RUN apt-get update && apt-get install -y netcat-traditional  \
