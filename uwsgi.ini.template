@@ -22,6 +22,7 @@ logto = ${BASE_DIR}/logs/uwsgi_%n.log
 chdir = ${BASE_DIR}/
 
 plugins = python3
+pythonpath = /usr/local/lib/python3.9/site-packages
 
 # settings to deal with subdirectory
 manage-script-name=true
