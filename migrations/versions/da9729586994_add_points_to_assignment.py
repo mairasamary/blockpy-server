@@ -15,6 +15,7 @@ down_revision = 'c56a36fb0a55'
 branch_labels = None
 depends_on = None
 
+# ALTER TABLE "assignment" ADD COLUMN points INTEGER DEFAULT 1;
 
 def upgrade():
     op.add_column('assignment', sa.Column('points', sa.Integer(), default=1))

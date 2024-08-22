@@ -15,6 +15,7 @@ down_revision = 'be70df7520d1'
 branch_labels = None
 depends_on = None
 
+# ALTER TABLE assignment ADD COLUMN subordinate BOOLEAN DEFAULT FALSE;
 
 def upgrade():
     op.add_column('assignment', sa.Column('subordinate', sa.Boolean(), default=False))

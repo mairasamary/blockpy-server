@@ -570,17 +570,17 @@ We've rewritten huge chunks of the project. If you have an older version of Bloc
 The following commands are used to update the database to handle the change to Flask-Security-Too:
 
 ```sql
-alter table user
-    add fs_uniquifier VARCHAR(64) NOT NULL default hex(randomblob(64));
+-- SQLite version
+alter table "user" add fs_uniquifier VARCHAR(64) NOT NULL default hex(randomblob(64));
+-- Postgres version
+alter table "user" add fs_uniquifier VARCHAR(64) NOT NULL default concat(md5(random()::text), md5(random()::text));
 
-UPDATE user
-SET fs_uniquifier=hex(randomblob(64));
+-- Might need to run this too on sqlite? Not sure according to my notes 
+UPDATE "user" SET fs_uniquifier=hex(randomblob(64));
 
-create unique index user_fs_uniquifier_index
-    on user (fs_uniquifier);
+create unique index user_fs_uniquifier_index on "user" (fs_uniquifier);
 
-alter table role
-    add description TEXT;
+alter table "role" add description TEXT;
 ```
 
 <https://flask-security-too.readthedocs.io/en/stable/changelog.html#id32>
@@ -588,24 +588,19 @@ alter table role
 Courses can now be locked, which requires the following new field:
 
 ```sql
-alter table course
-    add locked BOOLEAN NOT NULL default 0;
+alter table "course" add locked BOOLEAN NOT NULL default FALSE;
 ```
 
 The submissions now track when they are submitted, graded, and due:
 
 ```sql
-alter table submission
-    add date_submitted DATETIME default NULL;
+alter table submission add date_submitted timestamp without time zone default NULL;
 
-alter table submission
-    add date_graded DATETIME default NULL;
+alter table submission add date_graded timestamp without time zone default NULL;
 
-alter table submission
-    add date_due DATETIME default NULL;
+alter table submission add date_due timestamp without time zone default NULL;
 
-alter table submission
-    add date_locked DATETIME default NULL;
+alter table submission add date_locked timestamp without time zone default NULL;
 
 
 
@@ -615,6 +610,8 @@ alter table submission
 Need to create a `GradeHistory` table:
 
 ```sql
+create table grade_history (     id             integer not null         primary key,     date_created   datetime,     date_modified  datetime,     submission_id  integer not null         references submission,     grader_id      integer         references user,     score          integer,     date_submitted datetime );
+
 create table grade_history
 (
     id             integer not null
@@ -629,7 +626,13 @@ create table grade_history
     date_submitted datetime
 );
 
-create index grade_history_submission_id_index
-    on grade_history (submission_id);
+create index grade_history_submission_id_index on grade_history (submission_id);
 
+```
+
+And some other indexes:
+
+```sql
+CREATE INDEX authentication_lookup ON authentication (type, value);
+CREATE INDEX CONCURRENTLY log_assignment_index ON "log" (assignment_id);
 ```

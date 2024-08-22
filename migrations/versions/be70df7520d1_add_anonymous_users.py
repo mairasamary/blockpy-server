@@ -15,6 +15,7 @@ down_revision = 'da9729586994'
 branch_labels = None
 depends_on = None
 
+# ALTER TABLE "user" ADD COLUMN anonymous BOOLEAN DEFAULT FALSE;
 
 def upgrade():
     op.add_column('user', sa.Column('anonymous', sa.Boolean(), nullable=True))
