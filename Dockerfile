@@ -71,7 +71,7 @@ RUN pip install --no-cache /wheels/*
 COPY --chown=www-data:www-data . /usr/src/app
 
 # Copy the uWSGI template and entrypoint script
-COPY ./uwsgi.ini.template /etc/uwsgi/sites/uwsgi.ini.template
+# COPY ./uwsgi.ini.template /etc/uwsgi/sites/uwsgi.ini.template
 COPY ./conf/entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
