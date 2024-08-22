@@ -34,6 +34,7 @@ services:
       POSTGRES_INITDB_ARGS: "--encoding=UTF8 --lc-collate=C --lc-ctype=C"
     volumes:
       - blockpy_db:/var/lib/postgresql/data/
+      - ./backups/:/backups
       - ./conf/db/init.sql:/docker-entrypoint-initdb.d/init.sql
   redis:
     image: redis:7.4-alpine
