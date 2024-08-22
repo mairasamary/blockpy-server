@@ -56,7 +56,7 @@ class AssignmentGroup(EnhancedBase):
     @staticmethod
     def new(owner_id, course_id, name="Untitled Group", url=None):
         last = (db.session.query(func.max(AssignmentGroup.position).label("last_position"))
-                .filter_by(course_id=course_id).one()).last_position
+                .filter_by(course_id=maybe_int(course_id)).one()).last_position
         assignment_group = AssignmentGroup(owner_id=owner_id, course_id=maybe_int(course_id),
                                            name=name, url=url,
                                            position=last + 1 if last else 1)
@@ -84,7 +84,7 @@ class AssignmentGroup(EnhancedBase):
                                 forked_id=self.id,
                                 forked_version=self.version,
                                 owner_id=new_owner_id,
-                                course_id=new_course_id,
+                                course_id=maybe_int(new_course_id),
                                 position=self.position,
                                 version=0)
         # TODO: Copy tags, sample_submissions, submissions
@@ -92,14 +92,14 @@ class AssignmentGroup(EnhancedBase):
         db.session.commit()
         assignments = []
         for assignment in self.get_assignments():
-            new_assignment = assignment.fork(new_owner_id, new_course_id)
+            new_assignment = assignment.fork(new_owner_id, maybe_int(new_course_id))
             models.AssignmentGroupMembership.move_assignment(new_assignment.id, group.id)
             assignments.append(new_assignment)
         return group, assignments
 
     @staticmethod
     def is_in_course(assignment_group_id, course_id):
-        return AssignmentGroup.query.get(assignment_group_id).course_id == course_id
+        return AssignmentGroup.query.get(assignment_group_id).course_id == maybe_int(course_id)
 
     @staticmethod
     def id_by_url(assignment_group_url):
@@ -119,7 +119,7 @@ class AssignmentGroup(EnhancedBase):
 
     @staticmethod
     def by_course(course_id):
-        return (AssignmentGroup.query.filter_by(course_id=course_id)
+        return (AssignmentGroup.query.filter_by(course_id=maybe_int(course_id))
                 .order_by(AssignmentGroup.name)
                 .all())
 
@@ -135,7 +135,7 @@ class AssignmentGroup(EnhancedBase):
     @staticmethod
     def get_ungrouped_assignments(course_id):
         return (models.Assignment.query
-                .filter_by(course_id=course_id)
+                .filter_by(course_id=maybe_int(course_id))
                 .outerjoin(models.AssignmentGroupMembership)
                 .filter(models.AssignmentGroupMembership.assignment_id == None)
                 .all())
