@@ -12,6 +12,7 @@ from slugify import slugify
 import models
 from common.dates import datetime_to_string
 from common.databases import optional_encoded_field, make_copy
+from common.maybe import maybe_int
 from models.generics.definitions import LatePolicy
 from models.generics.models import db, ma
 from models.generics.base import EnhancedBase, Base
@@ -200,7 +201,7 @@ class Assignment(EnhancedBase):
         """ Create a new Assignment for the course and owner. """
         if name is None:
             name = 'Untitled'
-        assignment = Assignment(owner_id=owner_id, course_id=course_id,
+        assignment = Assignment(owner_id=owner_id, course_id=maybe_int(course_id),
                                 url=url,
                                 type=type, name=level if type == 'maze' else name)
         db.session.add(assignment)
@@ -209,7 +210,7 @@ class Assignment(EnhancedBase):
 
     def move_course(self, new_course_id: int):
         """ Move this assignment to a different course, removing its membership in the old course. """
-        self.course_id = new_course_id
+        self.course_id = maybe_int(new_course_id)
         models.AssignmentGroupMembership.query.filter_by(assignment_id=self.id).delete()
         db.session.commit()
 
@@ -228,17 +229,17 @@ class Assignment(EnhancedBase):
     @staticmethod
     def is_in_course(assignment_id: int, course_id: int) -> bool:
         """ Determine if the given assignment belongs to the given course. """
-        return Assignment.query.get(assignment_id).course_id == course_id
+        return Assignment.query.get(assignment_id).course_id == maybe_int(course_id)
 
     @staticmethod
     def by_course(course_id, exclude_builtins=True) -> 'List[models.Assignment]':
         """ Get all of the assignments that belong to the given course. """
         if exclude_builtins:
-            return (Assignment.query.filter_by(course_id=course_id)
+            return (Assignment.query.filter_by(course_id=maybe_int(course_id))
                     .filter(Assignment.type != 'maze')
                     .all())
         else:
-            return Assignment.query.filter_by(course_id=course_id).all()
+            return Assignment.query.filter_by(course_id=maybe_int(course_id)).all()
 
     @staticmethod
     def by_url(assignment_url: Optional[str]) -> 'Optional[models.Assignment]':
@@ -257,11 +258,11 @@ class Assignment(EnhancedBase):
     @staticmethod
     def by_builtin(assignment_type: str, name: str, owner_id: int, course_id: int) -> 'models.Assignment':
         """ Retrieves or creates the given built-in assignment. """
-        assignment = Assignment.query.filter_by(course_id=course_id,
+        assignment = Assignment.query.filter_by(course_id=maybe_int(course_id),
                                                 mode=assignment_type,
                                                 name=name).first()
         if not assignment:
-            assignment = Assignment.new(owner_id, course_id)
+            assignment = Assignment.new(owner_id, maybe_int(course_id))
             assignment.mode = assignment_type
             assignment.name = name
             db.session.commit()
@@ -275,7 +276,7 @@ class Assignment(EnhancedBase):
         else:
             assignment = Assignment.query.get(assignment_id)
         if not assignment:
-            assignment = Assignment.new(owner_id, course_id)
+            assignment = Assignment.new(owner_id, maybe_int(course_id))
         return assignment
 
     def context_is_valid(self, context_id: str) -> bool:
@@ -292,12 +293,12 @@ class Assignment(EnhancedBase):
         """ Loads the relevant submission for this assignment given the user and course.
         If the Submission does not yet exist, then it is created.
         Potentially updates the new_submission_url and assignment_group_id too. """
-        return models.Submission.load_or_new(self, user_id, course_id, new_submission_url, assignment_group_id,
+        return models.Submission.load_or_new(self, user_id, maybe_int(course_id), new_submission_url, assignment_group_id,
                                              new_due_date, new_lock_date)
 
     def load(self, user_id: int, course_id: int) -> 'models.Submission':
         """ Loads the given submission """
-        return models.Submission.get_submission(self.id, user_id, course_id)
+        return models.Submission.get_submission(self.id, user_id, maybe_int(course_id))
 
     def for_read_only_editor(self, user_id: int, is_quiz: bool) -> dict:
         """
@@ -311,7 +312,7 @@ class Assignment(EnhancedBase):
     def for_editor(self, user_id: int, course_id: int, is_quiz: bool, with_history=False) -> dict:
         """ Returns a JSON version of this assignment, including the submission. """
         # Trust the user for now that they belong here, and give them a submission
-        submission = (None if user_id is None else self.load_or_new_submission(user_id, course_id))
+        submission = (None if user_id is None else self.load_or_new_submission(user_id, maybe_int(course_id)))
         result = {
             'assignment': self.encode_json() if not is_quiz else self.encode_quiz_json(),
             'submission': submission.encode_json() if submission else None,
@@ -540,7 +541,7 @@ class Assignment(EnhancedBase):
         if not late_policy:
             if course_id is None:
                 course_id = self.course_id
-            course = models.Course.query.get(course_id)
+            course = models.Course.query.get(maybe_int(course_id))
             settings = json.loads(course.settings or "{}")
             if 'late_policy' in settings:
                 late_policy = settings['late_policy']
