@@ -10,6 +10,7 @@ from sqlalchemy.sql.expression import true, tuple_
 from werkzeug.utils import secure_filename
 
 import models
+from common.maybe import maybe_int
 from models.generics.models import db, ma
 from models.generics.base import Base
 
@@ -153,7 +154,8 @@ class User(Base, UserMixin):
         return secure_filename(self.name().replace(' ', "_")) + extension
 
     def in_course(self, course_id):
-        return bool(models.Role.query.filter_by(course_id=course_id, user_id=self.id).first())
+        return bool(models.Role.query.filter_by(course_id=int(course_id),
+                                                user_id=self.id).first())
 
     def is_admin(self):
         return 'admin' in {role.name.lower() for role in self.roles}
@@ -161,13 +163,13 @@ class User(Base, UserMixin):
     def is_instructor(self, course_id=None):
         if course_id is not None:
             return 'instructor' in {role.name.lower() for role in self.roles
-                                    if role.course_id == course_id}
+                                    if role.course_id == int(course_id)}
         return 'instructor' in {role.name.lower() for role in self.roles}
 
     def is_grader(self, course_id=None):
         if course_id is not None:
             role_strings = {role.name.lower() for role in self.roles
-                            if role.course_id == course_id}
+                            if role.course_id == int(course_id)}
         else:
             role_strings = {role.name.lower() for role in self.roles}
 
@@ -176,7 +178,7 @@ class User(Base, UserMixin):
     def is_student(self, course_id=None):
         if course_id is not None:
             return 'learner' in {role.name.lower() for role in self.roles
-                                 if role.course_id == course_id}
+                                 if role.course_id == int(course_id)}
         return 'learner' in {role.name.lower() for role in self.roles}
 
     def is_test_user(self, course_id=None):
@@ -187,14 +189,15 @@ class User(Base, UserMixin):
 
     def add_role(self, name, course_id):
         if name in [id for id, _ in models.Role.CHOICES]:
-            new_role = models.Role(name=name, user_id=self.id, course_id=course_id)
+            new_role = models.Role(name=name, user_id=self.id,
+                                   course_id=maybe_int(course_id))
             db.session.add(new_role)
             db.session.commit()
             return new_role
         return None
 
     def update_roles(self, new_roles, course_id):
-        old_roles = [role for role in self.roles if role.course_id == course_id]
+        old_roles = [role for role in self.roles if role.course_id == maybe_int(course_id)]
         new_role_names = set(new_role_name.lower() for new_role_name in new_roles)
         for old_role in old_roles:
             if old_role.name.lower() not in new_role_names:
@@ -202,7 +205,7 @@ class User(Base, UserMixin):
         old_role_names = set(role.name.lower() for role in old_roles)
         for new_role_name in new_roles:
             if new_role_name.lower() not in old_role_names:
-                new_role = models.Role(name=new_role_name.lower(), user_id=self.id, course_id=course_id)
+                new_role = models.Role(name=new_role_name.lower(), user_id=self.id, course_id=maybe_int(course_id))
                 db.session.add(new_role)
         db.session.commit()
 
