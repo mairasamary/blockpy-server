@@ -11,6 +11,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import Column, String, DateTime, Integer, ForeignKey, Text, func, JSON, Index, and_
 
 from common.dates import datetime_to_string
+from common.maybe import maybe_int
 from models.generics.models import db, ma
 from models.generics.base import Base
 from sqlalchemy.orm import relationship
@@ -80,7 +81,7 @@ class Report(Base):
         # Database logging
         report = Report(task=task, parameters=parameters, message=message,
                         visibility=visibility, owner_id=owner_id, assignment_id=assignment_id,
-                        course_id=course_id)
+                        course_id=maybe_int(course_id))
         db.session.add(report)
         db.session.commit()
         return report
@@ -93,7 +94,7 @@ class Report(Base):
 
     @classmethod
     def by_course(cls, course_id, kind = None):
-        query = db.session.query(Report).filter(Report.course_id == course_id)
+        query = db.session.query(Report).filter(Report.course_id == maybe_int(course_id))
         if kind is not None:
             query = query.filter(Report.task == kind)
         query = query.order_by(Report.date_created.desc())
@@ -143,7 +144,7 @@ class Report(Base):
             self.visibility = visibility
         self.owner_id = owner_id
         self.assignment_id = assignment_id
-        self.course_id = course_id
+        self.course_id = maybe_int(course_id)
         db.session.commit()
         return self
 

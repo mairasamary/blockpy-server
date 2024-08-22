@@ -7,6 +7,7 @@ from marshmallow import fields
 from werkzeug.utils import secure_filename
 
 import models
+from common.maybe import maybe_int
 from models.generics.models import db, ma
 from models.generics.base import EnhancedBase, Base, VersionedBase
 from common.dates import datetime_to_string, string_to_datetime
@@ -79,16 +80,16 @@ class Course(Base):
 
     @staticmethod
     def export(course_id):
-        course = Course.query.get(course_id)
+        course = Course.query.get(maybe_int(course_id))
         # Get all course's assignments
-        course_assignments = models.Assignment.by_course(course_id, False)
+        course_assignments = models.Assignment.by_course(maybe_int(course_id), False)
         # Get all course's assignment groups
         groups = course.get_assignment_groups()
         assignment_groups = [a.encode_json() for a in groups]
 
         # Get all assignment groups' memberships
         assignment_memberships = [a.encode_json()
-                                  for a in models.AssignmentGroupMembership.by_course(course_id)]
+                                  for a in models.AssignmentGroupMembership.by_course(maybe_int(course_id))]
         # Get all assignment groups' assignments
         groups_assignments = {a for g in groups
                               for a in g.get_assignments()}
@@ -118,6 +119,7 @@ class Course(Base):
 
     @staticmethod
     def remove(course_id, remove_linked=False):
+        course_id = maybe_int(course_id)
         Course.query.filter_by(id=course_id).delete()
         if remove_linked:
             for m in models.AssignmentGroupMembership.by_course(course_id):

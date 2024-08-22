@@ -5,6 +5,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import Column, String, Integer, ForeignKey, DateTime
 
 import models
+from common.maybe import maybe_int
 from models.generics.models import db, ma
 from models.generics.base import Base
 
@@ -33,5 +34,5 @@ class Invite(Base, RoleMixin):
 
     @staticmethod
     def by_course(course_id):
-        return Invite.query.filter_by(course_id=course_id).all()
+        return Invite.query.filter_by(course_id=maybe_int(course_id)).all()
 

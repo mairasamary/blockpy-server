@@ -4,6 +4,7 @@ from sqlalchemy import (event, Integer, Date, ForeignKey, Column, Table,
                         String, Boolean, DateTime, Text, ForeignKeyConstraint,
                         cast, func, and_, or_, Index)
 
+from common.maybe import maybe_int
 from models.assignment import Assignment
 from models.assignment_group import AssignmentGroup
 from models.generics.models import db, ma
@@ -63,7 +64,7 @@ class AssignmentGroupMembership(EnhancedBase):
 
     @staticmethod
     def by_course(course_id):
-        groups = [g.id for g in models.AssignmentGroup.by_course(course_id)]
+        groups = [g.id for g in models.AssignmentGroup.by_course(maybe_int(course_id))]
         return (AssignmentGroupMembership
                 .query
                 .filter(AssignmentGroupMembership.assignment_group_id.in_(groups))

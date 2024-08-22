@@ -118,14 +118,14 @@ class User(Base, UserMixin):
         return models.Role.query.filter_by(user_id=self.id).all()
 
     def get_course_roles(self, course_id):
-        return models.Role.query.filter_by(user_id=self.id, course_id=course_id).all()
+        return models.Role.query.filter_by(user_id=self.id, course_id=maybe_int(course_id)).all()
 
     @staticmethod
     def get_user_role(course_id, user_id):
         return (db.session.query(models.Role, models.User)
                 .filter(models.Role.user_id == models.User.id)
                 .filter(models.Role.user_id == user_id)
-                .filter(models.Role.course_id == course_id)
+                .filter(models.Role.course_id == maybe_int(course_id))
                 .distinct())
 
     def get_editable_courses(self):
@@ -154,7 +154,7 @@ class User(Base, UserMixin):
         return secure_filename(self.name().replace(' ', "_")) + extension
 
     def in_course(self, course_id):
-        return bool(models.Role.query.filter_by(course_id=int(course_id),
+        return bool(models.Role.query.filter_by(course_id=maybe_int(course_id),
                                                 user_id=self.id).first())
 
     def is_admin(self):

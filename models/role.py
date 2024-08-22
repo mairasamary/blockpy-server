@@ -3,6 +3,7 @@ from flask_security.models.fsqla_v3 import FsRoleMixin as RoleMixin
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import Column, String, Integer, ForeignKey
 
+from common.maybe import maybe_int
 from models.generics.models import db, ma
 from models.generics.base import Base
 
@@ -52,4 +53,4 @@ class Role(Base):
 
     @staticmethod
     def by_course(course_id):
-        return Role.query.filter_by(course_id=course_id).all()
+        return Role.query.filter_by(course_id=maybe_int(course_id)).all()

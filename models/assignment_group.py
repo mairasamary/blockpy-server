@@ -7,6 +7,7 @@ from natsort import natsorted
 from werkzeug.utils import secure_filename
 
 import models
+from common.maybe import maybe_int
 from models.generics.models import db, ma
 from models.generics.base import EnhancedBase, Base
 from common.dates import datetime_to_string
@@ -56,7 +57,7 @@ class AssignmentGroup(EnhancedBase):
     def new(owner_id, course_id, name="Untitled Group", url=None):
         last = (db.session.query(func.max(AssignmentGroup.position).label("last_position"))
                 .filter_by(course_id=course_id).one()).last_position
-        assignment_group = AssignmentGroup(owner_id=owner_id, course_id=course_id,
+        assignment_group = AssignmentGroup(owner_id=owner_id, course_id=maybe_int(course_id),
                                            name=name, url=url,
                                            position=last + 1 if last else 1)
         db.session.add(assignment_group)

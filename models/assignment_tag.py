@@ -3,6 +3,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import Column, String, Integer, ForeignKey, func, Text, Table
 
 import models
+from common.maybe import maybe_int
 from models.assignment_tag_membership import assignment_tag_membership
 from models.generics.models import db, ma
 from models.generics.base import Base
@@ -64,7 +65,7 @@ class AssignmentTag(Base):
 
     @staticmethod
     def new(owner_id, course_id, name, kind, description, level):
-        assignment_tag = AssignmentTag(owner_id=owner_id, course_id=course_id,
+        assignment_tag = AssignmentTag(owner_id=owner_id, course_id=maybe_int(course_id),
                                        name=name, kind=kind, description=description,
                                        level=level)
         db.session.add(assignment_tag)

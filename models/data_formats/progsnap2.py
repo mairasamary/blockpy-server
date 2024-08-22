@@ -9,6 +9,7 @@ import time
 from natsort import natsorted
 from tqdm import tqdm
 
+from common.maybe import maybe_int
 from models.assignment_group import AssignmentGroup
 from models.course import Course
 from models.log import Log
@@ -183,7 +184,7 @@ def to_progsnap_event(log, order_id, code_states, latest_code_states, scores):
 
 def generate_maintable(zip_file, course_id, assignment_group_ids, user_ids, exclude=None):
     code_states, latest_code_states, scores = {}, {}, {}
-    query = Log.query.filter_by(course_id=course_id)
+    query = Log.query.filter_by(course_id=maybe_int(course_id))
     if assignment_group_ids is not None:
         assignment_ids = [assignment.id
                           for group_id in assignment_group_ids

@@ -9,6 +9,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import Column, String, Integer, ForeignKey, Text, func, JSON, Index, and_
 
 import models
+from common.maybe import maybe_int
 from models.generics.models import db, ma
 from models.generics.base import Base
 from common.dates import datetime_to_string, string_to_datetime
@@ -87,7 +88,7 @@ class Log(Base):
             file_path, category, label, message, client_timestamp, client_timezone):
         # Database logging
         log = Log(assignment_id=assignment_id, assignment_version=assignment_version,
-                  course_id=course_id,
+                  course_id=maybe_int(course_id),
                   subject_id=subject_id, file_path=file_path, event_type=event_type,
                   category=category, label=label, message=message.replace("\0", ""),
                   client_timestamp=client_timestamp,
@@ -105,7 +106,7 @@ class Log(Base):
     def calculate_feedbacks(assignment_id, course_id):
         return (db.session.query(func.count(Log.id))
                 .filter(Log.assignment_id == assignment_id)
-                .filter(Log.course_id == course_id)
+                .filter(Log.course_id == maybe_int(course_id))
                 .filter(Log.event_type == 'feedback')
                 .filter(Log.category != "Success")
                 .group_by(Log.subject_id)
@@ -114,13 +115,13 @@ class Log(Base):
     @staticmethod
     def get_logs_for_user_course(course_id, user_id):
         return (db.session.query(Log)
-                .filter(Log.course_id == course_id)
+                .filter(Log.course_id == maybe_int(course_id))
                 .filter(Log.subject_id == user_id)
                 .all())
 
     @staticmethod
     def get_logs_for_course(course_id):
-        return Log.query.filter_by(course_id=course_id).all()
+        return Log.query.filter_by(course_id=maybe_int(course_id)).all()
 
     @staticmethod
     def get_users_for_course(course_id):

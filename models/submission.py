@@ -16,6 +16,7 @@ from werkzeug.utils import secure_filename
 
 
 import models
+from common.maybe import maybe_int
 from models.generics.definitions import LatePolicy
 from models.assignment import Assignment
 from models.log import Log
@@ -225,7 +226,7 @@ class Submission(EnhancedBase):
                 .filter(Submission.user_id == models.User.id)
                 .filter(Submission.assignment_id == models.Assignment.id)
                 .filter(Submission.assignment_id == assignment_id)
-                .filter(Submission.course_id == course_id)
+                .filter(Submission.course_id == maybe_int(course_id))
                 .all())
 
     @staticmethod

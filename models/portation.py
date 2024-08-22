@@ -19,6 +19,7 @@ from werkzeug.utils import secure_filename
 
 import pdfkit
 
+from common.maybe import maybe_int
 from models.generics.models import db
 from models.assignment import Assignment
 from models.assignment_group import AssignmentGroup
@@ -73,7 +74,7 @@ def import_bundle(bundle, owner_id, course_id=None, update=True, can_force=False
         db.session.add(course)
         db.session.commit()
     else:
-        course = Course.by_id(course_id)
+        course = Course.by_id(maybe_int(course_id))
     assignment_remap = {}
     assignments = bundle.get('assignments', [])
     for assignment_data in natsorted(assignments, key=lambda a: a['name']):

@@ -7,6 +7,7 @@ import json
 from natsort import natsorted
 from tqdm import tqdm
 
+from common.maybe import maybe_int
 from models.assignment_group import AssignmentGroup
 from models.course import Course
 from models.data_formats.progsnap2 import to_progsnap_event, HEADERS, LINK_SUBJECT_HEADERS, get_course_users, \
@@ -102,7 +103,7 @@ class CodeStates:
 def generate_maintable(cursor, connection, course_id, assignment_group_ids, user_ids, exclude):
     code_states = CodeStates(cursor, connection)
     latest_code_states, scores = {}, {}
-    query = Log.query.filter_by(course_id=course_id)
+    query = Log.query.filter_by(course_id=maybe_int(course_id))
     if assignment_group_ids is not None:
         assignment_ids = [assignment.id
                           for group_id in assignment_group_ids
@@ -138,7 +139,7 @@ def generate_link_subjects(cursor, connection, course_id, user_ids):
     spots = ", ".join("?" for h in LINK_SUBJECT_HEADERS)
     cursor.execute(f"CREATE TABLE LinkSubject ({headers})")
     connection.commit()
-    users, user_roles = get_course_users(course_id, user_ids)
+    users, user_roles = get_course_users(maybe_int(course_id), user_ids)
 
     # Report their information
     for user_id, user in natsorted(users.items(), lambda u: (u[1].last_name, u[1].first_name)):
@@ -163,7 +164,7 @@ def generate_link_assignments(cursor, connection, course_id, assignment_group_id
     cursor.execute(f"CREATE TABLE LinkAssignment ({headers})")
     connection.commit()
 
-    assignments, assignment_groups, all_groups = get_all_assignments_and_groups(course_id, assignment_group_ids, exclude)
+    assignments, assignment_groups, all_groups = get_all_assignments_and_groups(maybe_int(course_id), assignment_group_ids, exclude)
 
     for assignment in natsorted(assignments, key=lambda a: a.name):
         cursor.execute(f"INSERT INTO LinkAssignment ({headers}) VALUES ({spots})",

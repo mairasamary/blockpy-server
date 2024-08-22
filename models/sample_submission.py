@@ -3,6 +3,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import Column, String, Integer, ForeignKey, func, Text, Table, Boolean
 
 import models
+from common.maybe import maybe_int
 from models.generics.models import db, ma
 from models.generics.base import VersionedBase, Base
 from common.dates import datetime_to_string, string_to_datetime
@@ -74,7 +75,7 @@ class SampleSubmission(VersionedBase):
 
     @staticmethod
     def new(owner_id, course_id, name):
-        sample_submission = SampleSubmission(owner_id=owner_id, course_id=course_id, name=name)
+        sample_submission = SampleSubmission(owner_id=owner_id, course_id=maybe_int(course_id), name=name)
         db.session.add(sample_submission)
         db.session.commit()
         return sample_submission
