@@ -20585,7 +20585,7 @@ Sk.builtin.file = function (name, mode, buffering, encoding, errors, newline, cl
     this.encoding = Sk.ffi.remapToJs(encoding);
     this.errors = Sk.ffi.remapToJs(errors);
     if (Sk.builtin.checkNone(newline)) {
-        this.newline = /\n/;
+        this.newline = "\n";
     } else {
         this.newline = Sk.ffi.remapToJs(newline);
     }
@@ -37203,7 +37203,7 @@ var Sk = {}; // jshint ignore:line
 
 Sk.build = {
     githash: "318ea79ab8fda526919e71ae965f85e4602171cb",
-    date: "2024-07-02T17:34:22.130Z"
+    date: "2024-07-08T12:35:52.497Z"
 };
 
 /**
