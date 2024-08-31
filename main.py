@@ -7,11 +7,6 @@ from flask import Flask
 from flask_debugtoolbar import DebugToolbarExtension
 from flask_jwt_extended import JWTManager
 
-# Print out current python version and directory of the python executable
-import sys
-print(sys.version)
-print(sys.executable)
-
 
 def create_app(test_config=None, instance_config="configuration.py") -> Flask:
     """
