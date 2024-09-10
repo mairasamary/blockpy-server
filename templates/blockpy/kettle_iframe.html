@@ -12,7 +12,10 @@
         }
         function debugError(where, error) {
             console.error(where, error);
-            parent.postMessage({type: 'error', message: error.message}, '*');
+            // Only post to parent if we are not the top level window
+            if (parent !== window) {
+                parent.postMessage({type: 'error', message: error != null ? error.message : "ERROR IS BLANK"}, '*');
+            }
         }
         function executeCode(code) {
             parent.postMessage({type: 'execution.begun', message: "Executing code"}, '*');
@@ -20,7 +23,7 @@
             const worker = new Worker(URL.createObjectURL(blob));
             // Proxy messages back to parent
             worker.addEventListener('message', (e) => {
-                debugLog("Iframe Web Worker Heard:", e)
+                // debugLog("Iframe Web Worker Heard:", e)
                 try {
                     e = JSON.parse(JSON.stringify(e.data));
                 } catch (e) {
@@ -39,7 +42,7 @@
 
         let latestWebWorker = null;
         addEventListener("message", (event) => {
-            debugLog("Iframe heard:", event);
+            // debugLog("Iframe heard:", event);
             const data = event.data;
             // {type: 'execute', code: string}
             if (data.type === 'execute') {
@@ -55,6 +58,8 @@
                 // {type: 'debug', value: boolean?}
             } else if (data.type === 'debug') {
                 debugMode = data.value != null ? data.value : !debugMode;
+            } else if (data.type === undefined) {
+                // Do nothing with undefined types, they aren't for us!
             } else {
                 debugError("Iframe General Error: Unknown message type:", data.type);
             }

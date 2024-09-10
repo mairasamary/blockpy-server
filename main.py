@@ -61,7 +61,7 @@ def create_app(test_config=None, instance_config="configuration.py") -> Flask:
     app.huey = huey
 
     # Turn on Debug Toolbar
-    DebugToolbarExtension(app)
+    app.debug_toolbar = DebugToolbarExtension(app)
 
     # Set Up JWT
     jwt = JWTManager(app)

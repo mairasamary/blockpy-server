@@ -799,6 +799,10 @@ export class Kettle extends AssignmentInterface {
         clearTimeout(this.executionConfirmation);
         this.updateStatus(reason, false);
         this.logExecution();
+        if (this.latestListener !== null) {
+            window.removeEventListener('message', this.latestListener);
+            this.latestListener = null;
+        }
     }
 
     possibleExecutionFailure(request: FeedbackExecutionRequest, attempts: number) {
@@ -960,6 +964,10 @@ export class Kettle extends AssignmentInterface {
         this.terminateExecution();
         this.iframe = null;
         clearInterval(this.timeClock);
+        if (this.latestListener !== null) {
+            window.removeEventListener('message', this.latestListener);
+            this.latestListener = null;
+        }
     }
 
     saveStudentAnswer() {
