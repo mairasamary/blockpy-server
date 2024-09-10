@@ -159,7 +159,7 @@ class AssignmentGroup(EnhancedBase):
                                  models.AssignmentGroupMembership.id)
                        .all())
 
-    def get_select_url(self, menu):
+    def get_select_url(self, menu = 'embed'):
         # TODO: Refactor web logic outside of model?
         if self.url:
             return url_for('assignments.load', assignment_group_url=self.url, _external=True, embed=menu == 'embed')

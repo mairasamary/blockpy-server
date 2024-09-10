@@ -38,6 +38,7 @@ def add_group():
     select_url = get_select_menu_link(assignment_group.id,
                                       assignment_group.name, is_embedded, True)
     return jsonify(success=True, id=assignment_group.id, url=assignment_group.url,
+                   link=assignment_group.get_select_url(),
                    name=assignment_group.name, select=select_url)
 
 
@@ -61,6 +62,7 @@ def fork_group():
     # Result
     select_url = get_select_menu_link(new_assignment_group.id, new_assignment_group.name, is_embedded, True)
     return jsonify(success=True, id=new_assignment_group.id,
+                   link=new_assignment_group.get_select_url(),
                    name=new_assignment_group.name, select=select_url)
 
 
@@ -100,6 +102,7 @@ def edit_group():
     changed = assignment_group.edit(dict(name=new_name, url=new_url))
     # Result
     return jsonify(success=True, name=assignment_group.name,
+                   link=assignment_group.get_select_url(),
                    url=assignment_group.url)
 
 

@@ -4,6 +4,7 @@ import json
 from typing import Tuple, List, Optional, Any
 from dataclasses import dataclass
 
+from flask import url_for
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import Column, String, Text, Integer, ForeignKey, UniqueConstraint, Boolean
 from werkzeug.utils import secure_filename
@@ -180,6 +181,12 @@ class Assignment(EnhancedBase):
             return secure_filename(self.url) + extension
         else:
             return secure_filename(self.name) + extension
+
+    def get_select_url(self, menu='embed'):
+        # TODO: Refactor web logic outside of model?
+        if self.url:
+            return url_for('assignments.load', assignment_url=self.url, _external=True, embed=menu == 'embed')
+        return url_for('assignments.load', assignment_id=self.id, _external=True, embed=menu == 'embed')
 
     def get_points(self):
         if self.points is None:

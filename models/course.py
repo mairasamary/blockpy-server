@@ -256,7 +256,8 @@ class Course(Base):
                  'groups': [{'id': group.id,
                              'name': group.name,
                              'url': group.url,
-                             'select_url': group.get_select_url(menu)}
+                             'select_url': group.get_select_url(menu),
+                             'link': group.get_select_url(menu)}
                             for group in models.AssignmentGroup.by_course(course.id)]
                  }
                 for course in courses]

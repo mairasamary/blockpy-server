@@ -84,7 +84,8 @@ function MainModel() {
             'group_id': ko.observable({{ assignment[1].id|tojson if assignment[1] else -1}}),
             'id': {{ assignment[0].id }},
             'title': ko.observable("{{assignment[0].title()}}"),
-            'select': "{{ return_url }}?url={{url_for('assignments.load', assignment_id=assignment[0].id, _external=True, embed= menu == 'embed') | urlencode}}&return_type={{ 'lti_launch_url' if menu != 'embed' else 'iframe' }}&title={{ assignment[0].title()|urlencode }}&text=BlockPy%20Exercise&width=100%25&height=600", 
+            'select': "{{ return_url }}?url={{url_for('assignments.load', assignment_id=assignment[0].id, _external=True, embed= menu == 'embed') | urlencode}}&return_type={{ 'lti_launch_url' if menu != 'embed' else 'iframe' }}&title={{ assignment[0].title()|urlencode }}&text=BlockPy%20Exercise&width=100%25&height=600",
+            'link': {{ assignment[0].get_select_url() |tojson }},
             'edit': "{{ url_for('assignments.load', assignment_id=assignment[0].id, course_id=assignment[0].course_id )|safe }}",
             'exportUrl': "{{ url_for('assignments.export', assignment_id=assignment[0].id)|safe }}",
             'modified': ko.observable('{{ assignment[0].date_modified.strftime(" %I:%M%p on %a %d, %b %Y").replace(" 0", " ") }}'),
@@ -102,6 +103,7 @@ function MainModel() {
             {% for group in course.groups %}
             {   'name': ko.observable({{ group.name|tojson }}),
                 'url': ko.observable({{ group.url|tojson }}),
+                'link': ko.observable({{ group.link|tojson }}),
                 'id': ko.observable({{ group.id|tojson }})
             }{{ "," if not loop.last }}
             {% endfor %}
@@ -123,12 +125,13 @@ function MainModel() {
                                         'name': v.name(),
                                         'url': v.url(),
                                         'groups': v.groups().map(function(elem) {
-                                            return {'id': elem.id(), 'name': elem.name(), 'url': elem.url(), 'assignments': []}
+                                            return {'id': elem.id(), 'name': elem.name(), 'url': elem.url(), 'assignments': [], 'link': elem.link()}
                                         })};
             strayGroups[course_id] = {
                 'id': -1,
                 'name': 'Ungrouped Assignments',
                 'url': "",
+                'link': "",
                 'assignments': []
             };
             mappedCourses[course_id].groups.push(strayGroups[course_id])
@@ -144,7 +147,7 @@ function MainModel() {
                                             'name': new_course.name(),
                                             'url': new_course.url(),
                                             'groups': new_course.groups().map(function(elem) {
-                                                return {'id': elem.id(), 'name': elem.name(), 'assignments': []}
+                                                return {'id': elem.id(), 'name': elem.name(), 'assignments': [], 'url': elem.url(), 'link': elem.link()}
                                             })};
                 strayGroups[course_id] = {
                     'id': -1,
@@ -234,6 +237,7 @@ function MainModel() {
                     var group = findById(course.groups(), group_id, true);
                     group.name(new_name);
                     group.url(new_url);
+                    group.link(data.link);
                 } else {
                     alert("ERROR"+data.message);
                     console.error(data.message);
@@ -259,6 +263,7 @@ function MainModel() {
                     'id': ko.observable(data.id),
                     'name': ko.observable(data.name),
                     'url': ko.observable(data.url),
+                    'link': '', // ko.observable(data.link), // TODO
                     'assignments': ko.observableArray()
                 });
                 mainModel.createAssignmentGroup(data.id);
@@ -289,6 +294,7 @@ function MainModel() {
                         'id': ko.observable(data.id),
                         'name': ko.observable(data.name),
                         'url': ko.observable(data.url),
+                        'link': '', // ko.observable(data.link), // TODO
                         'assignments': ko.observableArray()
                     });
                     mainModel.createAssignmentGroup(data.id);
@@ -598,7 +604,9 @@ div.overlay {
         <td colspan="3">
             <a href="#" data-bind="click: $root.renameGroup.bind($data, $parent)">
                 <strong data-bind="text: name"></strong></a><br>
-                <code data-bind="text: url" style="color: #333"></code>
+            <code data-bind="text: url" style="color: #333">
+            </code>
+            <a href="" data-bind="attr: {href: link}" target="_blank"><small class="fas fa-external-link-alt"></small></a>
         </td>
         <td>
             <!--<button class='remove-button btn btn-danger btn-xs' type='button'
@@ -631,7 +639,9 @@ div.overlay {
     <tr class='hover-movers-rows'>
         <td style='width: 25%'>
             <strong data-bind="text: title"></strong><br>
-            <code data-bind="text: url" style="color: #333"></code><br>
+            <code data-bind="text: url" style="color: #333"></code>
+            <a href="" data-bind="attr: {href: link}" target="_blank"><small class="fas fa-external-link-alt"></small></a>
+            <br>
             Last modified at
             <span data-bind="text: modified"></span>
         </td>
