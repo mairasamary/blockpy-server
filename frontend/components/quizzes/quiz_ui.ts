@@ -22,6 +22,9 @@ export const QUIZ_PREVIEW = `
             <!-- ko case: 'IMMEDIATE' -->
             You can see the feedback for each question below.<br> 
             <!-- /ko -->
+            <!-- ko case: 'SUMMARY' -->
+            However, you will <strong>not</strong> see any feedback until the instructor releases grades; the feedback you receive will be limited.<br>
+            <!-- /ko -->
             <!-- ko case: 'NONE' -->
             However, you will <strong>not</strong> see any feedback.<br>
             <!-- /ko -->
@@ -62,6 +65,9 @@ export const INSTRUCTIONS_BAR_HTML = (position: string) => `
             <span data-bind="switch: quiz()?.feedbackType()">
                 <!-- ko case: 'IMMEDIATE' -->
                 You can see the feedback for each question ${position}.<br>
+                <!-- /ko -->
+                <!-- ko case: 'SUMMARY' -->
+                However, you will <strong>not</strong> see any feedback until the instructor releases grades; the feedback you receive will be limited.<br>
                 <!-- /ko -->
                 <!-- ko case: 'NONE' -->
                 However, you will <strong>not</strong> see any feedback.<br>

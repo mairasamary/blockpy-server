@@ -85,7 +85,8 @@ function MainModel() {
             'id': {{ assignment[0].id }},
             'title': ko.observable("{{assignment[0].title()}}"),
             'select': "{{ return_url }}?url={{url_for('assignments.load', assignment_id=assignment[0].id, _external=True, embed= menu == 'embed') | urlencode}}&return_type={{ 'lti_launch_url' if menu != 'embed' else 'iframe' }}&title={{ assignment[0].title()|urlencode }}&text=BlockPy%20Exercise&width=100%25&height=600",
-            'link': {{ assignment[0].get_select_url() |tojson }},
+            'link': ko.observable({{ assignment[0].get_select_url() |tojson }}),
+            'submissions': "{{ url_for('courses.submissions_filter', course_id=assignment[0].course_id, criteria='assignment', search_key=assignment[0].id)|safe }}",
             'edit': "{{ url_for('assignments.load', assignment_id=assignment[0].id, course_id=assignment[0].course_id )|safe }}",
             'exportUrl': "{{ url_for('assignments.export', assignment_id=assignment[0].id)|safe }}",
             'modified': ko.observable('{{ assignment[0].date_modified.strftime(" %I:%M%p on %a %d, %b %Y").replace(" 0", " ") }}'),
@@ -263,7 +264,7 @@ function MainModel() {
                     'id': ko.observable(data.id),
                     'name': ko.observable(data.name),
                     'url': ko.observable(data.url),
-                    'link': '', // ko.observable(data.link), // TODO
+                    'link': ko.observable(''), // ko.observable(data.link), // TODO
                     'assignments': ko.observableArray()
                 });
                 mainModel.createAssignmentGroup(data.id);
@@ -294,7 +295,7 @@ function MainModel() {
                         'id': ko.observable(data.id),
                         'name': ko.observable(data.name),
                         'url': ko.observable(data.url),
-                        'link': '', // ko.observable(data.link), // TODO
+                        'link': ko.observable(''), // ko.observable(data.link), // TODO
                         'assignments': ko.observableArray()
                     });
                     mainModel.createAssignmentGroup(data.id);
@@ -377,7 +378,9 @@ function MainModel() {
                     'name': ko.observable(data.name),
                     'title': ko.observable(data.title),
                     'select': "{{ return_url }}?url="+data.select,
+                    'link': ko.observable(data.link),
                     'edit': data.edit,
+                    'submissions': data.submissions,
                     'exportUrl': data.export,
                     'modified': ko.observable(data.date_modified),
                     'body': ko.observable(data.body)
@@ -417,6 +420,7 @@ function MainModel() {
                         'title': ko.observable(data.title),
                         'select': "{{ return_url }}?url=" + data.select,
                         'edit': data.edit,
+                        'submissions': data.submissions,
                         'exportUrl': data.export,
                         'modified': ko.observable(data.date_modified),
                         'body': ko.observable(data.body)
@@ -672,7 +676,8 @@ div.overlay {
                     <a class="dropdown-item" href="#" data-bind="click: $root.removeAssignment.bind($data, $parent)">Delete</a>
                     <a class="dropdown-item" href="#" data-bind="click: $root.forkAssignment.bind($data, $parent, false)">Fork (prompt URL)</a>
                     <a class="dropdown-item" href="#" data-bind="click: $root.forkAssignment.bind($data, $parent, true)">Fork</a>
-                    <a class="dropdown-item" target="_blank" data-bind="attr: {href: exportUrl}">Export</a>
+                    <a class="dropdown-item" target="_blank" data-bind="attr: {href: exportUrl}">Export Assignment</a>
+                    <a class="dropdown-item" target="_blank" data-bind="attr: {href: submissions}">View Submissions</a>
                 </div>
             </div>
         </td>

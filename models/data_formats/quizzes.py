@@ -102,7 +102,7 @@ def check_quiz_question(question, check, student) -> (float, bool, list):
     elif question.get('type') == 'matching_question':
         corrects = [check_matching_question(student_part, correct_part)
                     for student_part, correct_part in zip(student, check.get('correct', []))]
-        feedbacks = [feedback.get(student_part)
+        feedbacks = [feedback if isinstance(feedback, str) else feedback.get(student_part)
                      for student_part, feedback in zip(student, check.get('feedback', []))]
         message = "\n<br>".join(map(str, feedbacks)) if any(map(bool, feedbacks)) else ("Correct" if all(corrects) else 'Incorrect')
         return sum(corrects)/len(corrects) if corrects else 0, all(corrects), message

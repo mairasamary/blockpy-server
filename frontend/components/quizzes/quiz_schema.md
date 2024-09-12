@@ -32,6 +32,7 @@ The settings are fairly straightforward, so let's start with them.
 * `feedbackType`: How soon students can see the feedback. There's supposed to be some other options, but I didn't finish them.
   * `"immediate"`: As soon as they submit the quiz, they can see feedback.
   * `"none"`: They can't see feedback at all.
+  * `"summmary"`: When they are outside of the exam, they'll be able to see a limited summary bit of information about their performance.
 * `attemptLimit`: How many times they can attempt the quiz. This is a number, with `-1` for infinite attempts (the default). 
 * `coolDown`: How many minutes you must wait between attempts; -1 is no minutes and is the default. I doubt I even implemented this.
 * `poolRandomness`: What kind of randomness to use for the question pools, which decides which questions students see.

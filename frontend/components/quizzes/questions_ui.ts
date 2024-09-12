@@ -14,7 +14,7 @@ export const QUESTIONS_SUBMISSION_UI = `
                                    text: $data.editing() ? 'Cancel' : 'Edit'"></button>
                 </div>
                 <h6 class="card-subtitle mb-2 text-muted">
-                    <!-- ko if: feedback() && (!$component.asStudent() || $component.quiz().feedbackType() !== 'NONE') -->
+                    <!-- ko if: feedback() && (!$component.asStudent() || $component.quiz().feedbackType() === 'IMMEDIATE') -->
                     <span data-bind="text: Math.round(((feedback().score * points) + Number.EPSILON) * 100) / 100 + ' /'"></span>
                     <!-- /ko -->
                     <span data-bind="text: points"></span> points
@@ -139,7 +139,7 @@ export const QUESTIONS_SUBMISSION_UI = `
                         </div>
                     </div>
                 </div>
-                <!-- ko if: feedback() && (!$component.asStudent() || $component.quiz().feedbackType() !== 'NONE') -->
+                <!-- ko if: feedback() && (!$component.asStudent() || $component.quiz().feedbackType() === 'IMMEDIATE') -->
                 <div class="border rounded m-2 p-2" data-bind="class: feedback().status == 'error' ? 'bg-dark' :
                                                                       feedback().correct ? 'bg-success' : 'bg-danger'">
                     <span data-bind="html: feedback().message" class="text-white"></span>

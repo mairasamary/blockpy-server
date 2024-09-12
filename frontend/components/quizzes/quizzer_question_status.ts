@@ -60,7 +60,7 @@ export class QuizzerQuestionStatus {
             const graded = this.question && this.question.feedback();
             const errored = graded && this.question.feedback().status === "error";
             const correct = graded && this.question.feedback().correct;
-            if (graded && (!this.asStudent() || this.quiz().feedbackType() !== QuizFeedbackType.NONE)) {
+            if (graded && (!this.asStudent() || this.quiz().feedbackType() === QuizFeedbackType.IMMEDIATE)) {
                 if (errored) {
                     return 'error';
                 } else if (correct) {
