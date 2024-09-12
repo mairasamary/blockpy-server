@@ -157,12 +157,12 @@ class Log(Base):
             if isinstance(assignment_id, str) and ',' in assignment_id:
                 logs = logs.filter(Log.assignment_id.in_([int(a) for a in assignment_id.split(",")]))
             else:
-                logs = logs.filter_by(assignment_id=assignment_id)
+                logs = logs.filter_by(assignment_id=int(assignment_id))
         if user_id is not None:
             if isinstance(user_id, str) and ',' in user_id:
                 logs = logs.filter(Log.subject_id.in_([int(a) for a in user_id.split(",")]))
             else:
-                logs = logs.filter_by(subject_id=user_id)
+                logs = logs.filter_by(subject_id=int(user_id))
         logs = logs.order_by(Log.date_created.desc())
         if page_offset is not None:
             logs = logs.offset(page_offset)
