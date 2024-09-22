@@ -78,9 +78,10 @@ class AssignmentGroup(EnhancedBase):
         models.AssignmentGroupMembership.query.filter_by(assignment_group_id=assignment_group_id).delete()
         db.session.commit()
 
-    def fork(self, new_owner_id: int, new_course_id: int):
-        group = AssignmentGroup(name=self.name,
-                                url=make_copy(self.url),
+    def fork(self, new_owner_id: int, new_course_id: int, with_assignments: bool=True,
+             new_url = None, new_name= None):
+        group = AssignmentGroup(name=new_name if new_name is not None else self.name,
+                                url=new_url if new_url is not None else make_copy(self.url),
                                 forked_id=self.id,
                                 forked_version=self.version,
                                 owner_id=new_owner_id,
@@ -91,10 +92,11 @@ class AssignmentGroup(EnhancedBase):
         db.session.add(group)
         db.session.commit()
         assignments = []
-        for assignment in self.get_assignments():
-            new_assignment = assignment.fork(new_owner_id, maybe_int(new_course_id))
-            models.AssignmentGroupMembership.move_assignment(new_assignment.id, group.id)
-            assignments.append(new_assignment)
+        if with_assignments:
+            for assignment in self.get_assignments():
+                new_assignment = assignment.fork(new_owner_id, maybe_int(new_course_id))
+                models.AssignmentGroupMembership.move_assignment(new_assignment.id, group.id)
+                assignments.append(new_assignment)
         return group, assignments
 
     @staticmethod
@@ -122,6 +124,10 @@ class AssignmentGroup(EnhancedBase):
         return (AssignmentGroup.query.filter_by(course_id=maybe_int(course_id))
                 .order_by(AssignmentGroup.name)
                 .all())
+
+    @staticmethod
+    def check_if_url_exists(url: str) -> bool:
+        return AssignmentGroup.query.filter_by(url=url).first() is not None
 
     @staticmethod
     def by_assignment(assignment_id):
@@ -180,3 +186,6 @@ class AssignmentGroup(EnhancedBase):
             "Memberships": self.memberships
         }
         return resources
+
+    def get_existing_forks(self):
+        return AssignmentGroup.query.filter_by(forked_id=self.id).all()

@@ -73,6 +73,15 @@ def require_course_grader(user, course_id, allow_fork=False):
         return False
     return True
 
+def require_course_adopter(user, course_id):
+    if user.is_grader(course_id):
+        return True
+    if not user.is_adopter(course_id):
+        message = 'You are not an adopter (course ID {}).'.format(course_id)
+        abort(make_response(jsonify(success=False, message=message), 200))
+        return False
+    return True
+
 
 def require_admin(user):
     if not user.is_admin():

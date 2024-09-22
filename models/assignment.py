@@ -351,9 +351,13 @@ class Assignment(EnhancedBase):
         self.version += 1
         db.session.commit()
 
-    def fork(self, new_owner_id: int, new_course_id: int):
-        assignment = Assignment(name=make_copy(self.name),
-                                url=make_copy(self.url),
+    @staticmethod
+    def check_if_url_exists(url: str) -> bool:
+        return Assignment.query.filter_by(url=url).first() is not None
+
+    def fork(self, new_owner_id: int, new_course_id: int, new_name=None, new_url=None):
+        assignment = Assignment(name=new_name if new_name is not None else make_copy(self.name),
+                                url=new_url if new_url is not None else make_copy(self.url),
                                 type=self.type,
                                 instructions=self.instructions,
                                 reviewed=self.reviewed,

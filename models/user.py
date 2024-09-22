@@ -175,6 +175,14 @@ class User(Base, UserMixin):
 
         return any(grader_role in role_strings for grader_role in self.GRADER_ROLES)
 
+    def is_adopter(self, course_id=None):
+        if self.is_instructor(course_id):
+            return True
+        if course_id is not None:
+            return 'adopter' in {role.name.lower() for role in self.roles
+                                 if role.course_id == int(course_id)}
+        return 'adopter' in {role.name.lower() for role in self.roles}
+
     def is_student(self, course_id=None):
         if course_id is not None:
             return 'learner' in {role.name.lower() for role in self.roles

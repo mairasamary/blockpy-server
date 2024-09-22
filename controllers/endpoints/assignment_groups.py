@@ -2,10 +2,12 @@ import json
 
 from flask import Blueprint, send_from_directory, Response, render_template, flash
 from flask import Flask, redirect, url_for, session, request, jsonify, g, current_app
+from requests.packages import target
 
 from common.maybe import maybe_bool
 from controllers.auth import get_user
 from controllers.helpers import (require_request_parameters, require_course_instructor, login_required,
+                                 require_course_adopter,
                                  check_resource_exists, get_select_menu_link, get_course_id, ajax_success,
                                  maybe_int, require_course_grader, make_log_entry)
 from models import Course, Submission
@@ -238,6 +240,83 @@ def merge_assignment_ranges(set_of_ranges):
                  for ip_range in ip_ranges.split(",")
                  if ip_range.strip()]
     return ",".join(list(set(ip_ranges)))
+
+
+@blueprint_assignment_group.route('/forking_menu', methods=['GET', 'POST'])
+@blueprint_assignment_group.route('/forking_menu/', methods=['GET', 'POST'])
+@login_required
+def forking_menu():
+    # Get arguments
+    assignment_group_id = maybe_int(request.values.get('assignment_group_id'))
+    assignment_group_url = request.values.get("assignment_group_url")
+    if assignment_group_id is None and not assignment_group_url:
+        return jsonify(success=False, message="Set an assignment group id or url via the URL.")
+    if not assignment_group_id:
+        assignment_group = AssignmentGroup.by_url(assignment_group_url)
+    else:
+        assignment_group = AssignmentGroup.by_id(assignment_group_id)
+        assignment_group_id = assignment_group_url
+    assignments = assignment_group.get_assignments()
+    # Verify exists
+    check_resource_exists(assignment_group, "Assignment Group", assignment_group_id)
+    # Verify permissions
+    require_course_adopter(g.user, assignment_group.course_id)
+    # Perform action
+    if request.method == 'POST':
+        message = []
+        new_assignment_group_url = request.form.get('new_assignment_group_url')
+        new_assignment_group_name = request.form.get('new_assignment_group_name')
+        if new_assignment_group_url and AssignmentGroup.check_if_url_exists(new_assignment_group_url):
+            message.append(f"Assignment Group with URL Already Exists: <code>{new_assignment_group_url}</code>")
+        new_urls = {request.form.get(f"new_url[{assignment.id}]"): assignment
+                    for assignment in assignments
+                    if f"new_url[{assignment.id}]" in request.form}
+        for url, assignment in new_urls.items():
+            if url and Assignment.check_if_url_exists(url):
+                message.append(f"Assignment with URL Already Exists: <code>{url}</code>")
+        target_course_id = maybe_int(request.form.get('target_course_id'))
+        if target_course_id is None:
+            message.append(f"Invalid target course id: <code>{target_course_id}</code>")
+        # TODO: PICK UP HERE
+        if message:
+            flash("Updating:<br>" + "<br>".join(message))
+            return redirect(request.url)
+
+        forked_group, new_assignments = assignment_group.fork(new_owner_id=g.user.id, new_course_id=target_course_id,
+                                             with_assignments=False, new_url=new_assignment_group_url,
+                                             new_name=new_assignment_group_name)
+        for url, assignment in new_urls.items():
+            new_assignment = assignment.fork(new_owner_id=g.user.id, new_course_id=target_course_id, new_url=url,
+                            new_name=assignment.name)
+            AssignmentGroupMembership.move_assignment(new_assignment.id, forked_group.id)
+            new_assignments.append(new_assignment)
+        links = "<br>\n".join([
+            "<a href='"+url_for('assignments.load', assignment_group_id=forked_group.id,
+                                course_id=target_course_id)
+                + "' target=_blank>" + forked_group.name + "</a>"
+        ] + [
+            "<a href='"+url_for('assignments.load', assignment_id=assignment.id, course_id=target_course_id)
+                + "' target=_blank>" + assignment.name + "</a>"
+            for assignment in new_assignments
+        ])
+        flash(f"Forked {len(new_assignments)} assignments to {forked_group.name}:\n<br>{links}")
+        return redirect(request.url)
+    # Result
+    else:
+        # TODO: Check if the user is an instructor forks' courses
+        existing_forks = [
+            fork for fork in
+            assignment_group.get_existing_forks()
+            if g.user.is_instructor(fork.course_id)
+        ]
+        return render_template('assignments/make_forks.html',
+                               group_name=assignment_group.name,
+                               assignments=assignments,
+                               assignment_group=assignment_group,
+                               editable_courses=g.user.get_editable_courses(),
+                               existing_forks=existing_forks,
+                               is_instructor=g.user.is_instructor(assignment_group.course_id),
+                               warning="")
 
 
 @blueprint_assignment_group.route('/export_submissions/', methods=['GET', 'POST'])

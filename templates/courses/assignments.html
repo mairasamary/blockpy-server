@@ -219,6 +219,11 @@ function MainModel() {
         var baseUrl = "{{  url_for('assignment_group.edit_security_settings')|safe }}?";
         return baseUrl+"&course_id="+course.id+"&assignment_group_id="+group.id;
     }
+
+    self.forkUrl = function(course, group) {
+        var baseUrl = "{{  url_for('assignment_group.forking_menu')|safe }}?";
+        return baseUrl+"&course_id="+course.id+"&assignment_group_id="+group.id;
+    }
     
     self.renameGroup = function(course, group) {
         let new_name = window.prompt("Give a new name for this group:", group.name);
@@ -631,7 +636,8 @@ div.overlay {
                 <!-- Extended buttons -->
                 <div class="dropdown-menu">
                     <a target="_blank" class="dropdown-item" data-bind="attr: { href: $root.editSecurity($parent, $data)}">Edit Security</a>
-                    <a class="dropdown-item" href="#" data-bind="click: $root.forkGroup.bind($data, $parent)">Fork Group</a>
+                    <a target="_blank" class="dropdown-item" data-bind="attr: { href: $root.forkUrl($parent, $data)}">Fork Group</a>
+                    <!--<a class="dropdown-item" href="#" data-bind="click: $root.forkGroup.bind($data, $parent)">Fork Group</a>-->
                     <a class="dropdown-item" href="#" data-bind="click: $root.removeGroup.bind($data, $parent)">Delete</a>
                 </div>
             </div>
