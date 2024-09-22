@@ -247,22 +247,35 @@ def merge_assignment_ranges(set_of_ranges):
 @login_required
 def forking_menu():
     # Get arguments
+    course_id = maybe_int(request.values.get('course_id'))
     assignment_group_id = maybe_int(request.values.get('assignment_group_id'))
     assignment_group_url = request.values.get("assignment_group_url")
-    if assignment_group_id is None and not assignment_group_url:
-        return jsonify(success=False, message="Set an assignment group id or url via the URL.")
-    if not assignment_group_id:
+    if not assignment_group_id and not assignment_group_url:
+        if "course_id" in request.values:
+            assignment_group = None
+        else:
+            return jsonify(success=False,
+                           message="Set an assignment group id or url via the URL, or at least set a course_id.")
+    elif not assignment_group_id:
         assignment_group = AssignmentGroup.by_url(assignment_group_url)
+        assignment_group_id = assignment_group.id
     else:
         assignment_group = AssignmentGroup.by_id(assignment_group_id)
-        assignment_group_id = assignment_group_url
-    assignments = assignment_group.get_assignments()
-    # Verify exists
-    check_resource_exists(assignment_group, "Assignment Group", assignment_group_id)
+    if assignment_group:
+        assignments = assignment_group.get_assignments()
+        # Verify exists
+        check_resource_exists(assignment_group, "Assignment Group", assignment_group_id)
+        course_id = assignment_group.course_id
+    else:
+        assignments = []
     # Verify permissions
-    require_course_adopter(g.user, assignment_group.course_id)
+    if not course_id:
+        return jsonify(success=False, message="No valid assignment_group_id, assignment_group_url, or course_id provided.")
+    require_course_adopter(g.user, course_id)
     # Perform action
     if request.method == 'POST':
+        if not assignment_group:
+            return jsonify(success=False, message="Cannot fork unless you provide an assignment group.")
         message = []
         new_assignment_group_url = request.form.get('new_assignment_group_url')
         new_assignment_group_name = request.form.get('new_assignment_group_name')
@@ -308,14 +321,18 @@ def forking_menu():
             fork for fork in
             assignment_group.get_existing_forks()
             if g.user.is_instructor(fork.course_id)
-        ]
+        ] if assignment_group else []
+        possible_groups = AssignmentGroup.by_course(course_id)
         return render_template('assignments/make_forks.html',
-                               group_name=assignment_group.name,
+                               course_id=course_id,
+                               group_name=assignment_group.name if assignment_group is not None else None,
+                               group_id=assignment_group_id,
+                               possible_groups=possible_groups,
                                assignments=assignments,
                                assignment_group=assignment_group,
                                editable_courses=g.user.get_editable_courses(),
                                existing_forks=existing_forks,
-                               is_instructor=g.user.is_instructor(assignment_group.course_id),
+                               is_instructor=g.user.is_instructor(course_id),
                                warning="")
 
 

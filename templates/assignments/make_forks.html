@@ -40,6 +40,28 @@ Make Forks
         This page allows you to fork an assignment over to other courses that you have access to.
     </p>
 
+    <p>
+        This will create a new assignment group in the target course, and then create a new assignment in that group for each assignment in the original group.
+        The new assignments will have the same content as the original assignments, but will be in the target course.
+        You can change the name (user visible) and URL (internal) of the new assignment group.
+        The URLs must be unique across all courses! The system will not let you create a fork if the URLs are not unique.
+    </p>
+
+    <p>
+        <label for="assignment_group_id">Currently Forking Assignment Group:</label>
+        <form action="" method="GET">
+        <input type="hidden" name="course_id" value="{{ course_id }}">
+        <select name="assignment_group_id" id="assignment_group_id" class="form-control" onchange="this.form.submit()">
+            <option value="">Select an assignment group...</option>
+            {% for group in possible_groups %}
+                <option value="{{ group.id }}" {{ 'selected' if group.id == group_id }}>
+                    {{ group.name }}
+                </option>
+            {% endfor %}
+        </select>
+        </form>
+    </p>
+
     <form action="" method=post>
 
         <!-- Assignment Group Details -->
