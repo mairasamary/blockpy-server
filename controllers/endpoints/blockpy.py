@@ -509,20 +509,90 @@ def upload_file():
         contents = request.files.get('contents')
     delete = maybe_bool(request.values.get('delete', 'False'))
     user, user_id = get_user()
-    if None in (placement, directory, filename, contents):
-        return ajax_failure("No placement, directory, filename, contents given!")
+    if None in (placement, directory, filename):
+        return ajax_failure("No placement, directory, filename given!")
     if placement not in ("global", "course", "assignment", "submission", "user"):
         return ajax_failure(f"Invalid placement: {placement!r}")
     files_folder = os.path.join(current_app.config['UPLOADS_DIR'], 'files', placement)
     # Check file size
-    contents.seek(0, os.SEEK_END)
-    file_length = contents.tell()
-    contents.seek(0, 0)
-    if current_app.config["MAXIMUM_CODE_SIZE"] < file_length:
-        return ajax_failure(
-            "Maximum size of file exceeded. Current limit is {}, you uploaded {} characters.".format(
-                current_app.config["MAXIMUM_CODE_SIZE"], file_length
-            ))
+    if not delete:
+        contents.seek(0, os.SEEK_END)
+        file_length = contents.tell()
+        contents.seek(0, 0)
+        if current_app.config["MAXIMUM_CODE_SIZE"] < file_length:
+            return ajax_failure(
+                "Maximum size of file exceeded. Current limit is {}, you uploaded {} characters.".format(
+                    current_app.config["MAXIMUM_CODE_SIZE"], file_length
+                ))
+    # Permission check
+    permissions = check_file_permissions(user, user_id, placement, directory)
+    if permissions is not None:
+        return permissions
+    # Okay, we got this far, create it!
+    files_folder = os.path.join(files_folder, secure_filename(directory))
+    ensure_dirs(files_folder)
+    file_path = os.path.join(files_folder, secure_filename(filename))
+    if delete:
+        if os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+                return jsonify(success=True, ip=request.remote_addr)
+            except Exception as e:
+                current_app.logger.info(f"Could not delete file {file_path} because: {e}")
+                return ajax_failure(f"Could not delete the file!")
+    else:
+        try:
+            contents.save(file_path)
+            endpoint = url_for("blockpy.download_file", _external=True,
+                               placement=placement, directory=directory, filename=filename)
+            if filepond_mode:
+                return endpoint
+            return ajax_success({"success": True, "endpoint": endpoint})
+        except IOError as e:
+            return ajax_failure(str(e))
+
+
+@blueprint_blockpy.route('/rename_file/', methods=['GET', 'POST'])
+@blueprint_blockpy.route('/rename_file', methods=['GET', 'POST'])
+@require_request_parameters('placement', 'directory')
+def rename_file():
+    # Get parameters
+    placement = request.values.get('placement')
+    directory = request.values.get('directory')
+    old_filename = secure_filename(request.values.get('old_filename'))
+    new_filename = secure_filename(request.values.get('new_filename'))
+    user, user_id = get_user()
+    if None in (placement, directory, old_filename, new_filename):
+        return ajax_failure("No placement, directory, old_filename, new_filename given!")
+    if placement not in ("global", "course", "assignment", "submission", "user"):
+        return ajax_failure(f"Invalid placement: {placement!r}")
+    files_folder = os.path.join(current_app.config['UPLOADS_DIR'], 'files', placement)
+    # Permission check
+    permissions = check_file_permissions(user, user_id, placement, directory)
+    if permissions is not None:
+        return permissions
+    # Okay, we got this far, create it!
+    files_folder = os.path.join(files_folder, secure_filename(directory))
+    ensure_dirs(files_folder)
+    new_file_path = os.path.join(files_folder, secure_filename(new_filename))
+    old_file_path = os.path.join(files_folder, secure_filename(old_filename))
+    if os.path.exists(old_file_path):
+        try:
+            os.rename(old_file_path, new_file_path)
+        except Exception as e:
+            current_app.logger.info(f"Could not rename file `{old_file_path}` to `{new_file_path}` because: {e}")
+            return ajax_failure(f"Could not rename the file!")
+        endpoint = url_for("blockpy.download_file", _external=True,
+                           placement=placement, directory=directory, filename=new_filename)
+        return jsonify(success=True, ip=request.remote_addr, endpoint=endpoint)
+    current_app.logger.info(f"Could not find file to rename (`{old_file_path}`) to `{new_file_path}` because: {e}")
+    return ajax_failure(f"Could not rename the file!")
+
+
+SUGGEST_DOWNLOAD_EXTENSIONS = [".json", ".sqlite", ".py", ".zip"]
+
+
+def check_file_permissions(user, user_id, placement, directory):
     # Global file
     if placement == "global" and not user.is_admin():
         return ajax_failure(f"Invalid permissions to upload global file. User is not an admin.")
@@ -556,31 +626,7 @@ def upload_file():
             return ajax_failure(f"User {directory} does not exist.")
         if user_id != folder_user.id and not user.is_admin():
             return ajax_failure(f"You do not have permissions to upload files for this user.")
-    # Okay, we got this far, create it!
-    files_folder = os.path.join(files_folder, secure_filename(directory))
-    ensure_dirs(files_folder)
-    file_path = os.path.join(files_folder, secure_filename(filename))
-    if delete:
-        if os.path.exists(file_path):
-            try:
-                os.remove(file_path)
-                return jsonify(success=True, ip=request.remote_addr)
-            except Exception as e:
-                current_app.logger.info(f"Could not delete file {file_path} because: {e}")
-                return ajax_failure(f"Could not delete the file!")
-    else:
-        try:
-            contents.save(file_path)
-            endpoint = url_for("blockpy.download_file", _external=True,
-                               placement=placement, directory=directory, filename=filename)
-            if filepond_mode:
-                return endpoint
-            return ajax_success({"success": True, "endpoint": endpoint})
-        except IOError as e:
-            return ajax_failure(str(e))
-
-
-SUGGEST_DOWNLOAD_EXTENSIONS = [".json", ".sqlite", ".py", ".zip"]
+    return None
 
 
 @blueprint_blockpy.route('/download_file/', methods=['GET', 'POST'])
@@ -630,13 +676,18 @@ def list_files():
     check_resource_exists(assignment, "Assignment", submission.assignment_id)
     # Get all possible file placements
     placements = [('global', 'global', global_directory),
-                  ('user', 'user', user_id),
-                  ('submission user', 'user', submission.user_id),
-                  ('given course', 'course', course_id),
-                  ('submission course', 'course', submission.course_id),
-                  ('assignment course', 'course', assignment.course_id),
-                  ('assignment', 'assignment', assignment.id),
-                  ('submission', 'submission', submission.id)]
+                  ('user', 'user', user_id)]
+    if submission.user_id != user_id:
+        placements.append(('submission user', 'user', submission.user_id))
+    placements.append(('course', 'course', course_id))
+    if submission.course_id != course_id:
+        placements.append(('submission course', 'course', submission.course_id))
+    if assignment.course_id != course_id or assignment.course_id != submission.course_id:
+        placements.append(('assignment course', 'course', assignment.course_id))
+    placements.extend([
+        ('assignment', 'assignment', assignment.id),
+        ('submission', 'submission', submission.id)
+    ])
     file_lists = {}
     for name, placement, directory in placements:
         if only_placements and placement not in only_placements:

@@ -20628,8 +20628,10 @@ function splitLines(text, newline, inBrowser) {
         newline = "\n";
     }
     let lineList = text.split(newline);
-    if (inBrowser) {
-        lineList = lineList.slice(0, -1);
+    if (inBrowser && lineList.length) {
+        if (lineList[lineList.length-1] === "") {
+            lineList = lineList.slice(0, -1);
+        }
     }
     for (let i=0; i < lineList.length-1; i+= 1) {
         lineList[i] = lineList[i] + newline;
@@ -37203,7 +37205,7 @@ var Sk = {}; // jshint ignore:line
 
 Sk.build = {
     githash: "318ea79ab8fda526919e71ae965f85e4602171cb",
-    date: "2024-07-08T12:35:52.497Z"
+    date: "2024-09-26T16:06:05.922Z"
 };
 
 /**
