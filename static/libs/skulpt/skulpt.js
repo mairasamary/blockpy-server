@@ -11152,6 +11152,26 @@ var mergeDict = function(obj1, obj2) {
     return obj1;
 };
 
+function tryCatchWithPromises(tryFn, catchFn) {
+    var r;
+
+    try {
+        r = tryFn();
+    } catch (e) {
+        return catchFn(e);
+    }
+
+    if (r instanceof Sk.misceval.Suspension) {
+        var susp = new Sk.misceval.Suspension(undefined, r);
+        susp.resume = function () {
+            return tryCatchWithPromises(r.resume, catchFn);
+        };
+        return susp;
+    } else {
+        return r;
+    }
+}
+
 Sk.builtin.exec = function exec(code, globals, locals) {
     Sk.builtin.pyCheckArgs("exec", arguments, 1, 3);
 
@@ -11212,11 +11232,18 @@ Sk.builtin.exec = function exec(code, globals, locals) {
             Sk.globals = globals;
             // Set up some error catching
             caughtError = null;
+
             // Guard against exceptions so we can recover gracefully
             return Sk.misceval.tryCatch(() => {
                 let result = Sk.global["eval"](co.code)(globals, locals);
                 // Ensure it terminates
+                // If the result has a promise, we need to execute that first
+                // Then attach the result/error to the suspension
+                // And then finally call resume on the suspension
                 while (result instanceof Sk.misceval.Suspension) {
+                    if (!result.optional) {
+                        return Sk.misceval.promiseToSuspension(Sk.misceval.asyncToPromise(() => result));
+                    }
                     result = result.resume();
                 }
                 return result;
@@ -20628,6 +20655,7 @@ function splitLines(text, newline, inBrowser) {
         newline = "\n";
     }
     let lineList = text.split(newline);
+    // TODO: Find the reason why we needed this. It was part of CSV?
     if (inBrowser && lineList.length) {
         if (lineList[lineList.length-1] === "") {
             lineList = lineList.slice(0, -1);
@@ -26588,7 +26616,6 @@ Sk.exportSymbol("Sk.misceval.applyAsync", Sk.misceval.applyAsync);
  * @param {T}              initialValue
  * @param {...function(T)} chainedFns
  */
-
 Sk.misceval.chain = function (initialValue, chainedFns) {
     // We try to minimse overhead when nothing suspends (the common case)
     var i = 1,
@@ -37205,7 +37232,7 @@ var Sk = {}; // jshint ignore:line
 
 Sk.build = {
     githash: "318ea79ab8fda526919e71ae965f85e4602171cb",
-    date: "2024-09-26T16:06:05.922Z"
+    date: "2024-10-03T14:41:37.905Z"
 };
 
 /**

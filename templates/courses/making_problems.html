@@ -25,6 +25,13 @@
         <li><a href="#editing-coding">Editing a BlockPy Coding Problem</a></li>
         <li><a href="#blockpy-feedback">Writing Automatic Feedback</a></li>
         <li><a href="#linking-canvas">Linking BlockPy Assignments in Canvas</a></li>
+        <li><a href="#file-support">Making Assignments with Files</a>
+            <ul>
+                <li><a href="#file-support-files">Files</a></li>
+                <li><a href="#file-support-images">Images</a></li>
+                <li><a href="#file-support-urls">URLs</a></li>
+            </ul>
+        </li>
     </ul>
 
     <h1>Making Assignments from BlockPy Site</h1>
@@ -323,6 +330,117 @@ assert_output(student, "Hello world!")
         the Canvas assignment. Click Select again to close the menu, and then finish setting any other options for the
         assignment in canvas (e.g., number of points, due date, assignment name). Save the assignment.
     </p>
+
+    <h1 id="file-support">Making Assignments with Files</h1>
+
+    <p>
+    BlockPy supports the concept of files in a few different ways, which we will refer to as:
+    </p>
+
+    <ul>
+        <li><strong>Files</strong>: Text files can be added as "Starting Files", "Instructor Files", or "Student Files".</li>
+        <li><strong>Images</strong>: Binary files can be added as "Images" (so not just images, but also e.g., databases).</li>
+        <li><strong>URLs</strong>: HTTP requests can be mocked with the "URL Data" feature.</li>
+    </ul>
+
+    <p>
+    Which option is right for you? Here are the general rules:
+    </p>
+
+    <ul>
+        <li>If you want to import a Python module or open and read a simple text file
+            (e.g., <code>.txt</code>, <code>.csv</code>, <code>.json</code>), then
+            you should use the <strong>Files</strong> interface.</li>
+        <li>If you want to open an image file with the <code>PIL</code> module, then you should
+            use the <strong>Images</strong> interface.</li>
+        <li>If you want to use the <code>requests</code> module, then you should use the
+            <strong>URLs</strong> interface.</li>
+    </ul>
+
+    <h2 id="file-support-files">Files</h2>
+
+    <p>
+    The Files interface is the most general, allowing you to create text files that can be read by Python code.
+    These files come in three primary varieties:
+    </p>
+
+    <ul>
+        <li><strong>Starting File:</strong> This file is provided to the student when they first open the
+            assignment. Students will get a copy of the file which they are free to make modifications to.
+            Only instructors can edit the original file.
+        </li>
+        <li><strong>Instructor File:</strong> This file is meant for files that the instructor autograding code
+            will use. You can use this to hide files from students that they should have access to,
+            but not modify. You can also completely hide the file from students so that they don't have
+            any access.
+        </li>
+        <li><strong>Student File:</strong> This is for files that are only in YOUR student space.
+            Recall that every user accessing an assignment has a submission, including instructors.
+            So, for instance, if you needed a local file for testing purposes that you do not
+            want to use for other users, you can add files with this feature.</li>
+    </ul>
+
+    <p>Additionally, files have three options for controlling their individual privacy:</p>
+
+    <ul>
+        <li><strong>Completely inaccessible:</strong> The student has absolutely no way to see or
+            programatically access this file. It is meant for instructor files that should be kept
+            completely private, like additional unit tests.</li>
+        <li><strong>Hidden from student, accessible programatically:</strong> The student will not see
+            this file in the tabs, but can actually open it with the <code>open</code> function.
+            This is a more narrowly useful feature, meant for hidden files in games.</li>
+        <li><strong>Visible to student, but not editable:</strong> These instructor files are visible
+            and accessible to students programatically, but cannot be edited (unlike files that exist in
+            the student file space, like those created using <code>Starting File</code> and <code>Student File</code>.
+            This is good for most kinds of data files that you want the student to be able to look at and use, but not mess with.</li>
+    </ul>
+
+    <p>
+    If you want students to be able to see the files tab (and therefore any files), you will need
+        to uncheck the <code>Hide Files</code>code> setting in the assignment settings menu.
+    </p>
+
+    <h2 id="file-support-images">Images</h2>
+
+    <p>
+    If you want to work with the <code>PIL</code> module, then you want to use the Images interface.
+    This interface is a little simpler than the Files interface, but is critical for working with binary data.
+    </p>
+
+    <p>
+    First, you should enable the <code>Preload All Files</code> setting so that the <code>Images</code> tab is available to students.
+    I generally recommend keeping the <code>Hide Files</code> setting enabled, otherwise students will be shown the "Add Student File" button
+        (which is confusing, since they should only be adding images through the Images menu).
+    </p>
+
+    <p>
+    If the menu is not already present for you, then you can click "Add New" and choose the "Images" button.
+    This will move it to the files tab (and that's where it will be for everyone from now on).
+    At the top of the menu are the currently available files, and at the bottom is a form for uploading new files.
+    Instructors have buttons for manipulating the files in the course and the assignment, whereas students can only affect the images for their own submission.
+    Generally, there are a few places for the images to go:
+    </p>
+
+    <ul>
+        <li><strong>Course:</strong> Images can be made available to everyone in the current course. That means that they'll be available on every single assignemnt for that course too.</li>
+        <li><strong>Assignment:</strong> Images can be made available to everyone completing this assignment. That means that other assignments (even assignments in the same group) cannot see this image. Every student is accessing the same copy of the image, though, even across their different submissions.</li>
+        <li><strong>Assignment's Course:</strong> If an assignment is being adopted into a different course, then the images from that original course are also available.</li>
+        <li><strong>Submission:</strong> Images can be made available to ONLY this submission. Students upload new images to their own submission, so students cannot access each other's submission images.</li>
+    </ul>
+
+    <p>
+    The images are uploaded as binary files, so you can upload any kind of file you want. However, the BlockPy interface will only display images.
+    The filename listed is how you can access the image in BlockPy through <code>Image.open</code>.
+    If a file exceeds the maximum file size, then it will be rejected.
+    You can click on an image to preview the image at a larger size.
+    </p>
+
+    <h2 id="file-support-urls">URLs</h2>
+
+    <p>This is even more complicated. Basically, you have to provide a hidden JSON file that
+    will map the students' URLs to the local files. And don't even get me started on the difference
+    between binary and text files here. Good luck! Better take a look at some of the examples
+    from the Canvas Analyzer project and the <code>requests</code> assignments...</p>
 
 {% endblock %}
 
