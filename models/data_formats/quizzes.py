@@ -64,6 +64,7 @@ def process_quiz(body: dict, checks: dict, submission_body: dict) -> QuizResult:
     total_score, total_points = 0., 0.
     total_correct = True
     feedbacks = {}
+    questions_checked = 0
     for question_id, question in questions.items():
         student = student_answers.get(question_id)
         if student is None:
@@ -83,8 +84,10 @@ def process_quiz(body: dict, checks: dict, submission_body: dict) -> QuizResult:
             total_correct = total_correct and correct
             message = str(feedback)
             feedbacks[question_id] = { 'message': message, 'correct': correct, 'score': score, 'status': 'graded' }
+        questions_checked += 1
+    if not questions_checked:
+        total_correct = False
     # Report back the final score and feedback objects
-    #print(total_score, total_points)
     return QuizResult(total_score / total_points if total_points else 0,
                       total_correct, total_points, feedbacks, True, submission_body, None)
 
