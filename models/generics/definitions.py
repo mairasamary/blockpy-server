@@ -9,6 +9,7 @@ class LatePolicy:
     amount: float
     rounding: callable
     max_penalty: float
+    disabled: bool = False
     invalid: bool = False
     NORMAL_INTERVALS = {
         "hours": "hours", "hour": "hours",
@@ -17,13 +18,14 @@ class LatePolicy:
         "weeks": "weeks", "week": "weeks"
     }
 
-    def __init__(self, allowed, interval, amount, rounding, max_penalty):
+    def __init__(self, allowed, interval, amount, rounding, max_penalty, disabled):
         self.allowed = allowed
         self.max_penalty = self._convert_amount(max_penalty)
         self.amount = self._convert_amount(amount)
         self.interval, invalid_interval = self._normalize_interval(interval)
         self.rounding, invalid_rounding = self._normalize_rounding(rounding)
         self.invalid = invalid_interval or invalid_rounding
+        self.disabled = disabled
 
     @staticmethod
     def _normalize_interval(interval) -> tuple[str, bool]:
@@ -70,6 +72,8 @@ class LatePolicy:
             return 0
 
     def get_lateness_penalty(self, submitted, due) -> float:
+        if self.disabled:
+            return 0
         if self.invalid:
             return 0
         if not submitted or not due:
