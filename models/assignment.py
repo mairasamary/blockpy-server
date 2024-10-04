@@ -563,6 +563,7 @@ class Assignment(EnhancedBase):
                           late_policy.get('interval', 'hours'),
                           late_policy.get('amount', "1%"),
                           late_policy.get("rounding", "round"),
-                          late_policy.get("max_penalty", "50%"))
+                          late_policy.get("max_penalty", "50%"),
+                          late_policy.get('disabled', False))
 
 

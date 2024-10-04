@@ -708,7 +708,7 @@ class Submission(EnhancedBase):
         if not self.date_due or at_time < self.date_due:
             return actual_score, ["Submission was not late"]
         # No late policy, no penalty
-        if late_policy is None:
+        if late_policy is None or late_policy.disabled:
             return actual_score, ["No late policy, no penalty"]
         # If we are late and the late policy forbids this, we get a zero
         if not late_policy.allowed:
