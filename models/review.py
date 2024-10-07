@@ -35,6 +35,8 @@ class Review(VersionedBase):
     author: Mapped["User"] = db.relationship(back_populates="reviews")
     forked: Mapped["Review"] = db.relationship("Review", remote_side="Review.id")
 
+    __table_args__ = (Index('review_submission_index', "submission_id",),)
+
     def __str__(self):
         return "<Review {} for {}>".format(self.id, self.submission_id)
 

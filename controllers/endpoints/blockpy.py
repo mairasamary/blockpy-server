@@ -393,6 +393,7 @@ def view_submissions(course_id, user_id, assignment_group_id, ):
     #                   message=json.dumps({"viewer": viewer_id}))
     any_hidden = any(assignment.hidden or assignment.get_setting('hide_submission', False)
                      for assignment in assignments)
+    has_reviews = any(submission.get_reviews_db() for submission in submissions)
     return render_template("reports/group.html", embed=embed,
                            referer=referer, any_hidden=any_hidden,
                            points_total=points_total, points_possible=points_possible,
@@ -400,7 +401,8 @@ def view_submissions(course_id, user_id, assignment_group_id, ):
                            assignment_group=group, viewer=viewer,
                            group=list(zip(assignments, submissions)),
                            all_explanations=all_explanations, any_late_penalties=any_late_penalties,
-                           user_id=user_id, course_id=course_id)
+                           user_id=user_id, course_id=course_id,
+                           has_reviews=has_reviews)
 
 
 @blueprint_blockpy.route('/view_submission/', methods=['GET', 'POST'])
@@ -425,9 +427,10 @@ def view_submission():
                    submission.course_id, submission.user_id, "X-View.Submission", "answer.py",
                    category="single",
                    message=json.dumps({"viewer": viewer_id}))
+    has_reviews = bool(submission.get_reviews_db())
     return render_template("reports/alone.html", embed=embed,
                            submission=submission, assignment=submission.assignment,
-                           is_grader=is_grader, tags=tags,
+                           is_grader=is_grader, tags=tags, has_reviews=has_reviews,
                            user_id=submission.user_id, course_id=submission.course_id)
 
 

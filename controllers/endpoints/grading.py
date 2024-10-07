@@ -13,11 +13,14 @@ from natsort import natsorted
 from flask import Blueprint, url_for, session, request, jsonify, g, render_template, redirect, make_response, current_app, flash
 
 from controllers.pylti.common import LTIPostMessageException
-from controllers.pylti.post_grade import grade_submission
+from controllers.pylti.post_grade import grade_submission, get_outcomes, calculate_submissions_score
 
 from models.review import Review
 from models.submission import Submission, GradingStatuses
+from models.assignment import Assignment
+from models.assignment_group import AssignmentGroup
 from models.course import Course
+from models.assignment_tag import AssignmentTag
 
 from common.urls import normalize_url
 from common.filesystem import ensure_dirs
@@ -25,7 +28,7 @@ from controllers.auth import get_user
 from controllers.helpers import (ajax_failure, parse_assignment_load, require_request_parameters,
                                  get_course_id, maybe_int, check_resource_exists, ajax_success,
                                  login_required, require_course_instructor, require_course_grader, maybe_bool,
-                                 make_log_entry)
+                                 make_log_entry, get_assignments_in_groups)
 from models.user import User
 
 blueprint_grading = Blueprint('grading', __name__, url_prefix='/grading')
@@ -261,6 +264,158 @@ def bulk_update_submission():
         return render_template("courses/bulk_update_submission.html")
 
 
+@blueprint_grading.route("/review_editor/", methods=['GET', 'POST'])
+@blueprint_grading.route("/review_editor", methods=['GET', 'POST'])
+def review_editor():
+    user, user_id = get_user()
+    # Might have been provided identifying information
+    course_id = maybe_int(request.values.get('course_id'))
+    assignment_id = maybe_int(request.values.get('assignment_id'))
+    student_id = maybe_int(request.values.get('student_id'))
+    submission_id = maybe_int(request.values.get('submission_id'))
+
+    # Sorting order
+    sort_courses_by = request.values.get('sort_courses_by', 'name')
+    sort_students_by = request.values.get('sort_students_by', 'last_name')
+
+    # Load up potential information
+    course = Course.by_id(course_id)
+    assignment = Assignment.by_id(assignment_id)
+    submission = Submission.by_id(submission_id)
+    student = User.by_id(student_id)
+
+    # If they provide a submission, load them directly
+    if submission_id is not None:
+        submission = Submission.by_id(submission_id)
+        check_resource_exists(submission, "Submission", submission_id)
+        require_course_grader(user, submission.course_id)
+        assignment_id = submission.assignment_id
+        course_id = submission.course_id
+        student_id = submission.user_id
+        assignment = Assignment.by_id(assignment_id)
+        student = User.by_id(student_id)
+        course = Course.by_id(course_id)
+        has_submission = True
+    else:
+        has_submission = False
+        # Otherwise, make sure they have the right permissions for what we do know
+        if course_id is not None:
+            check_resource_exists(course, "Course", course_id)
+            require_course_grader(user, course_id)
+        if assignment_id is not None:
+            check_resource_exists(assignment, "Assignment", assignment_id)
+            require_course_grader(user, assignment.course_id)
+        if student_id is not None:
+            check_resource_exists(student, "Student", student_id)
+
+    if not submission and assignment and course and student:
+        submission = Submission.get_submission(assignment_id, student_id, course_id)
+        has_submission = submission is not None
+
+    # Get the information for dropdowns
+    available_courses = user.get_grading_courses(sort_courses_by)
+    if course is not None:
+        grouped_assignments, assignments_by_group, group_headers, groups = get_assignments_in_groups(course)
+        students = natsorted(course.get_students(sort_students_by), key=lambda x: x.name())
+    else:
+        grouped_assignments, assignments_by_group, group_headers, groups = [], {}, {}, []
+        students = []
+
+    tags = [tag.encode_json() for tag in AssignmentTag.get_all()]
+
+    return render_template("grading/review_editor.html",
+                           course=course, course_id=course_id,
+                           available_courses=available_courses,
+                           assignment_id=assignment_id,
+                           assignments_by_group=assignments_by_group,
+                           group_headers=group_headers,
+                           students=students,
+                           # Target data
+                           student=student, student_id=student_id,
+                           submission=submission,
+                           assignment=assignment,
+                           # Sorting
+                           sort_courses_by=sort_courses_by,
+                           sort_students_by=sort_students_by,
+                           # Grading setup
+                           tags=tags,
+                           is_instructor=True,
+                           is_grader=True,
+                           force_manual_review=True,
+                           has_submission=has_submission,
+                           )
+
+
+@blueprint_grading.route("/group_review_editor/", methods=['GET', 'POST'])
+@blueprint_grading.route("/group_review_editor", methods=['GET', 'POST'])
+def group_review_editor():
+    user, user_id = get_user()
+    # Might have been provided identifying information
+    course_id = maybe_int(request.values.get('course_id'))
+    assignment_group_id = maybe_int(request.values.get('assignment_group_id'))
+    student_id = maybe_int(request.values.get('student_id'))
+
+    # Sorting order
+    sort_courses_by = request.values.get('sort_courses_by', 'name')
+    sort_students_by = request.values.get('sort_students_by', 'last_name')
+
+    # Load up potential information
+    course = Course.by_id(course_id)
+    assignment_group = AssignmentGroup.by_id(assignment_group_id)
+    student = User.by_id(student_id)
+
+    # Check that this is allowed
+    if course_id is not None:
+        check_resource_exists(course, "Course", course_id)
+        require_course_grader(user, course_id)
+    if assignment_group_id is not None:
+        check_resource_exists(assignment_group, "AssignmentGroup", assignment_group_id)
+    if student_id is not None:
+        check_resource_exists(student, "Student", student_id)
+
+    if assignment_group:
+        assignments = assignment_group.get_assignments()
+        submissions = [a.load(student_id, course_id) for a in assignments]
+    else:
+        assignments = []
+        submissions = []
+
+    for assignment, submission in zip(assignments, submissions):
+        check_resource_exists(assignment, "Assignment", assignment.id)
+        if submission is not None:
+            require_course_grader(user, submission.course_id)
+
+    # Get the information for dropdowns
+    available_courses = user.get_grading_courses(sort_courses_by)
+    if course is not None:
+        grouped_assignments, assignments_by_group, group_headers, groups = get_assignments_in_groups(course)
+        students = natsorted(course.get_students(sort_students_by), key=lambda x: x.name())
+    else:
+        grouped_assignments, assignments_by_group, group_headers, groups = [], {}, {}
+        students = []
+
+    total_score, total_possible, all_explanations = calculate_submissions_score(assignments, submissions, None)
+
+    return render_template("grading/bulk_review_editor.html",
+                           course=course, course_id=course_id,
+                           available_courses=available_courses,
+                           assignment_group_id=assignment_group_id,
+                           assignment_group=assignment_group,
+                           groups=groups,
+                           students=students,
+                           # Target data
+                           student=student, student_id=student_id,
+                           submissions=submissions,
+                           assignments=assignments,
+                           # Sorting
+                           sort_courses_by=sort_courses_by,
+                           sort_students_by=sort_students_by,
+                           # Results
+                            total_score=total_score,
+                           total_possible=total_possible,
+                           )
+
+
 class ReviewAPI(MethodView):
 
     def get(self, review_id):
@@ -306,6 +461,7 @@ class ReviewAPI(MethodView):
         fix_nullables(review_data)
         review_data['score'] = normalize_score(review_data['score'])
         new_review = Review.new(review_data)
+        submission.mark_graded()
         return ajax_success(dict(review=new_review.encode_json()))
 
 
@@ -322,6 +478,7 @@ class ReviewAPI(MethodView):
         review_data['score'] = normalize_score(review_data['score'])
         review_data['author_id'] = user_id
         edited_review = review.edit(review_data)
+        submission.mark_graded()
         return ajax_success(dict(review=edited_review.encode_json()))
 
     def delete(self, review_id):

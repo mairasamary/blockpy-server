@@ -1,4 +1,4 @@
-{% if assignment.reviewed %}
+{% if assignment.reviewed or force_manual_review or has_reviews %}
     <script type='text/javascript'>
 
     $(function() {
@@ -71,6 +71,7 @@
             canEditFeedback: ko.pureComputed(() => isGrader()),
             mainReviewInterface: mainReviewInterface
         }
+        ko.cleanNode(document.getElementById(target));
         ko.applyBindings(editModel, document.getElementById(target));
     });
 

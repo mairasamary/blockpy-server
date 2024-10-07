@@ -635,4 +635,5 @@ And some other indexes:
 ```sql
 CREATE INDEX authentication_lookup ON authentication (type, value);
 CREATE INDEX CONCURRENTLY log_assignment_index ON "log" (assignment_id);
+CREATE INDEX review_submission_index ON "review" (submission_id);
 ```

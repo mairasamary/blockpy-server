@@ -2,6 +2,8 @@
 from urllib.parse import quote as url_quote
 from functools import wraps
 
+from natsort import natsorted
+
 # Flask imports
 from flask import g, request, redirect, url_for, make_response, current_app
 from flask import flash, session, jsonify, abort
@@ -344,4 +346,21 @@ def make_log_entry(assignment_id, assignment_version, course_id, user_id,
                    event_type, file_path, category, label, message, timestamp, timezone)
 
 
+def get_assignments_in_groups(course):
+    grouped_assignments = natsorted(course.get_submitted_assignments_grouped(),
+                                    key=lambda r: (
+                                        r.AssignmentGroup.name if r.AssignmentGroup is not None else "~~~~~~~~",
+                                        r.Assignment.title()))
+    assignments_by_group = {}
+    group_headers = {}
+    groups = []
+    for row in grouped_assignments:
+        group_name = row.AssignmentGroup.name if row.AssignmentGroup is not None else None
+        assignments_by_group.setdefault(group_name, []).append(row.Assignment)
+        group_headers[row.Assignment] = row.AssignmentGroup
+        if row.AssignmentGroup not in groups:
+            groups.append(row.AssignmentGroup)
+    # Horrifying hack to move Ungrouped elements to end
+    assignments_by_group[None] = assignments_by_group.pop(None, None)
+    return grouped_assignments, assignments_by_group, group_headers, groups
 

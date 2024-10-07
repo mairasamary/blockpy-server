@@ -1,3 +1,5 @@
+from idlelib.pyparse import trans
+
 from flask import Blueprint, url_for, session, request, jsonify, g, render_template, redirect, Response, \
     send_from_directory, current_app
 from common.urls import normalize_url
@@ -275,6 +277,9 @@ def grade_submission(submission_id, assignment_group_id,
             return report.add_reason(FailureReasons.INVALID_SUBMISSION_STATUS)
     else:
         report.changed = False
+    # Handle human grading
+    if by_human:
+        submission.update_grading_status(GradingStatuses.FULLY_GRADED)
     # Save the block image, if it was provided
     if image:
         submission.save_block_image(image)
@@ -321,10 +326,14 @@ def get_groups_submissions(group_id, user_id, course_id):
 def calculate_submissions_score(assignments, submissions, at_time):
     total_possible, total_score, all_explanations = 0, 0, {}
     for submission, assignment in zip(submissions, assignments):
+        if submission is None:
+            continue
         penalized_score, explanations = submission.penalized_full_score(at_time)
         total_score += penalized_score
         all_explanations[assignment.id] = explanations
         total_possible += assignment.get_points()
+    if total_score < 0:
+        total_score = 0
     return total_score, total_possible, all_explanations
 
 

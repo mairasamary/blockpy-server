@@ -10,7 +10,7 @@ import {Server} from "./server";
 function closeSubmissionStatus(status: SubmissionStatus) {
     switch (status.toLowerCase()) {
         case SubmissionStatus.COMPLETED.toLowerCase(): case SubmissionStatus.SUBMITTED.toLowerCase():
-            return "This assignment is closed, so the student cannot edit the assignment further.<br>Use this button to reopen the assignment.<br>";
+            return "This assignment is closed or already completed, so the student cannot edit the assignment further.<br>Use this button to reopen the assignment.<br>";
         default:
             return "This assignment is currently OPEN for the student to edit.<br>Use this button to close the assignment.<br>";
     }
@@ -28,13 +28,13 @@ function colorSubmissionStatus(status: SubmissionStatus) {
 export function explainGradingStatus(status: GradingStatus) {
     switch (status.toLowerCase()) {
         case GradingStatus.FULLY_GRADED.toLowerCase():
-           return "<strong>Student's submission is currently graded and visible to them</strong> (unless the assignment is hidden in the LMS).<br>Use this button to hide and make further changes to their feedback.<br>";
+           return "<strong>Submission is currently graded and the feedback is visible to them</strong> (unless the assignment is hidden in the LMS).<br>Use this button to hide and make further changes to their feedback.<br>";
        case GradingStatus.PENDING_MANUAL.toLowerCase(): case GradingStatus.PENDING.toLowerCase():
-           return "<strong>Student's submission is currently hidden while you add more feedback</strong>.<br>Use this button to release the feedback to the student and update their grade in Canvas.<br>";
+           return "<strong>Feedback is currently hidden while you add more feedback</strong>.<br>Use this button to release the feedback to the student and update their grade in Canvas.<br>";
        case GradingStatus.FAILED.toLowerCase():
            return "Something went wrong during the grading upload. Check your internet connection, make sure you have recently opened the BlockPy dashboard, and try again.<br>";
        case GradingStatus.NOT_READY.toLowerCase():
-           return "<strong>Student's submission is currently hidden while you add more feedback</strong>. They might still be working on the assignment.<br>Use this button to release the feedback to the student and update their grade in Canvas.<br>";
+           return "<strong>Feedback is currently hidden while you add more feedback</strong>. They might still be working on the assignment.<br>Use this button to release the feedback to the student and update their grade in Canvas.<br>";
     }
 }
 
@@ -478,6 +478,11 @@ export interface SubmissionReviewInterfaceJson {
     mainReviewInterface: KnockoutObservable<SubmissionReviewInterface>;
 }
 
+const DEFAULT_MARKS = [
+    "Passed human review",
+    "Caught Cheating"
+];
+
 // Main container of data about this submission and its reviews
 export class SubmissionReviewInterface {
     server: Server;
@@ -505,6 +510,7 @@ export class SubmissionReviewInterface {
     private canSeeFeedback: KnockoutReadonlyComputed<boolean>;
     private canEditFeedback: KnockoutReadonlyComputed<boolean>;
     private canMarkCorrect: KnockoutReadonlyComputed<boolean>;
+    private canMarkCheating: KnockoutReadonlyComputed<boolean>;
     private totalScore: KnockoutReadonlyComputed<number>;
     private releaseFeedbackExplanation: KnockoutReadonlyComputed<string>;
     private releaseFeedbackColor: KnockoutReadonlyComputed<string>;
@@ -591,9 +597,12 @@ export class SubmissionReviewInterface {
             this.submission.checkSubmission(SubmissionStatus.COMPLETED) ?
                 "Reopen submission" : "Close submission"
         );
-        this.canMarkCorrect = ko.pureComputed<boolean>(() =>
-            (undefined === this.reviews().find((review) =>
-                review.review.comment() === "Passed human review")));
+        [this.canMarkCorrect, this.canMarkCheating] = DEFAULT_MARKS.map((mark) => {
+            return ko.pureComputed<boolean>(() =>
+                (undefined === this.reviews().find((review) =>
+                    review.review.comment() === mark)))
+        });
+
     }
 
     releaseFeedback() {
@@ -659,15 +668,16 @@ export class SubmissionReviewInterface {
         this.reviews.push(draftReviewInterface);
     }
 
-    markCorrect() {
-        const existingReview = this.reviews().find((review) => review.review.comment() === "Passed human review");
+    markAs(title: string) {
+        const existingReview = this.reviews().find((review) => review.review.comment() === title);
         if (existingReview !== undefined) {
             return;
         }
+        let score = title === "Passed human review" ? (100 - this.submission.score()*100) || 100 : -10000000;
         let draftReview = new Review({
             assignment_version: this.assignment.version(),
             author_id: this.author.id,
-            comment: "Passed human review",
+            comment: title,
             date_created: ""+new Date(),
             date_modified: ""+new Date(),
             forked_id: null,
@@ -675,7 +685,7 @@ export class SubmissionReviewInterface {
             generic: false,
             id: null,
             location: null,
-            score: (100 - this.submission.score()*100) || 100,
+            score: score,
             submission_id: this.submission.id,
             submission_version: this.submission.version(),
             tag_id: null,
@@ -710,26 +720,33 @@ export const SUBMISSION_REVIEW_INTERFACE_TEMPLATE = `
 <!-- Controls -->
 <!-- ko if: canEditFeedback -->
 <div class="row">
-<p class="col-3">
+<p class="col-2">
     <button type="button" class="btn btn-sm"
         data-bind="text: closeSubmissionLabel, click: closeSubmission,
                     class: closeSubmissionColor"></button>
-</p><p class="col-9">
+</p><p class="col-10">
     <span data-bind="html: closeSubmissionExplanation"></span>
 </p>
-<p class="col-3">
+<p class="col-2">
     <button type="button" class="btn btn-sm"
         data-bind="text: releaseFeedbackLabel, click: releaseFeedback,
                     class: releaseFeedbackColor"></button>
-</p><p class="col-9">
+</p><p class="col-10">
     <span data-bind="html: releaseFeedbackExplanation"></span>
 </p>
-<p class="col-3">
+<p class="col-2">
     <button type="button" class="btn btn-sm btn-info"
-        data-bind="click: markCorrect, enabled: canMarkCorrect,
+        data-bind="click: ()=>markAs('Passed human review'), enabled: canMarkCorrect,
                     css: { disabled: !canMarkCorrect()} ">Mark as Fully Correct</button>
-</p><p class="col-9">
+</p><p class="col-10">
     Use this button to add a new General Feedback (<code>Passed human review</code>) that is worth all the remaining points of the assignment.<br>
+</p>
+<p class="col-2">
+    <button type="button" class="btn btn-sm btn-info"
+        data-bind="click: ()=>markAs('Caught Cheating'), enabled: canMarkCheating,
+                    css: { disabled: !canMarkCheating()} ">Mark as Caught Cheating</button>
+</p><p class="col-10">
+    Use this button to add a new General Feedback (<code>Caught Cheating</code>) that is worth a huge number of negative points, sure to take their score down to zero.<br>
 </p>
 </div>
 <!-- /ko -->

@@ -16,7 +16,8 @@ from controllers.auth import get_user
 from controllers.helpers import (get_lti_property, require_request_parameters, login_required,
                                  require_course_instructor, require_course_grader, get_select_menu_link,
                                  check_resource_exists, get_course_id, ajax_success, ajax_failure, maybe_int,
-                                 maybe_bool, require_admin, check_course_unlocked)
+                                 maybe_bool, require_admin, check_course_unlocked,
+                                 get_assignments_in_groups)
 from models.data_formats.report import make_report
 from models.log import Log
 from models import db, AssignmentGroup
@@ -569,11 +570,7 @@ def submissions_filter(course_id):
     course_id = int(course_id)
     course = Course.by_id(course_id)
     students = natsorted(course.get_students(), key=lambda r: r.name())
-    #assignments = natsorted(course.get_submitted_assignments(),
-    #                        key=lambda r: r.title())
-    grouped_assignments = natsorted(course.get_submitted_assignments_grouped(),
-                                    key=lambda r: (r.AssignmentGroup.name if r.AssignmentGroup is not None else "~~~~~~~~",
-                                                   r.Assignment.title()))
+    grouped_assignments, assignments_by_group, group_headers, groups = get_assignments_in_groups(course)
     criteria = request.values.get("criteria", "none")
     search_key = int(request.values.get("search_key", "-1"))
     submissions = []
@@ -587,14 +584,6 @@ def submissions_filter(course_id):
         all_subs = {s[0].user_id: s for s in all_subs}
         submissions = [all_subs.get(student.id, (None, student, None))
                        for student in students]
-    assignments_by_group = {}
-    group_headers = {}
-    for row in grouped_assignments:
-        group_name = row.AssignmentGroup.name if row.AssignmentGroup is not None else None
-        assignments_by_group.setdefault(group_name, []).append(row.Assignment)
-        group_headers[row.Assignment] = row.AssignmentGroup
-    # Horrifying hack to move Ungrouped elements to end
-    assignments_by_group[None] = assignments_by_group.pop(None, None)
     return render_template('courses/submissions_filter.html',
                            course_id=course_id,
                            course=course,

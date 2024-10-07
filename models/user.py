@@ -144,6 +144,14 @@ class User(Base, UserMixin):
                 .order_by(models.Role.name)
                 .all())
 
+    def get_grading_courses(self, order_by='name'):
+        return (db.session.query(models.Course)
+                .filter(models.Role.user_id == self.id,
+                        models.Role.course_id == models.Course.id,
+                        models.Role.name.in_(self.GRADER_ROLES))
+                .order_by(models.Course.name  if order_by == 'name' else models.Course.date_created)
+                .distinct())
+
     def __str__(self):
         return '<User {} ({})>'.format(self.id, self.email)
 

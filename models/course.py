@@ -154,10 +154,17 @@ class Course(Base):
                     .filter(models.Role.user_id == models.User.id)
                     .filter(models.Role.name.in_(roles)).all())
 
-    def get_students(self):
-        return [x[1] for x in (db.session.query(models.Role, models.User)
+    def get_students(self, sort_order=None):
+        students = (db.session.query(models.Role, models.User)
                                .filter(models.Role.course_id == self.id)
-                               .filter(models.Role.user_id == models.User.id).distinct())]
+                               .filter(models.Role.user_id == models.User.id))
+        if sort_order == 'last_name':
+            students = students.order_by(models.User.last_name)
+        elif sort_order == 'first_name':
+            students = students.order_by(models.User.first_name)
+        elif sort_order == 'email':
+            students = students.order_by(models.User.email)
+        return [x[1] for x in students.distinct()]
 
     def get_assignments(self):
         return (db.session.query(models.Assignment, models.AssignmentGroupMembership)

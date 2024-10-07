@@ -346,17 +346,14 @@ class Submission(EnhancedBase):
 
     def full_score(self):
         possible = self.assignment.get_points()
-        if self.assignment.reviewed:
-            review_score = self.get_reviewed_scores()
+        reviews = self.get_reviews_db()
+        if self.assignment.reviewed or reviews:
+            review_score = sum(review.get_actual_score() for review in reviews)
             return (self.as_float_score(self.score + review_score)) * possible
         return (float(self.correct) or self.as_float_score(self.score)) * possible
 
-    def get_reviewed_scores(self):
-        reviews = Review.query.filter_by(submission_id=self.id).all()
-        total = 0
-        for review in reviews:
-            total += review.get_actual_score()
-        return total
+    def get_reviews_db(self):
+        return Review.query.filter_by(submission_id=self.id).all()
 
     @staticmethod
     def from_assignment(assignment, user_id, course_id, assignment_group_id=None):
@@ -443,6 +440,14 @@ class Submission(EnhancedBase):
     def as_float_score(score):
         return score / 100.0
 
+    def get_review_scores_explained(self):
+        reviews = self.get_reviews_db()
+        scores = []
+        for review in reviews:
+            score = str(review.get_actual_score())
+            scores.append(score if "%" in score else score + "%")
+        return ", ".join(scores)
+
     def update_submission(self, score, correct, by_human=False, date_submitted=None):
         # TODO: Potential unfairness, error grades are considered late!
         new_score = self.as_int_score(score)
@@ -473,6 +478,10 @@ class Submission(EnhancedBase):
             self.date_graded = date_submitted or datetime.utcnow()
         db.session.commit()
         return was_changed
+
+    def mark_graded(self):
+        self.date_graded = datetime.utcnow()
+        db.session.commit()
 
     def update_submission_status(self, status):
         if status not in SubmissionStatuses.VALID_CHOICES:
