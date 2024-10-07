@@ -1,5 +1,3 @@
-from idlelib.pyparse import trans
-
 from flask import Blueprint, url_for, session, request, jsonify, g, render_template, redirect, Response, \
     send_from_directory, current_app
 from common.urls import normalize_url
