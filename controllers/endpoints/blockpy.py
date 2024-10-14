@@ -546,7 +546,7 @@ def upload_file():
     else:
         try:
             contents.save(file_path)
-            endpoint = url_for("blockpy.download_file", _external=True,
+            endpoint = url_for("blockpy.download_file", _external=True,_scheme="https",
                                placement=placement, directory=directory, filename=filename)
             if filepond_mode:
                 return endpoint
@@ -585,7 +585,7 @@ def rename_file():
         except Exception as e:
             current_app.logger.info(f"Could not rename file `{old_file_path}` to `{new_file_path}` because: {e}")
             return ajax_failure(f"Could not rename the file!")
-        endpoint = url_for("blockpy.download_file", _external=True,
+        endpoint = url_for("blockpy.download_file", _external=True,_scheme="https",
                            placement=placement, directory=directory, filename=new_filename)
         return jsonify(success=True, ip=request.remote_addr, endpoint=endpoint)
     current_app.logger.info(f"Could not find file to rename (`{old_file_path}`) to `{new_file_path}` because: {e}")

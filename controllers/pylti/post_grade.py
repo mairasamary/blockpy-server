@@ -340,7 +340,8 @@ def get_outcomes(submission, assignment_group_id, user_id, course_id, at_time) -
         penalized_score, explanations = submission.penalized_full_score(at_time)
         score = round(penalized_score, 2)
         url = url_for("assignments.load", _external=True, embed=True,
-                      submission_id=submission.id, grade_mode="single")
+                      submission_id=submission.id, grade_mode="single",
+                      _scheme="https")
     else:
         group, assignments, submissions = get_groups_submissions(assignment_group_id, user_id, course_id)
         total, possible, explanations = calculate_submissions_score(assignments, submissions, at_time)
@@ -348,6 +349,7 @@ def get_outcomes(submission, assignment_group_id, user_id, course_id, at_time) -
         url = url_for("assignments.load", _external=True, embed=True,
                       assignment_group_id=assignment_group_id,
                       course_id=course_id, grade_mode="group", graded_user_id=user_id,
+                      _scheme="https",
                       #single_arg_hack=f"true-group-{assignment_group_id}-{course_id}-{user_id}"
                       )
     return score, url, explanations

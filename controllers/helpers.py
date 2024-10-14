@@ -319,6 +319,7 @@ def get_select_menu_link(id, title, is_embedded, is_group):
     base_url = url_quote(url_for('assignments.load',
                                  assignment_group_id=id,
                                  _external=True,
+                                 _scheme="https",
                                  embed=is_embedded))
     return '&'.join([base_url,
                      "return_type=" + launch_type,

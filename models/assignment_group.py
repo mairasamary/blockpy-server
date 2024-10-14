@@ -168,8 +168,8 @@ class AssignmentGroup(EnhancedBase):
     def get_select_url(self, menu = 'embed'):
         # TODO: Refactor web logic outside of model?
         if self.url:
-            return url_for('assignments.load', assignment_group_url=self.url, _external=True, embed=menu == 'embed')
-        return url_for('assignments.load', assignment_group_id=self.id, _external=True, embed=menu == 'embed')
+            return url_for('assignments.load', assignment_group_url=self.url, _external=True, _scheme="https",embed=menu == 'embed')
+        return url_for('assignments.load', assignment_group_id=self.id, _external=True, _scheme="https",embed=menu == 'embed')
 
     def get_filename(self, extension=".json"):
         if self.url:

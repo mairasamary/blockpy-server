@@ -185,8 +185,8 @@ class Assignment(EnhancedBase):
     def get_select_url(self, menu='embed'):
         # TODO: Refactor web logic outside of model?
         if self.url:
-            return url_for('assignments.load', assignment_url=self.url, _external=True, embed=menu == 'embed')
-        return url_for('assignments.load', assignment_id=self.id, _external=True, embed=menu == 'embed')
+            return url_for('assignments.load', assignment_url=self.url, _external=True, embed=menu == 'embed', _scheme="https")
+        return url_for('assignments.load', assignment_id=self.id, _external=True, embed=menu == 'embed', _scheme="https")
 
     def get_points(self):
         if self.points is None:

@@ -532,7 +532,7 @@ class Submission(EnhancedBase):
         sub_blocks_folder = os.path.join(current_app.config['UPLOADS_DIR'], directory)
         image_path = os.path.join(sub_blocks_folder, str(self.id) + '.png')
         if os.path.exists(image_path):
-            return url_for(endpoint, submission_id=self.id, directory=directory, _external=True)
+            return url_for(endpoint, submission_id=self.id, directory=directory, _scheme="https",_external=True)
         return ""
 
     def save_block_image(self, image=""):
@@ -546,7 +546,7 @@ class Submission(EnhancedBase):
             converted_image = base64.b64decode(data[22:])
             with open(image_path, 'wb') as image_file:
                 image_file.write(converted_image)
-            return url_for(endpoint, submission_id=self.id, _external=True)
+            return url_for(endpoint, submission_id=self.id, _scheme="https",_external=True)
         elif os.path.exists(image_path):
             try:
                 os.remove(image_path)
