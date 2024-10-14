@@ -109,6 +109,9 @@ class DefaultConfig:
     # Logs
     ROTATE_LOGS = False
 
+    # Force https URLs
+    PREFERRED_URL_SCHEME = 'https'
+
 
 class ProductionConfig(DefaultConfig):
     """
