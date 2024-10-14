@@ -931,7 +931,7 @@ def get_group_submission_links():
     return "\n".join([f"{student.name()}\t{student.email}\t" +
                       url_for('blockpy.view_submissions', _external=True,
                           assignment_group_id=assignment_group_id, course_id=course_id,
-                          user_id=student.id)
+                          user_id=student.id, _scheme="https")
                       for student in students])
 
 
