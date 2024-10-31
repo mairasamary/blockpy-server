@@ -24,7 +24,7 @@
             </tr>
         </table>
         {% if submission.code %}
-        <pre class="bg-light border rounded"><code>
+        <pre class="bg-light border rounded" style="max-width: 40em; overflow: auto;"><code>
             {{- submission.code|truncate(255) -}}
         </code></pre>
         {% else %}
@@ -32,7 +32,7 @@
         {% endif %}
         {% if submission.extra_files %}
             Extra Files:
-            <pre><code>{{- submission.extra_files|truncate(255) -}}</code></pre>
+            <pre style="max-width: 40em; overflow: auto;"><code>{{- submission.extra_files|truncate(255) -}}</code></pre>
         {% endif %}
     {% else %}
         No existing submission.
