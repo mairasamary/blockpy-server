@@ -552,7 +552,7 @@ def bulk_transfer_course():
             for assignment_id in assignment_ids:
                 old_submission = old_submissions.get((assignment_id, user_id))
                 new_submission = new_submissions.get((assignment_id, user_id))
-                if old_submission or new_submission:
+                if old_submission:
                     potential_transfers.append((user_map[user_id], assignment_map[assignment_id],
                                                 old_submission, new_submission))
     else:
