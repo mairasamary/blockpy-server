@@ -22,7 +22,8 @@ from controllers.auth import get_user
 from controllers.helpers import (get_lti_property, require_request_parameters, login_required,
                                  require_course_instructor, get_select_menu_link,
                                  check_resource_exists, parse_assignment_load, get_course_id, ajax_success,
-                                 ajax_failure, maybe_int, maybe_bool)
+                                 ajax_failure, maybe_int, maybe_bool, require_course_grader,
+                                 get_assignments_in_groups)
 
 import controllers.endpoints.maze as maze
 import controllers.endpoints.blockpy as blockpy
@@ -499,3 +500,119 @@ def transfer_course():
     new_course_submission.copy_from(submission)
     return ajax_success({"message": "Update successful", "new": new_course_submission.encode_json(),
                          "old": submission.encode_json()})
+
+
+@blueprint_assignments.route('/bulk_transfer_course/', methods=['GET', 'POST'])
+@blueprint_assignments.route('/bulk_transfer_course', methods=['GET', 'POST'])
+@login_required
+def bulk_transfer_course():
+    user, user_id = get_user()
+    # Might have been provided identifying information
+    source_course_id = maybe_int(request.values.get('source_course_id'))
+    assignment_group_id = maybe_int(request.values.get('assignment_group_id'))
+    destination_course_id = maybe_int(request.values.get('destination_course_id'))
+
+    # Sorting order
+    sort_courses_by = request.values.get('sort_courses_by', 'name')
+
+    overwrite_endpoints = maybe_bool(request.values.get('overwrite-endpoints', "false"))
+
+    # Load up potential information
+    source_course = Course.by_id(source_course_id)
+    assignment_group = AssignmentGroup.by_id(assignment_group_id)
+    destination_course = Course.by_id(destination_course_id)
+
+    # Check that this is allowed
+    if source_course_id is not None:
+        check_resource_exists(source_course, "Course", source_course_id)
+        require_course_grader(user, source_course_id)
+    if destination_course_id is not None:
+        check_resource_exists(destination_course, "Course", destination_course_id)
+        require_course_instructor(user, destination_course_id)
+    if assignment_group_id is not None:
+        check_resource_exists(assignment_group, "AssignmentGroup", assignment_group_id)
+
+    if assignment_group and source_course and destination_course:
+        assignments = assignment_group.get_assignments()
+        assignment_map = {assignment.id: assignment for assignment in assignments}
+        assignment_ids = list(assignment_map.keys())
+        old_submissions = {
+            (submission.assignment_id, submission.user_id): submission
+            for submission in source_course.get_submissions(assignment_ids)
+        }
+        new_submissions = {
+            (submission.assignment_id, submission.user_id): submission
+            for submission in destination_course.get_submissions(assignment_ids)
+        }
+        all_user_ids = {submission.user_id for submission in old_submissions.values()}
+        all_user_ids.update({submission.user_id for submission in new_submissions.values()})
+        user_map = {user_id: User.by_id(user_id) for user_id in all_user_ids}
+        potential_transfers = []
+        for user_id in all_user_ids:
+            for assignment_id in assignment_ids:
+                old_submission = old_submissions.get((assignment_id, user_id))
+                new_submission = new_submissions.get((assignment_id, user_id))
+                if old_submission or new_submission:
+                    potential_transfers.append((user_map[user_id], assignment_map[assignment_id],
+                                                old_submission, new_submission))
+    else:
+        potential_transfers = []
+
+    # Check if we have the requisite transfer information
+    if request.method == 'POST':
+        # If the "do-transfer" button was clicked:
+        if 'do-transfer' in request.values:
+            copied_subs, overwritten_subs, skipped_subs = [], [], []
+            for user, assignment, old_submission, new_submission in potential_transfers:
+                key = f"transfer-submission-{old_submission.id}"
+                should_transfer = maybe_bool(request.values[key])
+                if should_transfer:
+                    if new_submission is None:
+                        new_submission = Submission.load_or_new(assignment,
+                                                                old_submission.user_id,
+                                                                destination_course_id,
+                                                                new_submission_url=old_submission.endpoint,
+                                                                assignment_group_id=assignment_group_id,
+                                                                new_due_date=old_submission.date_due,
+                                                                new_lock_date=old_submission.date_locked)
+                        copied_subs.append((user, assignment, old_submission, new_submission))
+                    else:
+                        overwritten_subs.append((user, assignment, old_submission, new_submission))
+                    new_submission.copy_from(old_submission, overwrite_endpoints)
+                else:
+                    skipped_subs.append((user, assignment, old_submission, new_submission))
+
+            message_parts = ["Submission transfer complete.<br>"]
+            for kind, subs in [("copied", copied_subs), ("overwritten", overwritten_subs)]:
+                message_parts.append(f"{len(subs)} {kind} submissions:")
+                if subs:
+                    message_parts.append("<ul>")
+                for user, assignment, old_submission, new_submission in subs:
+                    message_parts.append(f"<li>{user.name()} - {assignment.name} ({old_submission.id} -> {new_submission.id})</li>")
+                if subs:
+                    message_parts.append("</ul>")
+                message_parts.append("<br>")
+            message_parts.append(f"<br>Skipped {len(skipped_subs)} submissions.")
+
+            # return ajax_success({"message": "Update successful", "new": new_course_submission.encode_json(),
+            #                     "old": submission.encode_json()})
+            flash("".join(message_parts))
+            return redirect(request.url)
+
+    # Get the information for dropdowns
+    available_courses = user.get_grading_courses(sort_courses_by)
+    if source_course_id is not None:
+        grouped_assignments, assignments_by_group, group_headers, groups = get_assignments_in_groups(source_course)
+    else:
+        grouped_assignments, assignments_by_group, group_headers, groups = [], {}, {}, []
+
+
+    return render_template("assignments/bulk_transfer_course.html",                           source_course_id=source_course_id, destination_course_id=destination_course_id,
+                           assignment_group_id=assignment_group_id,
+                           source_course=source_course, destination_course=destination_course,
+                             assignment_group=assignment_group,
+                           potential_transfers=potential_transfers,
+                             available_courses=available_courses,
+                           groups=groups, sort_courses_by=sort_courses_by,
+                           )
+

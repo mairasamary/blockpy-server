@@ -227,10 +227,16 @@ class Course(Base):
                 .order_by(models.Assignment.name) #, models.AssignmentGroupMembership.position)
                 .distinct())
 
-    def get_submissions(self):
-        return (db.session.query(models.Submission)
-                .filter(models.Submission.course_id == self.id)
-                .all())
+    def get_submissions(self, assignments=None):
+        query = (db.session.query(models.Submission)
+                           .filter(models.Submission.course_id == self.id))
+        if assignments is not None:
+            if isinstance(assignments, str):
+                assignments = [int(assignments)]
+            elif isinstance(assignments, int):
+                assignments = [assignments]
+            query = query.filter(models.Submission.assignment_id.in_(assignments))
+        return query.all()
 
     def get_grading_failures(self):
         return (db.session.query(models.Submission, models.User, models.Assignment, models.Role)

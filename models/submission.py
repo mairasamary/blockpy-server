@@ -374,7 +374,7 @@ class Submission(EnhancedBase):
     @staticmethod
     def get_submissions(course_id, assignment_id, user_id):
         subs = Submission.query.filter_by(course_id=course_id)
-        # JUst need to refactor this to allow lists
+        # Just need to refactor this to allow lists
         if assignment_id is not None:
             if ',' in assignment_id:
                 subs = subs.filter(Submission.assignment_id.in_([int(a) for a in assignment_id.split(",")]))
@@ -675,14 +675,18 @@ class Submission(EnhancedBase):
             current = log.date_created
         return total
 
-    def copy_from(self, old_submission):
+    def copy_from(self, old_submission, overwrite_endpoints=False):
         self.code = old_submission.code
         self.extra_files = old_submission.extra_files
         self.url = old_submission.url
+        if overwrite_endpoints or not self.endpoint:
+            self.endpoint = old_submission.endpoint
         self.score = old_submission.score
         self.correct = old_submission.correct
         self.submission_status = old_submission.submission_status
         self.grading_status = old_submission.grading_status
+        self.date_due = old_submission.date_due
+        self.date_locked = old_submission.date_locked
         self.version += 1
         db.session.commit()
         return self

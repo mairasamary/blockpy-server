@@ -391,7 +391,7 @@ def group_review_editor():
         grouped_assignments, assignments_by_group, group_headers, groups = get_assignments_in_groups(course)
         students = natsorted(course.get_students(sort_students_by), key=lambda x: x.name())
     else:
-        grouped_assignments, assignments_by_group, group_headers, groups = [], {}, {}
+        grouped_assignments, assignments_by_group, group_headers, groups = [], {}, {}, []
         students = []
 
     total_score, total_possible, all_explanations = calculate_submissions_score(assignments, submissions, None)
