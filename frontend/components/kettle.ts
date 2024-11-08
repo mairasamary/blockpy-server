@@ -13,6 +13,8 @@ import * as ts from "typescript";
 import {decode} from "../utilities/vlq";
 import {QuizPoolRandomness} from "./quizzes/quiz";
 
+import { WebR } from 'webr';
+
 export const CONSOLE_API_COMMAND_LIST = ["log", "error", "info", "warning", "table", "clear"];
 export type ConsoleAPICommand = "log" | "error" | "info" | "warning" | "table" | "clear";
 export type ConsoleAPI = Record<ConsoleAPICommand, (...message: any[])=> void>;
@@ -46,6 +48,10 @@ export function extractFromPool(pool: string, splitter: RegExp, seed: number): s
 }
 
 interface KettleInterfaceJson extends AssignmentInterfaceJson {
+    smallLayout: boolean;
+    partId: string;
+    initialCode: string;
+    language: KettleLanguages;
 }
 
 export type SourceCodeMapping = Record<number, Record<number, [number, number]>>;
@@ -516,6 +522,13 @@ const POOL_SEPARATORS = {
     INSTRUCTIONS: /<!-{4,}# .+ #-{4,}>/
 };
 
+export enum KettleLanguages {
+    TYPESCRIPT = "typescript",
+    JAVASCRIPT = "javascript",
+    PYTHON = "python",
+    R = "r",
+}
+
 
 export class Kettle extends AssignmentInterface {
     errorMessage: ko.Observable<string>;
@@ -526,9 +539,13 @@ export class Kettle extends AssignmentInterface {
     isDebugMode: ko.Observable<boolean>;
     currentTime: ko.Observable<string>;
     executionTimer: Timer;
+    language: ko.Observable<KettleLanguages>;
+    mimeLanguage: ko.PureComputed<string>;
 
     seed: ko.Observable<number>;
     poolRandomness: ko.Observable<QuizPoolRandomness>;
+
+    webR: WebR | null;
 
     console: KettleConsole | null;
     iframe: HTMLIFrameElement | null;
@@ -540,6 +557,13 @@ export class Kettle extends AssignmentInterface {
     // Visuals from Pools
     poolInstructions: ko.PureComputed<string>;
     poolTests: ko.PureComputed<string>;
+
+    smallLayout: ko.Observable<boolean>;
+    startedSmallLayout: boolean;
+    partId: ko.Observable<string>;
+    initialCode: string;
+
+    runText: ko.PureComputed<string>;
 
     subscriptions: {
         currentAssignmentId: ko.Subscription;
@@ -565,6 +589,13 @@ export class Kettle extends AssignmentInterface {
         // For internal development
         this.isDebugMode = ko.observable(false);
 
+        this.startedSmallLayout = params.smallLayout || false;
+        this.smallLayout = ko.observable(this.startedSmallLayout);
+        this.partId = ko.observable(params.partId || "");
+        this.initialCode = params.initialCode || "";
+
+        this.language = ko.observable<KettleLanguages>(params.language || KettleLanguages.TYPESCRIPT);
+
         this.poolRandomness = ko.observable<QuizPoolRandomness>(QuizPoolRandomness.NONE);
         this.seed = ko.observable<number>(0);
 
@@ -574,6 +605,7 @@ export class Kettle extends AssignmentInterface {
         this.latestFeedback = "";
         this.latestTestScore = ko.observable(0);
         this.latestListener = null;
+        this.webR = null;
 
         this.executionTimer = new Timer(".kettle-clock");
 
@@ -612,6 +644,24 @@ export class Kettle extends AssignmentInterface {
                 return extractFromPool(instructions, POOL_SEPARATORS.INSTRUCTIONS, this.seed());
             } else {
                 return instructions;
+            }
+        });
+        this.runText = ko.pureComputed(() => {
+            return this.partId().length ? "Run" : "Run and Grade";
+        });
+
+        this.mimeLanguage = ko.pureComputed(() => {
+            switch (this.language()) {
+                case KettleLanguages.TYPESCRIPT:
+                    return "text/typescript";
+                case KettleLanguages.JAVASCRIPT:
+                    return "text/javascript";
+                case KettleLanguages.PYTHON:
+                    return "text/python";
+                case KettleLanguages.R:
+                    return "text/x-rsrc";
+                default:
+                    return "text/plain";
             }
         });
 
@@ -655,13 +705,24 @@ export class Kettle extends AssignmentInterface {
         // Clear out old errors
         this.latestErrors = [];
 
-        // Set up buttons
-        this.restoreRunButtons();
+        if (this.language() === KettleLanguages.R) {
+            this.webR = new WebR();
+            // @ts-ignore
+            this.webR.init().then(() => {
+                this.restoreRunButtons();
+                this.console.info("Ready to run R!");
+                this.updateStatus("Ready", false);
+                this.isLoading(false);
+            });
+        } else {
+            // Set up buttons
+            this.restoreRunButtons();
 
-        // Let the user know we're good
-        this.console.info("Ready to run!");
-        this.updateStatus("Ready", false);
-        this.isLoading(false);
+            // Let the user know we're good
+            this.console.info("Ready to run!");
+            this.updateStatus("Ready", false);
+            this.isLoading(false);
+        }
     }
 
     logExecution(eventType = "Run.Program") {
@@ -865,11 +926,45 @@ export class Kettle extends AssignmentInterface {
     restoreRunButtons() {
         $(".kettle-eval-button").off('click.run').on('click.run', () => {
             this.evaluateCode(true);
-        }).removeClass("btn-danger").addClass("btn-success").text("Run and Grade");
+        }).removeClass("btn-danger").addClass("btn-success").text(this.runText());
         $(".kettle-run-button").off('click.run').on('click.run', () => {
             this.evaluateCode(false);
         }).prop('disabled', false);
         $("#kettle-execution-control").removeClass("btn-danger").addClass("btn-success");
+    }
+
+    async evaluateCodeR(instructor: boolean = true) {
+        const currentCode = this.submission().code();
+        if (this.webR) {
+            this.updateStatus("Running", false)
+            // @ts-ignore
+            let shelter = await new this.webR.Shelter();
+
+            try {
+                // @ts-ignore
+                let result = await shelter.captureR(currentCode);
+                this.updateStatus("Outputing", false)
+                console.log(result);
+                let output = result.output;
+
+                output.forEach((line) => {
+                    if (line.type === 'stdout') {
+                        this.console.log(line.data);
+                    } else if (line.type === 'stderr') {
+                        this.console.error(line.data);
+                    } else {
+                        this.console.error("Unknown output type", line);
+                    }
+                });
+            } catch (e) {
+                this.console.error("Error running R code:", e);
+            } finally {
+                shelter.purge();
+            }
+            this.handleExecutionStopped("Finished Execution");
+        } else {
+            this.console.error("R is not available because WebR failed to load. Please notify the instructor.");
+        }
     }
 
     evaluateCode(instructor: boolean = true) {
@@ -878,6 +973,9 @@ export class Kettle extends AssignmentInterface {
         this.handleExecutionStarted();
         this.updateStatus("Compiling");
         this.logCompilation();
+        if (this.language() === KettleLanguages.R) {
+            return this.evaluateCodeR(instructor);
+        }
         const request = makeExecutionRequest(this.submission().code(),
             instructor ? this.poolTests()
                 : false);
@@ -967,6 +1065,10 @@ export class Kettle extends AssignmentInterface {
         if (this.latestListener !== null) {
             window.removeEventListener('message', this.latestListener);
             this.latestListener = null;
+        }
+        if (this.webR) {
+            // @ts-ignore
+            this.webR.destroy();
         }
     }
 
@@ -1084,10 +1186,12 @@ export class Kettle extends AssignmentInterface {
 
 export const EDITOR_HTML = `
 <!-- Errors -->
-<div class="alert alert-warning p-1 border rounded float-right" data-bind="text: errorMessage, visible: errorMessage().length"></div>
+<div class="alert alert-warning p-1 border rounded" 
+    data-bind="text: errorMessage, visible: errorMessage().length,
+                class: {'float-right': !smallLayout()} "></div>
 
 <!-- Instructor Editor Mode Selector -->
-<div data-bind="if: isInstructor()">
+<div data-bind="if: isInstructor() && !smallLayout()">
     <!-- Instructor Editor Mode Selector -->
     <div class="btn-group-toggle mt-2 mb-2">
         <label class="btn btn-outline-secondary" for="kettle-editor-mode-radio-submission"
@@ -1135,11 +1239,11 @@ export const EDITOR_HTML = `
         <button data-bind="click: saveAssignment" class="btn btn-info">Save Assignment Changes</button><br>
         <!-- On Run -->
         <h6>Instructor Feedback (On Run) Code</h6>
-        <div data-bind="codemirror: {value: assignment().onRun, lineNumbers: true, matchBrackets: true, mode: 'text/typescript'}" style="width: 100%; height: 300px"></div><br>
+        <div data-bind="codemirror: {value: assignment().onRun, lineNumbers: true, matchBrackets: true, mode: mimeLanguage}" style="width: 100%; height: 300px"></div><br>
         <button data-bind="click: ()=>resetAssignmentIfNeeded()">Reset On Run</button>
         <!-- Starting Code -->
         <h6>Starting Student Code</h6>
-        <div data-bind="codemirror: {value: assignment().startingCode, lineNumbers: true, matchBrackets: true, mode: 'text/typescript'}" style="width: 100%; height: 300px"></div><br>
+        <div data-bind="codemirror: {value: assignment().startingCode, lineNumbers: true, matchBrackets: true, mode: mimeLanguage}" style="width: 100%; height: 300px"></div><br>
         <!-- Instructions -->
         <h6>Instructions (Body)</h6>
         <textarea data-bind="markdowneditor: {value: assignment().instructions}" style="width: 100%; height: 300px"></textarea><br>
@@ -1177,7 +1281,7 @@ export const EDITOR_HTML = `
 export const KETTLE_HTML = `
 <div><style>.kettle-student-editor .CodeMirror { resize: vertical} </style>
     ${EDITOR_HTML}
-    <!-- ko if: assignment -->
+    <!-- ko if: assignment() && !smallLayout() -->
     <div data-bind="markdowned: {value: poolInstructions()}"></div>
     <div data-bind="visible: isInstructor">
         <div class="form-group">
@@ -1194,7 +1298,7 @@ export const KETTLE_HTML = `
         <div id='source' style='height: 70%;'></div>
         <div class="btn-group m-2" role="group" aria-label="Execution Control Buttons" >
           <button class='btn btn-success kettle-eval-button' type="button"
-                data-bind="">Run and Grade</button>
+                data-bind="text: runText"></button>
         
           <div class="btn-group" role="group">
             <button id="kettle-execution-control" type="button" 
@@ -1214,34 +1318,65 @@ export const KETTLE_HTML = `
       <span class="kettle-status"></span>
       <span class="kettle-clock"></span>
       <span class="time-clock float-right" data-bind="text: currentTime"></span>
+      <!-- Allow instructors to expand out of small layout -->
+      <button class="btn btn-outline-secondary btn-sm float-right mr-3" 
+        data-bind="click: ()=>smallLayout(!smallLayout()),
+                   visible: isInstructor() && startedSmallLayout">Toggle Small Layout</button>
+
       <button class="btn btn-mini btn-xs btn-outline-secondary code-reset float-right mr-3" data-bind="click: resetStudent">Reset Code</button>
       <span class="float-right mr-3" data-bind="visible: isInstructor, click: resetScore">Score: <span data-bind="text: latestTestScore"></span></span>
       <!-- ko if: isDirty() -->
         <small class="alert alert-info p-1 border rounded float-right">Saving changes</small>
       <!-- /ko -->
       </div>
-      <!-- ko if: submission -->
-        <div data-bind="codemirror: {
-            value: submission().code, lineNumbers: true, 
-            matchBrackets: true, mode: 'text/typescript',
-            indentUnit: 4,
-            statementIndent: 4, noOverwrite: true,
-        }" style="width: 100%; border: 1px solid black;" class="kettle-student-editor"></div>
-        <br>
+      <!-- ko if: smallLayout() -->
+        <iframe src="../blockpy/serve_kettle_iframe" class="kettle-execution-iframe" style="display: none;"></iframe>
+        <div class="row mb-2" style="background-color: #fcf8e3; border: 1px solid #faebcc">
+            <div class="col-md-5">
+                <button class="btn btn-mini btn-xs btn-outline-secondary float-right mr-3" style="display: none;" id="abort-command">Stop Execution</button>
+                <h6>Console (log)</h6>
+                
+                <div class='kettle-console' style="resize: vertical; height: 200px; overflow: auto; scroll-behavior: smooth"></div>
+                <h6>Instructor Feedback</h6>
+                <div class="kettle-feedback" style="min-height: 100px; padding: 4px"></div>
+            </div>
+            <div class="col-md-7">
+                <!-- ko if: submission -->
+                <div data-bind="codemirror: {
+                    value: submission().code, lineNumbers: true, 
+                    matchBrackets: true, mode: mimeLanguage,
+                    indentUnit: 4,
+                    statementIndent: 4, noOverwrite: true,
+                }" style="width: 100%; border: 1px solid black;" 
+                    class="kettle-student-editor"></div>
+              <!-- /ko -->
+            </div>
+        </div>
       <!-- /ko -->
-      <iframe src="../blockpy/serve_kettle_iframe" class="kettle-execution-iframe" style="display: none;"></iframe>
-      <div class="row mb-2">
-        <div class="col-md-7">
-            <button class="btn btn-mini btn-xs btn-outline-secondary float-right mr-3" style="display: none;" id="abort-command">Stop Execution</button>
-            <h6>Console (log)</h6>
-            
-            <div class='kettle-console' style="resize: vertical; height: 300px; overflow: auto; scroll-behavior: smooth"></div>
-        </div>
-        <div class="col-md-5">
-            <h6>Instructor Feedback</h6>
-            <div class="kettle-feedback" style="min-height: 300px; padding: 4px"></div>
-        </div>
-      </div>
+      <!-- ko ifnot: smallLayout() -->
+          <!-- ko if: submission -->
+            <div data-bind="codemirror: {
+                value: submission().code, lineNumbers: true, 
+                matchBrackets: true, mode: mimeLanguage,
+                indentUnit: 4,
+                statementIndent: 4, noOverwrite: true,
+            }" style="width: 100%; border: 1px solid black;" class="kettle-student-editor"></div>
+            <br>
+          <!-- /ko -->
+          <iframe src="../blockpy/serve_kettle_iframe" class="kettle-execution-iframe" style="display: none;"></iframe>
+          <div class="row mb-2">
+            <div class="col-md-7">
+                <button class="btn btn-mini btn-xs btn-outline-secondary float-right mr-3" style="display: none;" id="abort-command">Stop Execution</button>
+                <h6>Console (log)</h6>
+                
+                <div class='kettle-console' style="resize: vertical; height: 300px; overflow: auto; scroll-behavior: smooth"></div>
+            </div>
+            <div class="col-md-5">
+                <h6>Instructor Feedback</h6>
+                <div class="kettle-feedback" style="min-height: 300px; padding: 4px"></div>
+            </div>
+          </div>
+      <!-- /ko -->
 </div>
 `
 

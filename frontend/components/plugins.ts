@@ -10,7 +10,6 @@ import * as FilePond from 'filepond';
 import FilePondPluginImagePreview from 'filepond-plugin-image-preview';
 import 'filepond-plugin-image-preview/dist/filepond-plugin-image-preview.css';
 
-
 import {BlockPyFileRecord} from "../models/files";
 import {ajax_get_file} from "./ajax";
 import StateCore from "markdown-it/lib/rules_core/state_core";
@@ -19,8 +18,6 @@ import {AssignmentJson} from "../models/assignment";
 import {SubmissionJson} from "../models/submission";
 // The CSS for jsoneditor is loaded via assets.py
 //import 'jsoneditor/dist/jsoneditor.css';
-
-
 
 // Knockout codemirror binding handler
 ko.bindingHandlers.codemirror = {
@@ -121,10 +118,10 @@ ko.bindingHandlers.markdowneditor = {
             indentWithTabs: false,
             tabSize: 4,
         });
-        console.log("CREATING EDITOR AGAIN");
+        //console.log("CREATING EDITOR AGAIN");
         element.editor.codemirror.on("change", (newValue: any) => {
             initialValue = ko.unwrap(valueAccessor());
-            console.log("CHANGE EVENT", element.flag, element.editor.value(), initialValue.value());
+            //console.log("CHANGE EVENT", element.flag, element.editor.value(), initialValue.value());
             //element.flag = true;
             initialValue.value(element.editor.value());
         })
@@ -138,7 +135,7 @@ ko.bindingHandlers.markdowneditor = {
     },
     update: function (element, valueAccessor) {
         let value = ko.toJS(valueAccessor()).value;
-        console.log("MDE Update", element, valueAccessor, value, element.flag);
+        //console.log("MDE Update", element, valueAccessor, value, element.flag);
         if (element.flag) {
             element.flag = false;
         } else {
@@ -152,7 +149,7 @@ ko.bindingHandlers.markdowneditor = {
 
 // Highlighted Code Area
 hljs.configure({
-    languages: ["python", "javascript", "typescript"]
+    languages: ["python", "javascript", "typescript", "r"]
 })
 ko.bindingHandlers.highlightedCode = {
     update: function (element, valueAccessor) {
@@ -182,20 +179,49 @@ export let md: MarkdownIt = new MarkdownIt({
     html: true,
     highlight: function (str, lang, langAttrs) {
         // For now, the only option is the partId, hopefully folks don't try to get fancy with that.
-        if (lang && hljs.getLanguage(lang)) {
-          try {
-              //return hljs.highlight(str, { language: lang }).value;
-              const launchBlockpy = langAttrs ? ` class="reader-launch-blockpy" data-part-id="${langAttrs}"` : "";
-              return `<pre${launchBlockpy} style="margin-bottom: 5px"><code class="language-${lang} hljs">` +
-                   // @ts-ignore
-                   hljs.highlight(lang, str, true).value +
-                   `</code></pre>
-                    <div style="display: none">${str}</div>
-                    <div data-bind="blockPyEditor: {partId: '${langAttrs}', launched: false,
-                                    assignment: ((typeof assignment).localeCompare('undefined')) ? assignment : null,
-                                    submission: ((typeof submission).localeCompare('undefined')) ? submission : null}"></div>`;
-          } catch (e) {
-              console.error(e);
+        const hljsLang = hljs.getLanguage(lang);
+        if (lang && hljsLang) {
+          if (lang === "python") {
+              try {
+                  //return hljs.highlight(str, { language: lang }).value;
+                  const launchBlockpy = langAttrs ? ` class="reader-launch-blockpy" data-part-id="${langAttrs}"` : "";
+                  return `<pre${launchBlockpy} style="margin-bottom: 5px"><code class="language-${lang} hljs">` +
+                      // @ts-ignore
+                      hljs.highlight(lang, str, true).value +
+                      `</code></pre>
+                        <div style="display: none">${str}</div>
+                        <div data-bind="blockPyEditor: {partId: '${langAttrs}', launched: false,
+                                        assignment: ((typeof assignment).localeCompare('undefined')) ? assignment : null,
+                                        submission: ((typeof submission).localeCompare('undefined')) ? submission : null}"></div>`;
+              } catch (e) {
+                  console.error(e);
+              }
+          } else if (lang === "typescript" || lang === "ts" || lang =="r") {
+                try {
+                    //return hljs.highlight(str, { language: lang }).value;
+                    const launchKettle = langAttrs ? ` class="reader-launch-kettle" data-part-id="${langAttrs}"` : "";
+                    return `<pre${launchKettle} style="margin-bottom: 5px"><code class="language-${lang} hljs">` +
+                        // @ts-ignore
+                        hljs.highlight(lang, str, true).value +
+                        `</code></pre>
+                        <div style="display: none">${str}</div>
+                        <div data-bind="kettleLauncher: {partId: '${langAttrs}', launched: false,
+                                        language: '${lang}',
+                                        assignment: ((typeof assignment).localeCompare('undefined')) ? assignment : null,
+                                        submission: ((typeof submission).localeCompare('undefined')) ? submission : null}"></div>`;
+                } catch (e) {
+                    console.error(e);
+                }
+          } else {
+              try {
+                    //return hljs.highlight(str, { language: lang }).value;
+                    return `<pre style="margin-bottom: 5px"><code class="language-${lang} hljs">` +
+                        // @ts-ignore
+                        hljs.highlight(lang, str, true).value +
+                        `</code></pre>`;
+                } catch (e) {
+                    console.error(e);
+                }
           }
         }
         // @ts-ignore
@@ -325,6 +351,37 @@ ko.bindingHandlers.blockPyEditor = {
         }
         return { 'controlsDescendantBindings': true };
     },
+}
+
+ko.bindingHandlers.kettleLauncher = {
+    'init': function (element, valueAccessor, allBindings, viewModel, bindingContext) {
+        let options = ko.unwrap(valueAccessor());
+        if (!options.launched && options.partId) {
+            const editButton = $("<button class='btn btn-sm btn-success kettle-launch' style='margin-bottom: 10px'><span class='fas fa-pencil'></span> Edit</button>");
+            editButton.on('click', () => {
+                editButton.hide();
+
+                const initialBody = $(element).prev().prev().text();
+                const newKettleTag = $(`
+                    <kettle params=' server: $root.server,
+                                      currentAssignmentId: currentAssignmentId,
+                                      courseId: courseId, 
+                                      assignmentGroupId: assignmentGroupId,
+                                      isInstructor: isInstructor,
+                                      markCorrect: markCorrect,
+                                      user: user,
+                                      smallLayout: true,
+                                      language: ${JSON.stringify(options.language)},
+                                      partId: ${JSON.stringify(options.partId)},
+                                      initialCode: ${JSON.stringify(initialBody || "")}'></kettle>`);
+                $(element).append(newKettleTag);
+                ko.applyBindingsToDescendants(bindingContext, element);
+                $(element).prev().prev().prev().hide();
+            });
+            $(element).before(editButton);
+        }
+        return { 'controlsDescendantBindings': false };
+    }
 }
 
 

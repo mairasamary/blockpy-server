@@ -39,6 +39,7 @@ def get_bundles(app):
             'libs/codemirror/javascript.js',
             'libs/codemirror/shell.js',
             'libs/codemirror/yaml-frontmatter.js',
+            'libs/codemirror/r.js',
             # Filepond
             'libs/filepond/filepond.min.js',
             # D3

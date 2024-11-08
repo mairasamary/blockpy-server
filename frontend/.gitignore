@@ -4,6 +4,7 @@ logs
 npm-debug.log*
 
 node_modules - Copy
+node_modules_2
 
 # Runtime data
 pids
