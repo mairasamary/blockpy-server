@@ -3,6 +3,7 @@ import time
 import os
 import re
 import json
+import base64
 from typing import Tuple
 
 from slugify import slugify
@@ -338,6 +339,50 @@ def log_event():
 
 
 
+@blueprint_blockpy.route("/share/<target>/", methods=['GET', 'POST'])
+@blueprint_blockpy.route("/share/<target>", methods=['GET', 'POST'])
+@blueprint_blockpy.route("/share/", methods=['GET', 'POST'], defaults={'target': ""})
+def share_url(target=None):
+    """
+    Scheme for the <target> is `[verb]_[course_id]_[assignment_group_id]_[user_id]`
+    but the whole thing is base64 encoded.
+    :param target:
+    :return:
+    """
+    viewer, viewer_id = get_user()
+    # Decode the target from base64
+    if target is None:
+        return ajax_failure("No target provided.")
+    print(target)
+    try:
+        decoded = base64.b64decode(target).decode('utf-8')
+    except Exception as e:
+        return ajax_failure(f"Could not decode the share target: {e}")
+    print(decoded)
+    parts = decoded.split("_")
+    print(parts)
+    if len(parts) < 5:
+        return ajax_failure(f"Target has invalid number of parts ({len(parts)}).")
+    verb, course_id, assignment_group_id, assignment_id, user_id, *extra_information  = parts
+    course_id = maybe_int(course_id)
+    assignment_group_id = maybe_int(assignment_group_id)
+    assignment_id = maybe_int(assignment_id)
+    user_id = maybe_int(user_id)
+    if None in (course_id, assignment_group_id, assignment_id, user_id):
+        return ajax_failure(f"Target has invalid value inside ({course_id}, {assignment_group_id}, {assignment_id}, {user_id}).")
+    # Check course permissions
+    if not viewer.is_grader(course_id):
+        if user_id == viewer_id:
+            return ajax_failure("This URL is for your submission. You can share this URL with an instructor or TA and they will be able to access it.")
+        return ajax_failure("You do not have permission to view this submission's course. Only TAs and instructors who are logged in have access to this submission through this link. If you are an instructor or TA, make sure that you log in first through Canvas, and then you can access this link once a cookie has been saved. If you were the one who copied this URL, then you can simply share it with an instructor or TA.")
+    # Hand off to appropriate function
+    if verb == "group":
+        return view_submissions(course_id, user_id, assignment_group_id,
+                                assignment_id_focus=assignment_id)
+    elif verb == "submission":
+        return ajax_failure("Individual submission is not implemented yet.")
+    else:
+        return ajax_failure("Invalid verb in target: {verb}")
 
 
 assignment_referer_regex = r"(https?\:\/\/.*?\.instructure\.com/courses/\d+/assignments/\d+).*?"
@@ -347,7 +392,7 @@ assignment_referer_regex = r"(https?\:\/\/.*?\.instructure\.com/courses/\d+/assi
                          methods=['GET', 'POST'])
 @blueprint_blockpy.route('/view_submissions/<int:course_id>/<int:user_id>/<int:assignment_group_id>',
                          methods=['GET', 'POST'])
-def view_submissions(course_id, user_id, assignment_group_id, ):
+def view_submissions(course_id, user_id, assignment_group_id, assignment_id_focus=None):
     embed = maybe_bool(request.values.get('embed'))
     viewer, viewer_id = get_user()
     group, assignments, submissions = get_groups_submissions(assignment_group_id, user_id, course_id)
@@ -402,6 +447,7 @@ def view_submissions(course_id, user_id, assignment_group_id, ):
                            group=list(zip(assignments, submissions)),
                            all_explanations=all_explanations, any_late_penalties=any_late_penalties,
                            user_id=user_id, course_id=course_id,
+                           assignment_id_focus=assignment_id_focus,
                            has_reviews=has_reviews)
 
 

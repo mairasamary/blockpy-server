@@ -218,6 +218,7 @@
             'updateSubmission': {{ url_for('blockpy.update_submission')|tojson }},
             'updateSubmissionStatus': {{ url_for('blockpy.update_submission_status')|tojson }},
             "openaiProxy": {{ url_for('blockpy.openai')|tojson }},
+            "shareUrl": {{ url_for('blockpy.share_url', _external=True)|tojson }},
             {%- endif %}
         };
         window.$blockPyUserData = {
