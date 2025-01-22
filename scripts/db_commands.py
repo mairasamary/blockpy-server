@@ -243,7 +243,9 @@ def dump_db(output, log_for_course):
 @click.option('--overwrite', '-w', 'overwrite', default=False, is_flag=True)
 @click.option("--partition", '-p', "partition", default=None,
               help="How many user partitions to make", type=int)
-def export_progsnap2(output, log_for_course, groups, exclude, format, overwrite, partition,):
+@click.option("--users", '-u', "users", default=None,
+              help="An explicit list of comma-separated user ids to export")
+def export_progsnap2(output, log_for_course, groups, exclude, format, overwrite, partition, users):
     from models.portation import export_progsnap2
     if groups is not None:
         output = output + "_{}".format(groups.replace(",", "_"))
@@ -251,7 +253,7 @@ def export_progsnap2(output, log_for_course, groups, exclude, format, overwrite,
     if exclude is not None:
         output = output + "_x{}".format(exclude.replace(",", "_"))
         exclude = [int(g) for g in exclude.split(",")]
-    export_progsnap2(output.format(log_for_course), log_for_course, groups, exclude=exclude, log=True, format=format, overwrite=overwrite, partition=partition)
+    export_progsnap2(output.format(log_for_course), log_for_course, groups, exclude=exclude, log=True, format=format, overwrite=overwrite, partition=partition, users=users)
 
 
 @cli.command("visualize_db")

@@ -129,7 +129,7 @@ def export_bundle(**kwargs):
     return dumped
 
 
-def export_progsnap2(output, course_id, assignment_group_ids=None, exclude=None, log=False, format='csv', overwrite=False, partition=None):
+def export_progsnap2(output, course_id, assignment_group_ids=None, exclude=None, log=False, format='csv', overwrite=False, partition=None, users=None):
     if log:
         print("Starting off progsnap2 dump")
     if partition is not None:
@@ -145,8 +145,13 @@ def export_progsnap2(output, course_id, assignment_group_ids=None, exclude=None,
         for letter_break in letter_breaks:
             while users and users[0].last_name[0].upper() <= letter_break:
                 user_id_groups.setdefault(letter_break, []).append(users.pop(0).id)
+        if users:  # Add remaining users to the last group
+            user_id_groups.setdefault("Remaining", []).extend([user.id for user in users])
         if log:
             print({g: len(u) for g, u in user_id_groups.items()})
+    elif users is not None:
+        user_ids = [maybe_int(u.strip()) for u in users.split(",")]
+        user_id_groups = {"": user_ids}
     else:
         user_id_groups = {"": None}
     if format == 'csv':
