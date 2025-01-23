@@ -82,7 +82,7 @@ def edit(course_id):
         flash(f"You are not in {course_id}")
         return redirect(url_for('courses.index'))
     course = Course.by_id(course_id)
-    if user.is_instructor(course_id):
+    if not user.is_instructor(course_id):
         flash(f"You are not an instructor in course: {course_id}")
         return redirect(url_for("courses.index"))
 
