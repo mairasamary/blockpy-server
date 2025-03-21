@@ -31,7 +31,7 @@ Courses: Edit {{ course.name }}
     {% endwith %}
 
     <p>
-    This form is for editing an existing course's settings. You should only mess with your course if you know what you are doing..</a>
+    This form is for editing an existing course's settings. You should only mess with your course if you know what you are doing.</a>
     </p>
 
 <form method=post action="{{ url_for('courses.edit', course_id=course_id) }}">
@@ -40,6 +40,16 @@ Courses: Edit {{ course.name }}
     {{ render_field(edit_form.term) }}
     {{ render_field(edit_form.url) }}
     {{ render_field(edit_form.id) }}
+    {{ render_field(edit_form.settings) }}
+    <p style="padding-left: 2em;">
+        Some settings need to be set through this JSON object.
+        This includes the <code>late_policy</code>, which can be set as follows:
+        <code>"late_policy": {"interval": "hours", "amount": "1%"}</code>
+        The <code>pinned</code> and <code>textbooks</code> fields should normally be set through their appropriate menus, rather than directly editing here.
+        Here is an example of what this might look like in practice:
+    </p>
+    <pre style="padding-left: 2em;">{"textbooks": ["bakery_textbook"], "pinned": true,"late_policy": {"interval": "hours", "amount": "1%"}}</pre>
+    <hr>
     <p><input type="submit" value="Edit Course" class="btn btn-success"></p>
 </form>
 

@@ -283,7 +283,7 @@ class Course(Base):
         db.session.commit()
         return course
 
-    def edit(self, name=None, url=None, visibility=None, term=None):
+    def edit(self, name=None, url=None, visibility=None, term=None, settings=None):
         modified = False
         if name is not None:
             self.name = name
@@ -296,6 +296,9 @@ class Course(Base):
             modified = True
         if term is not None:
             self.term = term
+            modified = True
+        if settings is not None:
+            self.settings = settings
             modified = True
         db.session.commit()
         return modified

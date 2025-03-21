@@ -44,8 +44,13 @@ class AddCourseForm(Form):
     submit = SubmitField("Add new course")
 
 
+SETTINGS_EXPLANATION = """
+Additional JSON settings for the course
+"""
+
 class EditCourseForm(AddCourseForm):
     id = HiddenField("id", description="The ID of the course, used to identify it in the database.")
+    settings = TextAreaField("Settings", description=SETTINGS_EXPLANATION)
     submit = SubmitField("Edit course")
 
 @courses.route('/add', methods=['GET', 'POST'])
@@ -100,10 +105,19 @@ def edit(course_id):
         if not Course.check_url_is_unique(course_url, course_id):
             flash('Course not edited; URLs must be unique.')
         else:
-            modified = course.edit(name=edit_form.name.data,
-                                   visibility=edit_form.visibility.data,
-                                   term=edit_form.term.data,
-                                   url=edit_form.url.data)
+
+            # Safety check the settings is proper JSON
+            try:
+                json.loads(edit_form.settings.data)
+            except json.JSONDecodeError as e:
+                flash(f"Settings are not valid JSON: {e}")
+                modified = False
+            else:
+                modified = course.edit(name=edit_form.name.data,
+                                       visibility=edit_form.visibility.data,
+                                       term=edit_form.term.data,
+                                       url=edit_form.url.data,
+                                       settings=edit_form.settings.data)
             if modified:
                 flash('Course settings updated')
             else:
