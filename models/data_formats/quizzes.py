@@ -139,6 +139,7 @@ def check_quiz_question(question, check, student) -> (float, bool, list):
             feedback = check.get('feedback', {}).get(student, wrong_any)
         elif 'correct_regex' in check:
             correct = any(re.match(reg, student) for reg in check['correct_regex'])
+            # TODO: This should be using feedback, not correct_regex!
             feedback = [check.get('feedback', {}).get(reg) for reg in check['correct_regex'] if re.match(reg, student)]
             feedback = feedback[0] if feedback else wrong_any
         else:

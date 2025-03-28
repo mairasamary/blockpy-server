@@ -22,11 +22,11 @@ RELATIVE_SOURCE_FILES = {
     '../../gamedev/designer/dist-js/skulpt-designer.js': 'libs/designer/',
     '../../gamedev/designer/dist-js/skulpt-designer-files.js': 'libs/designer/',
     '../../drafter-edu/drafter/dist-js/skulpt-drafter.js': 'libs/drafter/',
-    '../blockly/blockly_uncompressed.js': 'blockly/',
-    '../blockly/blockly_compressed.js': 'blockly/',
-    '../blockly/blocks_compressed.js': 'blockly/',
-    '../blockly/python_compressed.js': 'blockly/',
-    '../blockly/msg/js/en.js': 'blockly/msg/js/'
+    # '../blockly/blockly_uncompressed.js': 'blockly/',
+    # '../blockly/blockly_compressed.js': 'blockly/',
+    # '../blockly/blocks_compressed.js': 'blockly/',
+    # '../blockly/python_compressed.js': 'blockly/',
+    # '../blockly/msg/js/en.js': 'blockly/msg/js/'
 }
 
 

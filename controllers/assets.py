@@ -63,7 +63,9 @@ def get_bundles(app):
             "blockly/blockly_compressed.js",
             "blockly/blocks_compressed.js",
             "blockly/python_compressed.js",
-            "blockly/msg/js/en.js",
+            "blockly/msg/en.js",
+            "blockly/field-multilineinput/index.js",
+            # TODO: Probably should add some other languages
             output='gen/blockly.js'
         ),
 
