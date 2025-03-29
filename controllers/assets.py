@@ -29,6 +29,8 @@ def get_bundles(app):
             'libs/select2/knockout-select2.js',
             # EasyMDE
             'libs/easymde/easymde.min.js',
+            # QR Code
+            'libs/qrcode/qrcode.min.js',
             # CodeMirror
             'libs/codemirror/codemirror.js',
             'libs/codemirror/diff.js',
