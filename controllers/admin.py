@@ -280,24 +280,25 @@ class LogView(RegularView):
         'course': make_ajax_fields('id', 'url', 'name'),
         'subject': make_ajax_fields('first_name', 'last_name', 'email', 'id')
     }
+    simple_list_pager = True
 
     def get_count_query(self):
         """
         Need to override this because we have MASSIVE tables sometimes
         """
-        dialect_name = self.session.get_bind().dialect.name
-        if dialect_name == "postgresql":
-            query = sql_text("""
-                SELECT reltuples::bigint
-                FROM pg_class
-                WHERE relname = :table_name;
-            """)
-            return self.session.execute(query, {"table_name": self.model.__tablename__})
-        elif dialect_name == "sqlite":
-            query = sql_text(f"SELECT count(*) FROM {self.model.__tablename__};")
-            return self.session.execute(query)
-        else:
-            return self.session.query(func.count('*')).select_from(self.model)
+        # dialect_name = self.session.get_bind().dialect.name
+        # if dialect_name == "postgresql":
+        #     query = sql_text("""
+        #         SELECT reltuples::bigint
+        #         FROM pg_class
+        #         WHERE relname = :table_name;
+        #     """)
+        #     return self.session.execute(query, {"table_name": self.model.__tablename__})
+        # elif dialect_name == "sqlite":
+        #     query = sql_text(f"SELECT count(*) FROM {self.model.__tablename__};")
+        #     return self.session.execute(query)
+        # else:
+        return self.session.query(func.count('*')).select_from(self.model)
 
 
 class AssignmentGroupMembershipView(RegularView):
