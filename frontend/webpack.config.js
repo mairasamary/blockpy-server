@@ -1,19 +1,15 @@
-const webpack = require('webpack');
 const path = require('path');
 
 module.exports = {
-  //cache: true,
+  cache: {
+    type: 'filesystem',
+  },
   entry: './app.ts',
   module: {
     rules: [
       {
         test: /\.tsx?$/,
         use: 'ts-loader',
-        /*include: [
-            path.resolve(__dirname, 'components/'),
-            path.resolve(__dirname, 'models/'),
-            path.resolve(__dirname, 'utilities/'),
-        ],*/
         exclude: [
             /node_modules/
         ],
@@ -21,7 +17,6 @@ module.exports = {
       {
         test: /\.css$/i,
         use: ["style-loader", "css-loader"],
-        //exclude: /node_modules/,
       }
     ],
     noParse: /typescript/
@@ -48,8 +43,5 @@ module.exports = {
     doppiojvm: "Doppio",
     ConTodo: "ConTodo",
     raw_kettle_compiler_dts: "RAW_D_TS_FILES"
-  }/*,
-  plugins: [
-      new webpack.debug.ProfilingPlugin()
-  ]*/
+  }
 };
