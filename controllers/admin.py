@@ -420,6 +420,7 @@ class SubmissionView(RegularView):
         'user': make_ajax_fields('first_name', 'last_name', 'email', 'id')
     }
     form_excluded_columns = ('reviews', 'grade_history')
+    simple_list_pager = True
 
 
 class GradeHistoryView(RegularView):
