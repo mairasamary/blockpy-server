@@ -12,6 +12,8 @@ from flask import g, Blueprint, request, url_for, render_template, Response, cur
 from flask_admin.contrib.sqla.ajax import QueryAjaxModelLoader
 from markupsafe import Markup
 
+from sqlalchemy import func, text as sql_text
+
 from models import db
 from models.user import User
 from models.course import Course
@@ -44,7 +46,6 @@ class RegularView(ModelView):
         if g.user:
             return g.user.is_admin()
         return False
-
 
 class UserView(RegularView):
     def _list_roles(view, context, model, name):
@@ -279,6 +280,24 @@ class LogView(RegularView):
         'course': make_ajax_fields('id', 'url', 'name'),
         'subject': make_ajax_fields('first_name', 'last_name', 'email', 'id')
     }
+
+    def get_count_query(self):
+        """
+        Need to override this because we have MASSIVE tables sometimes
+        """
+        dialect_name = self.session.get_bind().dialect.name
+        if dialect_name == "postgresql":
+            query = sql_text("""
+                SELECT reltuples::bigint
+                FROM pg_class
+                WHERE relname = :table_name;
+            """)
+            return self.session.execute(query, {"table_name": self.model.__tablename__})
+        elif dialect_name == "sqlite":
+            query = sql_text(f"SELECT count(*) FROM {self.model.__tablename__};")
+            return self.session.execute(query)
+        else:
+            return self.session.query(func.count('*')).select_from(self.model)
 
 
 class AssignmentGroupMembershipView(RegularView):
