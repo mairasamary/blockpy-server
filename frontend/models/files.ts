@@ -32,6 +32,7 @@ export class FileStore {
         const payload = {
             submission_id: submission().id,
             only_placements: placements.join(","),
+            course_id: submission().courseId,
         };
         return new Promise((resolve, reject) => {
             ajax_get(url, payload).then((data) => {
