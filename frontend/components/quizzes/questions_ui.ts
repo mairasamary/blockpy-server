@@ -1,6 +1,6 @@
 export const QUESTIONS_SUBMISSION_UI = `
-<div data-bind="foreach: quiz()?.questions().filter(question => !asStudent() || question.visible())">
-        <div class="card m-4">
+<div data-bind="foreach: quiz()?.questions">
+        <div class="card m-4" data-bind="visible: visible() || !$component.asStudent(),">
             <div class="quizzer-question card-body">
                 <quizzer-question-status params="indexId: 1+$index(), status: student, question: $data, isAnchor: true, 
                                                  quiz: $component.quiz(), asStudent: $component.asStudent()" class="float-right"></quizzer-question-status>

@@ -55,6 +55,8 @@ export class Quizzer extends AssignmentInterface {
         questions: ko.Subscription[]
     }
 
+    visibleQuestions: ko.PureComputed<Question[]>;
+
 
     constructor(params: AssignmentInterfaceJson) {
         super(params);
@@ -85,6 +87,11 @@ export class Quizzer extends AssignmentInterface {
             });
             this.quiz().hidePools();
         });
+
+        // this.visibleQuestions = ko.pureComputed<Question[]>( () => {
+        //     const isNotStudent = !this.asStudent();
+        //     return this.quiz()?.questions().filter(q => isNotStudent || q.visible());
+        // }, this);
 
         this.isReadOnly = ko.pureComputed<boolean>(() => {
             return !this.quiz().attempting();

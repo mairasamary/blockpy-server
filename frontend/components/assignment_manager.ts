@@ -54,9 +54,10 @@ const NEW_ASSIGNMENT_MODAL = `<div class="modal fade" id="assignment-create" tab
             <select class="form-control" data-bind="value: createAssignmentType">
                 <option>BlockPy</option>
                 <option>Reading</option>
-                <option value="quiz">Quiz Question</option>
+                <option value="quiz">Quiz Questions</option>
                 <option>TypeScript</option>
                 <option>Textbook</option>
+                <option value="explain">Code Explanation</option>
             </select></label>
         </div>
         <div class="form-group" data-bind="visible: createAssignmentType() != 'Maze'">

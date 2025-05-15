@@ -24,7 +24,8 @@
       "allowSyntheticDefaultImports": true
     },
     "include": [
-        "components"
+        "components",
+        "custom_types"
     ],
     "exclude": [
         "node_modules"

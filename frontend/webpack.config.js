@@ -17,6 +17,10 @@ module.exports = {
       {
         test: /\.css$/i,
         use: ["style-loader", "css-loader"],
+      },
+      {
+        test: /\.py$/,
+        type: 'asset/source'
       }
     ],
     noParse: /typescript/
@@ -42,6 +46,7 @@ module.exports = {
     browserfs: 'BrowserFS',
     doppiojvm: "Doppio",
     ConTodo: "ConTodo",
-    raw_kettle_compiler_dts: "RAW_D_TS_FILES"
+    raw_kettle_compiler_dts: "RAW_D_TS_FILES",
+    skulpt: "Sk",
   }
 };

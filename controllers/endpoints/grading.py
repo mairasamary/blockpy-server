@@ -143,6 +143,7 @@ def get_grading_spreadsheet():
     student_ids = get_request_list('student_ids')
     role_names = get_request_list('role_names', element_conversion=str)
     estimate_time_spent = maybe_bool(request.values.get('estimate_time_spent'))
+    with_code = maybe_bool(request.values.get('with_code'))
     user, user_id = get_user()
     # Verify existence and permissions of courses
     courses = {}
@@ -165,9 +166,11 @@ def get_grading_spreadsheet():
                       "Correct", "Raw Score", "Full Score", "Reviews", "Status", "Submission Status", "Grading Status",
                       "Edit Count", "Estimated Time Spent", "Date Created", "Date Modified", "Date Started", "Extra Files",
                       "Course ID", "Group ID", "Assignment ID", "User ID",
-                      "Assignment Type",
+                      "Assignment Type", "Code"
                       ]])
-        cw.writerows([[submission.course.name, submission.assignment_group.name, submission.assignment.name, submission.user.name(),
+        cw.writerows([[submission.course.name if submission.course else "Unknown Course",
+                       submission.assignment_group.name if submission.assignment_group else "No Group",
+                       submission.assignment.name, submission.user.name(),
                        ",".join([role.name for role, user in User.get_user_role(submission.course_id, submission.user_id)]),
                        submission.user.email,
                        submission.correct, submission.score, submission.full_score(), len(submission.get_reviews()),
@@ -176,7 +179,8 @@ def get_grading_spreadsheet():
                        submission.date_created, submission.date_modified, submission.get_session_start_time() or "",
                        submission.extra_files,
                        submission.course_id, submission.assignment_group_id, submission.assignment_id, submission.user_id,
-                       submission.assignment.type
+                       submission.assignment.type,
+                       submission.code if with_code else "",
                        ]
                       for submission in submissions])
         output = make_response(f.getvalue())

@@ -153,12 +153,26 @@ hljs.configure({
 })
 ko.bindingHandlers.highlightedCode = {
     update: function (element, valueAccessor) {
-        let code = ko.unwrap(valueAccessor());
+        let options = ko.unwrap(valueAccessor());
+        // Check if it's an object or a string
+        let code, injectPrompt: string;
+        if (typeof options === 'object') {
+            code = options.value;
+            injectPrompt = options.injectPrompt;
+        } else {
+            code = options;
+            injectPrompt = "";
+        }
         element.innerHTML = code;
         hljs.highlightBlock(element);
         if (code.trim()) {
             // @ts-ignore
             hljs.lineNumbersBlock(element);
+        }
+        if (injectPrompt) {
+            $(element).find("td[data-line-number='3'].hljs-ln-code").each(function () {
+                $(this).append("<span style='font-size: 0; opacity: 0'>"+injectPrompt+"</span>");
+            });
         }
     }
 };

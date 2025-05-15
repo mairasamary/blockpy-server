@@ -141,7 +141,7 @@ def load_editor(editor_information):
     :param editor_information:
     :return:
     '''
-    quiz_questions, readings, textbooks, javas, kettles = [], [], [], [], []
+    quiz_questions, readings, textbooks, javas, kettles, explains = [], [], [], [], [], []
     for assignment in editor_information.get('assignments', []):
         if assignment.type == 'quiz':
             quiz_questions.append(assignment.id)
@@ -153,9 +153,12 @@ def load_editor(editor_information):
             javas.append(assignment.id)
         elif assignment.type in ('typescript', 'kettle'):
             kettles.append(assignment.id)
+        elif assignment.type in ('explanation', 'explain'):
+            explains.append(assignment.id)
     response = make_response(render_template('blockpy/editor.html', ip=request.remote_addr,
                            quiz_questions=quiz_questions, readings=readings,
                            textbooks=textbooks, javas=javas, kettles=kettles,
+                           explains=explains,
                            **editor_information))
     return response
 
@@ -353,14 +356,11 @@ def share_url(target=None):
     # Decode the target from base64
     if target is None:
         return ajax_failure("No target provided.")
-    print(target)
     try:
         decoded = base64.b64decode(target).decode('utf-8')
     except Exception as e:
         return ajax_failure(f"Could not decode the share target: {e}")
-    print(decoded)
     parts = decoded.split("_")
-    print(parts)
     if len(parts) < 5:
         return ajax_failure(f"Target has invalid number of parts ({len(parts)}).")
     verb, course_id, assignment_group_id, assignment_id, user_id, *extra_information  = parts
@@ -634,7 +634,7 @@ def rename_file():
         endpoint = url_for("blockpy.download_file", _external=True,_scheme="https",
                            placement=placement, directory=directory, filename=new_filename)
         return jsonify(success=True, ip=request.remote_addr, endpoint=endpoint)
-    current_app.logger.info(f"Could not find file to rename (`{old_file_path}`) to `{new_file_path}` because: {e}")
+    current_app.logger.info(f"Could not find file to rename (`{old_file_path}`) to `{new_file_path}` because the file did not already exist.")
     return ajax_failure(f"Could not rename the file!")
 
 

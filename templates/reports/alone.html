@@ -28,7 +28,9 @@
 {% elif assignment.type.lower() == "textbook" %}
     {% include "reports/textbook.html" with context %}
 {% elif assignment.type.lower() == "typescript" %}
-        {% include "reports/typescript.html" with context %}
+    {% include "reports/typescript.html" with context %}
+{% elif assignment.type.lower() == "explain" %}
+    {% include "reports/explains.html" with context %}
 {% else %}
     Unknown assignment type
 {% endif %}

@@ -12,6 +12,7 @@
         let metaReviews = {{ submission.get_meta_reviews()|tojson }};
         let tags = {{ tags|tojson }};
         let isGrader = ko.observable({{ is_grader|tojson }});
+        let previewStudentMode = ko.observable(false);
         let mainReviewInterface = ko.observable(null);
         // Improve this check
         let isLtiActive = {{ (True == (session['is_lti_active'] and g.course and g.course.id == submission.course_id))|tojson }};
@@ -66,9 +67,12 @@
             genericReviews: metaReviews.map((review) => server.reviewStore.getInstance(review.id)),
             tags: tags,
             isGrader: isGrader,
+            previewStudentMode: previewStudentMode,
             isLtiActive: isLtiActive,
             canSeeFeedback: ko.pureComputed(() => isGrader() || server.submissionStore.getInstance(submission.id).isFullyGraded()),
-            canEditFeedback: ko.pureComputed(() => isGrader()),
+            canEditFeedback: ko.pureComputed(() => {
+                return isGrader() && !previewStudentMode();
+            }),
             mainReviewInterface: mainReviewInterface
         }
         ko.cleanNode(document.getElementById(target));
@@ -76,5 +80,4 @@
     });
 
     </script>
-    {# include "helpers/review_interface.html" with context #}
 {% endif %}

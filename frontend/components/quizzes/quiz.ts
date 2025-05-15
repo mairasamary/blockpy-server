@@ -271,8 +271,8 @@ export class Quiz {
             const seed = this.poolRandomness() === QuizPoolRandomness.SEED ?
                 this.seed() :
                 this.poolRandomness() === QuizPoolRandomness.ATTEMPT ?
-                this.seed() + this.attemptCount() :
-                0;
+                    this.seed() + this.attemptCount() :
+                    0;
             const chosenQuestions = subsetRandomly(allQuestions, pool.amount, seed);
             allQuestions.forEach((questionId: string) => {
                 this.questionMap[questionId].visible(chosenQuestions.includes(questionId));

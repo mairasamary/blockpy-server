@@ -187,6 +187,15 @@
                         markCorrect: markCorrect,
                         user: user"></kettle>
         <!-- /ko -->
+        <!-- ko if: assignmentType() == 'explain' -->
+        <explain params="server: server,
+                        courseId: courseId,
+                        currentAssignmentId: currentExplainAssignmentId,
+                        assignmentGroupId: assignmentGroupId,
+                        isInstructor: isInstructor,
+                        markCorrect: markCorrect,
+                        user: user"></explain>
+        <!-- /ko -->
     </div>
 
     {% if group and group|length > 1 %}
@@ -199,6 +208,7 @@
         const TEXTBOOKS = {{ textbooks|tojson }};
         const JAVAS = {{ javas|tojson }};
         const KETTLES = {{ kettles|tojson }};
+        const EXPLAINS = {{ explains|tojson }};
         window.$blocklyMediaPath = {{ url_for('static', filename='blockly/media/')|tojson }};
         window.$blockPyUrls = {
             "importDatasets": {{ config['CORGIS_URL']|tojson }},
@@ -251,6 +261,7 @@
                 currentTextbookAssignmentId: ko.observable(null),
                 currentJavaAssignmentId: ko.observable(null),
                 currentKettleAssignmentId: ko.observable(null),
+                currentExplainAssignmentId: ko.observable(null),
                 assignmentType: ko.observable(null),
                 assignmentGroupId: {{ (assignment_group_id or None)|tojson }},
                 markCorrect: markCorrect
@@ -302,18 +313,21 @@
 
             // System for switching assignments
             function loadAssignmentWrapper(id) {
-                const [isQuiz, isReading, isTextbook, isJava, isKettle] = [
-                    QUIZZES, READINGS, TEXTBOOKS, JAVAS, KETTLES
+                const [isQuiz, isReading, isTextbook, isJava, isKettle, isExplain] = [
+                    QUIZZES, READINGS, TEXTBOOKS, JAVAS, KETTLES, EXPLAINS
                 ].map((list) => list.includes(id));
 
                 id = parseInt(id, 10);
-                if ([isQuiz, isReading, isTextbook, isJava, isKettle].some(Boolean)) {
+                if ([isQuiz, isReading, isTextbook, isJava, isKettle, isExplain].some(Boolean)) {
                     editor.hide();
                     mainModel.assignmentType(
                         isQuiz ? 'quiz' :
                             isReading ? 'reading' :
                                 isTextbook ? 'textbook' :
-                                    isJava ? 'java' : 'typescript');
+                                    isJava ? 'java' :
+                                        isKettle ? 'typescript' :
+                                            isExplain ? 'explain' :
+                                                null);
                 } else {
                     editor.show();
                     editor.loadAssignment(id);
@@ -324,6 +338,7 @@
                 mainModel.currentTextbookAssignmentId(isTextbook ? id : null);
                 mainModel.currentJavaAssignmentId(isJava ? id : null);
                 mainModel.currentKettleAssignmentId(isKettle ? id : null);
+                mainModel.currentExplainAssignmentId(isExplain ? id : null);
             }
 
             // And/Or load assignment data explicitly passed in

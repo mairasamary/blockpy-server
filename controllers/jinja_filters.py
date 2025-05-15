@@ -144,6 +144,7 @@ def check_quiz_answer(question, feedback, student, check, is_grader, part=None):
             return False
     elif question['type'] in ('multiple_dropdowns_question', 'fill_in_multiple_blanks_question'):
         return check_entered_string(student, check, part)
+    return False
 
 
 POOL_SEPARATORS = {

@@ -22,5 +22,6 @@ import "./components/quizzer";
 import "./components/reader";
 //import "./components/java";
 import './components/kettle';
+import './components/explain';
 import "./components/review_interface";
 //import "./components/textbook";

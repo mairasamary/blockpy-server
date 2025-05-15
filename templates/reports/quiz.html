@@ -5,6 +5,8 @@
     <h2 id='{{ assignment.slug() }}'>Quiz {{ assignment.name }}</h2>
     <strong>Status:</strong><span> {{ submission.full_status(not is_grader) }}</span>
 
+    {%  include "reports/reviewing_interface.html" with context %}
+
     {{ report_tools.render_submission_details(submission, is_grader) }}
 
     {% set hiding = assignment.hidden or assignment.get_setting('hide_submission', False) %}
@@ -57,6 +59,9 @@
     {% endif %}
     </div>
 {% endif %}
+
+<div id="reviewable-code-area-{{ submission.id }}"></div>
+
 {% if 'feedback' in code and (not is_grader and ('feedbackType' in quiz_settings and quiz_settings['feedbackType'].upper() == 'SUMMARY')) %}
     <div>
     {% set feedback_messages = (code['feedback'].values()|map(attribute='message')|reject("equalto", "Incorrect")|reject("equalto", "Correct")|join('\n')|replace("<br>", "")
@@ -72,7 +77,7 @@
         {% endfor %}
         </ol>
     {% else %}
-        <p>No automatic feedback messages were generated for this quiz. That does not mean that all of your answers were correct, just that we have no auomatic feedback to provide you.</p>
+        <p>No automatic feedback messages were generated for this quiz. That does not mean that all of your answers were correct, just that we have no automatic feedback to provide you.</p>
     {% endif %}
     </div>
 {% elif 'feedback' in code and (not hiding or is_grader) %}
@@ -90,9 +95,9 @@
                             aria-expanded="true" aria-controls="{{ unique_id }}">
                         Quiz Question {{ loop.index }}:
                         {%  if feedback.get('correct', False) %}
-                            Correct! ({{- question['points'] }} points
+                            ✔️ Correct! ({{- question['points'] }} points
                         {%- else -%}
-                            Incorrect (
+                            ❌ Incorrect (
                                 {{- feedback.get('status') }}
                                 as {{ (feedback.get('score', 0)*100)|round()|int }}%
                                 for {{ (question['points'] * feedback.get('score', 0))|float|round(2) -}}/

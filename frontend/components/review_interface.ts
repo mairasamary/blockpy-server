@@ -471,6 +471,7 @@ export interface SubmissionReviewInterfaceJson {
     genericReviews: Review[];
     tags: Tag[];
     isGrader: KnockoutObservable<boolean>;
+    previewStudentMode: KnockoutObservable<boolean>;
     isLtiActive: boolean;
     hasAutoFeedback: KnockoutReadonlyComputed<boolean>;
     canSeeFeedback: KnockoutReadonlyComputed<boolean>;
@@ -500,6 +501,7 @@ export class SubmissionReviewInterface {
     // UI
     isGrader: KnockoutObservable<boolean>;
     isLtiActive: KnockoutObservable<boolean>;
+    previewStudentMode: KnockoutObservable<boolean>;
 
     mainReviewInterface: KnockoutObservable<SubmissionReviewInterface>;
 
@@ -577,6 +579,7 @@ export class SubmissionReviewInterface {
         });
         // UI Seeing/Editing Stuff
         this.isGrader = params.isGrader;
+        this.previewStudentMode = params.previewStudentMode;
         this.isLtiActive = ko.observable(params.isLtiActive);
         this.canSeeFeedback = params.canSeeFeedback;
         this.canEditFeedback = params.canEditFeedback;
@@ -796,7 +799,7 @@ export const SUBMISSION_REVIEW_INTERFACE_TEMPLATE = `
 </div>
 
 <!-- General Feedback -->
-<div class="col-xl-6 col-md-12" data-bind="visible: generalReviews().length > 0 || canEditFeedback">
+<div class="col-xl-6 col-md-12" data-bind="visible: generalReviews().length > 0 || canEditFeedback()">
     <h4>General Feedback</h4>
 
     <!-- ko if: canEditFeedback -->
