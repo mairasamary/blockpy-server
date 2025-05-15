@@ -55,7 +55,7 @@ def get_bundles(app):
             #"libs/doppio/js/base64.js",
             #"libs/doppio/js/util.js",
             #"libs/doppio/js/websock.js",
-            "libs/doppio/js/browserfs.min.js",
+            # "libs/doppio/js/browserfs.min.js",
             #"libs/doppio/js/doppio.js",
             # Output
             output='gen/libs.js'
