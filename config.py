@@ -133,6 +133,7 @@ class DevelopmentConfig(DefaultConfig):
     TASK_QUEUE_STYLE = 'sqlite'
     TASK_DB_URI = 'instance/tasks.db'
     SQLALCHEMY_DATABASE_URI = 'sqlite:///../instance/main.db'
+    SQLALCHEMY_DATABASE_URI_ALEMBIC = 'sqlite:///instance/main.db'
 
 
 class TestConfig(DefaultConfig):
