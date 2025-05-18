@@ -2,7 +2,6 @@ import json
 
 from flask import Blueprint, send_from_directory, Response, render_template, flash
 from flask import Flask, redirect, url_for, session, request, jsonify, g, current_app
-from requests.packages import target
 
 from common.maybe import maybe_bool
 from controllers.auth import get_user
