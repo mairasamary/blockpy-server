@@ -18,7 +18,6 @@ from models.generics.base import Base
 class User(Base, UserMixin):
     __tablename__ = "user"
     # General user properties
-    id: Mapped[int] = mapped_column(Integer(), primary_key=True)
     first_name: Mapped[str] = mapped_column(String(255))
     last_name: Mapped[str] = mapped_column(String(255))
 
@@ -29,6 +28,7 @@ class User(Base, UserMixin):
     active: Mapped[Optional[bool]] = mapped_column(Boolean())
     anonymous: Mapped[bool] = mapped_column(Boolean(), default=False)
     confirmed_at: Mapped[Optional[datetime]] = mapped_column(DateTime())
+    banned: Mapped[bool] = mapped_column(Boolean(), default=False)
 
     fs_uniquifier: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
 
@@ -39,11 +39,18 @@ class User(Base, UserMixin):
     assignment_groups: Mapped[list["AssignmentGroup"]] = db.relationship(back_populates="owner")
     courses: Mapped[list["Course"]] = db.relationship(back_populates="owner")
     tags: Mapped[list["AssignmentTag"]] = db.relationship(back_populates="owner")
-    logs: Mapped[list["Log"]] = db.relationship(back_populates="subject")
+    access_logs: Mapped[list["AccessLog"]] = db.relationship(back_populates="subject")
+    course_logs: Mapped[list["CourseLog"]] = db.relationship(back_populates="subject")
+    role_logs: Mapped[list["RoleLog"]] = db.relationship(back_populates="subject")
+    authorizer_logs: Mapped[list["RoleLog"]] = db.relationship(back_populates="authorizer",
+                                                               foreign_keys="RoleLog.authorizer_id")
+    assignment_logs: Mapped[list["AssignmentLog"]] = db.relationship(back_populates="subject")
+    submission_logs: Mapped[list["SubmissionLog"]] = db.relationship(back_populates="subject")
     reviews: Mapped[list["Review"]] = db.relationship(back_populates="author")
     submissions: Mapped[list["Submission"]] = db.relationship(back_populates="user")
     reports: Mapped[list["Report"]] = db.relationship(back_populates="owner")
-    invites: Mapped[list["Invite"]] = db.relationship(back_populates="user")
+    invites: Mapped[list["Invite"]] = db.relationship(back_populates="user", foreign_keys="Invite.user_id")
+    approvals: Mapped[list["Invite"]] = db.relationship(back_populates="approver", foreign_keys="Invite.approver_id")
     grade_history: Mapped[list["GradeHistory"]] = db.relationship(back_populates="grader")
 
     # TODO: Finish roles
@@ -348,10 +355,11 @@ class User(Base, UserMixin):
             # Delete the course if it is owned by the anonymous user,
             #   and no non-anonymous users have resources in the course
             "Course": self.courses,
-            "Log": self.get_logs().all(),
+            "SubmissionLog": self.get_logs().all(),
             # Can safely delete submissions owned by the user IF no
             "Submission": self.submissions,
             "Report": self.reports,
-            "GradeHistory": self.grade_history
+            "GradeHistory": self.grade_history,
+            "Invite": self.invites,
         }
         return resources

@@ -2,6 +2,8 @@
 The models and database connections
 """
 from flask import Flask
+from gunicorn.config import ErrorLog
+
 from models.generics.models import db, migrate, ma
 from models.role import Role
 from models.user import User
@@ -12,7 +14,7 @@ from models.assignment_tag_membership import assignment_tag_membership
 from models.assignment_group import AssignmentGroup
 from models.assignment_group_membership import AssignmentGroupMembership
 from models.authentication import Authentication
-from models.log import Log
+from models.logs import AccessLog, ErrorLog, CourseLog, RoleLog, AssignmentLog, SubmissionLog
 from models.review import Review
 from models.submission import Submission
 from models.sample_submission import SampleSubmission
@@ -51,5 +53,6 @@ ALL_TABLES = (
     Course, Invite,
     Submission, Review, SampleSubmission,
     User, Role, Authentication,
-    Log, Report, GradeHistory
+    Report, GradeHistory,
+    AccessLog, ErrorLog, CourseLog, RoleLog, AssignmentLog, SubmissionLog
 )

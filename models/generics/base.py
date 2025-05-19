@@ -95,6 +95,14 @@ class Base(db.Model):
     def find_all_linked_resources(self) -> dict[str, list["Base"]]:
         return {}
 
+    def remove(self):
+        """
+        Dangerous method to remove an entity and all of its associated data.
+        Should only be used by Admin, after doing proper backups.
+        """
+        resource_graph = find_all_linked_resources([self])
+        return mass_delete(resource_graph)
+
 
 class VersionedBase(Base):
     __abstract__ = True
@@ -216,7 +224,12 @@ def find_all_linked_resources(resources: list[Base]) -> dict[str, list[Base]]:
 
 SAFE_DELETE_ORDER = [
     "GradeHistory",
-    "Log",
+    "SubmissionLog",
+    "AssignmentLog",
+    "RoleLog",
+    "CourseLog",
+    "ErrorLog",
+    "AccessLog",
     "Report",
     "AssignmentTagMembership",
     "AssignmentTag",
@@ -232,3 +245,22 @@ SAFE_DELETE_ORDER = [
     "Authentication",
     "User",
 ]
+
+def mass_delete(resource_graph: dict[str, list[Base]]) -> tuple[int, int]:
+    """
+    Delete the given resource and all linked resources in a safe order.
+
+    Returns:
+        A tuple of the number of resources deleted and the number of forks unforked.
+    """
+    deleted, unforked = 0, 0
+    for fork in resource_graph.get("Forks", []):
+        fork.unfork()
+        unforked += 1
+    for category in SAFE_DELETE_ORDER:
+        if category in resource_graph:
+            for resource in resource_graph[category]:
+                db.session.delete(resource)
+                deleted += 1
+    db.session.commit()
+    return deleted, unforked
