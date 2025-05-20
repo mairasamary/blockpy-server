@@ -30,7 +30,7 @@ import flask_security
 from controllers.pylti.flask import LTI_SESSION_KEY, LTI, LTIException
 from flask_jwt_extended import create_access_token
 
-
+from mailing import mail, Message
 from controllers.setup import registry, rebar
 from models.user import User
 from models.course import Course
@@ -339,3 +339,27 @@ def make_user_anonymous():
         uid = uuid.uuid4().hex
         session['uid'] = uid
         g.user = User.make_anonymous_user(uid)
+
+@current_app.before_request
+def check_banned_user():
+    user = getattr(g, 'user', None)
+    if user and user.banned:
+        notify_admin()
+        abort(403, description="You are banned. Stop trying. The administrator has been notified.")
+
+
+def notify_admin():
+    msg = Message(
+        'A rascal has attempted to access the system!',
+        recipients=current_app.config['SYS_ADMINS'],
+        sender=current_app.config['SECURITY_EMAIL_SENDER'],
+        body=f'A rascal has attempted to access the system. '
+             f'I stopped them before they could do anything. '
+             f'Here are their details:\n'
+                f'User ID: {g.user.id}\n'
+                f'User Name: {g.user.name()}\n'
+                f'User Email: {g.user.email}\n'
+                f'User IP: {request.remote_addr}\n'
+                f'User Agent: {request.user_agent}\n'
+    )
+    mail.send(msg)

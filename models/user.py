@@ -29,6 +29,7 @@ class User(Base, UserMixin):
     active: Mapped[Optional[bool]] = mapped_column(Boolean())
     anonymous: Mapped[bool] = mapped_column(Boolean(), default=False)
     confirmed_at: Mapped[Optional[datetime]] = mapped_column(DateTime())
+    banned: Mapped[bool] = mapped_column(Boolean(), default=False)
 
     fs_uniquifier: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
 
