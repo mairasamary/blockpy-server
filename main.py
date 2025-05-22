@@ -67,8 +67,8 @@ def create_app(test_config=None, instance_config="configuration.py") -> Flask:
     jwt = JWTManager(app)
 
     # Email
-    from flask_mail import Mail
-    mail = Mail(app)
+    from mailing import setup_mail
+    setup_mail(app)
 
     # Set up all the endpoints
     with app.app_context():
