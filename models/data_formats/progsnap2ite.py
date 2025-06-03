@@ -12,7 +12,7 @@ from models.assignment_group import AssignmentGroup
 from models.course import Course
 from models.data_formats.progsnap2 import to_progsnap_event, HEADERS, LINK_SUBJECT_HEADERS, get_course_users, \
     get_all_assignments_and_groups, LINK_ASSIGNMENT_GROUP_HEADERS, LINK_ASSIGNMENT_HEADERS
-from models.log import Log
+from models.logs import SubmissionLog as Log
 from models.user import User
 
 try:

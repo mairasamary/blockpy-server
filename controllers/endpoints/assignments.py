@@ -7,7 +7,7 @@ from werkzeug.utils import secure_filename
 
 from models.assignment_group_membership import AssignmentGroupMembership
 from models.data_formats.progsnap2 import dump_progsnap
-from models.portation import export_bundle, import_bundle, export_zip, export_pdf_zip
+from models.data_formats.portation import export_bundle, import_bundle, export_zip, export_pdf_zip
 
 try:
     from urllib.parse import quote as url_quote

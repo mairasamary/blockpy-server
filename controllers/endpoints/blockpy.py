@@ -21,8 +21,8 @@ from models.assignment_tag import AssignmentTag
 from models.course import Course
 
 from models import db
-from models.log import Log
-from models.statuses import SubmissionStatuses
+from models.logs import SubmissionLog as Log
+from models.enums import SubmissionStatuses
 from models.submission import Submission, GradingStatuses
 from models.assignment import Assignment
 from models.assignment_group import AssignmentGroup

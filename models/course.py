@@ -1,47 +1,41 @@
 import json
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import Column, String, Integer, ForeignKey, Text, or_, Boolean
+from sqlalchemy import Column, String, Integer, ForeignKey, Text, or_, Boolean, Enum, Index
 from marshmallow import fields
 from werkzeug.utils import secure_filename
 
 import models
 from common.maybe import maybe_int
+from common.text import make_flavored_uuid_generator
+from models.enums import CourseVisibility, CourseKind, CourseService
 from models.generics.models import db, ma
 from models.generics.base import EnhancedBase, Base, VersionedBase
 from common.dates import datetime_to_string, string_to_datetime
-from models.statuses import GradingStatuses
+from models.enums import GradingStatuses
 
-
-class CourseSettingsSchema(ma.Schema):
-    enforce_dates = fields.Boolean(default=False)
-    textbooks = fields.List(fields.String(default=""))
-    pinned = fields.Boolean(default=False)
-
-
-class CourseVisibility:
-    PUBLIC = 'public'
-    PRIVATE = 'private'
-    ARCHIVED = 'archived'
-
-    VALID_CHOICES = (PUBLIC, PRIVATE, ARCHIVED)
+if TYPE_CHECKING:
+    from models import *
 
 
 class Course(Base):
     __tablename__ = "course"
-    SERVICES = ['native', 'lti']
-    LOG_LEVELS = ['nothing', 'everything', 'errors']
 
     name: Mapped[str] = mapped_column(String(255))
-    url: Mapped[Optional[str]] = mapped_column(String(255), default=None, nullable=True)
+    url: Mapped[Optional[str]] = mapped_column(String(255),
+                                               default=make_flavored_uuid_generator("course"),
+                                               nullable=True)
     owner_id: Mapped[int] = mapped_column(ForeignKey('user.id'))
 
-    service: Mapped[str] = mapped_column(String(80), default="native")
+    kind: Mapped[CourseKind] = mapped_column(Enum(CourseKind), default=CourseKind.TEMPLATE)
+    service: Mapped[CourseService] = mapped_column(Enum(CourseService), default=CourseService.NATIVE)
     external_id: Mapped[str] = mapped_column(String(255), default="")
+    lms_id: Mapped[Optional[int]] = mapped_column(Integer(), default=None, nullable=True)
     endpoint: Mapped[str] = mapped_column(Text(), default="")
+    version: Mapped[int] = mapped_column(Integer(), default=0)
 
-    visibility: Mapped[str] = mapped_column(String(80), default=CourseVisibility.PRIVATE)
+    visibility: Mapped[CourseVisibility] = mapped_column(Enum(CourseVisibility), default=CourseVisibility.PRIVATE)
     term: Mapped[str] = mapped_column(String(255), default="")
     settings: Mapped[str] = mapped_column(Text(), default="")
     locked: Mapped[bool] = mapped_column(Boolean(), default=False, nullable=False)
@@ -51,10 +45,15 @@ class Course(Base):
     assignments: Mapped[list["Assignment"]] = db.relationship(back_populates="course")
     assignment_groups: Mapped[list["AssignmentGroup"]] = db.relationship(back_populates="course")
     tags: Mapped[list["AssignmentTag"]] = db.relationship(back_populates="course")
-    logs: Mapped[list["Log"]] = db.relationship(back_populates="course")
+    course_logs: Mapped[list["CourseLog"]] = db.relationship(back_populates="course")
+    role_logs: Mapped[list["RoleLog"]] = db.relationship(back_populates="course")
+    assignment_logs: Mapped[list["AssignmentLog"]] = db.relationship(back_populates="course")
+    submission_logs: Mapped[list["SubmissionLog"]] = db.relationship(back_populates="course")
     submissions: Mapped[list["Submission"]] = db.relationship(back_populates="course")
     invites: Mapped[list["Invite"]] = db.relationship(back_populates="course")
     reports: Mapped[list["Report"]] = db.relationship(back_populates="course")
+
+    __table_args__ = (Index('course_url_index', "url"),)
 
     def encode_json(self):
         user = models.User.query.get(self.owner_id)

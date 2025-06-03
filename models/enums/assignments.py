@@ -55,3 +55,31 @@ class AssignmentFeedback(enum.StrEnum):
     AFTER_DUE = "after_due"
     MANUAL = "manual"
     NEVER = "never"
+
+
+class AssignmentGroupCategory(enum.StrEnum):
+    """
+    The category of the assignment group, allowing it to be grouped
+    along with similar kinds of assignments.
+
+    Instructors are free to use these categorizations as they see fit.
+    They are not enforced in any way and are only used for display.
+
+    Attributes:
+        NONE: The assignment group is not categorized.
+        EXAM: The assignment group is an exam.
+        HOMEWORK: The assignment group is a homework assignment.
+        CLASSWORK: The assignment group is a classwork assignment.
+        PROJECT: The assignment group is a project.
+        QUIZ: The assignment group is a quiz.
+        LAB: The assignment group is a lab.
+        READING: The assignment group is a reading assignment.
+    """
+    NONE = 'none'
+    EXAM = 'exam'
+    HOMEWORK = 'homework'
+    CLASSWORK = 'classwork'
+    PROJECT = 'project'
+    QUIZ = 'quiz'
+    LAB = 'lab'
+    READING = 'reading'

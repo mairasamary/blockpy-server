@@ -1,12 +1,12 @@
 from ipaddress import ip_address, ip_network
 from hmac import compare_digest
 import json
-from typing import Tuple, List, Optional, Any
+from typing import Tuple, List, Optional, Any, TYPE_CHECKING
 from dataclasses import dataclass
 
 from flask import url_for
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import Column, String, Text, Integer, ForeignKey, UniqueConstraint, Boolean
+from sqlalchemy import Column, String, Text, Integer, ForeignKey, UniqueConstraint, Boolean, Enum, Index
 from werkzeug.utils import secure_filename
 from slugify import slugify
 
@@ -14,11 +14,16 @@ import models
 from common.dates import datetime_to_string
 from common.databases import optional_encoded_field, make_copy
 from common.maybe import maybe_int
+from common.text import make_flavored_uuid_generator
+from models.enums import AssignmentStatus, AssignmentTypes
 from models.generics.definitions import LatePolicy
 from models.generics.models import db, ma
 from models.generics.base import EnhancedBase, Base
 from models.data_formats.textbook import search_textbook_for_key, rehydrate_textbook
 from models.assignment_tag_membership import assignment_tag_membership
+
+if TYPE_CHECKING:
+    from models import *
 
 
 class Assignment(EnhancedBase):
@@ -32,12 +37,13 @@ class Assignment(EnhancedBase):
     __tablename__ = "assignment"
 
     name: Mapped[str] = mapped_column(String(255), default="Untitled")
-    url: Mapped[Optional[str]] = mapped_column(String(255), default=None, nullable=True)
+    url: Mapped[Optional[str]] = mapped_column(String(255),
+                                               default=make_flavored_uuid_generator('assignment'),
+                                               nullable=True)
+    status: Mapped[AssignmentStatus] = mapped_column(Enum(AssignmentStatus), default=AssignmentStatus.DRAFT)
 
     # Settings
-    TYPES = ['blockpy', 'maze', 'reading',
-             'quiz', 'typescript', 'textbook', 'java']
-    type: Mapped[str] = mapped_column(String(10), default="blockpy")
+    type: Mapped[AssignmentTypes] = mapped_column(Enum(AssignmentTypes), default=AssignmentTypes.READING)
     instructions: Mapped[str] = mapped_column(Text(), default="")
     # Should we suggest this assignment's submissions be reviewed manually?
     reviewed: Mapped[bool] = mapped_column(Boolean(), default=False)
@@ -70,18 +76,22 @@ class Assignment(EnhancedBase):
     version: Mapped[int] = mapped_column(Integer(), default=0)
 
     # Relationships
-    forked: Mapped["Assignment"] = db.relationship("Assignment", remote_side="Assignment.id")
+    forked: Mapped["Assignment"] = db.relationship("Assignment", remote_side="Assignment.id", back_populates="forks",
+                                                   viewonly=True)
+    forks: Mapped["Assignment"] = db.relationship("Assignment", back_populates="forked", viewonly=True)
     owner: Mapped["User"] = db.relationship(back_populates="assignments")
     course: Mapped["Course"] = db.relationship(back_populates="assignments")
     tags: Mapped[list["AssignmentTag"]] = db.relationship(back_populates="assignments",
                                                           secondary=assignment_tag_membership)
     sample_submissions: Mapped[list["SampleSubmission"]] = db.relationship(back_populates="assignment")
-    memberships: Mapped[list["AssignmentGroupMembership"]] = db.relationship(back_populates="assignment")
-    logs: Mapped[list["Log"]] = db.relationship(back_populates="assignment")
+    submission_logs: Mapped[list["SubmissionLog"]] = db.relationship(back_populates="assignment")
+    assignment_logs: Mapped[list["AssignmentLog"]] = db.relationship(back_populates="assignment")
     submissions: Mapped[list["Submission"]] = db.relationship(back_populates="assignment")
+    memberships: Mapped[list["AssignmentGroupMembership"]] = db.relationship(back_populates="assignment")
     reports: Mapped[list["Report"]] = db.relationship(back_populates="assignment")
 
-    __table_args__ = (UniqueConstraint("course_id", "url", name="url_course_index"),)
+    __table_args__ = (Index("assignment_url_index", "url"),
+                      Index('assignment_course_index', "course_id"))
 
     # Override schema settings
     SCHEMA_V1_IGNORE_COLUMNS = EnhancedBase.SCHEMA_V1_IGNORE_COLUMNS + ('owner_id__email',)

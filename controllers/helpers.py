@@ -13,7 +13,7 @@ from common.maybe import maybe_bool, maybe_int
 from models.course import Course
 from models.assignment import Assignment
 from models.assignment_group import AssignmentGroup
-from models.log import Log
+from models.logs import RoleLog, CourseLog, ErrorLog, AccessLog, AssignmentLog, SubmissionLog
 
 
 def admin_required(f):

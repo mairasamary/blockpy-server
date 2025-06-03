@@ -14,7 +14,7 @@ from models import Course, Submission
 from models.assignment import Assignment
 from models.assignment_group import AssignmentGroup
 from models.assignment_group_membership import AssignmentGroupMembership
-from models.portation import export_bundle, import_bundle, export_zip, export_pdf_zip
+from models.data_formats.portation import export_bundle, import_bundle, export_zip, export_pdf_zip
 
 blueprint_assignment_group = Blueprint('assignment_group', __name__, url_prefix='/assignment_group')
 

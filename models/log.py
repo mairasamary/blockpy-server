@@ -1,3 +1,4 @@
+"""
 import logging
 from collections import OrderedDict
 import time
@@ -208,3 +209,4 @@ class Log(Base):
             json.dumps(self.client_timezone)
         ))
 
+"""

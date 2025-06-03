@@ -17,7 +17,7 @@ from models.course import Course
 from dataclasses import dataclass
 
 from models.generics.definitions import LogEventType
-from models.statuses import SubmissionStatuses, GradingStatuses
+from models.enums import SubmissionStatuses, GradingStatuses
 
 
 class TransmissionStatuses:

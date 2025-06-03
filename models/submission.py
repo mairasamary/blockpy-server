@@ -6,20 +6,21 @@ from datetime import timedelta, datetime
 import re
 
 import base64
-from typing import Union, Optional
+from typing import Union, Optional, TYPE_CHECKING
 
 from flask import url_for, current_app
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import Column, Text, Integer, Boolean, ForeignKey, Index, func, String, or_, DateTime
+from sqlalchemy import Column, Text, Integer, Boolean, ForeignKey, Index, func, String, or_, DateTime, Enum
 from sqlalchemy.orm import relationship
+from sqlalchemy_utc import UtcDateTime
 from werkzeug.utils import secure_filename
 
 
 import models
 from common.maybe import maybe_int
+from common.text import make_flavored_uuid_generator
 from models.generics.definitions import LatePolicy
 from models.assignment import Assignment
-from models.log import Log
 from models.generics.models import db, ma
 from models.generics.base import EnhancedBase, Base
 from common.dates import datetime_to_string
@@ -27,81 +28,31 @@ from common.databases import optional_encoded_field
 from common.filesystem import ensure_dirs
 from models.review import Review
 from models.data_formats.quizzes import process_quiz_str, QuizResult, try_parse_file
-from models.statuses import GradingStatuses, SubmissionStatuses
+from models.enums import GradingStatuses, SubmissionStatuses
 from models.user import User
+from models.data_formats.blockpy_legacy import DEFAULT_FILENAME, DEFAULT_FILENAMES_BY_TYPE, build_extra_starting_files, inject_code_part
 
-
-def build_extra_starting_files(extra_starting_files):
-    try:
-        data = json.loads(extra_starting_files)
-    except:
-        return extra_starting_files
-    if isinstance(data, dict):
-        return json.dumps({(k[1:] if k[0] in "^?!" else k): v for k, v in data.items()})
-    elif isinstance(data, list):
-        return extra_starting_files
-    else:
-        return extra_starting_files
-
-
-DEFAULT_SECTION_PATTERN = r"^(##### Part (.+))$"
-
-
-def inject_code_part(existing_code, new_code, part_id):
-    """
-    TODO: Someone unit test the heck out of this, please...
-
-    :param existing_code:
-    :param new_code:
-    :param part_id:
-    :return:
-    """
-    raw_parts = re.split(DEFAULT_SECTION_PATTERN, existing_code, flags=re.M)
-    header, raw_parts = raw_parts[0], raw_parts[1:]
-    new_body = [header] if header else []
-    updated = False
-    for i in range(0, len(raw_parts), 3):
-        full_part_header, candidate_part_id, part_body = raw_parts[i:i+3]
-        new_body.append(full_part_header)
-        if candidate_part_id == part_id:
-            new_body.append(new_code)
-            updated = True
-        else:
-            if part_body and part_body[0] == '\n':
-                part_body = part_body[1:]
-            if i != len(raw_parts) - 3 and part_body and part_body[-1] == '\n':
-                part_body = part_body[:-1]
-            new_body.append(part_body)
-    if not updated:
-        new_body.append("##### Part " + part_id)
-        new_body.append(new_code)
-    return "\n".join(new_body)
-
-
-DEFAULT_FILENAME = 'answer.py'
-DEFAULT_FILENAMES_BY_TYPE = {
-    'java': 'answer.java',
-    'quiz': 'answer.json',
-    'typescript': 'answer.ts',
-    'kettle': 'answer.ts'
-}
+if TYPE_CHECKING:
+    from models import *
 
 
 class Submission(EnhancedBase):
     __tablename__ = "submission"
     code: Mapped[str] = mapped_column(Text(), default="")
     extra_files: Mapped[str] = mapped_column(Text(), default="")
-    url: Mapped[str] = mapped_column(Text(), default="")
+    url: Mapped[str] = mapped_column(Text(), default=make_flavored_uuid_generator("submission_url"), unique=True)
     endpoint: Mapped[str] = mapped_column(Text(), default="")
     # Should be treated as out of X/100
     score: Mapped[int] = mapped_column(Integer(), default=0)
     correct: Mapped[bool] = mapped_column(Boolean(), default=False)
-    submission_status: Mapped[str] = mapped_column(String(255), default=SubmissionStatuses.STARTED)
-    grading_status: Mapped[str] = mapped_column(String(255), default=GradingStatuses.NOT_READY)
-    date_submitted: Mapped[Optional[datetime]] = mapped_column(DateTime(), default=None)
-    date_graded: Mapped[Optional[datetime]] = mapped_column(DateTime(), default=None)
-    date_due: Mapped[Optional[datetime]] = mapped_column(DateTime(), default=None)
-    date_locked: Mapped[Optional[datetime]] = mapped_column(DateTime(), default=None)
+    submission_status: Mapped[SubmissionStatuses] = mapped_column(Enum(SubmissionStatuses), default=SubmissionStatuses.STARTED)
+    grading_status: Mapped[GradingStatuses] = mapped_column(Enum(GradingStatuses), default=GradingStatuses.NOT_READY)
+    # Date Tracking
+    date_started: Mapped[Optional[datetime]] = mapped_column(UtcDateTime(), default=None, nullable=True)
+    date_submitted: Mapped[Optional[datetime]] = mapped_column(UtcDateTime(), default=None, nullable=True)
+    date_graded: Mapped[Optional[datetime]] = mapped_column(UtcDateTime(), default=None, nullable=True)
+    date_due: Mapped[Optional[datetime]] = mapped_column(UtcDateTime(), default=None, nullable=True)
+    date_locked: Mapped[Optional[datetime]] = mapped_column(UtcDateTime(), default=None, nullable=True)
     # Tracking
     assignment_id: Mapped[int] = mapped_column(Integer(), ForeignKey('assignment.id'))
     assignment_group_id: Mapped[int] = mapped_column(Integer(), ForeignKey('assignment_group.id'), nullable=True)
@@ -116,10 +67,13 @@ class Submission(EnhancedBase):
     user: Mapped["User"] = db.relationship(back_populates="submissions")
     reviews: Mapped[list["Review"]] = db.relationship(back_populates="submission")
     grade_history: Mapped[list["GradeHistory"]] = db.relationship(back_populates="submission")
+    submission_logs: Mapped[list["SubmissionLog"]] = db.relationship(back_populates="submission")
 
-    # TODO: Shouldn't this be course_id THEN assignment_id ???
-    __table_args__ = (Index('submission_index', "assignment_id",
-                            "course_id", "user_id"),)
+    __table_args__ = (Index('submission_index', "course_id",
+                            "assignment_id", "user_id"),
+                      Index("submission_assignment_index", "assignment_id"),
+                      Index("submission_user_index", "user_id"),
+                      Index("submission_url_index", "url"),)
 
     def encode_json(self, use_owner=True):
         return {

@@ -19,9 +19,9 @@ from controllers.helpers import (get_lti_property, require_request_parameters, l
                                  maybe_bool, require_admin, check_course_unlocked,
                                  get_assignments_in_groups)
 from models.data_formats.report import make_report
-from models.log import Log
 from models import db, AssignmentGroup
-from models.portation import export_bundle
+from models.data_formats.portation import export_bundle
+from models.enums import USER_DISPLAY_ROLES
 from models.user import User
 from models.course import Course
 from models.role import Role
@@ -397,7 +397,7 @@ class AddUsersForm(Form):
     # invite = BooleanField("Add Without Invitation")
     # send_email = BooleanField('Send Email')
     new_users = TextAreaField("Emails")
-    role = SelectField("Role", choices=Role.CHOICES)
+    role = SelectField("Role", choices=USER_DISPLAY_ROLES)
     submit = SubmitField("Add student")
 
 

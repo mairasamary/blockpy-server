@@ -8,6 +8,7 @@ from typing import Tuple, Dict, Optional
 from sqlalchemy import (Integer, Column, DateTime, func)
 from sqlalchemy.orm import mapped_column, Mapped
 from sqlalchemy.ext.declarative import declared_attr
+from sqlalchemy_utc import UtcDateTime, utc, utcnow
 
 from common.dates import string_to_datetime, datetime_to_pretty_string
 from models.generics.models import db
@@ -22,9 +23,8 @@ class Base(db.Model):
     __abstract__ = True
 
     id: Mapped[int] = mapped_column(Integer(), primary_key=True, autoincrement=True)
-    date_created: Mapped[datetime] = mapped_column(DateTime, default=func.current_timestamp())
-    date_modified: Mapped[datetime] = mapped_column(DateTime, default=func.current_timestamp(),
-                                                    onupdate=func.current_timestamp())
+    date_created: Mapped[datetime] = mapped_column(DateTime(), default=utcnow())
+    date_modified: Mapped[datetime] = mapped_column(DateTime(), default=utcnow(), onupdate=utcnow())
 
     SCHEMA_V1_IGNORE_COLUMNS = ('id', 'date_modified')
     SCHEMA_V2_IGNORE_COLUMNS = SCHEMA_V1_IGNORE_COLUMNS

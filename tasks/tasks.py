@@ -18,12 +18,12 @@ from controllers.pylti.flask import LTI
 from controllers.pylti.post_grade import TransmissionStatuses
 from models import User
 from models.data_formats.quiz_analysis import process_quizzes
-from models.log import Log
+from models.logs import SubmissionLog as Log
 from models.report import Report
 from models.assignment import Assignment
 from models.submission import Submission
 from models.course import Course
-from models.statuses import GradingStatuses
+from models.enums import GradingStatuses
 from tasks.similarity_report import make_report
 
 ctx = current_app.app_context()

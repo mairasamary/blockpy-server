@@ -1,5 +1,34 @@
 import enum
 
+SYS_ROLE_PREFIX = "urn:lti:sysrole:ims/lis/"
+INST_ROLE_PREFIX = "urn:lti:instrole:ims/lis/"
+CONTEXT_ROLE_PREFIX = "urn:lti:role:ims/lis/"
+
+
+def clean_role(role: str) -> (str, str):
+    """
+    Removes any LTI prefixes from a role string and returns the primary and sub roles.
+    Works fine if the LTI string has no prefix.
+
+    Args:
+        role: The role string to clean
+    Returns:
+        A tuple of the primary role and the sub role
+    """
+    if role.startswith(SYS_ROLE_PREFIX):
+        return role[len(SYS_ROLE_PREFIX):].lower(), "sys"
+    elif role.startswith(INST_ROLE_PREFIX):
+        return role[len(INST_ROLE_PREFIX):].lower(), "inst"
+    elif role.startswith(CONTEXT_ROLE_PREFIX):
+        role = role[len(CONTEXT_ROLE_PREFIX):]
+        if "/" in role:
+            primary, sub = role.lower().split("/")
+            return primary, sub
+        else:
+            return role.lower(), ""
+    else:
+        return role.lower(), ""
+
 class UserRoles(enum.StrEnum):
     """
     The roles that a user can have.

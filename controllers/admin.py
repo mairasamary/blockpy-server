@@ -3,23 +3,28 @@ import json
 import csv
 import io
 import os.path as op
+from datetime import datetime
 
+import pytz
 # Import Flask
 from flask_admin import Admin, BaseView, expose, form
 from flask_admin.contrib.sqla import ModelView
 from flask_admin.contrib.fileadmin import FileAdmin
 from flask import g, Blueprint, request, url_for, render_template, Response, current_app
 from flask_admin.contrib.sqla.ajax import QueryAjaxModelLoader
+from flask_admin.model.filters import BaseFilter
 from markupsafe import Markup
 
-from sqlalchemy import func, text as sql_text
+from sqlalchemy import func, text as sql_text, Date, cast
+from sqlalchemy_utc import UtcDateTime
+from wtforms import StringField
 
 from models import db
 from models.user import User
 from models.course import Course
 from models.role import Role
 from models.authentication import Authentication
-from models.log import Log
+from models.logs import RoleLog, AccessLog, ErrorLog, CourseLog, AssignmentLog, SubmissionLog
 from models.submission import Submission
 from models.sample_submission import SampleSubmission
 from models.review import Review
@@ -30,6 +35,15 @@ from models.assignment_tag import AssignmentTag
 from models.report import Report
 from models.invite import Invite
 from models.grade_history import GradeHistory
+from flask_admin.contrib.sqla.form import AdminModelConverter, validators
+
+
+class CustomConverter(AdminModelConverter):
+    def get_converter(self, column):
+        if isinstance(column.type, UtcDateTime):
+            return self.convert_datetime
+        else:
+            return super().get_converter(column)
 
 
 def make_ajax_fields(*fields):
@@ -41,11 +55,16 @@ def make_ajax_fields(*fields):
     }
 
 
+
 class RegularView(ModelView):
+    model_form_converter = CustomConverter
+
     def is_accessible(self):
         if g.user:
             return g.user.is_admin()
         return False
+
+
 
 class UserView(RegularView):
     def _list_roles(view, context, model, name):
@@ -443,7 +462,8 @@ def setup_admin(app):
     admin.add_view(AssignmentTagView(AssignmentTag, db.session, category='Tables'))
     admin.add_view(AuthenticationView(Authentication, db.session, category='Tables'))
     admin.add_view(RoleView(Role, db.session, category='Tables'))
-    admin.add_view(LogView(Log, db.session, category='Tables'))
+    admin.add_view(LogView(SubmissionLog, db.session, category='Tables'))
+    # TODO: Other logs tables
     admin.add_view(ReviewView(Review, db.session, category='Tables'))
     admin.add_view(ReportView(Report, db.session, category='Tables'))
     admin.add_view(InviteView(Invite, db.session, category='Tables'))

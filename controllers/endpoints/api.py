@@ -13,7 +13,7 @@ from models.assignment import Assignment
 from models.assignment_group import AssignmentGroup
 from models.course import Course
 from models.report import Report
-from models.portation import export_bundle, import_bundle
+from models.data_formats.portation import export_bundle, import_bundle
 from models.user import User
 from huey.exceptions import TaskException
 from tasks import tasks

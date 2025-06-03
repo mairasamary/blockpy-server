@@ -1,17 +1,19 @@
-import json
-from typing import Optional
+from typing import TYPE_CHECKING
 from datetime import datetime, timedelta
 
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import Column, String, Integer, ForeignKey, Text, func, JSON, Index, and_, Float
+from sqlalchemy import Column, String, Integer, ForeignKey, Text, func, JSON, Index, and_, Float, DateTime
 
-import models
 from models.generics.models import db, ma
 from models.generics.base import Base
 from common.dates import datetime_to_string, string_to_datetime
 from models.user import User
 from models.course import Course
 from models.assignment import Assignment
+from sqlalchemy_utc import UtcDateTime, utcnow
+
+if TYPE_CHECKING:
+    from models import *
 
 
 class GradeHistory(Base):
@@ -21,7 +23,7 @@ class GradeHistory(Base):
     grader_id: Mapped[int] = mapped_column(Integer(), ForeignKey('user.id'))
     # This is a "true actual" grade (from .full_score()), not a previously penalized one.
     score: Mapped[float] = mapped_column(Float())
-    date_submitted: Mapped[datetime] = mapped_column(db.DateTime(), default=datetime.utcnow)
+    date_submitted: Mapped[datetime] = mapped_column(DateTime(), default=utcnow())
 
     submission: Mapped["Submission"] = db.relationship(back_populates="grade_history")
     grader: Mapped["User"] = db.relationship(back_populates="grade_history")

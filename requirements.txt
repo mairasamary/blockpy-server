@@ -19,6 +19,7 @@ jinja2
 markdown~=3.5.1
 wtforms~=3.1.1
 sqlalchemy~=2.0.25
+SQLAlchemy-Utc
 marshmallow-sqlalchemy
 apispec[yaml]~=6.3.1
 apispec-webframeworks
@@ -56,3 +57,6 @@ webassets
 python-dateutil
 
 scipy
+
+argon2_cffi
+GitHub-Flask

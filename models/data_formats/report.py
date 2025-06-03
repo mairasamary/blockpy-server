@@ -2,7 +2,7 @@ import datetime
 import difflib
 
 from models.assignment import Assignment
-from models.log import Log
+from models.logs import SubmissionLog
 
 
 class SubmissionState:
@@ -19,7 +19,7 @@ class SubmissionState:
     score: float
     mode: str
     fullscreen: bool
-    log: Log
+    log: SubmissionLog
 
     def __init__(self):
         self.code = ""

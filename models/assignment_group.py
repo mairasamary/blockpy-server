@@ -1,24 +1,32 @@
-from typing import List, Optional
+from typing import List, Optional, TYPE_CHECKING
 
 from flask import url_for
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import Column, String, Integer, ForeignKey, func
+from sqlalchemy import Column, String, Integer, ForeignKey, func, Enum, UniqueConstraint, Index
 from natsort import natsorted
 from werkzeug.utils import secure_filename
 
 import models
 from common.maybe import maybe_int
+from common.text import make_flavored_uuid_generator
+from models.enums import AssignmentGroupCategory
 from models.generics.models import db, ma
 from models.generics.base import EnhancedBase, Base
 from common.dates import datetime_to_string
 from common.databases import make_copy
 
+if TYPE_CHECKING:
+    from models import *
+
 
 class AssignmentGroup(EnhancedBase):
     __tablename__ = 'assignment_group'
     name: Mapped[str] = mapped_column(String(255), default="Untitled")
-    url: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    forked_id: Mapped[Optional[int]] = mapped_column(Integer(), ForeignKey('assignment_group.id'), nullable=True)
+    url: Mapped[Optional[str]] = mapped_column(String(255), default=make_flavored_uuid_generator("group"),
+                                               nullable=True)
+    forked_id: Mapped[Optional[int]] = mapped_column(Integer(), ForeignKey('assignment_group.id'),
+                                                     nullable=True)
+    category: Mapped[AssignmentGroupCategory] = mapped_column(Enum(AssignmentGroupCategory), default=AssignmentGroupCategory.NONE)
     forked_version: Mapped[Optional[int]] = mapped_column(Integer(), nullable=True)
     owner_id: Mapped[int] = mapped_column(Integer(), ForeignKey('user.id'))
     course_id: Mapped[int] = mapped_column(Integer(), ForeignKey('course.id'))
@@ -30,6 +38,9 @@ class AssignmentGroup(EnhancedBase):
     course: Mapped["Course"] = db.relationship(back_populates="assignment_groups")
     memberships: Mapped[list["AssignmentGroupMembership"]] = db.relationship(back_populates="assignment_group")
     submissions: Mapped[list["Submission"]] = db.relationship(back_populates="assignment_group")
+
+    __table_args__ = (Index("assignment_group_url_index", "url"),
+                      Index('assignment_group_course_index', "course_id"))
 
     def __str__(self):
         return '<Group {} in {} ({})>'.format(self.name, self.course_id, self.url)

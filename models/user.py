@@ -1,18 +1,23 @@
 import uuid
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 from flask_security import UserMixin
 from flask_security.utils import hash_password
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, func
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql.expression import true, tuple_
+from sqlalchemy_utc import UtcDateTime
 from werkzeug.utils import secure_filename
 
 import models
 from common.maybe import maybe_int
 from models.generics.models import db, ma
 from models.generics.base import Base
+
+
+if TYPE_CHECKING:
+    from models import *
 
 
 class User(Base, UserMixin):
@@ -27,7 +32,7 @@ class User(Base, UserMixin):
     password: Mapped[str] = mapped_column(String(255))
     active: Mapped[Optional[bool]] = mapped_column(Boolean())
     anonymous: Mapped[bool] = mapped_column(Boolean(), default=False)
-    confirmed_at: Mapped[Optional[datetime]] = mapped_column(DateTime())
+    confirmed_at: Mapped[Optional[datetime]] = mapped_column(UtcDateTime(), nullable=True, default=None)
     banned: Mapped[bool] = mapped_column(Boolean(), default=False)
 
     fs_uniquifier: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
@@ -41,7 +46,7 @@ class User(Base, UserMixin):
     tags: Mapped[list["AssignmentTag"]] = db.relationship(back_populates="owner")
     access_logs: Mapped[list["AccessLog"]] = db.relationship(back_populates="subject")
     course_logs: Mapped[list["CourseLog"]] = db.relationship(back_populates="subject")
-    role_logs: Mapped[list["RoleLog"]] = db.relationship(back_populates="subject")
+    role_logs: Mapped[list["RoleLog"]] = db.relationship(back_populates="subject", foreign_keys="RoleLog.subject_id")
     authorizer_logs: Mapped[list["RoleLog"]] = db.relationship(back_populates="authorizer",
                                                                foreign_keys="RoleLog.authorizer_id")
     assignment_logs: Mapped[list["AssignmentLog"]] = db.relationship(back_populates="subject")
@@ -52,16 +57,6 @@ class User(Base, UserMixin):
     invites: Mapped[list["Invite"]] = db.relationship(back_populates="user", foreign_keys="Invite.user_id")
     approvals: Mapped[list["Invite"]] = db.relationship(back_populates="approver", foreign_keys="Invite.approver_id")
     grade_history: Mapped[list["GradeHistory"]] = db.relationship(back_populates="grader")
-
-    # TODO: Finish roles
-    LEARNER_ROLES = ['learner']
-    INSTRUCTOR_ROLES = ['instructor', "urn:lti:role:ims/lis/instructor"]
-    TA_ROLES = ['teachingassistant', 'urn:lti:role:ims/lis/teachingassistant']
-    SYS_ROLES = ['urn:lti:sysrole:ims/lis/none']
-    GRADER_ROLES = INSTRUCTOR_ROLES + TA_ROLES + SYS_ROLES
-    DEVELOPER_ROLES = ["contentdeveloper", "urn:lti:role:ims/lis/contentdeveloper"]
-    ADMIN_ROLES = ['admin']
-    STAFF_ROLES = GRADER_ROLES + DEVELOPER_ROLES
 
     def encode_json(self, use_owner=True):
         return {

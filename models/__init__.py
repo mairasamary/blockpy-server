@@ -2,7 +2,6 @@
 The models and database connections
 """
 from flask import Flask
-from gunicorn.config import ErrorLog
 
 from models.generics.models import db, migrate, ma
 from models.role import Role
@@ -26,9 +25,10 @@ from models.grade_history import GradeHistory
 from models.generics.schemas import (UserSchema, RoleSchema, CourseSchema, AssignmentSchema, AssignmentTagSchema,
                                      #AssignmentTagMembershipSchema,
                                      GroupSchema, AssignmentGroupMembershipSchema,
-                                     AuthenticationSchema, LogSchema, ReviewSchema, SubmissionSchema,
+                                     AuthenticationSchema, ReviewSchema, SubmissionSchema,
                                      SampleSubmissionSchema, InviteSchema, ReportSchema,
-                                     GradeHistorySchema)
+                                     GradeHistorySchema, RoleLogSchema, AccessLogSchema, ErrorLogSchema,
+                                     CourseLogSchema, AssignmentLogSchema, SubmissionLogSchema)
 
 
 def init_database(app: Flask) -> Flask:

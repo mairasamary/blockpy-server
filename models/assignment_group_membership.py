@@ -2,7 +2,7 @@ from typing import Optional
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import (event, Integer, Date, ForeignKey, Column, Table,
                         String, Boolean, DateTime, Text, ForeignKeyConstraint,
-                        cast, func, and_, or_, Index)
+                        cast, func, and_, or_, Index, UniqueConstraint)
 
 from common.maybe import maybe_int
 from models.assignment import Assignment
@@ -19,8 +19,15 @@ class AssignmentGroupMembership(EnhancedBase):
     assignment_id: Mapped[int] = mapped_column(Integer(), ForeignKey('assignment.id'))
     position: Mapped[Optional[int]] = mapped_column(Integer())
 
+    #: Logic for grading and visibility
+    policy: Mapped[Optional[str]] = mapped_column(String(255), default="{}")
+
     assignment_group: Mapped[list["AssignmentGroup"]] = db.relationship(back_populates="memberships")
     assignment: Mapped[list["Assignment"]] = db.relationship(back_populates="memberships")
+
+    __table_args__ = (UniqueConstraint("assignment_group_id", "assignment_id", name="assignment_group_membership_lookup"),
+                      Index('assignment_group_membership_assignment_id', "assignment_id"),
+                      Index('assignment_group_membership_assignment_group_id', "assignment_group_id"),)
 
     SCHEMA_V1_IGNORE_COLUMNS = EnhancedBase.SCHEMA_V1_IGNORE_COLUMNS + ("assignment_group_url",
                                                                 "assignment_url", "course_id")

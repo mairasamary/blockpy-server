@@ -1,39 +1,49 @@
 import os
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 import time
 
 import base64
 
 from flask import url_for, current_app
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import Column, Text, Integer, Boolean, ForeignKey, Index, func, String
+from sqlalchemy import Column, Text, Integer, Boolean, ForeignKey, Index, func, String, Enum
 
 import models
+from models.enums import ReviewCommentFormat, ReviewStatus
 from models.generics.models import db, ma
 from models.generics.base import VersionedBase, Base
+
+
+if TYPE_CHECKING:
+    from models import *
 
 
 class Review(VersionedBase):
     __tablename__ = "review"
     comment: Mapped[str] = mapped_column(Text(), default="")
+    comment_format: Mapped[ReviewCommentFormat] = mapped_column(Enum(ReviewCommentFormat), default=ReviewCommentFormat.MARKDOWN)
     location: Mapped[str] = mapped_column(Text(), default="")
     generic: Mapped[bool] = mapped_column(Boolean(), default=False)
     tag_id: Mapped[Optional[int]] = mapped_column(Integer(), ForeignKey('assignment_tag.id'), nullable=True)
+    status: Mapped[ReviewStatus] = mapped_column(Enum(ReviewStatus), default=ReviewStatus.DRAFT)
+    extra_data: Mapped[str] = mapped_column(Text(), default="")
     # Should be treated as out of X/100
     score: Mapped[Optional[int]] = mapped_column(Integer(), nullable=True)
+
+    replaces: Mapped[Optional[int]] = mapped_column(Integer(), ForeignKey('review.id'), nullable=True)
     # Tracking
     submission_id: Mapped[Optional[int]] = mapped_column(Integer(), ForeignKey('submission.id'), nullable=True)
     author_id: Mapped[int] = mapped_column(Integer(), ForeignKey('user.id'))
     assignment_version: Mapped[int] = mapped_column(Integer(), default=0)
     submission_version: Mapped[int] = mapped_column(Integer(), default=0)
-    version: Mapped[int] = mapped_column(Integer(), default=0)
+    tool: Mapped[Optional[str]] = mapped_column(String(255), default="", nullable=True)
     forked_id: Mapped[Optional[int]] = mapped_column(Integer(), ForeignKey('review.id'), nullable=True)
     forked_version: Mapped[Optional[int]] = mapped_column(Integer(), nullable=True)
 
     tag: Mapped["AssignmentTag"] = db.relationship(back_populates="reviews")
     submission: Mapped["Submission"] = db.relationship(back_populates="reviews")
     author: Mapped["User"] = db.relationship(back_populates="reviews")
-    forked: Mapped["Review"] = db.relationship("Review", remote_side="Review.id")
+    forked: Mapped["Review"] = db.relationship("Review", remote_side="Review.id", foreign_keys=[forked_id])
 
     __table_args__ = (Index('review_submission_index', "submission_id",),)
 
