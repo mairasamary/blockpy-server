@@ -343,9 +343,9 @@ def make_user_anonymous():
 @current_app.before_request
 def check_banned_user():
     user = getattr(g, 'user', None)
-    if user and user.banned:
-        notify_admin()
-        abort(403, description="You are banned. Stop trying. The administrator has been notified.")
+    #if user and user.banned:
+    #    notify_admin()
+    #    abort(403, description="You are banned. Stop trying. The administrator has been notified.")
 
 
 def notify_admin():

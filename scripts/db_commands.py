@@ -234,7 +234,8 @@ def dump_db(output, log_for_course):
 
 @cli.command("export_progsnap2")
 @click.option('--output', '-o', 'output', default='backups/progsnap2_{}')
-@click.option('--log_for_course', '-l', 'log_for_course', default=1)
+@click.option('--log_for_course', '-l', 'log_for_course', default="1",
+              help="The course id to export logs for. Can be a single id or a comma-separated list of ids.")
 @click.option('--groups', '-g', 'groups', default=None)
 @click.option("--exclude", '-e', "exclude", default=None)
 @click.option('--format', '-f', 'format', default='csv',
@@ -253,7 +254,18 @@ def export_progsnap2(output, log_for_course, groups, exclude, format, overwrite,
     if exclude is not None:
         output = output + "_x{}".format(exclude.replace(",", "_"))
         exclude = [int(g) for g in exclude.split(",")]
-    export_progsnap2(output.format(log_for_course), log_for_course, groups, exclude=exclude, log=True, format=format, overwrite=overwrite, partition=partition, users=users)
+    if isinstance(log_for_course, str):
+        if "," in log_for_course:
+            courses = log_for_course.split(",")
+            courses = [int(c) for c in courses]
+        else:
+            courses = [int(log_for_course)]
+    else:
+        courses = [int(log_for_course)]
+    for log_for_course in courses:
+        export_progsnap2(output.format(log_for_course), log_for_course, groups,
+                         exclude=exclude, log=True, format=format, overwrite=overwrite,
+                         partition=partition, users=users)
 
 
 @cli.command("visualize_db")

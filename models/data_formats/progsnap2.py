@@ -1,4 +1,5 @@
 import csv
+import json
 import os
 import shutil
 import tempfile
@@ -97,15 +98,43 @@ def blockpy_timestamp_to_iso8601(timestamp):
         return ""
     return datetime.fromtimestamp(int(timestamp) / 1000).isoformat()
 
+"""
+Potential new fields:
+- TermID
+- ProblemID
+- ProblemIsGraded
+- Attempt
+- ExperimentalCondition
+- LoggingErrorID
+- IsFabricatedEvent
+- SessionID
+- ProjectID
+- ResourceID
+- EventInitiator
+- CompileResult: Success, Warning, Error
+- SourceLocation
+- ExecutionID
+- TestID
+- ProgramInput
+- ProgramOutput
+- ProgramErrorOutput
+
+TODO Fixes:
+- Swap the Compile.Error and Run.Program|ProgramErrorOutput events, which were encoded wrong in the database.
+- Capture the ProgramInput and ProgramOutput from Run.Program events.
+
+"""
 
 HEADERS = [
-    'EventID', 'Order', 'SubjectID', 'AssignmentID', 'CourseID',
+    'EventID', 'Order', 'SubjectID', 'AssignmentID', 'CourseID', 'SubmissionID',
     'EventType', 'CodeStateID',
     'ParentEventID',
     'ClientTimestamp', 'ClientTimezone',
     'Score',
     'EditType',
-    'CompileMessageType', 'CompileMessageData', 'CodeStateSection',
+    'CompileMessageType', 'CompileMessageData',
+    'CodeStateSection',
+    'ExecutionResult', 'ProgramInput', 'ProgramOutput', 'ProgramErrorOutput',
     'InterventionCategory', 'InterventionType', 'InterventionMessage',
     'ServerTimestamp', 'ServerTimezone', 'ToolInstances'
 ]
@@ -119,10 +148,29 @@ CODE_STATE_UPDATE_EVENT_TYPES = {
     "File.Create": "GenericEdit"
 }
 
+USE_V1_ERROR_BEHAVIOR = False
 
-def to_progsnap_event(log, order_id, code_states, latest_code_states, scores):
-    fields = [log.id, order_id, log.subject_id, log.assignment_id, log.course_id, log.event_type]
+
+def extract_inputs_outputs(text):
+    if not text:
+        return "", ""
+    try:
+        content = json.loads(text)
+        return content["inputs"], content["outputs"]
+    except (json.JSONDecodeError, KeyError):
+        # If the text is not JSON or does not have inputs/outputs, store it in the input
+        return text, ""
+
+def extract_error_name(text):
+    if ":" in text:
+        return text[:text.index(":")].strip()
+    return "Unknown"
+
+
+
+def to_progsnap_event(log, order_id, code_states, latest_code_states, scores, submission_lookup):
     submission_identification = (log.subject_id, log.assignment_id, log.course_id)
+    submission_id = submission_lookup.get(submission_identification, -1)
     # Figure out code_state
     current_code_base = latest_code_states.get(submission_identification, {})
     edit_type = ""
@@ -144,12 +192,23 @@ def to_progsnap_event(log, order_id, code_states, latest_code_states, scores):
     else:
         score = ""
     # Compile Stuff
-    if log.event_type == "Compile.Error":
-        compile_message_type = "Error"
-        compile_message_data = log.message
-    else:
-        compile_message_type = ""
-        compile_message_data = ""
+    event_type = log.event_type
+    compile_message_type, compile_message_data = "", ""
+    execution_result = ""
+    program_input, program_output, program_error_output = "", "", ""
+    if not USE_V1_ERROR_BEHAVIOR:
+        if log.event_type == "Run.Program" and log.category == "ProgramErrorOutput":
+            event_type = "Compile.Error"
+            compile_message_type = extract_error_name(log.message)
+            compile_message_data = log.message
+        elif log.event_type == "Run.Program":
+            event_type = "Run.Program"
+            execution_result = "Success"
+            program_input, program_output = extract_inputs_outputs(log.message)
+        elif log.event_type == "Compile.Error":
+            event_type = "Run.Program"
+            execution_result = "Error"
+            program_error_output = log.message
     # Intervention
     if log.event_type == "Intervention":
         intervention_category = "Feedback"
@@ -164,22 +223,40 @@ def to_progsnap_event(log, order_id, code_states, latest_code_states, scores):
         intervention_type = ""
         intervention_message = ""
     # Result
-    return fields + [code_state_id,
-                     "",  # TODO: ParentEventId
-                     blockpy_timestamp_to_iso8601(log.client_timestamp),
-                     log.client_timezone,
-                     score,
-                     edit_type,
-                     compile_message_type,
-                     compile_message_data,
-                     log.file_path,
-                     intervention_category,
-                     intervention_type,
-                     intervention_message,
-                     log.date_created.isoformat(),
-                     str(time.timezone // 36).zfill(4),
-                     TOOL_INSTANCE_ID
-                     ]
+    return format_progsnap_event_row(
+        log_id=log.id, order_id=order_id, subject_id=log.subject_id, assignment_id=log.assignment_id, course_id=log.course_id,
+        submission_id=submission_id,
+        event_type=event_type, code_state_id=code_state_id, parent_event_id="",  # ParentEventId is not used
+        client_timestamp=blockpy_timestamp_to_iso8601(log.client_timestamp),
+        client_timezone=log.client_timezone,
+        score=score, edit_type=edit_type, compile_message_type=compile_message_type, compile_message_data=compile_message_data,
+        code_state_section=log.file_path,
+        execution_result=execution_result, program_input=program_input, program_output=program_output, program_error_output=program_error_output,
+        intervention_category=intervention_category,
+        intervention_type=intervention_type, intervention_message=intervention_message,
+        server_timestamp=log.date_created.isoformat(),
+        server_timezone=str(time.timezone // 36).zfill(4),
+        tool_instances=TOOL_INSTANCE_ID
+    )
+
+
+def format_progsnap_event_row(log_id, order_id, subject_id, assignment_id, course_id, submission_id, event_type,
+                              code_state_id, parent_event_id, client_timestamp, client_timezone,
+                              score, edit_type, compile_message_type, compile_message_data,
+                              code_state_section,
+                                execution_result, program_input, program_output, program_error_output,
+                              intervention_category, intervention_type,
+                              intervention_message, server_timestamp, server_timezone, tool_instances):
+    return [
+        log_id, order_id, subject_id, assignment_id, course_id, submission_id,
+        event_type, code_state_id, parent_event_id,
+        client_timestamp, client_timezone,
+        score, edit_type, compile_message_type, compile_message_data,
+        code_state_section,
+        execution_result, program_input, program_output, program_error_output,
+        intervention_category, intervention_type, intervention_message,
+        server_timestamp, server_timezone, tool_instances
+    ]
 
 
 def generate_maintable(zip_file, course_id, assignment_group_ids, user_ids, exclude=None):

@@ -490,6 +490,9 @@ digraph {
                          <TD BGCOLOR="#BBDEFB">confirmed_at</TD>
                          <TD BGCOLOR="#BBDEFB">DATETIME ()</TD>
                          </TR><TR>
+                         <TD BGCOLOR="#BBDEFB">banned</TD>
+                         <TD BGCOLOR="#BBDEFB">BOOLEAN ()</TD>
+                         </TR><TR>
                          <TD BGCOLOR="#BBDEFB">fs_uniquifier</TD>
                          <TD BGCOLOR="#BBDEFB">VARCHAR(64) (Unique)</TD>
                          </TR><TR>

@@ -1,4 +1,6 @@
+from common.text import sha256_hash
 import sqlite3
+import os
 from datetime import datetime
 import io
 import time
@@ -14,12 +16,16 @@ from models.data_formats.progsnap2 import to_progsnap_event, HEADERS, LINK_SUBJE
     get_all_assignments_and_groups, LINK_ASSIGNMENT_GROUP_HEADERS, LINK_ASSIGNMENT_HEADERS
 from models.log import Log
 from models.user import User
+from models.submission import Submission
 
 try:
-    profile
+    from cProfile import profile
 except:
     def profile(f):
         return f
+
+
+
 
 
 def generate_readme(cursor, connection):
@@ -40,20 +46,28 @@ def generate_metadata(cursor, connection):
 
 
 class CodeStates:
-    def __init__(self, cursor, connection):
+    def __init__(self, cursor, connection, code_state_database_path=None):
         self.cursor = cursor
         self.connection = connection
-        self._temp_connection = sqlite3.connect("")
+        self._already_exists = code_state_database_path and os.path.exists(code_state_database_path)
+        self._temp_connection = sqlite3.connect(code_state_database_path or "")
         self._temp_cursor = self._temp_connection.cursor()
-        self._temp_cursor.execute("CREATE TABLE TempCodeState (Hashed, ID)")
-        self._temp_cursor.execute("CREATE INDEX TempCodeStateHashed ON TempCodeState (Hashed)")
+        if not self._already_exists:
+            self._temp_cursor.execute("CREATE TABLE TempCodeState (Hashed, Contents, ID)")
+            self._temp_cursor.execute("CREATE INDEX TempCodeStateHashed ON TempCodeState (Hashed)")
         self._latest = None
         self._latest_key = None
-        self._id = 0
+        # Get the latest ID from the temp database, if it exists
+        latest_id = self._temp_cursor.execute("SELECT MAX(ID) FROM TempCodeState").fetchone()
+        if latest_id and latest_id[0] is not None:
+            self._id = latest_id[0] + 1
+        else:
+            self._id = 0
 
     @profile
     def __getitem__(self, key):
-        str_key = json.dumps(key)
+        str_contents = json.dumps(key)
+        str_key = sha256_hash(str_contents)
         if self._latest_key == str_key:
             return self._latest[0]
         self._latest = self._temp_cursor.execute("SELECT ID FROM TempCodeState WHERE Hashed=?",
@@ -64,17 +78,19 @@ class CodeStates:
 
     @profile
     def __setitem__(self, key, value):
-        str_key = json.dumps(key)
+        str_contents = json.dumps(key)
+        str_key = sha256_hash(str_contents)
         if value != self._id:
             raise ValueError(f"Inserting item out of order: {value} should be {self._id}")
-        self._temp_cursor.execute("INSERT INTO TempCodeState (Hashed, ID) VALUES (?, ?)",
-                            (str_key, value))
+        self._temp_cursor.execute("INSERT INTO TempCodeState (Hashed, Contents, ID) VALUES (?, ?, ?)",
+                            (str_key, str_contents, value))
         self._temp_connection.commit()
         self._id += 1
 
     @profile
     def __contains__(self, key):
-        str_key = json.dumps(key)
+        str_contents = json.dumps(key)
+        str_key = sha256_hash(str_contents)
         self._latest = self._temp_cursor.execute("SELECT ID FROM TempCodeState WHERE Hashed=?",
                                            (str_key, )).fetchone()
         return bool(self._latest)
@@ -84,24 +100,84 @@ class CodeStates:
 
     @profile
     def finish(self):
-        self.cursor.execute("CREATE TABLE CodeState (ID, Filename, Contents)")
+        self.cursor.execute("CREATE TABLE CodeState (ID, Filename, Contents, Hashed)")
         self.connection.commit()
-        rows = self._temp_cursor.execute("SELECT Hashed, ID FROM TempCodeState")
-        for hashed, ID in rows.fetchall():
-            original = json.loads(hashed)
+        rows = self._temp_cursor.execute("SELECT Contents, ID, Hashed FROM TempCodeState")
+        for str_contents, ID, hashed in rows.fetchall():
+            original = json.loads(str_contents)
             for filename, contents in original:
-                self.cursor.execute("INSERT INTO CodeState (ID, Filename, Contents) "
-                                    "VALUES (?, ?, ?)",
-                                    (ID, filename, contents))
+                self.cursor.execute("INSERT INTO CodeState (ID, Filename, Contents, Hashed) "
+                                    "VALUES (?, ?, ?, ?)",
+                                    (ID, filename, contents, hashed))
         self.connection.commit()
         self.cursor.execute("CREATE UNIQUE INDEX CodeStateIndex ON CodeState (ID, Filename)")
         self.connection.commit()
         self._temp_cursor.close()
         self._temp_connection.close()
 
+class InMemoryCodeStates:
+    def __init__(self, cursor, connection, code_state_database_path=None):
+        self.cursor = cursor
+        self.connection = connection
+        # Map from hashed key to ID
+        self._seen_states = {}
+        self._id = 0
+        # Hack for speed
+        self._latest = None
+        self._latest_key = None
+        # Set up the CodeState table itself
+        self.cursor.execute("CREATE TABLE CodeState (ID, Filename, Contents, Hashed)")
+        self.connection.commit()
+
+    @profile
+    def __getitem__(self, key):
+        str_contents = json.dumps(key)
+        str_key = sha256_hash(str_contents)
+        return self._seen_states[str_key]
+
+    @profile
+    def __setitem__(self, key, value):
+        str_contents = json.dumps(key)
+        str_key = sha256_hash(str_contents)
+        if value != self._id:
+            raise ValueError(f"Inserting item out of order: {value} should be {self._id}")
+        ID = self._id
+        self._seen_states[str_key] = value
+        for filename, contents in key:
+            self.cursor.execute("INSERT INTO CodeState (ID, Filename, Contents, Hashed) "
+                                "VALUES (?, ?, ?, ?)",
+                                (ID, filename, contents, str_key))
+        # self.connection.commit()
+        self._id += 1
+
+    @profile
+    def __contains__(self, key):
+        str_contents = json.dumps(key)
+        str_key = sha256_hash(str_contents)
+        return str_key in self._seen_states
+
+    def __len__(self):
+        return self._id
+
+    @profile
+    def finish(self):
+        self.connection.commit()
+        self.cursor.execute("CREATE UNIQUE INDEX CodeStateIndex ON CodeState (ID, Filename)")
+        self.connection.commit()
+
+def get_submission_lookup(course_id):
+    submissions = Submission.query.filter_by(course_id=maybe_int(course_id))
+    submission_lookup = {}
+    for sub in submissions:
+        submission_identification = (sub.user_id, sub.assignment_id, sub.course_id)
+        submission_lookup[submission_identification] = sub.id
+    return submission_lookup
+
+
 @profile
 def generate_maintable(cursor, connection, course_id, assignment_group_ids, user_ids, exclude):
-    code_states = CodeStates(cursor, connection)
+    submission_lookup = get_submission_lookup(course_id)
+    code_states = InMemoryCodeStates(cursor, connection, "instance/_temp_code_states.db")
     latest_code_states, scores = {}, {}
     query = Log.query.filter_by(course_id=maybe_int(course_id))
     if assignment_group_ids is not None:
@@ -125,7 +201,7 @@ def generate_maintable(cursor, connection, course_id, assignment_group_ids, user
     order_id = 0
     for log in tqdm(logs, total=estimated_size):
         cursor.execute(f"INSERT INTO MainTable ({headers}) VALUES ({spots})",
-                       to_progsnap_event(log, order_id, code_states, latest_code_states, scores))
+                       to_progsnap_event(log, order_id, code_states, latest_code_states, scores, submission_lookup))
         order_id += 1
     cursor.execute("CREATE UNIQUE INDEX MainTableIndex ON MainTable (EventID)")
     connection.commit()
@@ -214,6 +290,7 @@ def dump(output_db, course_id, assignment_group_ids, user_ids, exclude):
     cursor = connection.cursor()
     yield generate_readme(cursor, connection)
     yield generate_metadata(cursor, connection)
+    yield "Starting main table generation"
     yield from generate_maintable(cursor, connection, course_id, assignment_group_ids, user_ids, exclude)
     yield generate_link_subjects(cursor, connection, course_id, user_ids)
     yield from generate_link_assignments(cursor, connection, course_id, assignment_group_ids, user_ids, exclude)
