@@ -101,7 +101,7 @@ def login_user_if_able():
             return load_logged_in_user()
         else:
             # During the login process, we will let the user be anonymous
-            return make_user_anonymous()
+            return make_user_anonymous(request.remote_addr)
     # If LTI parameters are available, let's try setting that up
     if is_lti_launch_request(request):
         return try_lti_login_initial()
@@ -119,7 +119,7 @@ def login_user_if_able():
     if current_user.is_authenticated:
         return load_logged_in_user()
     # If all else fails, we have to create an anonymous user
-    return make_user_anonymous()
+    return make_user_anonymous(request.remote_addr)
 
 
 def get_consumer_secrets(app=None):
@@ -329,7 +329,7 @@ def old_authentication():
 """
 
 
-def make_user_anonymous():
+def make_user_anonymous(ip_address=None):
     # Have we already created an anonymous user for this user?
     if 'uid' in session:
         uid = session['uid']
@@ -338,7 +338,7 @@ def make_user_anonymous():
     else:
         uid = uuid.uuid4().hex
         session['uid'] = uid
-        g.user = User.make_anonymous_user(uid)
+        g.user = User.make_anonymous_user(uid, ip_address)
 
 @current_app.before_request
 def check_banned_user():

@@ -95,8 +95,9 @@ class User(Base, UserMixin):
         return User.query.filter(func.lower(User.email) == func.lower(email)).first()
 
     @staticmethod
-    def make_anonymous_user(uid):
-        new_user = User(first_name=uid, last_name="UNKNOWN", email="", proof="", password="",
+    def make_anonymous_user(uid, ip_address=None):
+        new_user = User(first_name=uid, last_name="UNKNOWN:"+str(ip_address),
+                        email="", proof="", password="",
                         active=False, anonymous=True,
                         fs_uniquifier=uuid.uuid4().hex)
         db.session.add(new_user)
