@@ -450,6 +450,18 @@ class GradeHistoryView(RegularView):
     }
     column_filters = ('id', 'submission_id', 'grader_id', 'score', 'date_submitted')
 
+class ProtectedFileAdmin(FileAdmin):
+    can_upload = False
+    can_delete = False
+    can_delete_dirs = False
+    can_mkdir = False
+    can_rename = False
+
+    def is_accessible(self):
+        if g.user:
+            return g.user.is_admin()
+        return False
+
 def setup_admin(app):
     admin = Admin(app)
     admin.add_view(UserView(User, db.session, category='Tables'))
@@ -471,9 +483,9 @@ def setup_admin(app):
 
     # admin.add_view(FileAdmin(app.config['BLOCKPY_LOG_DIR'], base_url='/admin/code_logs/', name='Disk Logs'))
     # TODO: Add redis console
-    admin.add_view(FileAdmin(app.config['UPLOADS_DIR'], '', name='File Uploads'))
+    admin.add_view(ProtectedFileAdmin(app.config['UPLOADS_DIR'], '', name='File Uploads'))
     # TODO: Figure out how to make multiple fileadmin work
-    report_dir = FileAdmin(app.config['REPORT_DIR'], '', name='Reports')
+    report_dir = ProtectedFileAdmin(app.config['REPORT_DIR'], '', name='Reports')
     report_dir.endpoint = 'ReportFiles'
     admin.add_view(report_dir)
     return admin
