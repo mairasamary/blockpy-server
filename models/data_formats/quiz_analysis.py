@@ -580,6 +580,8 @@ def process_quizzes(assignment, submissions, directory):
         student_answers = quiz_result.submission_body['studentAnswers']
         for question_id, student in student_answers.items():
             question = body.get('questions', {}).get(question_id, {})
+            if 'type' not in question:
+                continue
             check = checks.get(question_id, {})
             feedback = feedbacks.get(question_id, {})
             keys, values, parts, s_answers = [], [], [], []

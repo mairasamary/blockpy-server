@@ -115,6 +115,9 @@ def make_readonly_quiz_body(question, feedback, student, check, is_grader):
             text = re.sub(rf"(?<!\\)(\[{key}\])(?!\()",
                           f"<span class='mdq mdq-{correct if is_grader else 'unknown'}'>{value}</span>",
                           text)
+        # Also remove any double-doubled brackets
+        text = re.sub(r"\[\[", r"[", text)
+        text = re.sub(r"\]\]", r"]", text)
     return Markdown(extensions=['fenced_code']).convert(text)
 
 

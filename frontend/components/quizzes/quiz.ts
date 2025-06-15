@@ -317,6 +317,8 @@ export class Quiz {
                 let optionsStr = options.map((option: string) => (`<option>${option}</option>`)).join("")
                 body = body.replace(matchKeyInBrackets(key), `<select id="question-md-${index}" data-bind="value: student['${key}'], disable: $component.isReadOnly()">${optionsStr}</select>`)
             }
+            // Also replace any [[ and ]] with single square brackets
+            body = body.replace(/\[\[/g, '[').replace(/\]\]/g, ']');
         } else if (question.type === 'fill_in_multiple_blanks_question') {
             body = body.split(SQUARE_BRACKETS).map((part: string) => {
                 //console.log(part);
