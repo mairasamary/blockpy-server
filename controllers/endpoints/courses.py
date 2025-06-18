@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from pprint import pprint
 from collections import defaultdict
 import json
@@ -28,6 +28,7 @@ from models.role import Role
 from models.submission import Submission
 from models.assignment import Assignment
 from models.report import Report
+from models.logs import SubmissionLog as Log
 from tasks import tasks
 
 courses = Blueprint('courses', __name__, url_prefix='/courses')
@@ -422,7 +423,7 @@ def add_users(course_id):
                 new_user = current_app.user_datastore.create_user(first_name=first_name,
                                                                   last_name=last_name,
                                                                   email=new_email,
-                                                                  confirmed_at=datetime.utcnow())
+                                                                  confirmed_at=datetime.now(timezone.utc))
                 newly_created.append(new_user)
             new_role = add_form.role.data
             if new_role == 'student' and not new_user.is_student(course_id):

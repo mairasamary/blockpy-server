@@ -4,6 +4,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import Column, String, Integer, ForeignKey, Enum, Index
 
 from common.maybe import maybe_int
+from common.databases import get_enum_values
 from models.enums import UserRoles
 from models.generics.models import db, ma
 from models.generics.base import Base
@@ -16,7 +17,7 @@ if TYPE_CHECKING:
 
 class Role(Base):
     __tablename__ = "role"
-    name: Mapped[UserRoles] = mapped_column(Enum(UserRoles), default=UserRoles.LEARNER)
+    name: Mapped[UserRoles] = mapped_column(Enum(UserRoles, values_callable=get_enum_values), default=UserRoles.LEARNER)
     subname: Mapped[str] = mapped_column(String(80), default="")
     user_id: Mapped[int] = mapped_column(ForeignKey('user.id'))
     course_id: Mapped[Optional[int]] = mapped_column(ForeignKey('course.id'), default=None, nullable=True)

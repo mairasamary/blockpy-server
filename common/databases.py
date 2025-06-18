@@ -45,3 +45,8 @@ def make_copy(url: str) -> str:
         original, iteration = ending.group(1), int(ending.group(2))
         return f"{original}_copy{iteration+1}"
 
+def get_enum_values(enum_class):
+    """
+    Get the values of the enum class as a list.
+    """
+    return [member.value for member in enum_class]

@@ -12,7 +12,7 @@ from slugify import slugify
 
 import models
 from common.dates import datetime_to_string
-from common.databases import optional_encoded_field, make_copy
+from common.databases import optional_encoded_field, make_copy, get_enum_values
 from common.maybe import maybe_int
 from common.text import make_flavored_uuid_generator
 from models.enums import AssignmentStatus, AssignmentTypes
@@ -40,10 +40,10 @@ class Assignment(EnhancedBase):
     url: Mapped[Optional[str]] = mapped_column(String(255),
                                                default=make_flavored_uuid_generator('assignment'),
                                                nullable=True)
-    status: Mapped[AssignmentStatus] = mapped_column(Enum(AssignmentStatus), default=AssignmentStatus.DRAFT)
+    status: Mapped[AssignmentStatus] = mapped_column(Enum(AssignmentStatus, values_callable=get_enum_values), default=AssignmentStatus.DRAFT)
 
     # Settings
-    type: Mapped[AssignmentTypes] = mapped_column(Enum(AssignmentTypes), default=AssignmentTypes.READING)
+    type: Mapped[AssignmentTypes] = mapped_column(Enum(AssignmentTypes, values_callable=get_enum_values), default=AssignmentTypes.READING)
     instructions: Mapped[str] = mapped_column(Text(), default="")
     # Should we suggest this assignment's submissions be reviewed manually?
     reviewed: Mapped[bool] = mapped_column(Boolean(), default=False)
@@ -239,7 +239,7 @@ class Assignment(EnhancedBase):
         # TODO: Clear submission sample
         models.AssignmentGroupMembership.query.filter_by(assignment_id=assignment_id).delete()
         models.Submission.remove_by_assignment(assignment_id)
-        models.Log.remove_by_assignment(assignment_id)
+        models.SubmissionLog.remove_by_assignment(assignment_id)
         Assignment.query.filter_by(id=assignment_id).delete()
         db.session.commit()
 
@@ -521,7 +521,7 @@ class Assignment(EnhancedBase):
         try:
             textbook = json.loads(self.instructions)
             reading_urls = list(search_textbook_for_key(textbook, 'reading'))
-            group_urls = search_textbook_for_key(textbook, 'group')
+            group_urls = list(search_textbook_for_key(textbook, 'group'))
             db_readings = {a.url: a for a in db.session.query(Assignment)
             .filter(Assignment.url.in_(reading_urls))
             .all()}

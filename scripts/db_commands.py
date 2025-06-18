@@ -198,7 +198,7 @@ def dump_rows(rows, output, table_name):
         json.dump(data, output_file)
 
 def _log_for_course(course, output):
-    from models.log import Log
+    from models.logs import SubmissionLog as Log
     logs = Log.get_logs_for_course(course)
     dump_rows(logs, output, 'log')
 
@@ -213,7 +213,7 @@ def dump_db(output, log_for_course):
     from models.course import Course
     from models.role import Role
     from models.authentication import Authentication
-    from models.log import Log
+    from models.logs import SubmissionLog as Log
     from models.submission import Submission
     from models.assignment import Assignment
     from models.assignment_group import AssignmentGroup

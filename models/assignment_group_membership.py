@@ -25,7 +25,7 @@ class AssignmentGroupMembership(EnhancedBase):
     assignment_group: Mapped[list["AssignmentGroup"]] = db.relationship(back_populates="memberships")
     assignment: Mapped[list["Assignment"]] = db.relationship(back_populates="memberships")
 
-    __table_args__ = (UniqueConstraint("assignment_group_id", "assignment_id", name="assignment_group_membership_lookup"),
+    __table_args__ = (Index("assignment_group_membership_lookup", "assignment_group_id", "assignment_id"),
                       Index('assignment_group_membership_assignment_id', "assignment_id"),
                       Index('assignment_group_membership_assignment_group_id', "assignment_group_id"),)
 

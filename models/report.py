@@ -4,7 +4,7 @@ import os
 from collections import OrderedDict
 import time
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from flask import current_app
 from sqlalchemy.orm import Mapped, mapped_column
@@ -12,6 +12,7 @@ from sqlalchemy import Column, String, DateTime, Integer, ForeignKey, Text, func
 from sqlalchemy_utc import UtcDateTime
 
 from common.dates import datetime_to_string
+from common.databases import get_enum_values
 from common.maybe import maybe_int
 from models.enums import ReportVisibility
 from models.generics.models import db, ma
@@ -48,7 +49,7 @@ class Report(Base):
 
     __tablename__ = "report"
     #: Queued -> Started -> [ Finished, Error ]
-    status: Mapped[ReportStatus] = mapped_column(Enum(ReportStatus), default=ReportStatus.QUEUED)
+    status: Mapped[ReportStatus] = mapped_column(Enum(ReportStatus, values_callable=get_enum_values), default=ReportStatus.QUEUED)
     attempt: Mapped[int] = mapped_column(Integer(), default=0)
     result: Mapped[str] = mapped_column(String(255), default="output.html")
     date_started: Mapped[Optional[datetime]] = mapped_column(DateTime(), default=None, nullable=True)
@@ -65,7 +66,7 @@ class Report(Base):
     parameters: Mapped[str] = mapped_column(Text(), default="")
 
     #: "public", "private", "course", "assignment", "user"
-    visibility: Mapped[ReportVisibility] = mapped_column(Enum(ReportVisibility), default=ReportVisibility.PRIVATE)
+    visibility: Mapped[ReportVisibility] = mapped_column(Enum(ReportVisibility, values_callable=get_enum_values), default=ReportVisibility.PRIVATE)
 
     #: Specific user that this Report originates from
     owner_id: Mapped[Optional[int]] = mapped_column(Integer(), ForeignKey('user.id'), nullable=True)
@@ -143,7 +144,7 @@ class Report(Base):
             self.message= message
         self.attempt += 1
         self.status = ReportStatus.STARTED
-        self.date_started = datetime.utcnow()
+        self.date_started = datetime.now(timezone.utc)
         db.session.commit()
         return self
 
@@ -160,7 +161,7 @@ class Report(Base):
         if result is not None:
             self.result = result
         self.status = ReportStatus.FINISHED
-        self.date_finished = datetime.utcnow()
+        self.date_finished = datetime.now(timezone.utc)
         self.progress = 100
         db.session.commit()
         return self

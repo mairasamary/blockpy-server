@@ -8,6 +8,7 @@ from flask import url_for, current_app
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import Column, Text, Integer, Boolean, ForeignKey, Index, func, String, Enum
 
+from common.databases import get_enum_values
 import models
 from models.enums import ReviewCommentFormat, ReviewStatus
 from models.generics.models import db, ma
@@ -21,14 +22,15 @@ if TYPE_CHECKING:
 class Review(VersionedBase):
     __tablename__ = "review"
     comment: Mapped[str] = mapped_column(Text(), default="")
-    comment_format: Mapped[ReviewCommentFormat] = mapped_column(Enum(ReviewCommentFormat), default=ReviewCommentFormat.MARKDOWN)
+    comment_format: Mapped[ReviewCommentFormat] = mapped_column(Enum(ReviewCommentFormat, values_callable=get_enum_values), default=ReviewCommentFormat.MARKDOWN)
     location: Mapped[str] = mapped_column(Text(), default="")
     generic: Mapped[bool] = mapped_column(Boolean(), default=False)
     tag_id: Mapped[Optional[int]] = mapped_column(Integer(), ForeignKey('assignment_tag.id'), nullable=True)
-    status: Mapped[ReviewStatus] = mapped_column(Enum(ReviewStatus), default=ReviewStatus.DRAFT)
+    status: Mapped[ReviewStatus] = mapped_column(Enum(ReviewStatus, values_callable=get_enum_values), default=ReviewStatus.DRAFT)
     extra_data: Mapped[str] = mapped_column(Text(), default="")
     # Should be treated as out of X/100
     score: Mapped[Optional[int]] = mapped_column(Integer(), nullable=True)
+    version: Mapped[int] = mapped_column(Integer(), default=0)
 
     replaces: Mapped[Optional[int]] = mapped_column(Integer(), ForeignKey('review.id'), nullable=True)
     # Tracking

@@ -13,6 +13,7 @@ from models.enums import CourseVisibility, CourseKind, CourseService
 from models.generics.models import db, ma
 from models.generics.base import EnhancedBase, Base, VersionedBase
 from common.dates import datetime_to_string, string_to_datetime
+from common.databases import get_enum_values
 from models.enums import GradingStatuses
 
 if TYPE_CHECKING:
@@ -28,14 +29,14 @@ class Course(Base):
                                                nullable=True)
     owner_id: Mapped[int] = mapped_column(ForeignKey('user.id'))
 
-    kind: Mapped[CourseKind] = mapped_column(Enum(CourseKind), default=CourseKind.TEMPLATE)
-    service: Mapped[CourseService] = mapped_column(Enum(CourseService), default=CourseService.NATIVE)
+    kind: Mapped[CourseKind] = mapped_column(Enum(CourseKind, values_callable=get_enum_values), default=CourseKind.DEFAULT)
+    service: Mapped[CourseService] = mapped_column(Enum(CourseService, values_callable=get_enum_values), default=CourseService.NATIVE)
     external_id: Mapped[str] = mapped_column(String(255), default="")
     lms_id: Mapped[Optional[int]] = mapped_column(Integer(), default=None, nullable=True)
     endpoint: Mapped[str] = mapped_column(Text(), default="")
     version: Mapped[int] = mapped_column(Integer(), default=0)
 
-    visibility: Mapped[CourseVisibility] = mapped_column(Enum(CourseVisibility), default=CourseVisibility.PRIVATE)
+    visibility: Mapped[CourseVisibility] = mapped_column(Enum(CourseVisibility, values_callable=get_enum_values), default=CourseVisibility.PRIVATE)
     term: Mapped[str] = mapped_column(String(255), default="")
     settings: Mapped[str] = mapped_column(Text(), default="")
     locked: Mapped[bool] = mapped_column(Boolean(), default=False, nullable=False)
@@ -136,7 +137,7 @@ class Course(Base):
     @staticmethod
     def change_course_visibility(course_id, visibility):
         course = Course.query.filter_by(id=course_id).first()
-        if course and visibility and visibility.lower() in CourseVisibility.VALID_CHOICES:
+        if course and visibility and isinstance(visibility.lower(), CourseVisibility):
             course.visibility = visibility.lower()
             db.session.commit()
             return True
@@ -304,7 +305,7 @@ class Course(Base):
 
     @staticmethod
     def new(name, owner_id, visibility, term, url):
-        if visibility and visibility.lower() in CourseVisibility.VALID_CHOICES:
+        if visibility and isinstance(visibility.lower(), CourseVisibility):
             visibility = visibility.lower()
         else:
             visibility = CourseVisibility.PRIVATE

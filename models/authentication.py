@@ -7,6 +7,7 @@ from sqlalchemy_utc import UtcDateTime
 from models.enums import AuthenticationType
 from models.generics.models import ma
 from models.generics.base import Base
+from common.databases import get_enum_values
 
 if TYPE_CHECKING:
     from models import *
@@ -19,7 +20,7 @@ class Authentication(Base):
     """
     __tablename__ = "authentication"
 
-    type: Mapped[AuthenticationType] = mapped_column(Enum(AuthenticationType), default=AuthenticationType.LOCAL)
+    type: Mapped[AuthenticationType] = mapped_column(Enum(AuthenticationType, values_callable=get_enum_values), default=AuthenticationType.LOCAL)
     value: Mapped[str] = mapped_column(String(255))
     user_id: Mapped[int] = mapped_column(Integer(), ForeignKey('user.id'))
     expires_at: Mapped[Optional[datetime]] = mapped_column(UtcDateTime(), default=None, nullable=True)

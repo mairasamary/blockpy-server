@@ -1,10 +1,33 @@
 """
-
 Course counts
+    Number of submissions
+    Number of assignments
+    Number of assignment groups
+    Number of users
+    Number of students
+    Number of instructors
+
 Assignment counts
+    Number of submissions
+
 Submission counts
+    Number of runs
+    Average edit time
+    Average attempt time
+    Estimated time spent
+
 User counts
-Report counts
+    Number of courses
+    Number of assignments
+    Number of assignment groups
+    Number of submissions
+    Number of reports
+    Estimate time spent
+    Last logged in
+    Last edited
+
 Assignment group counts
+    Number of assignments
+    Number of submissions
 
 """

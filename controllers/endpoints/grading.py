@@ -252,7 +252,8 @@ def bulk_update_submission():
                 if submission:
                     grade_submission(submission_id, None, g.user, request.remote_addr,
                                      score, correct, None, None, True, by_human=True, must_be_grader=True)
-                    make_log_entry(submission.assignment_id, submission.assignment_version,
+                    make_log_entry(submission_id, submission.version,
+                                   submission.assignment_id, submission.assignment_version,
                                    submission.course_id, submission.user_id, "X-Grade.Instructor", message=json.dumps({
                             "grader_id": g.user.id,
                             "score": score,

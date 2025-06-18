@@ -65,15 +65,15 @@ USER_DISPLAY_ROLES = {
 
 
 class RolePermissions:
-    ALL_ROLES = (UserRoles.ADMIN, UserRoles.INSTRUCTOR, UserRoles.LEARNER,
+    ALL_ROLES = [UserRoles.ADMIN, UserRoles.INSTRUCTOR, UserRoles.LEARNER,
                  UserRoles.TA, UserRoles.ADOPTER, UserRoles.PROCTOR,
-                 UserRoles.CONTENT_DEVELOPER)
-    LEARNER_ROLES = (UserRoles.ADMIN, UserRoles.LEARNER,)
-    GRADER_ROLES = (UserRoles.ADMIN, UserRoles.INSTRUCTOR, UserRoles.TA,)
-    STAFF_ROLES = (UserRoles.ADMIN, UserRoles.INSTRUCTOR, UserRoles.TA,
-                   UserRoles.CONTENT_DEVELOPER, UserRoles.PROCTOR)
-    ADOPTER_ROLES = (UserRoles.ADMIN, UserRoles.INSTRUCTOR,
-                     UserRoles.CONTENT_DEVELOPER, UserRoles.ADOPTER)
-    EXAM_ROLES = (UserRoles.ADMIN, UserRoles.INSTRUCTOR, UserRoles.PROCTOR)
-    DEVELOPER_ROLES = (UserRoles.ADMIN, UserRoles.INSTRUCTOR,
-                       UserRoles.CONTENT_DEVELOPER)
+                 UserRoles.CONTENT_DEVELOPER]
+    LEARNER_ROLES = [UserRoles.ADMIN, UserRoles.LEARNER,]
+    GRADER_ROLES = [UserRoles.ADMIN, UserRoles.INSTRUCTOR, UserRoles.TA,]
+    STAFF_ROLES = [UserRoles.ADMIN, UserRoles.INSTRUCTOR, UserRoles.TA,
+                   UserRoles.CONTENT_DEVELOPER, UserRoles.PROCTOR]
+    ADOPTER_ROLES = [UserRoles.ADMIN, UserRoles.INSTRUCTOR,
+                     UserRoles.CONTENT_DEVELOPER, UserRoles.ADOPTER]
+    EXAM_ROLES = [UserRoles.ADMIN, UserRoles.INSTRUCTOR, UserRoles.PROCTOR]
+    DEVELOPER_ROLES = [UserRoles.ADMIN, UserRoles.INSTRUCTOR,
+                       UserRoles.CONTENT_DEVELOPER]

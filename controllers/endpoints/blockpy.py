@@ -21,8 +21,8 @@ from models.assignment_tag import AssignmentTag
 from models.course import Course
 
 from models import db
-from models.logs import SubmissionLog as Log
-from models.enums import SubmissionStatuses
+from models.logs import SubmissionLog as Log, AssignmentLog
+from models.enums import SubmissionStatuses, AssignmentLogEvent
 from models.submission import Submission, GradingStatuses
 from models.assignment import Assignment
 from models.assignment_group import AssignmentGroup
@@ -206,13 +206,22 @@ def load_assignment():
             'user_agent': request.user_agent.string,
             'ip_address': request.remote_addr
         })
+        submission = editor_information.get('submission', None)
+        if submission is None:
+            # TODO SUM25: Log an error here
+            submission_id = None
+            submission_version = None
+        else:
+            submission_id = submission['id'] if submission else None
+            submission_version = submission['version'] if submission else None
         # Log the event
         if user is not None:
             if user_id != student_id:
-                make_log_entry(assignment_id, assignment.version, course_id,
+                # TODO SUM25: This should get the submission id and stuff
+                make_log_entry(submission_id, submission_version, assignment_id, assignment.version, course_id,
                                user_id, 'X-Submission.Get', message=str(student_id))
             else:
-                make_log_entry(assignment_id, assignment.version, course_id,
+                make_log_entry(submission_id, submission_version, assignment_id, assignment.version, course_id,
                                user_id, 'Session.Start', message=browser_info)
     # Verify passcode, if necessary
     if assignment.passcode_fails(request.values.get('passcode')):
@@ -270,7 +279,7 @@ def save_student_file(filename, course_id, user):
     version_change = submission.assignment.version != submission.assignment_version
     new_code = submission.save_code(filename, code, part_id)
     # TODO: What is a grader is uploading code for a student?
-    make_log_entry(submission.assignment_id, submission.assignment_version,
+    make_log_entry(submission.id, submission.version, submission.assignment_id, submission.assignment_version,
                    course_id, submission.user_id,
                    "File.Edit", filename + ("#" + part_id if part_id else ""), message=new_code)
     return ajax_success({"version_change": version_change})
@@ -288,8 +297,9 @@ def save_instructor_file(course_id, user, filename):
         require_course_grader(user, assignment.course_id, allow_fork=course_id)
     # Perform update
     assignment.save_file(filename, code)
-    make_log_entry(assignment_id, assignment.version, course_id, user.id,
-                   "X-Instructor.File.Edit", filename, message=code)
+    AssignmentLog.new(assignment.id, assignment.version,
+                          course_id,
+                      user.id, AssignmentLogEvent.EDIT, filename, code, "", "")
     return ajax_success({})
 
 
@@ -469,7 +479,7 @@ def view_submission():
     if is_grader:
         tags = [tag.encode_json() for tag in AssignmentTag.get_all()]
     # Do action
-    make_log_entry(submission.assignment.id, submission.assignment_version,
+    make_log_entry(submission.id, submission.version, submission.assignment.id, submission.assignment_version,
                    submission.course_id, submission.user_id, "X-View.Submission", "answer.py",
                    category="single",
                    message=json.dumps({"viewer": viewer_id}))
@@ -769,7 +779,7 @@ def save_image():
         return ajax_failure("This is not your submission and you are not a grader in its course.")
     # Do action
     success = submission.save_image(directory, image)
-    make_log_entry(submission.assignment_id, submission.assignment_version,
+    make_log_entry(submission_id, submission.version, submission.assignment_id, submission.assignment_version,
                    course_id, user_id, "X-Image.Save", directory)
     return ajax_success({"success": success})
 
@@ -855,10 +865,9 @@ def save_assignment():
         updates['points'] = maybe_int(request.values.get('points'))
     # Perform update
     modified = assignment.edit(updates)
-    make_log_entry(assignment.id, assignment.version,
-                   course_id or assignment.course_id,
-                   user.id, "X-Instructor.Settings.Edit", "assignment_settings.blockpy",
-                   message=json.dumps(updates))
+    AssignmentLog.new(assignment.id, assignment.version, course_id,
+                      user.id, AssignmentLogEvent.EDIT, "assignment_settings.blockpy",
+                      json.dumps(updates), "", "")
     return ajax_success({"modified": modified})
 
 
@@ -1062,10 +1071,11 @@ def fork_assignment():
     # TODO: Perform update
     modified = assignment.edit(updated_settings)
     # TODO: Log
-    make_log_entry(assignment.id, assignment.version,
-                   course_id or assignment.course_id,
-                   user.id, "X-Instructor.Settings.Edit", "assignment_settings.blockpy",
-                   message=json.dumps(updated_settings))
+    AssignmentLog.new(assignment.id, assignment.version, course_id,
+                      user.id, "edit",
+                        "assignment_settings.blockpy",
+                      json.dumps(updated_settings),
+                      "", "")
     return ajax_success({"modified": modified})
 
 

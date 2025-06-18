@@ -9,8 +9,9 @@ from controllers.helpers import (require_request_parameters, require_course_inst
                                  require_course_adopter,
                                  check_resource_exists, get_select_menu_link, get_course_id, ajax_success,
                                  maybe_int, require_course_grader, make_log_entry)
-from models import Course, Submission
+from models import Course, Submission, AssignmentLog
 
+from models.enums.logs import AssignmentLogEvent
 from models.assignment import Assignment
 from models.assignment_group import AssignmentGroup
 from models.assignment_group_membership import AssignmentGroupMembership
@@ -202,16 +203,16 @@ def edit_security_settings():
                     if assignment.update_setting("passcode", passcode):
                         message.append(f"{assignment.name} passcode to <code>{passcode}</code>")
                 # Record a log of this
-                make_log_entry(assignment.id, assignment.version,
-                               assignment.course_id, g.user.id,
-                               "X-Instructor.Settings.Edit", "assignment_settings.blockpy",
-                               message=json.dumps({
+                AssignmentLog.new(assignment.id, assignment.version,
+                                  assignment.course_id, g.user.id, AssignmentLogEvent.EDIT,
+                                  "assignment_settings.blockpy",
+                                  json.dumps({
                                    "is_instructor": is_instructor,
                                    "old_ranges": old_ranges,
                                    "ip_ranges": ip_ranges,
                                    "protected_ip_ranges": protected_ip_ranges,
                                    "passcode": passcode
-                               }))
+                               }), "", "")
             if message:
                 flash("Updating:<br>" + "<br>".join(message))
             else:

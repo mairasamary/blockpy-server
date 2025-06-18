@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, TYPE_CHECKING
 
 from flask_security import UserMixin
@@ -12,6 +12,7 @@ from werkzeug.utils import secure_filename
 
 import models
 from common.maybe import maybe_int
+from models.enums import RolePermissions
 from models.generics.models import db, ma
 from models.generics.base import Base
 
@@ -82,7 +83,7 @@ class User(Base, UserMixin):
         """ Note, does not create admin role. """
         new_user = User(first_name=first_name, last_name=last_name,
                         email=email, password=password,
-                        active=True, confirmed_at=datetime.utcnow(),
+                        active=True, confirmed_at=datetime.now(timezone.utc),
                         fs_uniquifier=uuid.uuid4().hex)
         db.session.add(new_user)
         db.session.commit()
@@ -151,7 +152,7 @@ class User(Base, UserMixin):
         return (db.session.query(models.Course)
                 .filter(models.Role.user_id == self.id,
                         models.Role.course_id == models.Course.id,
-                        models.Role.name.in_(self.GRADER_ROLES))
+                        models.Role.name.in_(RolePermissions.GRADER_ROLES))
                 .order_by(models.Course.name  if order_by == 'name' else models.Course.date_created)
                 .distinct())
 
@@ -184,7 +185,7 @@ class User(Base, UserMixin):
         else:
             role_strings = {role.name.lower() for role in self.roles}
 
-        return any(grader_role in role_strings for grader_role in self.GRADER_ROLES)
+        return any(grader_role in role_strings for grader_role in RolePermissions.GRADER_ROLES)
 
     def is_adopter(self, course_id=None):
         if self.is_instructor(course_id):
@@ -291,7 +292,7 @@ class User(Base, UserMixin):
 
     @staticmethod
     def get_old_anonymous_users(threshold_days: int, limit: int = None):
-        threshold = datetime.utcnow() - timedelta(days=threshold_days)
+        threshold = datetime.now(timezone.utc) - timedelta(days=threshold_days)
         query = (db.session.query(models.User)
                  .filter(models.User.anonymous == true())
                  .filter(models.User.date_created < threshold))
@@ -303,7 +304,7 @@ class User(Base, UserMixin):
         course_assignments_subquery = (db.session.query(
             models.Course.id, models.Assignment.id
         ).join(models.Assignment, models.Assignment.course_id == models.Course.id, isouter=True))
-        final_query = db.session.query(models.Log)
+        final_query = db.session.query(models.SubmissionLog)
         if threshold is not None:
             final_query = final_query.filter(models.Log.date_modified > threshold)
         return (final_query
@@ -312,7 +313,7 @@ class User(Base, UserMixin):
                 )
 
     def has_activity(self, threshold_days: int):
-        threshold = datetime.utcnow() - timedelta(days=threshold_days)
+        threshold = datetime.now(timezone.utc) - timedelta(days=threshold_days)
         return ((
                         db.session.query(models.Submission)
                         .filter(models.Submission.user_id == self.id)

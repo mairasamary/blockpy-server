@@ -13,7 +13,7 @@ from models.enums import AssignmentGroupCategory
 from models.generics.models import db, ma
 from models.generics.base import EnhancedBase, Base
 from common.dates import datetime_to_string
-from common.databases import make_copy
+from common.databases import make_copy, get_enum_values
 
 if TYPE_CHECKING:
     from models import *
@@ -26,7 +26,7 @@ class AssignmentGroup(EnhancedBase):
                                                nullable=True)
     forked_id: Mapped[Optional[int]] = mapped_column(Integer(), ForeignKey('assignment_group.id'),
                                                      nullable=True)
-    category: Mapped[AssignmentGroupCategory] = mapped_column(Enum(AssignmentGroupCategory), default=AssignmentGroupCategory.NONE)
+    category: Mapped[AssignmentGroupCategory] = mapped_column(Enum(AssignmentGroupCategory, values_callable=get_enum_values), default=AssignmentGroupCategory.NONE)
     forked_version: Mapped[Optional[int]] = mapped_column(Integer(), nullable=True)
     owner_id: Mapped[int] = mapped_column(Integer(), ForeignKey('user.id'))
     course_id: Mapped[int] = mapped_column(Integer(), ForeignKey('course.id'))

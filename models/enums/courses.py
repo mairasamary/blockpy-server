@@ -24,6 +24,7 @@ class CourseService(enum.StrEnum):
         LTI: The course is using an LTI connection to an external service
     """
     NATIVE = 'native'
+    CANVAS = 'canvas'
     LTI = 'lti'
 
 

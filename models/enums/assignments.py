@@ -9,6 +9,8 @@ class AssignmentTypes(enum.StrEnum):
     JAVA = 'java'
     TYPESCRIPT = 'typescript'
     EXPLANATION = 'explanation'
+    EXPLAIN = 'explain'
+    BLOCKPY = 'blockpy'
 
 
 class AssignmentStatus(enum.StrEnum):

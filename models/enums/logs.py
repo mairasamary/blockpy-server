@@ -30,6 +30,7 @@ class RoleLogEvent(enum.StrEnum):
 
 
 class SubmissionLogEvent(enum.StrEnum):
+    UNKNOWN = "unknown"
     CREATE = "create"
     DELETE = "delete"
     EDIT = "edit"

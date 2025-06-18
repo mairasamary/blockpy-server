@@ -13,6 +13,8 @@ from common.maybe import maybe_bool, maybe_int
 from models.course import Course
 from models.assignment import Assignment
 from models.assignment_group import AssignmentGroup
+from models.enums import SubmissionLogEvent
+from models.logs import SubmissionLog as Log
 from models.logs import RoleLog, CourseLog, ErrorLog, AccessLog, AssignmentLog, SubmissionLog
 
 
@@ -231,18 +233,24 @@ def parse_assignment_load(assignment_id_or_url=None):
         course_id = Course.get_default().id
     if user_id is None or course_id is None:
         submissions = []
+        submission_assignment_map = {}
     else:
         submissions = [assignment.load_or_new_submission(user_id, course_id, new_submission_url, assignment_group_id,
                                                          new_due_date, new_lock_date)
                        for assignment in assignments]
+        submission_assignment_map = {submission.assignment_id: submission for submission in submissions}
     # Determine the users' role in relation to this information
     role = user.determine_role(assignments, submissions) if user else "anonymous"
     if role in ("student", "anonymous"):
         # Check for any IP locked assignments
         for assignment in assignments:
             if not assignment.is_allowed(request.remote_addr):
-                make_log_entry(assignment.id, assignment.version, course_id, user_id, "X-Access.Denied",
-                               message=str(request.remote_addr))
+                if submissions:
+                    submission = submission_assignment_map.get(assignment.id, None)
+                    if submission:
+                        make_log_entry(submission.id, submission.version, assignment.id, assignment.version,
+                                       course_id, user_id, SubmissionLogEvent.ERROR,
+                                       message=str(request.remote_addr))
                 return abort(403,
                              "You cannot access this assignment from your current location: " + request.remote_addr)
     # Check passcode
@@ -339,11 +347,11 @@ def ajax_success(original_data):
     return jsonify(original_data)
 
 
-def make_log_entry(assignment_id, assignment_version, course_id, user_id,
+def make_log_entry(submission_id, submission_version, assignment_id, assignment_version, course_id, user_id,
                    event_type, file_path='', category='', label='', message='', timestamp=None, timezone=None):
     timestamp = request.values.get('timestamp') if timestamp is None else timestamp
     timezone = request.values.get('timezone') if timezone is None else timezone
-    return Log.new(assignment_id, assignment_version, course_id, user_id,
+    return Log.new(submission_id, submission_version, assignment_id, assignment_version, course_id, user_id,
                    event_type, file_path, category, label, message, timestamp, timezone)
 
 

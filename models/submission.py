@@ -2,7 +2,7 @@ import json
 import math
 import os
 import time
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, timezone
 import re
 
 import base64
@@ -19,6 +19,7 @@ from werkzeug.utils import secure_filename
 import models
 from common.maybe import maybe_int
 from common.text import make_flavored_uuid_generator
+from common.databases import get_enum_values
 from models.generics.definitions import LatePolicy
 from models.assignment import Assignment
 from models.generics.models import db, ma
@@ -30,6 +31,7 @@ from models.review import Review
 from models.data_formats.quizzes import process_quiz_str, QuizResult, try_parse_file
 from models.enums import GradingStatuses, SubmissionStatuses
 from models.user import User
+from models.logs import SubmissionLog
 from models.data_formats.blockpy_legacy import DEFAULT_FILENAME, DEFAULT_FILENAMES_BY_TYPE, build_extra_starting_files, inject_code_part
 
 if TYPE_CHECKING:
@@ -45,8 +47,8 @@ class Submission(EnhancedBase):
     # Should be treated as out of X/100
     score: Mapped[int] = mapped_column(Integer(), default=0)
     correct: Mapped[bool] = mapped_column(Boolean(), default=False)
-    submission_status: Mapped[SubmissionStatuses] = mapped_column(Enum(SubmissionStatuses), default=SubmissionStatuses.STARTED)
-    grading_status: Mapped[GradingStatuses] = mapped_column(Enum(GradingStatuses), default=GradingStatuses.NOT_READY)
+    submission_status: Mapped[SubmissionStatuses] = mapped_column(Enum(SubmissionStatuses, values_callable=get_enum_values), default=SubmissionStatuses.STARTED)
+    grading_status: Mapped[GradingStatuses] = mapped_column(Enum(GradingStatuses, values_callable=get_enum_values), default=GradingStatuses.NOT_READY)
     # Date Tracking
     date_started: Mapped[Optional[datetime]] = mapped_column(UtcDateTime(), default=None, nullable=True)
     date_submitted: Mapped[Optional[datetime]] = mapped_column(UtcDateTime(), default=None, nullable=True)
@@ -321,7 +323,7 @@ class Submission(EnhancedBase):
         db.session.add(submission)
         db.session.commit()
         # TODO: Log extra starting files!
-        Log.new(assignment.id, assignment.version, course_id, user_id,
+        SubmissionLog.new(submission.id, submission.version, assignment.id, assignment.version, course_id, user_id,
                 "File.Create", "answer.py", "", "", assignment.starting_code, "", "")
         return submission
 
@@ -427,14 +429,14 @@ class Submission(EnhancedBase):
             self.submission_status = SubmissionStatuses.SUBMITTED
             self.grading_status = GradingStatuses.PENDING
         if (was_changed and do_change_submission_date) or not self.date_submitted:
-            self.date_submitted = date_submitted or datetime.utcnow()
+            self.date_submitted = date_submitted or datetime.now(timezone.utc)
         if was_changed and do_change_grading_date:
-            self.date_graded = date_submitted or datetime.utcnow()
+            self.date_graded = date_submitted or datetime.now(timezone.utc)
         db.session.commit()
         return was_changed
 
     def mark_graded(self):
-        self.date_graded = datetime.utcnow()
+        self.date_graded = datetime.now(timezone.utc)
         db.session.commit()
 
     def update_submission_status(self, status):
@@ -510,10 +512,13 @@ class Submission(EnhancedBase):
 
     def log_code(self, course_id, extension='.py', timestamp=''):
         '''
+        DEPRECATED
+
         Store the code on disk, mapped to the Assignment ID and the Student ID
         '''
         # Multiple-file logging
-        log = models.Log.new('code', 'set', self.assignment_id, self.assignment_version,
+        log = models.SubmissionLog.new(self.id, self.version,
+                                       'code', 'set', self.assignment_id, self.assignment_version,
                              course_id,
                              self.user_id, body=self.code, timestamp=timestamp)
 
@@ -583,12 +588,12 @@ class Submission(EnhancedBase):
         return False, 0
 
     def get_logs(self):
-        return Log.query.filter_by(course_id=self.course_id, assignment_id=self.assignment_id, subject_id=self.user_id).order_by(
-            Log.date_created.asc()).all()
+        return SubmissionLog.query.filter_by(course_id=self.course_id, assignment_id=self.assignment_id, subject_id=self.user_id).order_by(
+            SubmissionLog.date_created.asc()).all()
 
     def get_session_start_time(self):
-        first_session = Log.query.filter_by(course_id=self.course_id, assignment_id=self.assignment_id,
-                            subject_id=self.user_id,event_type='Session.Start').order_by(Log.date_created.asc()).first()
+        first_session = SubmissionLog.query.filter_by(course_id=self.course_id, assignment_id=self.assignment_id,
+                            subject_id=self.user_id,event_type='Session.Start').order_by(SubmissionLog.date_created.asc()).first()
         if not first_session:
             return None
         time = first_session.date_created
@@ -596,7 +601,7 @@ class Submission(EnhancedBase):
         return int(round(1000*(time + offset).timestamp()))
 
     def estimate_duration(self, inactivity_threshold=5):
-        logs = Log.get_history(self.course_id, self.assignment_id, self.user_id, as_json=False)
+        logs = SubmissionLog.get_history(self.course_id, self.assignment_id, self.user_id, as_json=False)
         if not logs:
             return 0
         current = logs[-1].date_created
@@ -668,7 +673,7 @@ class Submission(EnhancedBase):
             if self.date_submitted:
                 at_time = self.date_submitted
             else:
-                at_time = datetime.utcnow()
+                at_time = datetime.now(timezone.utc)
         # First, compute the current "actual score"
         actual_score = self.full_score()
         # If we are not late, then just use the regular score
