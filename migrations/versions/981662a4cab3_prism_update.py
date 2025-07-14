@@ -115,151 +115,147 @@ def upgrade():
         batch_op.create_index('role_log_subject_index', ['subject_id'], unique=False)
 
     op.create_table('submission_log',
-    sa.Column('submission_id', sa.Integer(), nullable=False),
-    sa.Column('submission_version', sa.Integer(), nullable=False),
-    sa.Column('assignment_id', sa.Integer(), nullable=False),
-    sa.Column('assignment_version', sa.Integer(), nullable=False),
-    sa.Column('course_id', sa.Integer(), nullable=False),
-    sa.Column('subject_id', sa.Integer(), nullable=False),
-    sa.Column('event_type', sa.Enum('CREATE', 'DELETE', 'EDIT', 'SUBMIT', 'VIEW', 'FEEDBACK', 'COMPILE', 'RUN', 'DEBUG', 'ERROR', 'WARNING', 'INFO', 'COMPLETE', 'TRANSFER', 'CANVAS', name='submissionlogevent'), nullable=False),
-    sa.Column('file_path', sa.String(length=255), nullable=True),
-    sa.Column('category', sa.String(length=255), nullable=False),
-    sa.Column('label', sa.String(length=255), nullable=False),
-    sa.Column('message', sa.Text(), nullable=False),
-    sa.Column('client_timestamp', sa.String(length=255), nullable=True),
-    sa.Column('client_timezone', sa.String(length=255), nullable=True),
-    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
-    sa.Column('date_created', sa.DateTime(), nullable=False),
-    sa.Column('date_modified', sa.DateTime(), nullable=False),
-    sa.ForeignKeyConstraint(['assignment_id'], ['assignment.id'], ),
-    sa.ForeignKeyConstraint(['course_id'], ['course.id'], ),
-    sa.ForeignKeyConstraint(['subject_id'], ['user.id'], ),
-    sa.ForeignKeyConstraint(['submission_id'], ['submission.id'], ),
-    sa.PrimaryKeyConstraint('id')
-    )
+                    sa.Column('submission_id', sa.Integer(), nullable=False),
+                    sa.Column('submission_version', sa.Integer(), nullable=False),
+                    sa.Column('assignment_id', sa.Integer(), nullable=False),
+                    sa.Column('assignment_version', sa.Integer(), nullable=False),
+                    sa.Column('course_id', sa.Integer(), nullable=False),
+                    sa.Column('subject_id', sa.Integer(), nullable=False),
+                    sa.Column('event_type',
+                              sa.Enum('CREATE', 'DELETE', 'EDIT', 'SUBMIT', 'VIEW', 'FEEDBACK', 'COMPILE', 'RUN',
+                                      'DEBUG', 'ERROR', 'WARNING', 'INFO', 'COMPLETE', 'TRANSFER', 'CANVAS',
+                                      name='submissionlogevent'), nullable=False),
+                    sa.Column('file_path', sa.String(length=255), nullable=True),
+                    sa.Column('category', sa.String(length=255), nullable=False),
+                    sa.Column('label', sa.String(length=255), nullable=False),
+                    sa.Column('message', sa.Text(), nullable=False),
+                    sa.Column('client_timestamp', sa.String(length=255), nullable=True),
+                    sa.Column('client_timezone', sa.String(length=255), nullable=True),
+                    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+                    sa.Column('date_created', sa.DateTime(), nullable=False),
+                    sa.Column('date_modified', sa.DateTime(), nullable=False),
+                    sa.ForeignKeyConstraint(['assignment_id'], ['assignment.id'], ),
+                    sa.ForeignKeyConstraint(['course_id'], ['course.id'], ),
+                    sa.ForeignKeyConstraint(['subject_id'], ['user.id'], ),
+                    sa.ForeignKeyConstraint(['submission_id'], ['submission.id'], ),
+                    sa.PrimaryKeyConstraint('id')
+                    )
+
+
     with op.batch_alter_table('submission_log', schema=None) as batch_op:
         batch_op.create_index('submission_log_assignment_index', ['assignment_id'], unique=False)
         batch_op.create_index('submission_log_course_index', ['course_id'], unique=False)
         batch_op.create_index('submission_log_subject_index', ['subject_id'], unique=False)
         batch_op.create_index('submission_log_submission_index', ['submission_id'], unique=False)
 
-    with op.batch_alter_table('log', schema=None) as batch_op:
-        batch_op.drop_index('log_index')
-
-    op.drop_table('log')
-    with op.batch_alter_table('assignment', schema=None) as batch_op:
-        batch_op.add_column(sa.Column('status', sa.Enum('DRAFT', 'PILOT', 'PUBLISHED', 'ARCHIVED', name='assignmentstatus'), nullable=False,
-                                      default="DRAFT"))
-        batch_op.alter_column('type',
-               existing_type=sa.VARCHAR(length=10),
-               type_=sa.Enum('READING', 'QUIZ', 'TEXTBOOK', 'MAZE', 'PYTHON', 'JAVA', 'TYPESCRIPT', 'EXPLANATION', name='assignmenttypes'),
-               nullable=False)
-        batch_op.create_index('assignment_course_index', ['course_id'], unique=False)
-        batch_op.create_index('assignment_url_index', ['url'], unique=False)
+    op.add_column('assignment', sa.Column('status', sa.Enum('DRAFT', 'PILOT', 'PUBLISHED', 'ARCHIVED', name='assignmentstatus'), nullable=False,
+                                  default="DRAFT"))
+    op.alter_column('assignment', 'type',
+           existing_type=sa.VARCHAR(length=10),
+           type_=sa.Enum('READING', 'QUIZ', 'TEXTBOOK', 'MAZE', 'PYTHON', 'JAVA', 'TYPESCRIPT', 'EXPLANATION', name='assignmenttypes'),
+           nullable=False)
+    op.create_index('assignment_course_index', 'assignment', ['course_id'], unique=False)
+    op.create_index('assignment_url_index', 'assignment', ['url'], unique=False)
 
     with op.batch_alter_table('assignment_group', schema=None) as batch_op:
         batch_op.add_column(sa.Column('category', sa.Enum('NONE', 'EXAM', 'HOMEWORK', 'CLASSWORK', 'PROJECT', 'QUIZ', 'LAB', 'READING', name='assignmentgroupcategory'), nullable=False, default="NONE", server_default="NONE"))
         batch_op.create_index('assignment_group_course_index', ['course_id'], unique=False)
         batch_op.create_index('assignment_group_url_index', ['url'], unique=False)
 
-    with op.batch_alter_table('assignment_group_membership', schema=None) as batch_op:
-        batch_op.add_column(sa.Column('policy', sa.String(length=255), nullable=True))
-        batch_op.create_index('assignment_group_membership_assignment_group_id', ['assignment_group_id'], unique=False)
-        batch_op.create_index('assignment_group_membership_assignment_id', ['assignment_id'], unique=False)
-        batch_op.create_unique_constraint('assignment_group_membership_lookup', ['assignment_group_id', 'assignment_id'])
+    op.add_column('assignment_group_membership', sa.Column('policy', sa.String(length=255), nullable=True))
+    op.create_index('assignment_group_membership_assignment_group_id', 'assignment_group_membership', ['assignment_group_id'], unique=False)
+    op.create_index('assignment_group_membership_assignment_id', 'assignment_group_membership', ['assignment_id'], unique=False)
+    op.create_index('assignment_group_membership_lookup', 'assignment_group_membership', ['assignment_group_id', 'assignment_id'], unique=False)
 
-    with op.batch_alter_table('authentication', schema=None) as batch_op:
-        batch_op.add_column(sa.Column('expires_at', sqlalchemy_utc.sqltypes.UtcDateTime(timezone=True), nullable=True))
-        batch_op.add_column(sa.Column('refresh_token', sa.String(length=255), nullable=True))
-        batch_op.alter_column('type',
-               existing_type=sa.VARCHAR(length=80),
-               default="LOCAL",
-               type_=sa.Enum('LOCAL', 'CANVAS', name='authenticationtype'),
-               nullable=False)
-        batch_op.create_index('authentication_user_index', ['user_id'], unique=False)
+    op.add_column('authentication', sa.Column('expires_at', sqlalchemy_utc.sqltypes.UtcDateTime(timezone=True), nullable=True))
+    op.add_column('authentication', sa.Column('refresh_token', sa.String(length=255), nullable=True))
+    op.alter_column('authentication', 'type',
+           existing_type=sa.VARCHAR(length=80),
+           default="LOCAL",
+           type_=sa.Enum('LOCAL', 'CANVAS', name='authenticationtype'),
+           nullable=False)
+    op.create_index('authentication_user_index', 'authentication', ['user_id'], unique=False)
 
-    with op.batch_alter_table('course', schema=None) as batch_op:
-        batch_op.add_column(sa.Column('kind', sa.Enum('TEMPLATE', 'OFFERING', 'DEFAULT', name='coursekind'), nullable=False, default="TEMPLATE"))
-        batch_op.add_column(sa.Column('lms_id', sa.Integer(), nullable=True))
-        batch_op.alter_column('service',
-               existing_type=sa.VARCHAR(length=80),
-               type_=sa.Enum('NATIVE', 'LTI', name='courseservice'),
-                default="NATIVE",
-               nullable=False)
-        batch_op.alter_column('visibility',
-               existing_type=sa.VARCHAR(length=80),
-               type_=sa.Enum('PUBLIC', 'PRIVATE', 'STUDENTS', 'ARCHIVED', name='coursevisibility'),
-               default="PUBLIC",
-               nullable=False)
-        batch_op.create_index('course_url_index', ['url'], unique=False)
+    op.add_column('course', sa.Column('kind', sa.Enum('TEMPLATE', 'OFFERING', 'DEFAULT', name='coursekind'), nullable=False, default="TEMPLATE"))
+    op.add_column('course', sa.Column('lms_id', sa.Integer(), nullable=True))
+    op.alter_column('course', 'service',
+           existing_type=sa.VARCHAR(length=80),
+           type_=sa.Enum('NATIVE', 'LTI', name='courseservice'),
+           default="NATIVE",
+           nullable=False)
+    op.alter_column('course', 'visibility',
+           existing_type=sa.VARCHAR(length=80),
+           type_=sa.Enum('PUBLIC', 'PRIVATE', 'STUDENTS', 'ARCHIVED', name='coursevisibility'),
+           default="PUBLIC",
+           nullable=False)
+    op.create_index('course_url_index', 'course', ['url'], unique=False)
 
 
-    with op.batch_alter_table('invite', schema=None) as batch_op:
-        batch_op.add_column(sa.Column('kind', sa.Enum('COURSE_INVITE', 'COURSE_JOIN', name='invitekind'), nullable=False, default="COURSE_INVITE"))
-        batch_op.add_column(sa.Column('status', sa.Enum('PENDING', 'ACCEPTED', 'REJECTED', name='invitestatus'), nullable=False, default="PENDING"))
-        batch_op.add_column(sa.Column('approver_id', sa.Integer(), nullable=True))
-        batch_op.alter_column('role',
-               existing_type=sa.VARCHAR(length=80),
-               type_=sa.Enum('ADMIN', 'INSTRUCTOR', 'LEARNER', 'TA', 'ADOPTER', 'PROCTOR', 'CONTENT_DEVELOPER', 'NONE', name='userroles'),
-               default="LEARNER",
-               existing_nullable=True)
-        batch_op.create_index('invite_course_id', ['course_id'], unique=False)
-        batch_op.create_index('invite_user_id', ['user_id'], unique=False)
-        batch_op.create_index("invite_url_index", ['url'], unique=False)
-        batch_op.create_foreign_key(None, 'user', ['approver_id'], ['id'])
+    op.add_column('invite', sa.Column('kind', sa.Enum('COURSE_INVITE', 'COURSE_JOIN', name='invitekind'), nullable=False, default="COURSE_INVITE"))
+    op.add_column('invite', sa.Column('status', sa.Enum('PENDING', 'ACCEPTED', 'REJECTED', name='invitestatus'), nullable=False, default="PENDING"))
+    op.add_column('invite', sa.Column('approver_id', sa.Integer(), nullable=True))
+    op.alter_column('invite', 'role',
+           existing_type=sa.VARCHAR(length=80),
+           type_=sa.Enum('ADMIN', 'INSTRUCTOR', 'LEARNER', 'TA', 'ADOPTER', 'PROCTOR', 'CONTENT_DEVELOPER', 'NONE', name='userroles'),
+           default="LEARNER",
+           existing_nullable=True)
+    op.create_index('invite_course_id', 'invite', ['course_id'], unique=False)
+    op.create_index('invite_user_id', 'invite', ['user_id'], unique=False)
+    op.create_index("invite_url_index", 'invite', ['url'], unique=False)
+    # TODO: This is not getting generated correctly, need to fix the foreign key
+    # op.create_foreign_key('fk_invite_approver_id_user', 'invite', 'user', ['approver_id'], ['id'])
 
-    with op.batch_alter_table('report', schema=None) as batch_op:
-        batch_op.alter_column('status',
-               existing_type=sa.VARCHAR(length=255),
-               type_=sa.Enum('QUEUED', 'STARTED', 'FINISHED', 'ERROR', 'EXPIRED', name='reportstatus'),
-               default="QUEUED",
-               nullable=False)
-        batch_op.alter_column('visibility',
-               existing_type=sa.VARCHAR(),
-               type_=sa.Enum('PUBLIC', 'PRIVATE', 'STUDENTS', 'ARCHIVED', name='reportvisibility'),
-               default="PRIVATE",
-               nullable=False)
 
-    with op.batch_alter_table('review', schema=None) as batch_op:
-        batch_op.add_column(sa.Column('comment_format', sa.Enum('MARKDOWN', 'HTML', 'TEXT', name='reviewcommentformat'), nullable=False, default="MARKDOWN"))
-        batch_op.add_column(sa.Column('status', sa.Enum('DRAFT', 'PILOT', 'PUBLISHED', 'PRIVATE', 'DELETED', name='reviewstatus'), nullable=False, default="DRAFT"))
-        batch_op.add_column(sa.Column('extra_data', sa.Text(), nullable=False))
-        batch_op.add_column(sa.Column('replaces', sa.Integer(), nullable=True))
-        batch_op.add_column(sa.Column('tool', sa.String(length=255), nullable=True))
-        batch_op.create_index('review_submission_index', ['submission_id'], unique=False)
-        batch_op.create_foreign_key(None, 'review', ['replaces'], ['id'])
-        batch_op.drop_column('version')
+    op.alter_column('report', 'status',
+           existing_type=sa.VARCHAR(length=255),
+           type_=sa.Enum('QUEUED', 'STARTED', 'FINISHED', 'ERROR', 'EXPIRED', name='reportstatus'),
+           default="QUEUED",
+           nullable=False)
+    op.alter_column('report', 'visibility',
+           existing_type=sa.VARCHAR(),
+           type_=sa.Enum('PUBLIC', 'PRIVATE', 'STUDENTS', 'ARCHIVED', name='reportvisibility'),
+           default="PRIVATE",
+           nullable=False)
 
-    with op.batch_alter_table('role', schema=None) as batch_op:
-        batch_op.add_column(sa.Column('subname', sa.String(length=80), nullable=False))
-        batch_op.add_column(sa.Column('external_id', sa.Integer(), nullable=True))
-        batch_op.alter_column('name',
-               existing_type=sa.VARCHAR(length=80),
-               type_=sa.Enum('ADMIN', 'INSTRUCTOR', 'LEARNER', 'TA', 'ADOPTER', 'PROCTOR', 'CONTENT_DEVELOPER', 'NONE', name='userroles'),
-               default="LEARNER",
-               nullable=False)
-        batch_op.create_index('role_course_id', ['course_id'], unique=False)
-        batch_op.create_index('role_user_id', ['user_id'], unique=False)
+    op.add_column('review', sa.Column('comment_format', sa.Enum('MARKDOWN', 'HTML', 'TEXT', name='reviewcommentformat'), nullable=False, default="MARKDOWN"))
+    op.add_column('review', sa.Column('status', sa.Enum('DRAFT', 'PILOT', 'PUBLISHED', 'PRIVATE', 'DELETED', name='reviewstatus'), nullable=False, default="DRAFT"))
+    op.add_column('review', sa.Column('extra_data', sa.Text(), nullable=False))
+    op.add_column('review', sa.Column('replaces', sa.Integer(), nullable=True))
+    op.add_column('review', sa.Column('tool', sa.String(length=255), nullable=True))
+    op.create_index('review_submission_index', 'review', ['submission_id'], unique=False)
+    # TODO: This is not getting generated correctly, need to fix the foreign key
+    # op.create_foreign_key('fk_review_replaces_id_review', 'review', 'review', ['replaces'], ['id'])
+    op.drop_column('review', 'version')
 
-    with op.batch_alter_table('submission', schema=None) as batch_op:
-        batch_op.add_column(sa.Column('date_started', sqlalchemy_utc.sqltypes.UtcDateTime(timezone=True), nullable=True))
-        batch_op.alter_column('submission_status',
-               existing_type=sa.VARCHAR(length=255),
-               type_=sa.Enum('INITIALIZED', 'STARTED', 'IN_PROGRESS', 'SUBMITTED', 'COMPLETED', name='submissionstatuses'),
-               default="INITIALIZED",
-               nullable=False)
-        batch_op.alter_column('grading_status',
-               existing_type=sa.VARCHAR(length=255),
-               type_=sa.Enum('FULLY_GRADED', 'PENDING', 'PENDING_MANUAL', 'FAILED', 'NOT_READY', name='gradingstatuses'),
-               default="NOT_READY",
-               nullable=False)
-        batch_op.drop_index('submission_index')
-        batch_op.create_index('submission_index', ['course_id', 'assignment_id', 'user_id'], unique=False)
-        batch_op.create_index('submission_assignment_index', ['assignment_id'], unique=False)
-        batch_op.create_index('submission_url_index', ['url'], unique=False)
-        batch_op.create_index('submission_user_index', ['user_id'], unique=False)
-        batch_op.create_unique_constraint(None, ['url'])
-        batch_op.create_foreign_key(None, 'assignment_group', ['assignment_group_id'], ['id'])
+    op.add_column('role', sa.Column('subname', sa.String(length=80), nullable=False))
+    op.add_column('role', sa.Column('external_id', sa.Integer(), nullable=True))
+    op.alter_column('role', 'name',
+           existing_type=sa.VARCHAR(length=80),
+           type_=sa.Enum('ADMIN', 'INSTRUCTOR', 'LEARNER', 'TA', 'ADOPTER', 'PROCTOR', 'CONTENT_DEVELOPER', 'NONE', name='userroles'),
+           default="LEARNER",
+           nullable=False)
+    op.create_index('role_course_id', 'role', ['course_id'], unique=False)
+    op.create_index('role_user_id', 'role', ['user_id'], unique=False)
+
+    op.add_column('submission', sa.Column('date_started', sqlalchemy_utc.sqltypes.UtcDateTime(timezone=True), nullable=True))
+    op.alter_column('submission', 'submission_status',
+           existing_type=sa.VARCHAR(length=255),
+           type_=sa.Enum('INITIALIZED', 'STARTED', 'IN_PROGRESS', 'SUBMITTED', 'COMPLETED', name='submissionstatuses'),
+           default="INITIALIZED",
+           nullable=False)
+    op.alter_column('submission', 'grading_status',
+           existing_type=sa.VARCHAR(length=255),
+           type_=sa.Enum('FULLY_GRADED', 'PENDING', 'PENDING_MANUAL', 'FAILED', 'NOT_READY', name='gradingstatuses'),
+           default="NOT_READY",
+           nullable=False)
+    op.drop_index('submission', 'submission_index')
+    op.create_index('submission_index', 'submission', ['course_id', 'assignment_id', 'user_id'], unique=False)
+    op.create_index('submission_assignment_index', 'submission', ['assignment_id'], unique=False)
+    op.create_index('submission_url_index', 'submission', ['url'], unique=False)
+    op.create_index('submission_user_index', 'submission', ['user_id'], unique=False)
+    # TODO: These two are not getting generated correctly, need to fix the foreign key and unique constraint
+    # op.create_unique_constraint(None, 'submission', ['url'])
+    # op.create_foreign_key(None, 'submission', 'assignment_group', ['assignment_group_id'], ['id'])
 
     # ### end Alembic commands ###
 
