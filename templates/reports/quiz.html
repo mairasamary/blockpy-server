@@ -1,4 +1,4 @@
-{% import 'helpers/report_tools.html' as report_tools %}
+m{% import 'helpers/report_tools.html' as report_tools %}
 {% import 'reports/quiz_question.html' as quiz_questions %}
 
 <div xml:lang="en">
@@ -7,9 +7,11 @@
 
     {%  include "reports/reviewing_interface.html" with context %}
 
-    {{ report_tools.render_submission_details(submission, is_grader) }}
-
     {% set hiding = assignment.hidden or assignment.get_setting('hide_submission', False) %}
+
+    {{ report_tools.render_submission_details(submission, is_grader, hiding) }}
+
+
 
     {% set code = submission.code|json_load %}
     {% set questions = assignment.instructions|json_load %}
@@ -64,6 +66,7 @@
 
 {% if 'feedback' in code and (not is_grader and ('feedbackType' in quiz_settings and quiz_settings['feedbackType'].upper() == 'SUMMARY')) %}
     <div>
+    <pre>{{ code }}</pre>
     {% set feedback_messages = (code['feedback'].values()|map(attribute='message')|reject("equalto", "Incorrect")|reject("equalto", "Correct")|join('\n')|replace("<br>", "")
                         ).split("\n")|unique|reject("equalto", "")|sort() %}
     {% if feedback_messages %}
