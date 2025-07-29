@@ -15,6 +15,9 @@ Submission counts
     Average edit time
     Average attempt time
     Estimated time spent
+    Syntax Errors
+    Runtime Errors
+    Failed Instructor Tests
 
 User counts
     Number of courses

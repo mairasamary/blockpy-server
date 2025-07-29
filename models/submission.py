@@ -49,6 +49,7 @@ class Submission(EnhancedBase):
     correct: Mapped[bool] = mapped_column(Boolean(), default=False)
     submission_status: Mapped[SubmissionStatuses] = mapped_column(Enum(SubmissionStatuses, values_callable=get_enum_values), default=SubmissionStatuses.STARTED)
     grading_status: Mapped[GradingStatuses] = mapped_column(Enum(GradingStatuses, values_callable=get_enum_values), default=GradingStatuses.NOT_READY)
+    feedback: Mapped[str] = mapped_column(Text(), default="")
     # Date Tracking
     date_started: Mapped[Optional[datetime]] = mapped_column(UtcDateTime(), default=None, nullable=True)
     date_submitted: Mapped[Optional[datetime]] = mapped_column(UtcDateTime(), default=None, nullable=True)

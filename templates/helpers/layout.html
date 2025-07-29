@@ -614,7 +614,7 @@
                     {% if g.user and not g.user.anonymous %}
                         <span class="navbar-text">
                         Signed in as {{ g.user.name() }}
-                            <a href="{{ url_for('security.register') }}"
+                            <a href="{{ url_for('security.logout') }}"
                                class="navbar-link">(log out)</a>
                         </span>
                     {%  elif config.PREFERRED_LOGIN %}
