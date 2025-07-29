@@ -60,6 +60,10 @@ def process_quiz(body: dict, checks: dict, submission_body: dict) -> QuizResult:
     student_answers = submission_body.get('studentAnswers', {})
     checks = checks.get('questions', {})
     questions = body.get('questions', {})
+    settings = body.get("settings", {})
+    if "feedbackType" in settings:
+        if settings["feedbackType"] == "SUMMARY":
+            print("HELLO WORLD")
     # For each question in the on_run, run the evaluation criteria
     total_score, total_points = 0., 0.
     total_correct = True

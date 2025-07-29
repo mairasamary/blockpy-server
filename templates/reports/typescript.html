@@ -16,7 +16,7 @@
 {% endif  %}
 <hr>
 
-{{ report_tools.render_submission_details(submission, is_grader) }}
+{{ report_tools.render_submission_details(submission, is_grader, hiding) }}
 
 {%  include "reports//reviewing_interface.html" with context %}
 

@@ -65,7 +65,8 @@ export const QUESTIONS_SUBMISSION_UI = `
                                                     attr: {name: 'question-mcq-'+$parentContext.$index()+'-'+$index(),
                                                            id: 'question-mcq-'+$parentContext.$index()+'-'+$index()}"
                                     class="form-check-input" type="radio">
-                                    <span data-bind="html: $data"></span>
+<!--                                    <span data-bind="html: $data"></span>-->
+                                        <span data-bind="markdowned: {value: $data}"></span>
                               </label>
                             </div>
                             <!-- /ko -->
@@ -92,7 +93,8 @@ export const QUESTIONS_SUBMISSION_UI = `
                         <div data-bind="case: 'matching_question'" class="container">
                             <!-- ko foreach: statements -->
                             <div class="row justify-content-between mb-3">
-                                <div class="col" data-bind="html: $data"></div>
+<!--                                <div class="col" data-bind="html: $data"></div>-->
+                                <div class="col" data-bind="markdowned: {value: $data}"></div>
                                 <div class="col">
                                     <select class="custom-select"
                                         data-bind="options: $parent.retainOrder ? $parent.answers : $parent.answers.sort(() => Math.random() - 0.5),
