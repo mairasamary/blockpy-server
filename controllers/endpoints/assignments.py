@@ -525,7 +525,7 @@ def bulk_transfer_course():
     # Check that this is allowed
     if source_course_id is not None:
         check_resource_exists(source_course, "Course", source_course_id)
-        require_course_grader(user, source_course_id)
+        require_course_instructor(user, source_course_id)
     if destination_course_id is not None:
         check_resource_exists(destination_course, "Course", destination_course_id)
         require_course_instructor(user, destination_course_id)

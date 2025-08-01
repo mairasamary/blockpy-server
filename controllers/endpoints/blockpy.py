@@ -267,7 +267,7 @@ def save_student_file(filename, course_id, user):
     check_resource_exists(submission, "Submission", submission_id)
     # Verify permissions
     if submission.user_id != user.id:
-        require_course_grader(user, submission.course_id)
+        require_course_instructor(user, submission.course_id)
     # Validate the maximum file size
     if current_app.config["MAXIMUM_CODE_SIZE"] < len(code):
         return ajax_failure(
@@ -294,7 +294,7 @@ def save_instructor_file(course_id, user, filename):
     check_resource_exists(assignment, "Assignment", assignment_id)
     # Verify permissions
     if assignment.owner_id != user.id:
-        require_course_grader(user, assignment.course_id, allow_fork=course_id)
+        require_course_instructor(user, assignment.course_id, allow_fork=course_id)
     # Perform update
     assignment.save_file(filename, code)
     AssignmentLog.new(assignment.id, assignment.version,
@@ -844,7 +844,7 @@ def save_assignment():
         [Fork just this assignment]
         [Fork entire assignment group]
         [Cancel]"""
-        require_course_grader(user, assignment.course_id, allow_fork=course_id)
+        require_course_instructor(user, assignment.course_id, allow_fork=course_id)
     # Parse new settings
     updates = {}
     if "hidden" in request.values:

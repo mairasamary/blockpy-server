@@ -77,3 +77,4 @@ class RolePermissions:
     EXAM_ROLES = [UserRoles.ADMIN, UserRoles.INSTRUCTOR, UserRoles.PROCTOR]
     DEVELOPER_ROLES = [UserRoles.ADMIN, UserRoles.INSTRUCTOR,
                        UserRoles.CONTENT_DEVELOPER]
+

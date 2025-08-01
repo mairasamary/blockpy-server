@@ -180,7 +180,7 @@ def edit_security_settings():
     # Verify exists
     check_resource_exists(assignment_group, "Assignment Group", assignment_group_id)
     # Verify permissions
-    require_course_grader(g.user, assignment_group.course_id)
+    require_course_instructor(g.user, assignment_group.course_id)
     # Perform action
     if request.method == 'POST':
         assignments = assignment_group.get_assignments()

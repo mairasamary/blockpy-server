@@ -17,13 +17,14 @@ export enum QuizFeedbackType {
 }
 
 export enum QuizPoolRandomness {
-    ATTEMPT = "ATTEMPT", SEED="SEED", NONE="NONE"
+    ATTEMPT = "ATTEMPT", SEED="SEED", NONE="NONE", GROUP="GROUP"
 }
 
 export interface QuestionPool {
     questions: string[]
     amount: number
     name: string
+    group?: string
 }
 
 export interface QuizInstructionsSettings {
@@ -265,7 +266,7 @@ export class Quiz {
     hidePools() {
         this.questions().forEach((question: Question) => {
             question.visible(true);
-        })
+        });
         this.pools().forEach((pool: QuestionPool) => {
             const allQuestions = pool.questions;
             const seed = this.poolRandomness() === QuizPoolRandomness.SEED ?
@@ -278,6 +279,10 @@ export class Quiz {
                 this.questionMap[questionId].visible(chosenQuestions.includes(questionId));
             })
         })
+    }
+
+    hidePoolsGroups() {
+
     }
 
     submissionAsJson(): string {

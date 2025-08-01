@@ -165,6 +165,8 @@ class User(Base, UserMixin):
     def get_filename(self, extension='.json'):
         return secure_filename(self.name().replace(' ', "_")) + extension
 
+    ## Role checking methods ##
+
     def in_course(self, course_id):
         return bool(models.Role.query.filter_by(course_id=maybe_int(course_id),
                                                 user_id=self.id).first())
@@ -206,6 +208,30 @@ class User(Base, UserMixin):
         if self.first_name == 'Test' and self.last_name == 'Student':
             return True
         return False
+
+    ### Sophisticated Permission Checking ###
+
+    """
+    Activities
+    - Can the user see the [detailed|summary] RESOURCE?
+    - Can the user create a RESOURCE?
+    - Can the user edit a RESOURCE?
+    - Can the user delete a RESOURCE?
+    - Can the user submit a RESOURCE?
+    
+    RESOURCEs:
+    - Course
+    - Assignment
+    - AssignmentGroup
+    - Submission - Code, Feedback (detailed, summary), Stats
+    - Review
+    - User
+    
+    For hidden assignments, TAs cannot see the assignment as a grader.
+    
+    """
+
+    ### Adding and updating roles ###
 
     def add_role(self, name, course_id):
         if name in [id for id, _ in models.Role.CHOICES]:

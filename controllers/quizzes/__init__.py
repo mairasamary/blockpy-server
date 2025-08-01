@@ -75,7 +75,7 @@ def quiz_report():
     # Get resources
     course = Course.by_id(course_id)
     # Verify user can see the submission
-    require_course_grader(user, course_id)
+    require_course_instructor(user, course_id)
     # Get the possible quizzes
     # List[(Assignments, AssignmentGroups)]
     quizzes = course.get_submitted_assignments_grouped('quiz')
@@ -154,7 +154,7 @@ def list_quiz_submissions():
     student = User.by_id(student_id)
     course = Course.by_id(course_id)
     # Verify user can see the submission
-    require_course_grader(user, course_id)
+    require_course_instructor(user, course_id)
     # Load up all the submissions
     suas = Submission.by_assignment(assignment_id, course_id)
     # Load up the assignment
@@ -173,7 +173,7 @@ def give_mulligan():
     submission = Submission.by_id(submission_id)
     check_resource_exists(submission, Submission, submission_id)
     # Verify permissions
-    require_course_grader(user, submission.course_id)
+    require_course_instructor(user, submission.course_id)
     # Make change
     count = submission.give_quiz_mulligan(amount)
     # Return result
@@ -200,7 +200,7 @@ class QuizAPI(MethodView):
             check_resource_exists(submission, "Submission", submission_id)
             reviews = Review.get_for_submission(submission_id)
             if submission.user_id != user_id:
-                require_course_grader(user, submission.course_id)
+                require_course_instructor(user, submission.course_id)
         return ajax_success(dict(reviews=[review.encode_json() for review in reviews]))
 
     def get_one(self, review_id):
@@ -211,7 +211,7 @@ class QuizAPI(MethodView):
         submission = Submission.by_id(review.submission_id)
         check_resource_exists(submission, "Submission", review.submission_id)
         if submission.user_id != user_id:
-            require_course_grader(user, submission.course_id)
+            require_course_instructor(user, submission.course_id)
         return ajax_success(dict(review=review.encode_json()))
 
     def post(self):
@@ -220,7 +220,7 @@ class QuizAPI(MethodView):
         submission_id = maybe_int(request.values.get('submission_id'))
         submission = Submission.by_id(submission_id)
         check_resource_exists(submission, "Submission", submission_id)
-        require_course_grader(user, submission.course_id)
+        require_course_instructor(user, submission.course_id)
         review_data = request.values.copy()
         del review_data['id']
         review_data['author_id'] = user_id
@@ -237,7 +237,7 @@ class QuizAPI(MethodView):
         check_resource_exists(review, "Review", review_id)
         submission = Submission.by_id(review.submission_id)
         check_resource_exists(submission, "Submission", review.submission_id)
-        require_course_grader(user, submission.course_id)
+        require_course_instructor(user, submission.course_id)
         review_data = request.json.copy()
         del review_data['id']
         #fix_nullables(review_data)
@@ -252,7 +252,7 @@ class QuizAPI(MethodView):
         check_resource_exists(review, "Review", review_id)
         submission = Submission.by_id(review.submission_id)
         check_resource_exists(submission, "Submission", review.submission_id)
-        require_course_grader(user, submission.course_id)
+        require_course_instructor(user, submission.course_id)
         review.delete()
         return ajax_success(dict(success=True))
 
