@@ -31,11 +31,6 @@ declare class ConTodo {
     api: ConsoleAPI;
 }
 
-declare global {
-    interface Crypto {
-        randomUUID: () => string;
-    }
-}
 
 export function extractFromPool(pool: string, splitter: RegExp, seed: number): string {
     const pools = pool.split(splitter);

@@ -48,8 +48,8 @@
         });
     }
 
-    window.ltiLoadedCorrectly = checkCookies();
-    if (!checkCookies()) {
+    window.ltiLoadedCorrectly = frontend.checkCookies();
+    if (!frontend.checkCookies()) {
         // alert
         console.error("Cookies appear to be disabled. We will attempt to load without cookies. " +
             "You might need to disable an ad-blocker, adjust your security settings, or use a different browser (we recommend Chrome).");

@@ -43,15 +43,7 @@
 
     {% if lti %}
     <script>
-    function checkCookies() {
-        let cookieEnabled = navigator.cookieEnabled;
-        if (!cookieEnabled){
-            document.cookie = "testcookie";
-            cookieEnabled = document.cookie.indexOf("testcookie")!==-1;
-        }
-        return cookieEnabled;
-    }
-    if (!checkCookies()) {
+    if (!frontend.checkCookies()) {
         alert("Cookies appear to be disabled. You might need to disable an ad-blocker, adjust your security settings, or use a different browser (we recommend Chrome).");
     }
     </script>

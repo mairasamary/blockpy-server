@@ -6,7 +6,6 @@ import {Submission} from "../models/submission";
 import {formatClock} from "../utilities/text";
 import {generateUUID} from "../utilities/random";
 
-
 export interface AssignmentInterfaceJson {
     server: Server;
     courseId: number;

@@ -17,8 +17,8 @@
     {% endif %}
 
     let loggedInUser = {{ viewer.encode_json()|tojson }};
-    let userIds = {{  request.values.get('user_ids')|tojson }} || getLocalStorage("BLOCKPY_SERVER_USERIDS", "");
-    let assignmentIds = {{  request.values.get('assignment_ids')|tojson }} || getLocalStorage("BLOCKPY_SERVER_ASSIGNMENTIDS", "first");
+    let userIds = {{  request.values.get('user_ids')|tojson }} || frontend.getLocalStorage("BLOCKPY_SERVER_USERIDS", "");
+    let assignmentIds = {{  request.values.get('assignment_ids')|tojson }} || frontend.getLocalStorage("BLOCKPY_SERVER_ASSIGNMENTIDS", "first");
     let group = {{ assignment_group.encode_json()|tojson }};
     let assignments = [], submissions = [];
 

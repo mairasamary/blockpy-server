@@ -14,8 +14,8 @@ Watch Events
 
     $(function() {
         let loggedInUser = {{ user.encode_json()|tojson }};
-        let userIds = {{  request.values.get('user_ids')|tojson }} || getLocalStorage("BLOCKPY_SERVER_USERIDS", "");
-        let assignmentIds = {{  request.values.get('assignment_ids')|tojson }} || getLocalStorage("BLOCKPY_SERVER_ASSIGNMENTIDS", "first");
+        let userIds = {{  request.values.get('user_ids')|tojson }} || frontend.getLocalStorage("BLOCKPY_SERVER_USERIDS", "");
+        let assignmentIds = {{  request.values.get('assignment_ids')|tojson }} || frontend.getLocalStorage("BLOCKPY_SERVER_ASSIGNMENTIDS", "first");
         server = new frontend.Server({{ course_id|tojson }}, {
         }, {
             users: [loggedInUser]

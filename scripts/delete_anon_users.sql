@@ -3,8 +3,10 @@ SELECT id
 FROM "user"
 WHERE anonymous = TRUE;
 
+
+
 DELETE FROM log WHERE subject_id IN (SELECT id FROM anons);
-DELETE FROM grade_history WHERE user_id IN (SELECT id FROM anons);
+DELETE FROM grade_history WHERE submission_id IN (SELECT id FROM submission WHERE user_id IN (SELECT id FROM anons));
 DELETE FROM authentication WHERE user_id IN (SELECT id FROM anons);
 DELETE FROM role WHERE user_id IN (SELECT id FROM anons);
 DELETE FROM submission WHERE user_id IN (SELECT id FROM anons);

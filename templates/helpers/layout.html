@@ -21,6 +21,8 @@
         window.$URL_ROOT = {{ request.url_root|tojson|safe }};
         <!-- TODO: This needs to be able to handle missing access_token -->
         window.accessToken = {{ (g.access_token or "")|tojson }}
+        
+        window.URLS_UPDATE_SUBMISSION = "{{ url_for('blockpy.update_submission') }}";
     </script>
 
     {% assets "libs_js" %}
@@ -41,39 +43,6 @@
         {% endblock %}
     </style>
 
-    <script>
-    function checkCookies() {
-        let cookieEnabled = navigator.cookieEnabled;
-        if (!cookieEnabled){
-            document.cookie = "testcookie";
-            cookieEnabled = document.cookie.indexOf("testcookie")!==-1;
-        }
-        return cookieEnabled;
-    }
-    
-    function getLocalStorage(key, defaultValue) {
-        if (defaultValue === undefined) {
-            defaultValue = null;
-        }
-        try {
-            let value = localStorage.getItem(key);
-            if (value === null) {
-                return defaultValue;
-            } else {
-                return value;
-            }
-        } catch (e) {
-            return defaultValue;
-        }
-    }
-    
-    function setLocalStorage(key, value) {
-        try {
-            localStorage.setItem(key, value);
-        } catch (e) {}
-    }
-    </script>
-
     {% block extrahead %}
     {% endblock %}
 
@@ -93,7 +62,7 @@
     </script>
 
     <script>
-        
+        // TODO: Extract this logic into the frontend.js (site/core.js)
 
         function switchVisible(submissionId, showHide) {
             $(`#h-${submissionId}-start`).toggle(!showHide);
