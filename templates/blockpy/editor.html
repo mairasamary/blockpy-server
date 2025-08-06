@@ -170,13 +170,14 @@
                         user: user"></reader>
         <!-- /ko -->
         <!-- ko if: assignmentType() == 'java' -->
-        <java params="server: server,
-                        courseId: courseId,
-                        currentAssignmentId: currentJavaAssignmentId,
-                        assignmentGroupId: assignmentGroupId,
-                        isInstructor: isInstructor,
-                        markCorrect: markCorrect,
-                        user: user"></java>
+        Java assignments are no longer supported in BlockPy.
+{#        <java params="server: server,#}
+{#                        courseId: courseId,#}
+{#                        currentAssignmentId: currentJavaAssignmentId,#}
+{#                        assignmentGroupId: assignmentGroupId,#}
+{#                        isInstructor: isInstructor,#}
+{#                        markCorrect: markCorrect,#}
+{#                        user: user"></java>#}
         <!-- /ko -->
         <!-- ko if: assignmentType() == 'typescript' -->
         <kettle params="server: server,
