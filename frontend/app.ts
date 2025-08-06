@@ -4,6 +4,8 @@ export {dateCreatedSorter} from "./models/model";
 
 // Site wide utilities, available through frontend.*
 export * from "./site/core";
+export { generateUUID } from "./utilities/random";
+export { getParameterByName } from "./utilities/urls";
 
 // Data models
 export {AssignmentGroup} from "./models/assignment_group";
