@@ -1,6 +1,10 @@
 const path = require('path');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 module.exports = {
+  plugins: [new MiniCssExtractPlugin({
+    filename: 'frontend.css',
+  })],
   cache: {
     type: 'filesystem',
   },
@@ -16,8 +20,25 @@ module.exports = {
       },
       {
         test: /\.css$/i,
-        use: ["style-loader", "css-loader"],
+        use: [
+          MiniCssExtractPlugin.loader,
+          {
+            loader: 'css-loader',
+            options: {
+              importLoaders: 1,
+              sourceMap: true
+            }
+          },
+        ],
       },
+      {
+        test: /\.(png|jpg|gif|svg)$/,
+        type: 'asset/resource'
+      },
+      // {
+      //   test: /\.css$/i,
+      //   use: ["style-loader", "css-loader"],
+      // },
       {
         test: /\.py$/,
         type: 'asset/source'
@@ -25,7 +46,7 @@ module.exports = {
     ],
     noParse: /typescript/
   },
-  devtool: 'eval-cheap-module-source-map',
+  devtool: 'source-map',
   resolve: {
     extensions: [ '.tsx', '.ts', '.js' ],
   },

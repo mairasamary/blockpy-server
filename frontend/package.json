@@ -64,6 +64,7 @@
     "@types/node": "^12.20.20",
     "css-loader": "^6.2.0",
     "knockout": "^3.5.1",
+    "mini-css-extract-plugin": "^2.9.3",
     "npm-run-all": "^4.1.5",
     "speed-measure-webpack-plugin": "^1.5.0",
     "text-loader": "0.0.1",

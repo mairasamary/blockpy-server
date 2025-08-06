@@ -25,3 +25,5 @@ import './components/kettle';
 import './components/explain';
 import "./components/review_interface";
 //import "./components/textbook";
+
+import "./styles/test.css";
