@@ -1,11 +1,11 @@
-import {Server} from "./server";
+import {Server} from "../services/server";
 import {Course} from "../models/course";
 import {User} from "../models/user";
 import * as ko from 'knockout';
-import {Watcher, WatcherTemplate} from "./watcher";
-import {prettyPrintDateTime} from "./dates";
+import {Watcher, WatcherTemplate} from "./watcher/watcher";
+import {prettyPrintDateTime} from "../utilities/dates";
 import {STORAGE_SERVICE} from "../utilities/safe_local_storage";
-import {ajax_post, hideOverlay, showOverlay} from "./ajax";
+import {ajax_post, hideOverlay, showOverlay} from "../services/ajax";
 
 export interface CourseListInterfaceJson {
     server: Server;

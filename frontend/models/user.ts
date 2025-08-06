@@ -1,8 +1,8 @@
 import * as ko from 'knockout';
 import {Model, ModelJson, ModelStore} from "./model";
-import {capitalize, TwoWayReadonlyMap} from "../components/plugins";
-import {ajax_get} from "../components/ajax";
-import {Server} from "../components/server";
+import {capitalize, TwoWayReadonlyMap} from "../services/plugins";
+import {ajax_get} from "../services/ajax";
+import {Server} from "../services/server";
 import {STORAGE_SERVICE} from "../utilities/safe_local_storage";
 
 export interface RoleJson extends ModelJson {

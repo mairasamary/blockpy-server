@@ -8,7 +8,7 @@
  */
 
 import * as ko from 'knockout';
-import {AssignmentInterface, AssignmentInterfaceJson, EditorMode} from "./assignment_interface";
+import {AssignmentInterface, AssignmentInterfaceJson, EditorMode} from "../assignment_interface";
 
 interface TextbookReadingJson {
     id: number

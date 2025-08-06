@@ -1,7 +1,7 @@
 import * as ko from 'knockout';
 import {Model, ModelJson, ModelStore} from "../models/model";
 import {User, UserJson, UserStore} from "../models/user";
-import {areArraysEqualSets, pushObservableArray} from "./plugins";
+import {areArraysEqualSets, pushObservableArray} from "../services/plugins";
 import {Assignment, AssignmentJson} from "../models/assignment";
 import {STORAGE_SERVICE} from "../utilities/safe_local_storage";
 

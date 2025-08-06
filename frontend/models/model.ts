@@ -1,8 +1,8 @@
 import * as ko from 'knockout';
-import {TwoWayReadonlyMap} from "../components/plugins";
-import {ajax_get} from "../components/ajax";
-import {prettyPrintDateTime} from "../components/dates";
-import {Server} from "../components/server";
+import {TwoWayReadonlyMap} from "../services/plugins";
+import {ajax_get} from "../services/ajax";
+import {prettyPrintDateTime} from "../utilities/dates";
+import {Server} from "../services/server";
 
 export interface ModelJson {
     id: number;

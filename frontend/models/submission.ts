@@ -1,6 +1,6 @@
 import * as ko from 'knockout';
 import {Model, ModelJson, ModelStore} from "./model";
-import {TwoWayReadonlyMap} from "../components/plugins";
+import {TwoWayReadonlyMap} from "../services/plugins";
 
 export enum SubmissionStatus {
     // Not yet begun - the value if the submission does not exist

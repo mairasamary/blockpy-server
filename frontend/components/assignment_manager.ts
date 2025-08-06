@@ -1,4 +1,4 @@
-import {Server} from "./server";
+import {Server} from "../services/server";
 import {Course} from "../models/course";
 import {User} from "../models/user";
 import * as ko from 'knockout';

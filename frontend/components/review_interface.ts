@@ -3,8 +3,8 @@ import {Review, ReviewJson} from "../models/review";
 import {User} from "../models/user";
 import {Assignment} from "../models/assignment";
 import * as ko from 'knockout';
-import {hideOverlay, showOverlay} from "./ajax";
-import {Server} from "./server";
+import {hideOverlay, showOverlay} from "../services/ajax";
+import {Server} from "../services/server";
 
 
 function closeSubmissionStatus(status: SubmissionStatus) {

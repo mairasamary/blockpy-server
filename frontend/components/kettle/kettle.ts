@@ -4,14 +4,14 @@
  */
 
 import * as ko from 'knockout';
-import {AssignmentInterface, AssignmentInterfaceJson, EditorMode} from "./assignment_interface";
-import {Assignment} from "../models/assignment";
-import {Timer} from "../utilities/timer";
-import {formatClock, pad, titleCase} from "../utilities/text";
-import {CompilationResult, compile, delint} from "../utilities/ts_compiler";
+import {AssignmentInterface, AssignmentInterfaceJson, EditorMode} from "../assignment_interface";
+import {Assignment} from "../../models/assignment";
+import {Timer} from "../../utilities/timer";
+import {formatClock, pad, titleCase} from "../../utilities/text";
+import {CompilationResult, compile, delint} from "../../utilities/ts_compiler";
 import * as ts from "typescript";
-import {decode} from "../utilities/vlq";
-import {QuizPoolRandomness} from "./quizzes/quiz";
+import {decode} from "../../utilities/vlq";
+import {QuizPoolRandomness} from "../quizzes/quiz";
 
 import { WebR } from 'webr';
 

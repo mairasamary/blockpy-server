@@ -1,6 +1,6 @@
 import * as ko from 'knockout';
 import {Model, ModelJson, ModelStore} from "./model";
-import {TwoWayReadonlyMap} from "../components/plugins";
+import {TwoWayReadonlyMap} from "../services/plugins";
 
 export interface AssignmentTagJson extends ModelJson {
     name: string;

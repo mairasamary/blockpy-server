@@ -1,10 +1,10 @@
 import * as ko from 'knockout';
 import {Model, ModelJson} from "./model";
-import {TwoWayReadonlyMap} from "../components/plugins";
+import {TwoWayReadonlyMap} from "../services/plugins";
 import {Assignment} from "./assignment";
 import {Submission} from "./submission";
-import {Server} from "../components/server";
-import {ajax_get} from "../components/ajax";
+import {Server} from "../services/server";
+import {ajax_get} from "../services/ajax";
 
 export type BlockPyFileRecord = Record<string, [string, string][]>;
 
@@ -35,7 +35,7 @@ export class FileStore {
             course_id: submission().courseId,
         };
         return new Promise((resolve, reject) => {
-            ajax_get(url, payload).then((data) => {
+            ajax_get(url, payload).then((data: any) => {
                 if (data.success) {
                     resolve(data.files);
                 } else {

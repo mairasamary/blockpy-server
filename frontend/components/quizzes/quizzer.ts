@@ -1,4 +1,4 @@
-import {Server} from "../server";
+import {Server} from "../../services/server";
 import {User} from "../../models/user";
 import * as ko from 'knockout';
 import {AssignmentInterface, AssignmentInterfaceJson, EditorMode} from "../assignment_interface";

@@ -10,13 +10,13 @@
  */
 
 import * as ko from 'knockout';
-import {ajax_post} from "./ajax";
-import {Server} from "./server";
-import {User} from "../models/user";
-import {Assignment} from "../models/assignment";
-import {Submission} from "../models/submission";
-import {AssignmentInterface, AssignmentInterfaceJson, EditorMode} from "./assignment_interface";
-import {STORAGE_SERVICE} from "../utilities/safe_local_storage";
+import {ajax_post} from "../../services/ajax";
+import {Server} from "../../services/server";
+import {User} from "../../models/user";
+import {Assignment} from "../../models/assignment";
+import {Submission} from "../../models/submission";
+import {AssignmentInterface, AssignmentInterfaceJson, EditorMode} from "../assignment_interface";
+import {STORAGE_SERVICE} from "../../utilities/safe_local_storage";
 
 // TODO: Prevent popout button in exams, allow easy to close button there too?
 // TODO: Fix IP Change logEvent?

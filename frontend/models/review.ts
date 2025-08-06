@@ -1,7 +1,7 @@
 import * as ko from 'knockout';
 import {Model, ModelJson, ModelStore} from "./model";
-import {TwoWayReadonlyMap} from "../components/plugins";
-import {ajax_delete, ajax_post, ajax_put, hideOverlay, showOverlay} from "../components/ajax";
+import {TwoWayReadonlyMap} from "../services/plugins";
+import {ajax_delete, ajax_post, ajax_put, hideOverlay, showOverlay} from "../services/ajax";
 
 export interface ReviewJson extends ModelJson {
     comment: string;

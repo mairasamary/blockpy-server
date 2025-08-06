@@ -1,6 +1,6 @@
 import * as ko from 'knockout';
 import {Model, ModelJson} from "./model";
-import {TwoWayReadonlyMap} from "../components/plugins";
+import {TwoWayReadonlyMap} from "../services/plugins";
 
 export interface LogJson extends ModelJson {
     assignment_id: number | null;

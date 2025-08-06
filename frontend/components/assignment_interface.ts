@@ -1,5 +1,5 @@
 import * as ko from 'knockout';
-import {Server} from "./server";
+import {Server} from "../services/server";
 import {User} from "../models/user";
 import {Assignment} from "../models/assignment";
 import {Submission} from "../models/submission";

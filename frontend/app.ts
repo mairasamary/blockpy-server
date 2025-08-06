@@ -1,4 +1,4 @@
-import './components/plugins';
+import './services/plugins';
 import "./models/model";
 export {dateCreatedSorter} from "./models/model";
 
@@ -12,19 +12,19 @@ export {User} from "./models/user";
 export {Assignment} from "./models/assignment";
 
 // Main server that coordinates data
-export {Server} from "./components/server";
+export {Server} from "./services/server";
 
 // Interfaces
-export {Watcher} from "./components/watcher";
-export {launchEditor} from "./components/editor";
+export {Watcher} from "./components/watcher/watcher";
+export {launchEditor} from "./services/editor";
 
 // These interfaces are just new tags
 import "./components/course_list";
 import "./components/assignment_manager";
 import "./components/quizzes/quizzer";
-import "./components/reader";
+import "./components/reader/reader";
 //import "./components/java";
-import './components/kettle';
+import './components/kettle/kettle';
 import './components/explanations/explain';
 import "./components/review_interface";
 //import "./components/textbook";

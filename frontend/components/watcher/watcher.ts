@@ -5,24 +5,24 @@
  */
 
 import * as ko from 'knockout';
-import {Log, LogJson, REMAP_EVENT_TYPES} from "../models/log";
-import {ajax_post} from "./ajax";
-import {User, UserStore} from "../models/user";
+import {Log, LogJson, REMAP_EVENT_TYPES} from "../../models/log";
+import {ajax_post} from "../../services/ajax";
+import {User, UserStore} from "../../models/user";
 import {
     formatDuration,
     prettyPrintDate,
     prettyPrintDateTime,
     prettyPrintDateTimeString,
     prettyPrintTime
-} from "./dates";
-import {Assignment, AssignmentStore} from "../models/assignment";
-import {last, pushObservableArray} from "./plugins";
-import './model_selector';
-import {ModelSet} from "./model_selector";
-import {launchEditor} from "./editor";
-import {Submission, SubmissionJson} from "../models/submission";
-import {Server} from "./server";
-import {STORAGE_SERVICE} from "../utilities/safe_local_storage";
+} from "../../utilities/dates";
+import {Assignment, AssignmentStore} from "../../models/assignment";
+import {last, pushObservableArray} from "../../services/plugins";
+import '../model_selector';
+import {ModelSet} from "../model_selector";
+import {launchEditor} from "../../services/editor";
+import {Submission, SubmissionJson} from "../../models/submission";
+import {Server} from "../../services/server";
+import {STORAGE_SERVICE} from "../../utilities/safe_local_storage";
 
 // TODO: Load events on page load, mode or setting
 // TODO: Prevent both All from being loaded if SxA is too big?
