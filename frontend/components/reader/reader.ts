@@ -17,6 +17,8 @@ import {Assignment} from "../../models/assignment";
 import {Submission} from "../../models/submission";
 import {AssignmentInterface, AssignmentInterfaceJson, EditorMode} from "../assignment_interface";
 import {STORAGE_SERVICE} from "../../utilities/safe_local_storage";
+import READER_HTML from "./reader.html";
+import EDITOR_HTML from "./editor.html";
 
 // TODO: Prevent popout button in exams, allow easy to close button there too?
 // TODO: Fix IP Change logEvent?
@@ -430,169 +432,14 @@ export class Reader extends AssignmentInterface {
 // TODO: Pop out button to put into another frame
 // TODO: Log all youtube and scrolling
 
-export const EDITOR_HTML = `
-<!-- Errors -->
-<div class="alert alert-warning p-1 border rounded float-right" data-bind="text: errorMessage, visible: errorMessage().length"></div>
-
-<!-- Instructor Editor Mode Selector -->
-<div data-bind="if: isInstructor() && !asPreamble()">
-    <!-- Instructor Editor Mode Selector -->
-    <div class="btn-group-toggle mt-2 mb-2">
-        <label class="btn btn-outline-secondary mr-4" for="reader-editor-mode-radio-raw"
-            data-bind="css: { active: editorMode()=='RAW'}">
-            <input data-bind="checked: editorMode"
-                   id="reader-editor-mode-radio-raw" name="reader-editor-mode-radio"
-                   class="btn-check" type="radio" value="RAW" autocomplete="off">
-            Raw Editor
-        </label>
-        <label class="btn btn-outline-secondary mr-4" for="reader-editor-mode-radio-form"
-            data-bind="css: { active: editorMode()=='FORM'}">
-            <input data-bind="checked: editorMode"
-                       id="reader-editor-mode-radio-form" name="reader-editor-mode-radio"
-                       class="btn-check" type="radio" value="FORM" autocomplete="off">
-            Form Editor
-        </label>
-        <label class="btn btn-outline-secondary" for="reader-editor-mode-radio-submission"
-            data-bind="css: { active: editorMode()=='SUBMISSION'}">
-            <input data-bind="checked: editorMode"
-               id="reader-editor-mode-radio-submission" name="reader-editor-mode-radio"
-               class="btn-check" type="radio" value="SUBMISSION" autocomplete="off">
-            Actual Reader
-        </label>
-        <br><hr>
-    </div>
-    
-    <!-- Raw Instructor Editor -->
-    <div data-bind="if: editorMode() === 'RAW'">
-        <button data-bind="click: saveAssignment">Save Assignment</button><br>
-        <h6>Instructions</h6>
-        <textarea data-bind="textInput: assignment().instructions" style="width: 100%; height: 300px"></textarea><br>
-        <h6>Settings</h6>
-        <textarea data-bind="textInput: assignment().settings" style="width: 100%; height: 300px"></textarea><br>
-    </div>
-
-    <!-- Form Instructor Editor -->
-    <div data-bind="if: editorMode() === 'FORM'" class="reader-editor">
-        <button data-bind="click: saveAssignment">Save Assignment</button><br>
-        <!-- Actual Contents -->
-        <h6>Instructions (Body)</h6>
-        <textarea data-bind="markdowneditor: {value: assignment().instructions}" style="width: 100%; height: 500px"></textarea><br>
-        <!-- Other settings -->
-        <div class="form-group">
-            <label for="reader-points-editor">
-                Points:
-                <input type="number" id="reader-points-editor" name="reader-points-editor"
-                    class="form-control" data-bind="value: assignment().points">
-            </label>
-        </div>
-        <div class="form-group">
-            <label for="reader-name-editor">
-                Name:
-                <input type="text" id="reader-name-editor" name="reader-name-editor"
-                    class="form-control" data-bind="value: assignment().name">
-            </label>
-        </div>
-        <div class="form-group">
-            <label for="reader-url-editor">
-                URL:
-                <input type="text" id="reader-url-editor" name="reader-url-editor"
-                    class="form-control" data-bind="value: assignment().url">
-            </label>
-        </div>
-        <h6>Additional Settings</h6>
-        <div data-bind="jsoneditor: {value: assignment().settings}" style="width: 100%; height: 300px"></div><br>
-        <h6>Assignment Files</h6>
-        <div data-bind="filepond: {server: server, submission: submission, assignment: assignment}"></div><br>
-    </div>
-</div>
-`;
-
-
-export const READER_HTML = `
+const FULL_HTML = `
 <div data-bind="if: assignment">
     ${EDITOR_HTML}
-    <!-- Popout button -->
-    <a href="" class="btn btn-sm btn-outline-secondary float-right m-3" target="_blank"
-        data-bind="attr: {href: assignment().editUrl()+'&embed=true'}, visible: allowPopout()">
-        <span class="fas fa-external-link-alt" aria-hidden="true"></span>
-        Popout
-    </a>
-    <!-- Download button -->
-    <a href="" class="btn btn-sm btn-outline-secondary float-right m-3" target="_blank"
-        data-bind="attr: {href: slides()}, visible: slides().length">
-        <span class="fas fa-download" aria-hidden="true"></span>
-        Download
-    </a>
-    <!-- Body -->
-    <div  style="background: #FBFAF7" class="pt-4">
-        <h3 data-bind="text: header(), hidden: !header().length" class="p-1"></h3>
-        <div data-bind="text: summary(), hidden: !summary().length" class="p-1"></div>
-        <!-- ko if: youtube().length && !video().length -->
-        <div style="float: right" class="btn-group" role="group" data-bind="if: Object.keys(youtubeOptions()).length > 1">
-            <button id="blockpy-reader-video-voice-choice" type="button" class="btn btn-outline-secondary dropdown-toggle"
-                    data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">                    
-            </button>
-            <div class="dropdown-menu" aria-labelledby="blockpy-reader-video-voice-choice"
-                data-bind="foreach: Object.keys(youtubeOptions())"">
-                <a href="" data-bind="text : $data,
-                                      click: ()=>$parent.setVoice($data, $parent.youtubeOptions()[$data]),
-                                      css: {active: $parent.youtubeOptions()[$data] === $parent.youtube()}"
-                    class="dropdown-item"></a>
-            </div>
-        </div>
-        <!-- /ko -->
-        <!-- ko if: video().length -->
-        <div style="float: right" class="btn-group" role="group" data-bind="if: Object.keys(videoOptions()).length > 1">
-            <button id="blockpy-reader-video-voice-choice" type="button" class="btn btn-outline-secondary dropdown-toggle"
-                    data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">                    
-            </button>
-            <div class="dropdown-menu" aria-labelledby="blockpy-reader-video-voice-choice"
-                data-bind="foreach: Object.keys(videoOptions())"">
-                <a href="" data-bind="text : $data,
-                                      click: ()=>$parent.setVoiceVideo($data, $parent.videoOptions()[$data]),
-                                      css: {active: $parent.videoOptions()[$data] === $parent.video()}"
-                    class="dropdown-item"></a>
-            </div>
-        </div>
-        <video data-bind="if: video().length" controls width="640" height="480"
-            style="display: block; margin-left: auto; margin-right: auto;"
-            crossorigin="anonymous" preload="metadata" class="reader-video-display">
-            <source data-bind="attr: { src: video() + '#t=1' }" type="video/mp4" >
-            <track data-bind="attr: { src: video().slice(0, -3) + 'vtt'}"
-                default kind="captions" srclang="en" label="English">
-        </video>
-        <!-- /ko -->
-        <iframe style="width: 640px; height: 480px; margin-left: 10%"
-            width="300" height="150" allowfullscreen="allowfullscreen"
-            webkitallowfullscreen="webkitallowfullscreen"
-            mozallowfullscreen="mozallowfullscreen"
-            id="reader-youtube-video"
-            data-bind="attr: {title: assignment().name(),
-                              src: 'https://www.youtube.com/embed/'+youtube()+'?feature=oembed&rel=0&enablejsapi=1'},
-                       hidden: !youtube().length || video().length">
-        </iframe>
-        <div data-bind="markdowned: {value: assignment().instructions(), assignment: assignment, submission: submission}"
-            class="p-4"></div>
-        <!-- ko if: startTimerButton -->
-        <div class="text-center mb-4">
-            <!-- ko if: submission() && submission().dateStarted() -->
-            <button class="btn btn-primary btn-lg" disabled>
-                Exam has begun, please continue working.
-            </button>
-            <!-- /ko -->
-            <!-- ko if: submission() && !submission().dateStarted() -->
-            <button class="btn btn-primary btn-lg" data-bind="click: startTimer">
-                I am ready to start the exam!
-            </button>
-            <!-- /ko -->
-        </div>
-        <!-- /ko -->
-        <hr>
-    </div>
+    ${READER_HTML}
 </div>
 `
 
 ko.components.register("reader", {
     viewModel: Reader,
-    template: READER_HTML
+    template: FULL_HTML
 });

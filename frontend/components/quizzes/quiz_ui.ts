@@ -1,4 +1,4 @@
-import {QUESTIONS_EDITOR_UI, QUESTIONS_SUBMISSION_UI} from "./questions_ui";
+import QUESTIONS_SUBMISSION_UI from "./questions_ui.html"
 
 export const QUIZ_PREVIEW = `
 <div data-bind="switch: quiz()?.attemptStatus()">
@@ -242,7 +242,7 @@ export const QUIZZER_HTML = `
     <!-- /ko -->
     
     <!-- ko if: editorMode() === 'QUIZ_EDITOR' -->
-    ${QUESTIONS_EDITOR_UI}
+    Quiz Editor is not yet ready.
     <!-- /ko -->
     
     ${INSTRUCTIONS_BAR_HTML('above')}

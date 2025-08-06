@@ -42,6 +42,11 @@ module.exports = {
       {
         test: /\.py$/,
         type: 'asset/source'
+      },
+      {
+        test: /\.html$/i,
+        type: 'asset/source',
+        exclude: [/node_modules/],
       }
     ],
     noParse: /typescript/
