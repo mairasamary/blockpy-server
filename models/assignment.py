@@ -576,4 +576,19 @@ class Assignment(EnhancedBase):
                           late_policy.get("max_penalty", "50%"),
                           late_policy.get('disabled', False))
 
-
+    @classmethod
+    def get_timed_assignments(cls):
+        """
+        Get all assignments that have a time limit set.
+        :return: List of assignments with time limits.
+        """
+        potential_assignments = (cls.query.filter(cls.settings.isnot(None))
+                .filter(cls.settings != "")
+                .filter(cls.settings.contains('"time_limit"'))
+                .all())
+        assignments = []
+        for potential_assignment in potential_assignments:
+            time_limit_settings = potential_assignment.get_setting('time_limit', None)
+            if time_limit_settings is not None:
+                assignments.append(potential_assignment)
+        return assignments

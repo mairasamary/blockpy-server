@@ -38,6 +38,9 @@ export interface SubmissionJson extends ModelJson {
     course_id: number | null;
     user_id: number | null;
     version: number;
+    time_limit: string | null;
+    feedback: string;
+    date_started: string | null;
 }
 
 export class Submission extends Model<SubmissionJson> {
@@ -55,6 +58,9 @@ export class Submission extends Model<SubmissionJson> {
     courseId: ko.Observable<number | null>;
     userId: ko.Observable<number | null>;
     version: KnockoutObservable<number>;
+    dateStarted: KnockoutObservable<string | null>;
+    feedback: KnockoutObservable<string | null>;
+    timeLimit: KnockoutObservable<string | null>;
 
     FIELDS: TwoWayReadonlyMap = new TwoWayReadonlyMap({
         "date_modified": "dateModified",
@@ -72,7 +78,10 @@ export class Submission extends Model<SubmissionJson> {
         "assignment_version": "assignmentVersion",
         "course_id": "courseId",
         "user_id": "userId",
-        "version": "version"
+        "version": "version",
+        "date_started": "dateStarted",
+        "feedback": "feedback",
+        "time_limit": "timeLimit"
     });
 
     constructor(data: SubmissionJson) {
@@ -131,7 +140,10 @@ export class SubmissionStore extends ModelStore<SubmissionJson, Submission> {
             version: 0,
             id: id,
             date_created: null,
-            date_modified: null
+            date_modified: null,
+            date_started: null,
+            feedback: null,
+            time_limit: null
         });
     }
 

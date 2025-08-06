@@ -10,6 +10,7 @@
  */
 
 import * as ko from 'knockout';
+import {ajax_post} from "./ajax";
 import {Server} from "./server";
 import {User} from "../models/user";
 import {Assignment} from "../models/assignment";
@@ -40,6 +41,7 @@ export class Reader extends AssignmentInterface {
     header: ko.Observable<string>;
     slides: ko.Observable<string>;
     summary: ko.Observable<string>;
+    startTimerButton: ko.Observable<boolean>;
 
     asPreamble: ko.Observable<boolean>;
     allowPopout: ko.Observable<boolean>;
@@ -71,6 +73,8 @@ export class Reader extends AssignmentInterface {
         this.asPreamble = ko.observable<boolean>(params.asPreamble || false);
         this.allowPopout = ko.observable<boolean>(true);
 
+        this.startTimerButton = ko.observable<boolean>(false);
+
         this.editorMode = ko.observable(EditorMode.SUBMISSION);
         this.errorMessage = ko.observable("");
 
@@ -88,6 +92,41 @@ export class Reader extends AssignmentInterface {
             /*<source data-bind="attr: { src: video() + '#t=1' }" type="video/mp4" >
             <track data-bind="attr: { src: video().slice(0, -3) + 'vtt'}"
                 default kind="captions" srclang="en" label="English">*/
+        });
+    }
+
+    hideExamMovementControls() {
+        $(".assignment-selector-div").hide();
+    }
+    showExamMovementControls() {
+        $(".assignment-selector-div").show();
+    }
+
+    startTimer() {
+        const dateStarted = (new Date()).toISOString();
+        return new Promise((resolve, reject) => {
+            ajax_post("blockpy/start_assignment/", {
+                assignment_id: this.assignment().id,
+                assignment_group_id: this.assignmentGroupId,
+                course_id: this.courseId,
+                user_id: this.user.id,
+                date_started: dateStarted,
+            }).then((response) => {
+                if (response.success) {
+                    this.submission().dateStarted(dateStarted);
+                    this.showExamMovementControls();
+                    resolve(response);
+                } else {
+                    alert("The exam could not be started. Please try reloading the page and starting again.");
+
+                    console.error("Failed to start timer", response);
+                    reject(response);
+                }
+            }).catch((error) => {
+                alert("The exam could not be started. Please try reloading the page and starting again.");
+                console.error("Failed to start timer (HTTP LEVEL)", error);
+                reject(error);
+            })
         });
     }
 
@@ -204,6 +243,12 @@ export class Reader extends AssignmentInterface {
         }
         this.slides(slides);
         this.summary(settings.summary || "");
+        this.startTimerButton(settings.start_timer_button || false);
+        if (this.startTimerButton()) {
+            if (!this.isInstructor() && this.submission() && !this.submission().dateStarted()) {
+                this.hideExamMovementControls();
+            }
+        }
     }
 
     logWatching(event: any) {
@@ -528,6 +573,20 @@ export const READER_HTML = `
         </iframe>
         <div data-bind="markdowned: {value: assignment().instructions(), assignment: assignment, submission: submission}"
             class="p-4"></div>
+        <!-- ko if: startTimerButton -->
+        <div class="text-center mb-4">
+            <!-- ko if: submission() && submission().dateStarted() -->
+            <button class="btn btn-primary btn-lg" disabled>
+                Exam has begun, please continue working.
+            </button>
+            <!-- /ko -->
+            <!-- ko if: submission() && !submission().dateStarted() -->
+            <button class="btn btn-primary btn-lg" data-bind="click: startTimer">
+                I am ready to start the exam!
+            </button>
+            <!-- /ko -->
+        </div>
+        <!-- /ko -->
         <hr>
     </div>
 </div>

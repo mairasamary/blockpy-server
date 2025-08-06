@@ -3,6 +3,8 @@ import {Server} from "./server";
 import {User} from "../models/user";
 import {Assignment} from "../models/assignment";
 import {Submission} from "../models/submission";
+import {formatClock} from "../utilities/text";
+import {generateUUID} from "../utilities/random";
 
 
 export interface AssignmentInterfaceJson {
@@ -13,6 +15,30 @@ export interface AssignmentInterfaceJson {
     assignmentGroupId: number;
     isInstructor: boolean;
     markCorrect: (id: number) => void;
+}
+
+function parseTimeLimit(timeLimit: string, studentLimit: string | null): number {
+    let modifier = 1;
+    if (studentLimit) {
+        if (studentLimit.includes("min")) {
+            return parseInt(studentLimit.replace("min", "").trim()) * 60;
+        } else if (studentLimit.includes("x")) {
+            modifier = parseFloat(studentLimit.replace("x", "").trim());
+        } else {
+            console.error("Unknown time limit format", studentLimit);
+        }
+    }
+    if (timeLimit.includes("min")) {
+        let minutes = parseInt(timeLimit.replace("min", "").trim());
+        return minutes * 60 * modifier;
+    } else {
+        let minutes = parseInt(timeLimit.trim());
+        if (isNaN(minutes)) {
+            console.error("Unknown time limit format", timeLimit);
+            return 0;
+        }
+        return minutes * 60 * modifier;
+    }
 }
 
 
@@ -28,6 +54,8 @@ export class AssignmentInterface {
     submission: ko.Observable<Submission>;
     markCorrect: (id: number) => void;
 
+    timeChecker: NodeJS.Timeout | null;
+
     constructor(params: AssignmentInterfaceJson) {
         this.server = params.server;
         this.courseId = params.courseId;
@@ -41,6 +69,79 @@ export class AssignmentInterface {
 
         let BlockPyServer = window['$MAIN_BLOCKPY_EDITOR'].components.server;
         BlockPyServer.altLogEntry = this.logEvent.bind(this);
+
+        if (window['$TIME_CHECKER_ID']) {
+            clearInterval(window['$TIME_CHECKER_ID']);
+            console.log("Killing old time checker", window['$TIME_CHECKER_ID']);
+        }
+        this.timeChecker = setInterval(() => {
+            this.handleTimeCheck();
+        }, 5000);
+        window['$TIME_CHECKER_ID'] = this.timeChecker;
+    }
+
+    handleTimeCheck() {
+        // There can be only one time checker at a time on the page
+        if (this.timeChecker !== window['$TIME_CHECKER_ID']) {
+            // If this is not the current time checker, then we stop
+            if (this.timeChecker != null) {
+                clearInterval(this.timeChecker);
+                console.log("Killing old time checker", this.timeChecker);
+                this.timeChecker = null;
+            }
+            return;
+        }
+        // Otherwise, we might need to check the time
+        if (this.assignment() != null && this.submission() != null) {
+            let now = new Date();
+            const rawSettings = this.assignment().settings();
+            let settings;
+            try {
+                settings = JSON.parse(rawSettings);
+            } catch (e){
+                console.error("Failed to parse assignment settings", rawSettings, e);
+                return;
+            }
+            if (!settings.time_limit) {
+                return;
+            }
+            const timeLimit = parseTimeLimit(settings.time_limit, this.submission().timeLimit());
+            const startTime = this.submission().dateStarted();
+            if (startTime) {
+                const startDate = new Date(startTime);
+                console.log(startTime, startDate, now.getTime());
+                const elapsed = Math.floor((now.getTime() - startDate.getTime()) / 1000);
+                const remaining = timeLimit - elapsed;
+                if (remaining <= 0) {
+                    // Time is up, we should submit the assignment
+                    // Check if overlay already exists
+                    if ($('.end-assignment-timer-box').length > 0) {
+                        // Overlay already exists, do not create a new one
+                        return;
+                    }
+                    // Add a box in the center of the overlay that explains
+                    const box = $('<div class="end-assignment-timer-box"> </div>');
+                    box.appendTo(document.body);
+                    box.html("Time is up! Your assignment will be submitted now. You may not continue working on it.");
+                    box.css({
+                        "position": "fixed",
+                        "width": "100%",
+                        "height": "100%",
+                        "top": "0",
+                        "left": 0,
+                        "padding": "20px",
+                        "background-color": "white",
+                        "border": "1px solid black",
+                        "border-radius": "10px",
+                        "text-align": "center",
+                        "z-index": "1000"
+                    });
+                }
+                $("#assignment-time-remaining-clock").html(
+                    remaining + "|" + elapsed
+                )
+            }
+        }
     }
 
     logEvent(eventType: string, category: string, label: string, message: string, file_path: string, callback: any) {

@@ -47,10 +47,13 @@ def date_description(date):
     #print(date, date.tzinfo, date.astimezone(), date.astimezone().utcoffset(), sep=" | ")
     date = (date + date.astimezone().utcoffset())
     # TODO: Handle dates in the future
-    is_today = date > datetime.now().replace(hour=0, minute=0)
-    if is_today:
-        return "Today, " + date.strftime("%I:%M") + date.strftime("%p").lower()
-    return date.strftime("%B %d %Y, %I:%M") + date.strftime("%p").lower()
+    try:
+        is_today = date > datetime.now().replace(hour=0, minute=0)
+        if is_today:
+            return "Today, " + date.strftime("%I:%M") + date.strftime("%p").lower()
+        return date.strftime("%B %d %Y, %I:%M") + date.strftime("%p").lower()
+    except Exception as e:
+        return date.strftime("%B %d %Y, %I:%M") + date.strftime("%p").lower()
 
 
 FRIENDLY_DATE_FORMAT = "%B %d %Y, %I%M %p"

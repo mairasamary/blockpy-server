@@ -24,7 +24,7 @@
 {% elif assignment.type.lower() == "quiz" %}
     {% include "reports/quiz.html" with context %}
 {% elif assignment.type.lower() == "java" %}
-        {% include "reports/java.html" with context %}
+    {% include "reports/java.html" with context %}
 {% elif assignment.type.lower() == "textbook" %}
     {% include "reports/textbook.html" with context %}
 {% elif assignment.type.lower() == "typescript" %}
@@ -34,5 +34,17 @@
 {% else %}
     Unknown assignment type
 {% endif %}
+
+    {% if is_grader %}
+
+        <div class="m-3">
+            <a href="{{ url_for('courses.submissions_filter', course_id=course_id) }}" class="btn btn-secondary">
+                Back to Submissions
+            </a>
+            <a href="{{ url_for('blockpy.load', course_id=course_id, assignment_id=assignment.id) }}" class="btn btn-secondary">
+                View Assignment
+            </a>
+        </div>
+    {% endif %}
 
 {% endblock %}

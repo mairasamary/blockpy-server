@@ -219,7 +219,12 @@ export class Quiz {
         this.attemptMulligans(currentAnswer.attempt.mulligans);
         this.attemptLimit(instructions.settings.attemptLimit);
         if (typeof instructions.settings.readingId === 'string') {
-            this.lookupReading(instructions.settings.readingId).then((id) => this.readingId(id));
+            this.lookupReading(instructions.settings.readingId).then((id) => this.readingId(id)).catch(
+                () => {
+                    this.readingId(null);
+                    console.error(`Failed to look up reading ID for ${instructions.settings.readingId}`);
+                }
+            );
         } else {
             this.readingId(instructions.settings.readingId);
         }

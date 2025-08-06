@@ -13,6 +13,7 @@ from flask import Blueprint, url_for, session, request, jsonify, g, render_templ
     send_from_directory, current_app, make_response
 from werkzeug.utils import secure_filename
 
+from common.dates import string_to_datetime, iso_to_datetime, datetime_to_string
 from controllers.jinja_filters import to_iso_time
 from controllers.pylti.common import LTIPostMessageException
 from controllers.pylti.flask import LTI
@@ -22,7 +23,7 @@ from models.course import Course
 
 from models import db
 from models.logs import SubmissionLog as Log, AssignmentLog
-from models.enums import SubmissionStatuses, AssignmentLogEvent
+from models.enums import SubmissionStatuses, AssignmentLogEvent, SubmissionLogEvent
 from models.submission import Submission, GradingStatuses
 from models.assignment import Assignment
 from models.assignment_group import AssignmentGroup
@@ -197,6 +198,8 @@ def load_assignment():
     if course_id is None:
         editor_information = assignment.for_read_only_editor(student_id, is_quiz)
     else:
+        if student_id is None:
+            student_id = user_id
         editor_information = assignment.for_editor(student_id, course_id, is_quiz, with_history)
         browser_info = json.dumps({
             'platform': request.user_agent.platform,
@@ -549,6 +552,47 @@ def update_submission_status():
         return ajax_success(report.for_ajax())
     else:
         return ajax_failure(report.for_ajax())
+
+@blueprint_blockpy.route('/start_assignment/', methods=['GET', 'POST'])
+@blueprint_blockpy.route('/start_assignment', methods=['GET', 'POST'])
+def start_assignment():
+    """
+    This starts an assignment group's timer, by setting the date_started
+    field for all of its submissions to the current time.
+    """
+    # Get parameters
+    user, user_id = get_user()
+    course_id = get_course_id()
+    assignment_id = maybe_int(request.values.get('assignment_id'))
+    assignment_group_id = maybe_int(request.values.get('assignment_group_id'))
+    date_started = request.values.get('date_started', None)
+    if date_started is None:
+        return ajax_failure("No date started provided.")
+    date_started = iso_to_datetime(date_started)
+    # TODO: Only send image if the assignment settings starts as Block or Split
+    if assignment_group_id is None:
+        assignment = Assignment.by_id(assignment_id)
+        check_resource_exists(assignment, "Assignment", assignment_id)
+        assignments = [assignment]
+    else:
+        assignment_group = AssignmentGroup.by_id(assignment_group_id)
+        check_resource_exists(assignment_group, "AssignmentGroup", assignment_group_id)
+        assignments = assignment_group.get_assignments()
+    # Verify permissions
+    dates = []
+    for assignment in assignments:
+        submission = assignment.load(user_id, course_id)
+        if submission is None:
+            return ajax_failure(f"No submission for assignment {assignment.id} in group {assignment_group_id}.")
+        submission.edit({'date_started': date_started})
+        dates.append(datetime_to_string(submission.date_started))
+        make_log_entry(submission.id, submission.version,
+                       assignment.id, assignment.version,
+                       course_id, user_id,
+                       SubmissionLogEvent.START_TIMER,
+                       message=date_started)
+
+    return ajax_success({"dates": dates})
 
 
 @blueprint_blockpy.route('/upload_file/', methods=['GET', 'POST'])

@@ -12,7 +12,7 @@ from werkzeug.utils import secure_filename
 
 import models
 from common.maybe import maybe_int
-from models.enums import RolePermissions
+from models.enums import RolePermissions, USER_DISPLAY_ROLES
 from models.generics.models import db, ma
 from models.generics.base import Base
 
@@ -234,7 +234,7 @@ class User(Base, UserMixin):
     ### Adding and updating roles ###
 
     def add_role(self, name, course_id):
-        if name in [id for id, _ in models.Role.CHOICES]:
+        if name in [id for id, _ in USER_DISPLAY_ROLES.items()]:
             new_role = models.Role(name=name, user_id=self.id,
                                    course_id=maybe_int(course_id))
             db.session.add(new_role)

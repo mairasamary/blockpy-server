@@ -17,11 +17,11 @@ from controllers.helpers import (get_lti_property, require_request_parameters, l
                                  require_course_instructor, require_course_grader, get_select_menu_link,
                                  check_resource_exists, get_course_id, ajax_success, ajax_failure, maybe_int,
                                  maybe_bool, require_admin, check_course_unlocked,
-                                 get_assignments_in_groups)
+                                 get_assignments_in_groups, make_log_entry)
 from models.data_formats.report import make_report
 from models import db, AssignmentGroup
 from models.data_formats.portation import export_bundle
-from models.enums import USER_DISPLAY_ROLES
+from models.enums import USER_DISPLAY_ROLES, SubmissionLogEvent
 from models.user import User
 from models.course import Course
 from models.role import Role
@@ -398,7 +398,7 @@ class AddUsersForm(Form):
     # invite = BooleanField("Add Without Invitation")
     # send_email = BooleanField('Send Email')
     new_users = TextAreaField("Emails")
-    role = SelectField("Role", choices=USER_DISPLAY_ROLES)
+    role = SelectField("Role", choices=list(USER_DISPLAY_ROLES.items()))
     submit = SubmitField("Add student")
 
 
@@ -426,8 +426,9 @@ def add_users(course_id):
                                                                   confirmed_at=datetime.now(timezone.utc))
                 newly_created.append(new_user)
             new_role = add_form.role.data
-            if new_role == 'student' and not new_user.is_student(course_id):
-                new_user.add_role('student', course_id=course_id)
+            # TODO: Update this to reflect new enums
+            if new_role in ('student', 'learner') and not new_user.is_student(course_id):
+                new_user.add_role('learner', course_id=course_id)
                 newly_added.append(new_user)
             elif new_role == 'teachingassistant' and not new_user.is_grader(course_id):
                 new_user.add_role('teachingassistant', course_id=course_id)
@@ -1043,3 +1044,82 @@ def bulk_groups():
                                course_id=course_id,
                                course=course,
                                groups=groups)
+
+@courses.route('/modify_time', methods=['GET', 'POST'])
+@courses.route('/modify_time/', methods=['GET', 'POST'])
+@login_required
+def modify_time():
+    course_id = get_course_id(False)
+    user, user_id = get_user()
+    student_id = maybe_int(request.values.get("student_id", ""))
+    assignment_ids = request.values.get("assignment_ids", "")
+    amount = request.values.get("amount", "")
+    # Check permissions
+    require_course_instructor(g.user, course_id)
+    # Load Resources
+    course = Course.by_id(course_id)
+    student = User.by_id(student_id)
+    check_resource_exists(student, "User", student_id)
+    check_resource_exists(course, "Course", course_id)
+    # Load or create the submission for the assignments of this user
+    new_limits = []
+    for assignment_id in assignment_ids.split(","):
+        assignment_id = maybe_int(assignment_id)
+        if assignment_id is None:
+            continue
+        assignment = Assignment.by_id(assignment_id)
+        submission = assignment.load_or_new_submission(student_id, course_id)
+        submission.edit(dict(time_limit=amount))
+        make_log_entry(submission.id, submission.version, assignment_id, assignment.version,
+                       course_id, student_id, SubmissionLogEvent.EXTEND_TIME,
+                       message=f"User {user_id} set time limit to `{amount}`")
+        shown_amount = amount if amount else "default"
+        new_limits.append({"assignment": assignment.encode_json(), "time_limit": shown_amount})
+    return ajax_success({'new_limits': new_limits})
+
+@courses.route('/manage_time', methods=['GET', 'POST'])
+@courses.route('/manage_time/', methods=['GET', 'POST'])
+@login_required
+def manage_time():
+    course_id = get_course_id(False)
+    user, user_id = get_user()
+    chosen_assignment_ids = request.values.get("assignment_ids", "")
+    # Check permissions
+    require_course_instructor(g.user, course_id)
+    # Load Resources
+    course = Course.by_id(course_id)
+    # Get all timed assignments that are available to this user
+    all_timed_assignments = Assignment.get_timed_assignments()
+    all_timed_assignments = {a.id: a for a in all_timed_assignments}
+
+    if chosen_assignment_ids:
+        chosen_assignment_ids = [int(aid) for aid in chosen_assignment_ids.split(",") if maybe_int(aid) is not None]
+    else:
+        chosen_assignment_ids = []
+
+    # Get all the users in the course
+    all_users = course.get_users()
+
+    # Get the submissions for the chosen assignments, grouped by user
+    submissions_by_user = {
+        user.id: [
+            Submission.get_submission(aid, user.id, course_id)
+            for aid in chosen_assignment_ids
+        ]
+        for role, user in all_users
+    }
+
+    all_users.sort(key=lambda ru: (-sum(len(s.time_limit) if s else 0
+                                       for s in submissions_by_user[ru[1].id]),
+                                   -len(submissions_by_user[ru[1].id]),
+                                   ru[1].name()
+                                   ))
+
+    return render_template("courses/manage_time.html",
+                            course_id=course_id,
+                            course=course,
+                            all_timed_assignments=all_timed_assignments,
+                            chosen_assignment_ids=chosen_assignment_ids,
+                            all_users=all_users,
+                            submissions_by_user=submissions_by_user
+                           )

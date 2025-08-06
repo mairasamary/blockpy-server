@@ -2,7 +2,7 @@
 Common utility functions for managing dates and times.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from dateutil.parser import parse as parse_date
 
 
@@ -14,7 +14,7 @@ def datetime_to_string(a_datetime: datetime) -> str:
     """
     if a_datetime is None:
         return ""
-    return a_datetime.isoformat() + 'Z'
+    return a_datetime.isoformat() # + 'Z'
 
 
 def string_to_datetime(a_string: str) -> datetime:
@@ -31,6 +31,14 @@ def string_to_datetime(a_string: str) -> datetime:
         return datetime.strptime(a_string, '%Y-%m-%dT%H:%M:%S.%fZ')
     except ValueError:
         return datetime.strptime(a_string, '%Y-%m-%dT%H:%M:%SZ')
+
+def iso_to_datetime(a_string: str) -> datetime:
+    """
+    Convert the given ISO 8601 string to a datetime object.
+    :param a_string: A string representation of a datetime in ISO 8601 format.
+    :return: The datetime version of that string
+    """
+    return datetime.fromisoformat(a_string.replace('Z', '+00:00')).astimezone(timezone.utc)
 
 
 def datetime_to_pretty_string(a_datetime: datetime) -> str:

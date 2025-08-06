@@ -46,3 +46,5 @@ class SubmissionLogEvent(enum.StrEnum):
     COMPLETE = "complete"
     TRANSFER = "transfer"
     CANVAS = "canvas"
+    EXTEND_TIME = "extend_time"
+    START_TIMER = "start_timer"

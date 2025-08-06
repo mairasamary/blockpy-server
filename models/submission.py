@@ -6,7 +6,7 @@ from datetime import timedelta, datetime, timezone
 import re
 
 import base64
-from typing import Union, Optional, TYPE_CHECKING
+from typing import Union, Optional, TYPE_CHECKING, Any
 
 from flask import url_for, current_app
 from sqlalchemy.orm import Mapped, mapped_column
@@ -50,6 +50,7 @@ class Submission(EnhancedBase):
     submission_status: Mapped[SubmissionStatuses] = mapped_column(Enum(SubmissionStatuses, values_callable=get_enum_values), default=SubmissionStatuses.STARTED)
     grading_status: Mapped[GradingStatuses] = mapped_column(Enum(GradingStatuses, values_callable=get_enum_values), default=GradingStatuses.NOT_READY)
     feedback: Mapped[str] = mapped_column(Text(), default="")
+    time_limit: Mapped[Optional[str]] = mapped_column(Text(), default="", nullable=True)
     # Date Tracking
     date_started: Mapped[Optional[datetime]] = mapped_column(UtcDateTime(), default=None, nullable=True)
     date_submitted: Mapped[Optional[datetime]] = mapped_column(UtcDateTime(), default=None, nullable=True)
@@ -86,6 +87,7 @@ class Submission(EnhancedBase):
             'url': self.url,
             'endpoint': self.endpoint,
             'score': self.as_float_score(self.score),
+            'time_limit': self.time_limit,
             'correct': self.correct,
             'assignment_id': self.assignment_id,
             'course_id': self.course_id,
@@ -94,6 +96,7 @@ class Submission(EnhancedBase):
             'version': self.version,
             'submission_status': self.submission_status,
             'grading_status': self.grading_status,
+            'feedback': self.feedback,
             'user_id__email': optional_encoded_field(self.user_id, use_owner, models.User.query.get, 'email'),
             'id': self.id,
             'date_modified': datetime_to_string(self.date_modified),
@@ -102,6 +105,7 @@ class Submission(EnhancedBase):
             'date_graded': datetime_to_string(self.date_graded),
             'date_due': datetime_to_string(self.date_due),
             'date_locked': datetime_to_string(self.date_locked),
+            'date_started': datetime_to_string(self.date_started),
         }
 
     def encode_human(self, with_history=False):
@@ -141,6 +145,8 @@ class Submission(EnhancedBase):
             'date_graded': datetime_to_string(self.date_graded),
             'date_due': datetime_to_string(self.date_due),
             'date_locked': datetime_to_string(self.date_locked),
+            'date_started': datetime_to_string(self.date_started),
+
         }
         if self.user:
             _grade_data['user'] = {
