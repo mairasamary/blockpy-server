@@ -14,7 +14,7 @@ from models.sample_submission import SampleSubmission
 from models.invite import Invite
 from models.report import Report
 from models.grade_history import GradeHistory
-from models.logs import RoleLog, AccessLog, ErrorLog, CourseLog, AssignmentLog, SubmissionLog
+from models.log_tables import RoleLog, AccessLog, ErrorLog, CourseLog, AssignmentLog, SubmissionLog
 
 
 class BaseSchema:

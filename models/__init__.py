@@ -13,7 +13,7 @@ from models.assignment_tag_membership import assignment_tag_membership
 from models.assignment_group import AssignmentGroup
 from models.assignment_group_membership import AssignmentGroupMembership
 from models.authentication import Authentication
-from models.logs import AccessLog, ErrorLog, CourseLog, RoleLog, AssignmentLog, SubmissionLog
+from models.log_tables import AccessLog, ErrorLog, CourseLog, RoleLog, AssignmentLog, SubmissionLog
 from models.review import Review
 from models.submission import Submission
 from models.sample_submission import SampleSubmission

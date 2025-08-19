@@ -18,7 +18,7 @@ from controllers.pylti.flask import LTI
 from controllers.pylti.post_grade import TransmissionStatuses
 from models import User
 from models.data_formats.quiz_analysis import process_quizzes
-from models.logs import SubmissionLog as Log
+from models.log_tables import SubmissionLog as Log
 from models.report import Report
 from models.assignment import Assignment
 from models.submission import Submission

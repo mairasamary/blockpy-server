@@ -31,7 +31,7 @@ from models.review import Review
 from models.data_formats.quizzes import process_quiz_str, QuizResult, try_parse_file
 from models.enums import GradingStatuses, SubmissionStatuses
 from models.user import User
-from models.logs import SubmissionLog
+from models.log_tables import SubmissionLog
 from models.data_formats.blockpy_legacy import DEFAULT_FILENAME, DEFAULT_FILENAMES_BY_TYPE, build_extra_starting_files, inject_code_part
 
 if TYPE_CHECKING:

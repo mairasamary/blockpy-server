@@ -14,8 +14,8 @@ from models.course import Course
 from models.assignment import Assignment
 from models.assignment_group import AssignmentGroup
 from models.enums import SubmissionLogEvent
-from models.logs import SubmissionLog as Log
-from models.logs import RoleLog, CourseLog, ErrorLog, AccessLog, AssignmentLog, SubmissionLog
+from models.log_tables import SubmissionLog as Log
+from models.log_tables import RoleLog, CourseLog, ErrorLog, AccessLog, AssignmentLog, SubmissionLog
 
 
 def admin_required(f):

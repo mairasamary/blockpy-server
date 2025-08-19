@@ -2,7 +2,7 @@ import datetime
 import difflib
 
 from models.assignment import Assignment
-from models.logs import SubmissionLog
+from models.log_tables import SubmissionLog
 
 
 class SubmissionState:

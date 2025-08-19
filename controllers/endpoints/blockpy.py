@@ -22,7 +22,7 @@ from models.assignment_tag import AssignmentTag
 from models.course import Course
 
 from models import db
-from models.logs import SubmissionLog as Log, AssignmentLog
+from models.log_tables import SubmissionLog as Log, AssignmentLog
 from models.enums import SubmissionStatuses, AssignmentLogEvent, SubmissionLogEvent
 from models.submission import Submission, GradingStatuses
 from models.assignment import Assignment

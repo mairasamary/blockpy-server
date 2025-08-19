@@ -10,7 +10,7 @@ from flask import Blueprint, url_for, session, request, jsonify, g, render_templ
 from werkzeug.utils import secure_filename
 
 from models import db
-from models.logs import SubmissionLog as Log
+from models.log_tables import SubmissionLog as Log
 from models.submission import Submission
 from models.assignment import Assignment
 from models.assignment_group import AssignmentGroup

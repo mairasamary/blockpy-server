@@ -15,7 +15,7 @@ from models.assignment_group import AssignmentGroup
 from models.course import Course
 from models.user import User
 
-from models.logs import SubmissionLog as Log
+from models.log_tables import SubmissionLog as Log
 
 PROGSNAP_CSV_WRITER_OPTIONS = {'delimiter': ',', 'quotechar': '"', 'quoting': csv.QUOTE_MINIMAL}
 

@@ -24,7 +24,7 @@ from models.user import User
 from models.course import Course
 from models.role import Role
 from models.authentication import Authentication
-from models.logs import RoleLog, AccessLog, ErrorLog, CourseLog, AssignmentLog, SubmissionLog
+from models.log_tables import RoleLog, AccessLog, ErrorLog, CourseLog, AssignmentLog, SubmissionLog
 from models.submission import Submission
 from models.sample_submission import SampleSubmission
 from models.review import Review
