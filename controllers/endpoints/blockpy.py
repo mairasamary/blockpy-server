@@ -440,7 +440,9 @@ def view_submissions(course_id, user_id, assignment_group_id, assignment_id_focu
     else:
         score = 0
     # TODO: Handle tags
-    is_grader = viewer.is_grader(course_id)
+    any_hidden = any(assignment.hidden for assignment in assignments)
+    is_grader = viewer.is_instructor(course_id) if any_hidden else viewer.is_grader(course_id)
+    # Turn off is_grader for TAs if there are any hidden assignments
     tags = []
     if is_grader:
         tags = [tag.encode_json() for tag in AssignmentTag.get_all()]
@@ -477,7 +479,7 @@ def view_submission():
     # Check permissions
     if submission.user_id != viewer_id:
         require_course_grader(viewer, submission.course_id)
-    is_grader = viewer.is_grader(submission.course_id)
+    is_grader = viewer.is_instructor(submission.course_id) if submission.assignment.hidden else viewer.is_grader(submission.course_id)
     tags = []
     if is_grader:
         tags = [tag.encode_json() for tag in AssignmentTag.get_all()]
