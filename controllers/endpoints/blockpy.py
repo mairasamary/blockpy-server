@@ -340,6 +340,8 @@ def log_event():
     user, user_id = get_user()
     assignment_id = request.values.get('assignment_id')
     assignment_version = request.values.get('assignment_version') or 0
+    submission_id = request.values.get('submission_id')
+    submission_version = request.values.get('version') or 0
     event_type = request.values.get("event_type")
     file_path = request.values.get("file_path", "")
     category = request.values.get('category', "")
@@ -349,7 +351,7 @@ def log_event():
     if None in (assignment_id, course_id, user_id) or '' in (assignment_id, course_id, user_id):
         return ajax_failure(
             f"Missing either course_id ({course_id}, user ({user_id}), or assignment_id ({assignment_id}.")
-    new_log = make_log_entry(assignment_id, assignment_version, course_id, user_id,
+    new_log = make_log_entry(submission_id, submission_version, assignment_id, assignment_version, course_id, user_id,
                              event_type, file_path, category, label, message)
     return ajax_success({"log_id": new_log.id})
 
