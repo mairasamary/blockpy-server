@@ -79,10 +79,12 @@ function renameCourse() {
     {% for textbook in textbooks %}
     View the textbook: <a href="{{ url_for('assignments.load_textbook', path=textbook.url, course_id=course.id, embed=False) }}" class='btn btn-outline-secondary'>{{ textbook.name }}</a><br><br>
     {% endfor %}
+    {% if is_instructor %}
     <div class="instructor-only-tools p-2">
         <small>Instructor Tools (not visible to students or TAs)</small><br>
         <a href="{{ url_for('courses.edit_textbooks', course_id=course.id) }}" class='btn btn-outline-secondary'>Edit Textbooks</a> Edit the textbook settings.<br><br>
     </div>
+    {% endif %}
 {% else %}
     {% if is_instructor %}
         <div class="instructor-only-tools p-2">
