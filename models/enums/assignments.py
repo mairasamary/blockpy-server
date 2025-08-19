@@ -1,6 +1,7 @@
 import enum
+from strenum import StrEnum
 
-class AssignmentTypes(enum.StrEnum):
+class AssignmentTypes(StrEnum):
     READING = 'reading'
     QUIZ = 'quiz'
     TEXTBOOK = 'textbook'
@@ -13,7 +14,7 @@ class AssignmentTypes(enum.StrEnum):
     BLOCKPY = 'blockpy'
 
 
-class AssignmentStatus(enum.StrEnum):
+class AssignmentStatus(StrEnum):
     """
     The workflow status of the assignment, controlling how it is displayed and used in the system.
 
@@ -29,7 +30,7 @@ class AssignmentStatus(enum.StrEnum):
     ARCHIVED = 'archived'
 
 
-class AssignmentFeedback(enum.StrEnum):
+class AssignmentFeedback(StrEnum):
     """
     TODO: AssignmentFeedback (visibility) should probably be separated out into either a Schema or a separate table
 
@@ -59,7 +60,7 @@ class AssignmentFeedback(enum.StrEnum):
     NEVER = "never"
 
 
-class AssignmentGroupCategory(enum.StrEnum):
+class AssignmentGroupCategory(StrEnum):
     """
     The category of the assignment group, allowing it to be grouped
     along with similar kinds of assignments.

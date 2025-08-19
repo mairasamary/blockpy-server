@@ -1,6 +1,7 @@
 import enum
+from strenum import StrEnum
 
-class ReviewStatus(enum.StrEnum):
+class ReviewStatus(StrEnum):
     """
     Statuses for feedback
 
@@ -18,7 +19,7 @@ class ReviewStatus(enum.StrEnum):
     DELETED = "deleted"
 
 
-class ReviewCommentFormat(enum.StrEnum):
+class ReviewCommentFormat(StrEnum):
     """
     Formats for feedback comments
 
@@ -32,7 +33,7 @@ class ReviewCommentFormat(enum.StrEnum):
     TEXT = "text"
 
 
-class ReviewTools(enum.StrEnum):
+class ReviewTools(StrEnum):
     """
     Tools that can generate feedback
 

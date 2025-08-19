@@ -60,3 +60,5 @@ scipy
 
 argon2_cffi
 GitHub-Flask
+
+strenum

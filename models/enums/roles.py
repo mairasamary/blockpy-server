@@ -1,4 +1,5 @@
 import enum
+from strenum import StrEnum
 
 SYS_ROLE_PREFIX = "urn:lti:sysrole:ims/lis/"
 INST_ROLE_PREFIX = "urn:lti:instrole:ims/lis/"
@@ -29,7 +30,7 @@ def clean_role(role: str) -> (str, str):
     else:
         return role.lower(), ""
 
-class UserRoles(enum.StrEnum):
+class UserRoles(StrEnum):
     """
     The roles that a user can have.
 

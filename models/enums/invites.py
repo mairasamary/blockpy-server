@@ -1,10 +1,11 @@
 import enum
+from strenum import StrEnum
 
-class InviteStatus(enum.StrEnum):
+class InviteStatus(StrEnum):
     PENDING = "pending"
     ACCEPTED = "accepted"
     REJECTED = "rejected"
 
-class InviteKind(enum.StrEnum):
+class InviteKind(StrEnum):
     COURSE_INVITE = "course_invite"
     COURSE_JOIN = "course_join"

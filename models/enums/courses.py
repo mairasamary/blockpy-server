@@ -1,6 +1,7 @@
 import enum
+from strenum import StrEnum
 
-class CourseVisibility(enum.StrEnum):
+class CourseVisibility(StrEnum):
     """
     The visibility of a course, controlling whether users can see the course and its resources.
 
@@ -15,7 +16,7 @@ class CourseVisibility(enum.StrEnum):
     STUDENTS = 'students'
     ARCHIVED = 'archived'
 
-class CourseService(enum.StrEnum):
+class CourseService(StrEnum):
     """
     The service that a course is using to manage its assignments.
 
@@ -28,7 +29,7 @@ class CourseService(enum.StrEnum):
     LTI = 'lti'
 
 
-class CourseKind(enum.StrEnum):
+class CourseKind(StrEnum):
     """
     The kind of course.
 

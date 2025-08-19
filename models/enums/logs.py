@@ -1,6 +1,7 @@
 import enum
+from strenum import StrEnum
 
-class AssignmentLogEvent(enum.StrEnum):
+class AssignmentLogEvent(StrEnum):
     CREATE = "create"
     DELETE = "delete"
     EDIT = "edit"
@@ -11,7 +12,7 @@ class AssignmentLogEvent(enum.StrEnum):
     CORRUPTED = "corrupted"
 
 
-class CourseLogEvent(enum.StrEnum):
+class CourseLogEvent(StrEnum):
     CREATE = "create"
     DELETE = "delete"
     # Edit events
@@ -23,13 +24,13 @@ class CourseLogEvent(enum.StrEnum):
     CORRUPTED = "corrupted"
 
 
-class RoleLogEvent(enum.StrEnum):
+class RoleLogEvent(StrEnum):
     GIVEN = "given"
     REMOVED = "removed"
     CHANGED = "changed"
 
 
-class SubmissionLogEvent(enum.StrEnum):
+class SubmissionLogEvent(StrEnum):
     UNKNOWN = "unknown"
     CREATE = "create"
     DELETE = "delete"

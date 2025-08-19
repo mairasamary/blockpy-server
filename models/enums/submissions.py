@@ -1,6 +1,7 @@
 import enum
+from strenum import StrEnum
 
-class SubmissionStatuses(enum.StrEnum):
+class SubmissionStatuses(StrEnum):
     # Not yet begun - the value if the submission does not exist
     INITIALIZED = "Initialized"
     # Started -> not yet run
@@ -13,7 +14,7 @@ class SubmissionStatuses(enum.StrEnum):
     COMPLETED = "Completed"
 
 
-class GradingStatuses(enum.StrEnum):
+class GradingStatuses(StrEnum):
     FULLY_GRADED = 'FullyGraded'
     PENDING = 'Pending'
     PENDING_MANUAL = 'PendingManual'
