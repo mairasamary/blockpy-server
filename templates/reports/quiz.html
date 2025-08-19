@@ -66,7 +66,7 @@
 
 {% if 'feedback' in code and (not is_grader and ('feedbackType' in quiz_settings and quiz_settings['feedbackType'].upper() == 'SUMMARY')) %}
     <div>
-    <pre>{{ code }}</pre>
+
     {% set feedback_messages = (code['feedback'].values()|map(attribute='message')|reject("equalto", "Incorrect")|reject("equalto", "Correct")|join('\n')|replace("<br>", "")
                         ).split("\n")|unique|reject("equalto", "")|sort() %}
     {% if feedback_messages %}
