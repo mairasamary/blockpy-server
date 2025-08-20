@@ -84,7 +84,10 @@ class UserView(RegularView):
     column_formatters = {'roles': _list_roles}
     form_excluded_columns = ('password', 'roles', 'authentications',
                              'assignments', 'assignment_groups', 'courses',
-                             'tags', 'logs', 'reviews', 'submissions', 'reports',
+                             'tags', 'submission_logs', 'assignment_logs', 'course_logs',
+                             'role_logs', 'access_logs', 'approvals', 'invites',
+                             'authorizer_logs',
+                             'reviews', 'submissions', 'reports',
                              'invites', 'grade_history')
     column_exclude_list = ('password', 'proof')
     column_display_pk = True
@@ -192,7 +195,7 @@ class RoleView(RegularView):
         'course': make_ajax_fields('id', 'url', 'name'),
         'user': make_ajax_fields('first_name', 'last_name', 'email', 'id')
     }
-    form_excluded_columns = ()
+    form_excluded_columns = ('role_logs', )
 
 
 def _render_course_service(view, context, model, name):
@@ -217,7 +220,8 @@ class CourseView(RegularView):
     column_list = ('id', 'date_modified', 'name', 'url', 'owner_id',
                    'service', 'visibility', 'term', 'settings')
     form_excluded_columns = ('roles', 'assignments', 'assignment_groups',
-                             'tags', 'logs', 'submissions', 'invites', 'reports')
+                             'course_logs', 'role_logs', 'assignment_logs',
+                             'tags', 'submission_logs', 'submissions', 'invites', 'reports')
     column_searchable_list = ('id', 'name', 'url')
     column_filters = ('id', 'name', 'date_modified', 'url', 'term', 'owner_id', 'service')
     column_formatters = {'service': _render_course_service}
@@ -250,7 +254,8 @@ class AssignmentView(RegularView):
         'tags': make_ajax_fields('name', 'id'),
         'sample_submissions': make_ajax_fields('id'),
     }
-    form_excluded_columns = ('memberships', 'logs', 'submissions', 'reports')
+    form_excluded_columns = ('memberships', 'assignment_logs', 'submission_logs',
+                             'submissions', 'reports', 'sample_submissions', 'tags')
     # form_columns = ('id', 'date_modified')
     column_filters = ('id', 'name', 'on_run', 'course_id', 'url', 'instructions', 'reviewed', 'hidden', 'public')
     column_formatters = {'name': _render_assignment_name,
@@ -438,7 +443,7 @@ class SubmissionView(RegularView):
         'course': make_ajax_fields('id', 'url', 'name'),
         'user': make_ajax_fields('first_name', 'last_name', 'email', 'id')
     }
-    form_excluded_columns = ('reviews', 'grade_history')
+    form_excluded_columns = ('reviews', 'grade_history', 'submission_logs')
     simple_list_pager = True
 
 
