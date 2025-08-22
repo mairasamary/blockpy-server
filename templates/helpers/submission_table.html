@@ -101,6 +101,7 @@
 
     <!-- Row Color based on Assignment status -->
     {% set roles_list = submission[1].get_course_roles(course_id)|map(attribute='name')|map('title')|join(', ') if submission[1] != None else "" %}
+    {% set viewer_role = g.user.determine_role([submission[2]], [submission[0]]) if g.user and submission[0] else 'anonymous'%}
 <tr
     class='{%
         if submission[0].correct or (submission[0].score is defined and submission[0].score|round(1) >= 100) or submission[2].type == 'reading'
@@ -131,9 +132,13 @@
     {%endif %}
 
     <td>
-        {% if submission[0].correct%}Yes{% else %}No{% endif %}
-        {% if submission[0].score is defined %}
-        ({{ submission[0].score|round(1) }}%)
+        {% if not submission[2].hidden or (viewer_role == 'grader' or viewer_role == 'owner') %}
+            {% if submission[0].correct%}Yes{% else %}No{% endif %}
+            {% if submission[0].score is defined %}
+            ({{ submission[0].score|round(1) }}%)
+            {% endif %}
+        {% else %}
+            <i>Hidden</i>
         {% endif %}
     </td>
     <td>
@@ -182,6 +187,7 @@
                 <span class="sr-only">Toggle Dropdown</span>
             </button>
             <!-- Extended buttons -->
+            {% if not submission[2].hidden or (viewer_role == 'grader' or viewer_role == 'owner') %}
             <div class="dropdown-menu dropdown-menu-right">
                 {% if submission[0] != None and submission[0].assignment_group_id != None %}
                     <a href="{{ url_for('blockpy.view_submissions',
@@ -252,6 +258,9 @@
 
 
             </div>
+            {% else %}
+                <div class="dropdown-menu dropdown-menu-right"></div>
+            {% endif %}
         </div>
     {%- endif %}
     </td>

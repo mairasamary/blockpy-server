@@ -144,14 +144,17 @@ class SubmissionLog(Base):
     @staticmethod
     def get_history(course_id, assignment_id, user_id, page_offset=None, page_limit=None, as_json=True):
         logs = SubmissionLog.query.filter_by(course_id=course_id)
-        # JUst need to refactor this to allow lists
         if assignment_id is not None:
-            if isinstance(assignment_id, str) and ',' in assignment_id:
+            if isinstance(assignment_id, list):
+                logs = logs.filter(SubmissionLog.assignment_id.in_(assignment_id))
+            elif isinstance(assignment_id, str) and ',' in assignment_id:
                 logs = logs.filter(SubmissionLog.assignment_id.in_([int(a) for a in assignment_id.split(",")]))
             else:
                 logs = logs.filter_by(assignment_id=assignment_id)
         if user_id is not None:
-            if isinstance(user_id, str) and ',' in user_id:
+            if isinstance(user_id, list):
+                logs = logs.filter(SubmissionLog.subject_id.in_(user_id))
+            elif isinstance(user_id, str) and ',' in user_id:
                 logs = logs.filter(SubmissionLog.subject_id.in_([int(a) for a in user_id.split(",")]))
             else:
                 logs = logs.filter_by(subject_id=user_id)

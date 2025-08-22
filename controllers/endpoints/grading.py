@@ -309,7 +309,10 @@ def review_editor():
             require_course_grader(user, course_id)
         if assignment_id is not None:
             check_resource_exists(assignment, "Assignment", assignment_id)
-            require_course_grader(user, assignment.course_id)
+            if assignment.hidden:
+                require_course_instructor(user, assignment.course_id)
+            else:
+                require_course_grader(user, assignment.course_id)
         if student_id is not None:
             check_resource_exists(student, "Student", student_id)
 

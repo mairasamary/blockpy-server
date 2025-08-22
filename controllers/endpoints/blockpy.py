@@ -13,6 +13,7 @@ from flask import Blueprint, url_for, session, request, jsonify, g, render_templ
     send_from_directory, current_app, make_response
 from werkzeug.utils import secure_filename
 
+from common.flask_extensions import safe_request
 from common.dates import string_to_datetime, iso_to_datetime, datetime_to_string
 from controllers.jinja_filters import to_iso_time
 from controllers.pylti.common import LTIPostMessageException
@@ -34,7 +35,7 @@ from controllers.auth import get_user, get_consumer_secrets
 from controllers.helpers import (ajax_failure, parse_assignment_load, require_request_parameters,
                                  get_course_id, maybe_int, check_resource_exists, ajax_success,
                                  login_required, require_course_instructor, require_course_grader, maybe_bool,
-                                 make_log_entry)
+                                 make_log_entry, check_permissions)
 from common.highlighters import highlight_python_code
 from tasks.tasks import queue_lti_post_grade
 from models.user import User
@@ -47,36 +48,30 @@ def blockpy_static(path):
     return current_app.send_static_file(path)
 
 
+def new_load_submission():
+    submission_id = request.get_maybe_int('submission_id')
+    g.safely.load_submission(submission_id)
+
+
 @blueprint_blockpy.route('/load_submission/', methods=['GET', 'POST'])
 @blueprint_blockpy.route('/load_submission', methods=['GET', 'POST'])
 @require_request_parameters('submission_id')
 def load_submission():
-    submission_id = int(request.args.get('submission_id'))
-    embed = maybe_bool(request.values.get('embed'))
-    course_id = get_course_id(True)
-    user, user_id = get_user()
-    submission = Submission.by_id(submission_id)
-    read_only = maybe_bool(request.values.get('read_only', "true"))
-    # Check that the resource exists
-    check_resource_exists(submission, "Submission", submission_id)
+    # Load parameters
+    submission_id = safe_request.get_int('submission_id')
+    embed = safe_request.get_maybe_bool('embed')
+    course_id = safe_request.get_course_id(True)
+    read_only = safe_request.get_maybe_bool('read_only', True)
+    # Load models
+    user, user_id = g.safely.get_user()
+    scope, submission = g.safely.load_submission_by_id(submission_id)
     # If it is this user's submission, redirect to load the assignment
     if submission.user_id == user_id:
-        if course_id is None:
-            course_id = submission.course_id
         return redirect(url_for('blockpy.load', assignment_id=submission.assignment.id,
-                                course_id=course_id))
-    # Check that it is public or you are a grader
-    elif user.is_grader(submission.course_id):
-        role = 'grader'
-    elif not submission.assignment.public:
-        # TODO: Handle this more gracefully
-        return ajax_failure(
-            "Cannot view submission. This is not a public submission, and you do not own the submission, and you are "
-            "not an instructor in its course.")
-    else:
-        role = 'anonymous'
+                                course_id=course_id if course_id else submission.course_id))
     # Get the assignment
-    assignment_data = submission.assignment.for_editor(submission.user_id, submission.course_id)
+    is_quiz = submission.assignment.type == 'quiz' and scope == 'grader'
+    assignment_data = submission.assignment.for_editor(submission.user_id, submission.course_id, is_quiz)
     return load_editor({
         "user": user,
         "user_id": user_id,
@@ -84,7 +79,7 @@ def load_submission():
         "read_only": read_only,
         "current_submission_id": submission_id,
         "course_id": course_id,
-        "role": role,
+        "role": scope.name,
         "assignment_group_id": None,
         "assignment_data": assignment_data
     })
@@ -93,12 +88,9 @@ def load_submission():
 @blueprint_blockpy.route('/load_readonly/', methods=['GET', 'POST'])
 @blueprint_blockpy.route('/load_readonly', methods=['GET', 'POST'])
 def load_readonly():
-    embed = maybe_bool(request.values.get('embed'))
-    user, user_id = get_user()
+    embed = safe_request.get_maybe_bool('embed')
+    user, user_id = g.safely.get_user()
     assignment_data = json.loads(request.values.get("assignment_data", "{}"))
-    # Handle Passcode
-    # Handle IP Addresses
-    # print(assignment_data)
     return load_editor({
         "user": user,
         "user_id": user_id,
@@ -136,30 +128,29 @@ def load():
     return load_editor(editor_information)
 
 
+ASSIGNMENT_TYPES = {
+    'quiz_questions': ('quiz', ),
+    'readings': ('reading', ),
+    'textbooks': ('textbook', ),
+    'javas': ('java', ),
+    'kettles': ('kettle', 'typescript'),
+    'explains': ('explanation', 'explain')
+}
+
 def load_editor(editor_information):
-    '''
+    """
     Render the actual editor based on the editor information.
     :param editor_information:
     :return:
-    '''
-    quiz_questions, readings, textbooks, javas, kettles, explains = [], [], [], [], [], []
+    """
+    by_type = {name: [] for name in ASSIGNMENT_TYPES}
     for assignment in editor_information.get('assignments', []):
-        if assignment.type == 'quiz':
-            quiz_questions.append(assignment.id)
-        elif assignment.type == 'reading':
-            readings.append(assignment.id)
-        elif assignment.type == 'textbook':
-            textbooks.append(assignment.id)
-        elif assignment.type == 'java':
-            javas.append(assignment.id)
-        elif assignment.type in ('typescript', 'kettle'):
-            kettles.append(assignment.id)
-        elif assignment.type in ('explanation', 'explain'):
-            explains.append(assignment.id)
+        for name, types in ASSIGNMENT_TYPES.items():
+            if assignment.type in types:
+                by_type[name].append(assignment.id)
+                break
     response = make_response(render_template('blockpy/editor.html', ip=request.remote_addr,
-                           quiz_questions=quiz_questions, readings=readings,
-                           textbooks=textbooks, javas=javas, kettles=kettles,
-                           explains=explains,
+                           **by_type,
                            **editor_information))
     return response
 
@@ -181,34 +172,25 @@ def serve_kettle_iframe():
 @require_request_parameters('assignment_id')
 def load_assignment():
     # Get arguments
-    assignment_id = int(request.values.get('assignment_id'))
-    assignment = Assignment.by_id(assignment_id)
-    student_id = maybe_int(request.values.get('user_id'))
-    course_id = get_course_id(True)
-    user, user_id = get_user()
-    force_download = maybe_bool(request.values.get('force_download', "false"))
-    force_quiz = maybe_bool(request.values.get("force_quiz", "false"))
-    with_history = maybe_bool(request.values.get("with_history", "false"))
-    # Verify exists
-    check_resource_exists(assignment, "Assignment", assignment_id)
-    # Verify permissions
-    if user_id != student_id and not user.is_grader(course_id):
-        return ajax_failure("Only graders can see submissions for other people.")
-    is_quiz = force_quiz or (assignment.type == 'quiz' and not user.is_grader(course_id))
+    assignment_id = safe_request.get_maybe_int('assignment_id')
+    student_id = safe_request.get_maybe_int('student_id')
+    force_download = safe_request.get_maybe_bool('force_download', False)
+    force_quiz = safe_request.get_maybe_bool('force_quiz', False)
+    with_history = safe_request.get_maybe_bool('with_history', False)
+    course_id = safe_request.get_course_id(True)
+    user, user_id = g.safely.get_user()
+    if student_id is None:
+        student_id = user_id
+    # Load models
+    scope, assignment = g.safely.load_assignment_by_id(assignment_id, course_id)
+    # Start processing
+    is_quiz = force_quiz or (assignment.type == 'quiz' and scope.can_view)
+
     if course_id is None:
         editor_information = assignment.for_read_only_editor(student_id, is_quiz)
     else:
-        if student_id is None:
-            student_id = user_id
         editor_information = assignment.for_editor(student_id, course_id, is_quiz, with_history)
-        browser_info = json.dumps({
-            'platform': request.user_agent.platform,
-            'browser': request.user_agent.browser,
-            'version': request.user_agent.version,
-            'language': request.user_agent.language,
-            'user_agent': request.user_agent.string,
-            'ip_address': request.remote_addr
-        })
+        browser_info = json.dumps(safe_request.get_browser_info())
         submission = editor_information.get('submission', None)
         if submission is None:
             # TODO SUM25: Log an error here
@@ -226,10 +208,6 @@ def load_assignment():
             else:
                 make_log_entry(submission_id, submission_version, assignment_id, assignment.version, course_id,
                                user_id, 'Session.Start', message=browser_info)
-    # Verify passcode, if necessary
-    if assignment.passcode_fails(request.values.get('passcode')):
-        return ajax_failure("Passcode {!r} rejected".format(request.values.get("passcode")))
-
     if force_download:
         student_filename = User.by_id(student_id).get_filename("")
         filename = assignment.get_filename("") + "_" + student_filename + '_submission.json'
@@ -244,11 +222,9 @@ def load_assignment():
 @require_request_parameters('filename')
 @login_required
 def save_file():
-    filename = request.values.get("filename")
-    course_id = get_course_id()
-    user, user_id = get_user()
-    if course_id is None:
-        return ajax_failure("Course ID was not made available")
+    filename = safe_request.get_str("filename")
+    course_id = safe_request.get_course_id(False)
+    user, user_id = g.safely.get_user()
     if filename in Submission.STUDENT_FILENAMES:
         return save_student_file(filename, course_id, user)
     if filename in Assignment.INSTRUCTOR_FILENAMES:
@@ -258,19 +234,16 @@ def save_file():
 
 @require_request_parameters("submission_id", "code")
 def save_student_file(filename, course_id, user):
-    submission_id = request.values.get("submission_id")
-    code = request.values.get("code")
-    part_id = request.values.get("part_id")
+    submission_id = safe_request.get_int("submission_id")
+    code = safe_request.get_str("code")
+    part_id = safe_request.get_str("part_id")
     if submission_id == '':
         return ajax_failure(
             "No submission ID was provided."
         )
-    submission = Submission.query.get(submission_id)
-    # Verify exists
-    check_resource_exists(submission, "Submission", submission_id)
-    # Verify permissions
-    if submission.user_id != user.id:
-        require_course_instructor(user, submission.course_id)
+    scope, submission = g.safely.load_submission_by_id(submission_id)
+    if not scope.can_edit:
+        return ajax_failure("Only the submission owner and graders can save files for a submission.")
     # Validate the maximum file size
     if current_app.config["MAXIMUM_CODE_SIZE"] < len(code):
         return ajax_failure(
@@ -290,19 +263,17 @@ def save_student_file(filename, course_id, user):
 
 @require_request_parameters("assignment_id", "code")
 def save_instructor_file(course_id, user, filename):
-    assignment_id = request.values.get("assignment_id")
-    code = request.values.get("code")
-    assignment = Assignment.query.get(assignment_id)
-    # Verify exists
-    check_resource_exists(assignment, "Assignment", assignment_id)
-    # Verify permissions
-    if assignment.owner_id != user.id:
-        require_course_instructor(user, assignment.course_id, allow_fork=course_id)
+    assignment_id = safe_request.get_int("assignment_id")
+    code = safe_request.get_str("code")
+    # Load the assignment
+    scope, assignment = g.safely.load_assignment_by_id(assignment_id)
+    if not scope.can_edit:
+        return ajax_failure("Only the assignment owner and instructors can save instructor files for an assignment.")
     # Perform update
     assignment.save_file(filename, code)
-    AssignmentLog.new(assignment.id, assignment.version,
-                          course_id,
-                      user.id, AssignmentLogEvent.EDIT, filename, code, "", "")
+    AssignmentLog.new(assignment.id, assignment.version, course_id,
+                      user.id, AssignmentLogEvent.EDIT, filename, code,
+                      "", "")
     return ajax_success({})
 
 
@@ -310,24 +281,26 @@ def save_instructor_file(course_id, user, filename):
 @blueprint_blockpy.route('/load_history', methods=['GET', 'POST'])
 @require_request_parameters("course_id")
 def load_history():
-    # Get parameters
-    course_id = maybe_int(request.values.get('course_id'))
-    assignment_id = (request.values.get('assignment_id'))
-    student_id = (request.values.get('user_id'))
-    page_limit = maybe_int(request.values.get('page_limit'))
-    page_offset = maybe_int(request.values.get('page_offset'))
-    with_submission = maybe_bool(request.values.get('with_submission'))
-    user, user_id = get_user()
-    # Verify user can see the submission
-    if str(user_id) != str(student_id) and not user.is_grader(course_id):
-        return ajax_failure("Only graders can see logs for other people.")
-    history = Log.get_history(course_id, assignment_id, student_id,
+    user, user_id = g.safely.get_user()
+    course_id = safe_request.get_course_id(False)
+    # Could be one or more assignment_ids, separated by commas
+    assignment_ids = safe_request.get_maybe_int_list('assignment_id')
+    # Could be one or more user_ids, separated by commas
+    student_ids = safe_request.get_maybe_int_list('user_id')
+    # Pagination information
+    page_limit = safe_request.get_maybe_int('page_limit', 20)
+    page_offset = safe_request.get_maybe_int('page_offset', 0)
+    with_submission = safe_request.get_maybe_bool('with_submission', False)
+    # Load models
+    for assignment_id in assignment_ids:
+        scope, assignment = g.safely.load_assignment_by_id(assignment_id, course_id)
+    history = Log.get_history(course_id, assignment_ids, student_ids,
                               page_offset=page_offset,
                               page_limit=page_limit)
     history = list(reversed(history))
     submissions = []
     if with_submission:
-        submissions = Submission.get_submissions(course_id, assignment_id, student_id)
+        submissions = Submission.get_submissions(course_id, assignment_ids, student_ids)
     return ajax_success({"history": history, "submissions": submissions})
 
 
@@ -336,21 +309,22 @@ def load_history():
 @require_request_parameters('event_type')
 @login_required
 def log_event():
-    course_id = get_course_id()
-    user, user_id = get_user()
-    assignment_id = request.values.get('assignment_id')
-    assignment_version = request.values.get('assignment_version') or 0
-    submission_id = request.values.get('submission_id')
-    submission_version = request.values.get('version') or 0
-    event_type = request.values.get("event_type")
-    file_path = request.values.get("file_path", "")
-    category = request.values.get('category', "")
-    label = request.values.get('label', "")
-    message = request.values.get('message', "")
+    course_id = safe_request.get_course_id(True)
+    user, user_id = g.safely.get_user()
+    assignment_id = safe_request.get_int('assignment_id')
+    assignment_version = safe_request.get_maybe_int('assignment_version', 0)
+    submission_id = safe_request.get_int('submission_id')
+    submission_version = safe_request.get_maybe_int('version', 0)
+    event_type = safe_request.get_str("event_type")
+    file_path = safe_request.get_maybe_str("file_path", "")
+    category = safe_request.get_maybe_str('category', "")
+    label = safe_request.get_maybe_str('label', "")
+    message = safe_request.get_maybe_str('message', "")
+    # Load the models
+    scope, submission = g.safely.load_submission_by_id(submission_id)
+    if not scope.can_edit:
+        return ajax_failure("Only the submission owner and graders can log events for a submission.")
     # Make the entry
-    if None in (assignment_id, course_id, user_id) or '' in (assignment_id, course_id, user_id):
-        return ajax_failure(
-            f"Missing either course_id ({course_id}, user ({user_id}), or assignment_id ({assignment_id}.")
     new_log = make_log_entry(submission_id, submission_version, assignment_id, assignment_version, course_id, user_id,
                              event_type, file_path, category, label, message)
     return ajax_success({"log_id": new_log.id})
@@ -403,34 +377,41 @@ def share_url(target=None):
 assignment_referer_regex = r"(https?\:\/\/.*?\.instructure\.com/courses/\d+/assignments/\d+).*?"
 
 
+def custom_blocked_message():
+    referer_header = request.headers.get('referer', '')
+    referer = re.match(assignment_referer_regex, referer_header)
+    referer = referer.group(0) if referer else ""
+    if referer:
+        return (referer, "<h3>The submission could not be loaded, probably because you are not logged in."
+                f" Log into the <a href='{referer}' target=_blank>assignment</a> via Canvas "
+                f"(or open the BlockPy dashboard), and then reload this page."
+                " If that still does not work, you may not have grader permissions for this course.</h3>")
+    return (referer, "<h3>↑ The submission could not be loaded. If you "
+            "are loading this assignment through the Grades menu in Canvas, then you can click "
+            "the link directly above to open your latest submission. If you want to edit your submission "
+            "assignment, then use the link at the top of the page to open the assignment.</h3>"
+            "<br><br><br><h3>If you are not in Canvas, then you may not have Grader permissions "
+            "for this course, or this might not be your submission.</h3>")
+
 @blueprint_blockpy.route('/view_submissions/<int:course_id>/<int:user_id>/<int:assignment_group_id>/',
                          methods=['GET', 'POST'])
 @blueprint_blockpy.route('/view_submissions/<int:course_id>/<int:user_id>/<int:assignment_group_id>',
                          methods=['GET', 'POST'])
 def view_submissions(course_id, user_id, assignment_group_id, assignment_id_focus=None):
-    embed = maybe_bool(request.values.get('embed'))
+    embed = safe_request.get_maybe_bool('embed')
     viewer, viewer_id = get_user()
+    referer, blocked_message = custom_blocked_message()
+    #scope, group, assignments, submissions = g.safely.load_group_submissions(
+    #    assignment_group_id, user_id, course_id
+    #)
     group, assignments, submissions = get_groups_submissions(assignment_group_id, user_id, course_id)
     # Check permissions
-    referer_header = request.headers.get('referer', '')
-    referer = re.match(assignment_referer_regex, referer_header)
-    referer = referer.group(0) if referer else ""
     for submission in submissions:
         if not submission:
             return ajax_failure(f"No submission for the given course, user, and group.")
         elif submission.user_id != viewer_id:
             if not viewer.is_grader(submission.course_id):
-                if referer:
-                    return ("<h3>The submission could not be loaded, probably because you are not logged in."
-                            f" Log into the <a href='{referer}' target=_blank>assignment</a> via Canvas "
-                            f"(or open the BlockPy dashboard), and then reload this page."
-                            " If that still does not work, you may not have grader permissions for this course.</h3>")
-                return ("<h3>↑ The submission could not be loaded. If you "
-                        "are loading this assignment through the Grades menu in Canvas, then you can click "
-                        "the link directly above to open your latest submission. If you want to edit your submission "
-                        "assignment, then use the link at the top of the page to open the assignment.</h3>"
-                        "<br><br><br><h3>If you are not in Canvas, then you may not have Grader permissions "
-                        "for this course, or this might not be your submission.</h3>")
+                return blocked_message
     # Do action
     points_total, points_possible, all_explanations = calculate_submissions_score(assignments, submissions, None)
     any_late_penalties = any(len(explanation) > 1 or
@@ -966,6 +947,10 @@ def process_history(history):
 @blueprint_blockpy.route('/browse_submissions', methods=['GET', 'POST'])
 @blueprint_blockpy.route('/browse_submissions/', methods=['GET', 'POST'])
 def browse_submissions():
+    """
+    TODO: Check if this is deprecated?
+    :return:
+    """
     assignment_id = request.values.get('assignment_id', None)
     if assignment_id is None:
         return ajax_failure("No Assignment ID given!")

@@ -12,7 +12,7 @@ from werkzeug.utils import secure_filename
 
 import models
 from common.maybe import maybe_int
-from models.enums import RolePermissions, USER_DISPLAY_ROLES
+from models.enums import RolePermissions, USER_DISPLAY_ROLES, UserRoles
 from models.generics.models import db, ma
 from models.generics.base import Base
 
@@ -172,22 +172,22 @@ class User(Base, UserMixin):
                                                 user_id=self.id).first())
 
     def is_admin(self):
-        return 'admin' in {role.name.lower() for role in self.roles}
+        return bool(models.Role.query.filter_by(course_id=None,
+                                                name=UserRoles.ADMIN,
+                                                user_id=self.id).first())
 
     def is_instructor(self, course_id=None):
+        query = models.Role.query.filter_by(user_id=self.id, name=UserRoles.INSTRUCTOR)
         if course_id is not None:
-            return 'instructor' in {role.name.lower() for role in self.roles
-                                    if role.course_id == int(course_id)}
-        return 'instructor' in {role.name.lower() for role in self.roles}
+            query = query.filter_by(course_id=int(course_id))
+        return bool(query.first())
 
     def is_grader(self, course_id=None):
+        query = models.Role.query.filter_by(user_id=self.id)
+        query = query.filter(models.Role.name.in_(RolePermissions.GRADER_ROLES))
         if course_id is not None:
-            role_strings = {role.name.lower() for role in self.roles
-                            if role.course_id == int(course_id)}
-        else:
-            role_strings = {role.name.lower() for role in self.roles}
-
-        return any(grader_role in role_strings for grader_role in RolePermissions.GRADER_ROLES)
+            query = query.filter_by(course_id=int(course_id))
+        return bool(query.first())
 
     def is_adopter(self, course_id=None):
         if self.is_instructor(course_id):
@@ -262,16 +262,28 @@ class User(Base, UserMixin):
         it would be very unusual to be able to access submissions from that menu, but in theory that's
         what this role delegation means.
 
+        TODO: Make it so that you have the least privleged role based on all the assignments.
+        TODO: Make it so that hidden assignments do not give TAs grader access.
+
         :param assignments:
         :param submissions:
         :return:
         '''
-        role = 'student'
-        if assignments and self.is_grader(assignments[0].course_id):
-            role = 'owner'
-        elif submissions and self.is_grader(submissions[0].course_id):
-            role = 'grader'
-        return role
+        roles = set()
+        for assignment, submission in zip(assignments, submissions):
+            check_function = self.is_instructor if assignment.hidden else self.is_grader
+            if check_function(assignment.course_id):
+                roles.add((2, 'owner'))
+            elif check_function(submission.course_id):
+                roles.add((1, 'grader'))
+            else:
+                roles.add((0, 'student'))
+
+        if not roles:
+            return 'student'
+        else:
+            _, lowest_role = min(roles)
+            return lowest_role
 
     @staticmethod
     def is_lti_instructor(given_roles):

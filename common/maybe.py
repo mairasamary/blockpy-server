@@ -19,6 +19,10 @@ def maybe_float(value):
 def maybe_bool(value):
     if value is None:
         return False
-    elif value.lower() == "true":
+    elif isinstance(value, bool):
+        return value
+    elif isinstance(value, (int, float)):
+        return bool(value)
+    elif isinstance(value, str) and value.lower() == "true":
         return True
     return False

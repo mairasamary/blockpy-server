@@ -39,7 +39,6 @@ pytest
 natsort~=8.4.0
 psycopg
 psycopg2
-psycopg2-binary
 email-validator
 Werkzeug
 alembic~=1.13.1

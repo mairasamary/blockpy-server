@@ -30,8 +30,10 @@ import flask_security
 from controllers.pylti.flask import LTI_SESSION_KEY, LTI, LTIException
 from flask_jwt_extended import create_access_token
 
+from controllers.services import ValidUserPermissionLayer, InvalidUserPermissionLayer
 from mailing import mail, Message
 from controllers.setup import registry, rebar
+from models.enums import clean_role
 from models.user import User
 from models.course import Course
 
@@ -91,6 +93,7 @@ def login_user_if_able():
     The LTI object is responsible for
 
     """
+    g.safely = InvalidUserPermissionLayer()
     # Invalid URL
     if not request.endpoint:
         return
@@ -144,6 +147,7 @@ def load_logged_in_user():
     :return:
     """
     g.user = current_user
+    g.safely = ValidUserPermissionLayer(g.user)
     if session.get(LTI_SESSION_KEY, False):
         g.lti = LTI(get_consumer_secrets())
     if 'lti_course_id' in session and g.user:
@@ -187,6 +191,7 @@ def load_lti_user():
                            session.get("lis_person_contact_email_primary", ""),
                            session.get("lis_person_name_given", "Canvas"),
                            session.get("lis_person_name_family", "User"))
+    g.safely = ValidUserPermissionLayer(g.user)
     # 2) Check the course
     new_outcome_url = request.form.get('lis_outcome_service_url', "")
     g.course = Course.from_lti("canvas",
@@ -198,6 +203,7 @@ def load_lti_user():
     session['lti_course_id'] = g.course.id
     # 3) Check the user's roles
     g.roles = session["roles"].split(",") if "roles" in session else []
+    g.roles = [clean_role(role)[0] for role in g.roles]
     g.user.update_roles(g.roles, g.course.id)
     # 4) Generally update the LTI status
     session['is_lti_active'] = True
@@ -240,6 +246,7 @@ def load_jwt_user(user_id, claims):
     """
     old_user = g.user if 'user' in g else None
     g.user = User.by_id(user_id)
+    g.safely = ValidUserPermissionLayer(g.user)
     g.course = Course.by_id(claims['course_id'])
     g.roles = claims['roles']
     session['lti_course_id'] = g.course.id
@@ -334,18 +341,22 @@ def make_user_anonymous(ip_address=None):
     if 'uid' in session:
         uid = session['uid']
         g.user = User.find_anonymous_user(uid)
+        if g.user is not None:
+            g.safely = ValidUserPermissionLayer(g.user)
     # If not, then make them a new one
     else:
         uid = uuid.uuid4().hex
         session['uid'] = uid
         g.user = User.make_anonymous_user(uid, ip_address)
+        if g.user is not None:
+            g.safely = ValidUserPermissionLayer(g.user)
 
 @current_app.before_request
 def check_banned_user():
     user = getattr(g, 'user', None)
-    #if user and user.banned:
-    #    notify_admin()
-    #    abort(403, description="You are banned. Stop trying. The administrator has been notified.")
+    if user and user.banned:
+        notify_admin()
+        abort(403, description="You are banned. Stop trying. The administrator has been notified.")
 
 
 def notify_admin():

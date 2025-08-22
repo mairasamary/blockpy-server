@@ -1,5 +1,6 @@
 # Built-in imports
 from urllib.parse import quote as url_quote
+import json
 from functools import wraps
 
 from natsort import natsorted
@@ -278,6 +279,27 @@ def parse_assignment_load(assignment_id_or_url=None):
                 passcode_protected=passcode_protected)
 
 
+def check_permissions(viewer, submission, assignment, ip_address):
+    """
+    :param viewer:
+    :param submission:
+    :param assignment:
+    :return:
+    """
+    role = viewer.determine_role([assignment], [submission]) if viewer else "anonymous"
+    print(role, viewer, submission, assignment, ip_address)
+    if role in ('owner', 'grader'):
+        return True
+    if role in ("student", "anonymous"):
+        # Check for any IP locked assignments
+        if not assignment.is_allowed(ip_address):
+            make_log_entry(submission.id, submission.version, assignment.id, assignment.version,
+                           submission.course_id, submission.user_id, SubmissionLogEvent.ERROR,
+                           message=json.dumps({"ip_address": ip_address, "viewer_id": viewer.id if viewer else None}))
+            return False
+    return submission.user_id == viewer.id if viewer else False
+
+
 def get_lti_property(property_name, default_value=None):
     # TODO: Deprecate this!
     if property_name in request.form:
@@ -339,7 +361,6 @@ def get_select_menu_link(id, title, is_embedded, is_group):
 
 def ajax_failure(message, error_code=200):
     return abort(make_response(jsonify(success=False, message=message, ip=request.remote_addr), error_code))
-
 
 def ajax_success(original_data):
     original_data['ip'] = request.remote_addr

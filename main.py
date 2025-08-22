@@ -3,6 +3,7 @@ import json
 import os
 
 # Flask
+from common.flask_extensions import CustomFlask
 from flask import Flask
 from flask_debugtoolbar import DebugToolbarExtension
 from flask_jwt_extended import JWTManager
@@ -16,7 +17,7 @@ def create_app(test_config=None, instance_config="configuration.py") -> Flask:
     """
     # create and configure the app
     instance_path = os.path.join(os.path.dirname(__file__), './instance')
-    app = Flask('blockpy', instance_relative_config=True, static_folder='static',
+    app = CustomFlask('blockpy', instance_relative_config=True, static_folder='static',
                 instance_path=instance_path)
                 #static_url_path='/static')
     # load the test config if passed in

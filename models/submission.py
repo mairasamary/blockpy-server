@@ -339,12 +339,16 @@ class Submission(EnhancedBase):
         subs = Submission.query.filter_by(course_id=course_id)
         # Just need to refactor this to allow lists
         if assignment_id is not None:
-            if ',' in assignment_id:
+            if isinstance(assignment_id, list):
+                subs = subs.filter(Submission.assignment_id.in_(assignment_id))
+            elif ',' in assignment_id:
                 subs = subs.filter(Submission.assignment_id.in_([int(a) for a in assignment_id.split(",")]))
             else:
                 subs = subs.filter_by(assignment_id=assignment_id)
         if user_id is not None:
-            if ',' in user_id:
+            if isinstance(user_id, list):
+                subs = subs.filter(Submission.user_id.in_(user_id))
+            elif ',' in user_id:
                 subs = subs.filter(Submission.user_id.in_([int(a) for a in user_id.split(",")]))
             else:
                 subs = subs.filter_by(user_id=user_id)
