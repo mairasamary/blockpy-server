@@ -236,7 +236,7 @@ def save_file():
 def save_student_file(filename, course_id, user):
     submission_id = safe_request.get_int("submission_id")
     code = safe_request.get_str("code")
-    part_id = safe_request.get_str("part_id")
+    part_id = safe_request.get_maybe_str("part_id")
     if submission_id == '':
         return ajax_failure(
             "No submission ID was provided."
