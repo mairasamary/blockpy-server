@@ -95,6 +95,9 @@ export class AssignmentInterface {
             let now = new Date();
             const rawSettings = this.assignment().settings();
             let settings;
+            if (!rawSettings || rawSettings.trim() === "") {
+                return;
+            }
             try {
                 settings = JSON.parse(rawSettings);
             } catch (e){
