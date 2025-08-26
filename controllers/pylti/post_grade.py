@@ -67,6 +67,7 @@ class GradingReport:
     grader_id: int
     student_id: int
     submission_id: int
+    submission_version: int
     by_human: bool
     # Tracking client timestamps
     client_timestamp: str
@@ -96,7 +97,7 @@ class GradingReport:
 
     def log(self, event_type, message, category='', label='', file_path='',
             when=None, when_timezone=None):
-        return make_log_entry(self.assignment_id, self.assignment_version, self.course_id,
+        return make_log_entry(self.submission_id, self.submission_version, self.assignment_id, self.assignment_version, self.course_id,
                               self.student_id, event_type, file_path, category, label,
                               message, when, when_timezone)
 
@@ -211,7 +212,8 @@ def grade_submission(submission_id, assignment_group_id,
     # Create the GradingReport, prepopulated with some information
     report = GradingReport(None, None,
                            assignment_group_id,
-                           None, None, None, submission_id, by_human,
+                           None, None, None, submission_id, 0,
+                           by_human,
                            request.values.get('timestamp'), request.values.get('timezone'),
                            client_correct, client_score, None, {}, [],
                            True, None, None, None)
@@ -220,6 +222,7 @@ def grade_submission(submission_id, assignment_group_id,
         return report.add_reason(FailureReasons.NO_SUBMISSION)
     report.assignment_id = submission.assignment_id
     report.assignment_version = submission.assignment_version
+    report.submission_version = submission.version
     if assignment_group_id is None:
         report.assignment_group_id = submission.assignment_group_id
     if client_correct is None:
