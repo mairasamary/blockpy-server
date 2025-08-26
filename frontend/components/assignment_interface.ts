@@ -108,7 +108,7 @@ export class AssignmentInterface {
             const startTime = this.submission().dateStarted();
             if (startTime) {
                 const startDate = new Date(startTime);
-                console.log(startTime, startDate, now.getTime());
+                // console.log(startTime, startDate, now.getTime());
                 const elapsed = Math.floor((now.getTime() - startDate.getTime()) / 1000);
                 const remaining = timeLimit - elapsed;
                 if (remaining <= 0) {
