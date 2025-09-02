@@ -28,9 +28,9 @@ def string_to_datetime(a_string: str) -> datetime:
     :return: The datetime version of that string
     """
     try:
-        return datetime.strptime(a_string, '%Y-%m-%dT%H:%M:%S.%fZ')
+        return datetime.strptime(a_string, '%Y-%m-%dT%H:%M:%S.%f%z')
     except ValueError:
-        return datetime.strptime(a_string, '%Y-%m-%dT%H:%M:%SZ')
+        return datetime.strptime(a_string, '%Y-%m-%dT%H:%M:%S%z')
 
 def iso_to_datetime(a_string: str) -> datetime:
     """

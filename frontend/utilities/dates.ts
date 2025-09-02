@@ -88,6 +88,51 @@ export function prettyPrintTime(timeString: string): string {
     return past.toLocaleTimeString();
 }
 
+export function formatAmount(delta: number, sign: string, coarse: boolean = false, round: boolean = false) {
+    const operation = round ? Math.round : Math.floor;
+    let years = operation(delta / (365*3600*24));
+    let days = operation(delta % (365*3600*24) / (3600*24));
+    let hours = operation(delta % (3600*24) / 3600);
+    let minutes = operation(delta % 3600 / 60);
+    let seconds = operation(delta % 60);
+
+    let yearsDisplay = `${years} year${years!==1? 's': ''}`;
+    let daysDisplay = `${days} day${days!==1? 's': ''}`;
+    let hoursDisplay = `${hours} hour${hours!==1? 's': ''}`;
+    let minutesDisplay = `${minutes} minute${minutes!==1? 's': ''}`;
+    let secondsDisplay = `${seconds} second${seconds!==1? 's': ''}`;
+
+    if (coarse) {
+        if (delta < 60) {
+            return "<1 minute" + sign;
+        } else if (delta < 60 * 60) {
+            return minutesDisplay + sign;
+        } else if (delta < 24 * 60 * 60) {
+            return hoursDisplay + ", " + minutesDisplay + sign;
+        } else if (delta < 365 * 24 * 60 * 60) {
+            return daysDisplay + ", " + hoursDisplay + sign;
+        } else {
+            return yearsDisplay + ", " + daysDisplay + sign;
+        }
+    } else {
+        if (delta < 1) {
+            return "At this time";
+        } else if (delta < 60) {
+            return secondsDisplay + sign;
+        } else if (delta < 60 * 10) {
+            return minutesDisplay + ", " + secondsDisplay + sign;
+        } else if (delta < 60 * 60) {
+            return minutesDisplay + sign;
+        } else if (delta < 24 * 60 * 60) {
+            return hoursDisplay + ", " + minutesDisplay + sign;
+        } else if (delta < 365 * 24 * 60 * 60) {
+            return daysDisplay + ", " + hoursDisplay + sign;
+        } else {
+            return yearsDisplay + ", " + daysDisplay + sign;
+        }
+    }
+}
+
 export function formatDuration(earlier: string, later: string) {
     if (earlier === null) {
         return "Never";
@@ -97,31 +142,5 @@ export function formatDuration(earlier: string, later: string) {
     let delta = Math.abs(timeLater.getTime() - timeEarlier.getTime())/1000;
     let sign = timeLater.getTime() > timeEarlier.getTime() ? ' earlier' : ' later';
 
-    let years = Math.floor(delta / (365*3600*24));
-    let days = Math.floor(delta % (365*3600*24) / (3600*24));
-    let hours = Math.floor(delta % (3600*24) / 3600);
-    let minutes = Math.floor(delta % 3600 / 60);
-    let seconds = Math.floor(delta % 60);
-
-    let yearsDisplay = `${years} year${years!==1? 's': ''}`;
-    let daysDisplay = `${days} day${days!==1? 's': ''}`;
-    let hoursDisplay = `${hours} hour${hours!==1? 's': ''}`;
-    let minutesDisplay = `${minutes} minute${minutes!==1? 's': ''}`;
-    let secondsDisplay = `${seconds} second${seconds!==1? 's': ''}`;
-
-    if (delta < 1) {
-        return "At this time";
-    } else if (delta < 60) {
-        return secondsDisplay+sign;
-    } else if (delta < 60*10) {
-        return minutesDisplay+", "+secondsDisplay+sign;
-    } else if (delta < 60*60) {
-        return minutesDisplay+sign;
-    } else if (delta < 24*60*60) {
-        return hoursDisplay+", "+minutesDisplay+sign;
-    } else if (delta < 365*24*60*60) {
-        return daysDisplay+", "+hoursDisplay+sign;
-    } else {
-        return yearsDisplay+", "+daysDisplay+sign;
-    }
+    return formatAmount(delta, sign);
 }

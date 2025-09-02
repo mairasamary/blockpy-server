@@ -33,7 +33,7 @@ httplib2
 tqdm~=4.66.1
 pydot~=2.0.0
 six~=1.16.0
-bcrypt
+bcrypt==4.0.1
 python-slugify~=8.0.1
 pytest
 natsort~=8.4.0

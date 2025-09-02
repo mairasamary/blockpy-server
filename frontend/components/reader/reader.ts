@@ -153,6 +153,7 @@ export class Reader extends AssignmentInterface {
                             this.markRead();
                         }
                         this.registerWatcher();
+                        this.handleTimeCheck();
                     } else {
                         console.error("Failed to load", response);
                         this.assignment(null);

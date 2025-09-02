@@ -451,14 +451,14 @@ class Submission(EnhancedBase):
         db.session.commit()
 
     def update_submission_status(self, status):
-        if status not in SubmissionStatuses.VALID_CHOICES:
+        if status not in SubmissionStatuses.choices():
             return False
         self.submission_status = status
         db.session.commit()
         return True
 
     def update_grading_status(self, status):
-        if status not in GradingStatuses.VALID_CHOICES:
+        if status not in GradingStatuses.choices():
             return False
         self.grading_status = status
         db.session.commit()
@@ -597,6 +597,13 @@ class Submission(EnhancedBase):
                 attempt = student.get('attempt', {})
                 return attempt.get('attempting', False), attempt.get('count', 0)
         return False, 0
+
+    def get_tags(self):
+        if self.assignment.type == 'blockpy':
+            if not self.correct:
+                tags = self.assignment.get_setting('tags', [])
+                return tags
+        return []
 
     def get_logs(self):
         return SubmissionLog.query.filter_by(course_id=self.course_id, assignment_id=self.assignment_id, subject_id=self.user_id).order_by(

@@ -3,6 +3,7 @@ import {Server} from "../services/server";
 import {User} from "../models/user";
 import {Assignment} from "../models/assignment";
 import {Submission} from "../models/submission";
+import {formatAmount} from "../utilities/dates";
 import {formatClock} from "../utilities/text";
 import {generateUUID} from "../utilities/random";
 
@@ -121,10 +122,14 @@ export class AssignmentInterface {
                         // Overlay already exists, do not create a new one
                         return;
                     }
+                    if (this.isInstructor()) {
+                        return;
+                    }
+                    // TODO: We need to allow instructors to remove the box if it appears for them!
                     // Add a box in the center of the overlay that explains
                     const box = $('<div class="end-assignment-timer-box"> </div>');
                     box.appendTo(document.body);
-                    box.html("Time is up! Your assignment will be submitted now. You may not continue working on it.");
+                    box.html("Time is up! Your assignment will be automatically submitted now. You may not continue working on it. Please log out. Thanks for taking the exam, and best of luck!");
                     box.css({
                         "position": "fixed",
                         "width": "100%",
@@ -139,9 +144,12 @@ export class AssignmentInterface {
                         "z-index": "1000"
                     });
                 }
-                $("#assignment-time-remaining-clock").html(
-                    remaining + "|" + elapsed
+
+                $(".assignment-selector-countdown").html(
+                    formatAmount(elapsed, " elapsed", true) + "; " +
+                    formatAmount(remaining, " left", true)
                 )
+                $(".assignment-selector-clock").hide();
             }
         }
     }
