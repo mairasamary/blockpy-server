@@ -160,7 +160,7 @@ def load_editor(editor_information):
 def serve_kettle_iframe():
     if hasattr(current_app, 'debug_toolbar') and current_app.debug_toolbar is not None:
         real_request = request._get_current_object()  # type: ignore[attr-defined]
-        current_app.debug_toolbar.debug_toolbars.pop(real_request, None)
+        current_app.debug_toolbar.debug_toolbars_var.get({}).pop(real_request, None)
     response = make_response(render_template('blockpy/kettle_iframe.html'))
     response.headers.set('Content-Security-Policy', "sandbox allow-scripts")
     response.headers.set('Access-Control-Allow-Origin', "*")
