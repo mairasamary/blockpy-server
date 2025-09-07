@@ -45,7 +45,7 @@ alembic~=1.13.1
 gunicorn
 redis
 huey~=2.5.0
-compare50
+compare50==1.2.6
 pdfkit~=1.0.0
 thefuzz~=0.20.0
 MarkupSafe~=2.1.3
