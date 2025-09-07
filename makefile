@@ -23,6 +23,7 @@ create_directories:
 	mkdir -p static/.webassets-cache/
 	mkdir -p static/uploads/submission_blocks/
 	mkdir -p static/public/
+	mkdir -p static/reports/
 	mkdir -p certs/
 	mkdir -p logs/
 	mkdir -p backups/

@@ -1,0 +1,17 @@
+
+    server {
+        listen 80;
+        server_name test.mairasamary.com;
+
+	location / {
+	    root /var/www/blockpy-server/static/;
+            index index.html;
+	    add_header X-Debug "test.mairasamary.com";
+	}
+
+	# Serve ACME challenge files
+	location /.well-known/acme-challenge/ {
+	    root /var/www/certbot;
+	}
+
+    }

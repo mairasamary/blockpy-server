@@ -10,6 +10,7 @@ from scripts.setup import cli
 import scripts.db_commands
 import scripts.external_commands
 
+import sys
 
 @cli.command('huey')
 def run_huey():
