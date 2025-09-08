@@ -8,7 +8,6 @@ events {
 }
 
 http {
-
     ##
     # Basic Settings
     ##
@@ -25,17 +24,16 @@ http {
     client_header_timeout 60s;
     client_body_timeout 60s;
     send_timeout 60s;
-    proxy_connect_timeout 60s;
-    proxy_send_timeout 60s;
-    proxy_read_timeout 60s;
-    # uwsgi_connect_timeout 60s;
-    # uwsgi_send_timeout 60s;
-    # uwsgi_read_timeout 60s;
+
+    # (Use uwsgi_* timeouts since we are speaking uwsgi protocol)
+    uwsgi_connect_timeout 60s;
+    uwsgi_send_timeout 60s;
+    uwsgi_read_timeout 60s;
 
     ##
     # SSL Settings
     ##
-    ssl_protocols TLSv1 TLSv1.1 TLSv1.2 TLSv1.3; # Dropping SSLv3, ref: POODLE
+    ssl_protocols TLSv1 TLSv1.1 TLSv1.2 TLSv1.3;
     ssl_prefer_server_ciphers on;
 
     ##
@@ -51,85 +49,50 @@ http {
     error_log /var/log/nginx/error.log;
 
     ##
-    # Gzip Settings
+    # Gzip
     ##
     gzip on;
 
     client_max_body_size 10M;
 
     ##
-    # Upstream Definition
-    ##
-    upstream blockpy {
-        server localhost:8888;
-    }
-
-    ##
-    # Server Block
+    # Server (HTTPS)
     ##
     server {
         listen 443 ssl default_server;
         listen [::]:443 ssl default_server;
         server_name test.mairasamary.com;
 
-        #http2 on;
-
-        ssl_certificate /etc/letsencrypt/live/test.mairasamary.com/fullchain.pem;
+        ssl_certificate     /etc/letsencrypt/live/test.mairasamary.com/fullchain.pem;
         ssl_certificate_key /etc/letsencrypt/live/test.mairasamary.com/privkey.pem;
-        ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+        ssl_dhparam         /etc/letsencrypt/ssl-dhparams.pem;
 
-        ##
-        # Proxy Pass Configuration
-        ##
+        # App at /
         location / {
-            proxy_set_header Host $http_host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
-            proxy_pass http://blockpy;
-            # include            uwsgi_params;
-            # uwsgi_pass         web:8888; # unix:/run/uwsgi/blockpy.sock;
+            include uwsgi_params;
+            uwsgi_pass unix:/var/run/uwsgi/blockpy.sock;
         }
 
+        # Longer-running endpoints
         location ~ /grading/get_grading_spreadsheet(.*) {
-            # uwsgi_read_timeout 600;
-            # include uwsgi_params;
-            # uwsgi_pass web:8888; # unix:/run/uwsgi/blockpy.sock;
-            proxy_read_timeout 600;
-            proxy_set_header Host $http_host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
-            proxy_pass http://blockpy;
+            include uwsgi_params;
+            uwsgi_read_timeout 600;
+            uwsgi_pass unix:/var/run/uwsgi/blockpy.sock;
         }
 
         location ~ /grading/bulk_update_submission(.*) {
-            # uwsgi_read_timeout 600;
-            # include uwsgi_params;
-            # uwsgi_pass web:8888; # unix:/run/uwsgi/blockpy.sock;
-            proxy_read_timeout 600;
-            proxy_set_header Host $http_host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
-            proxy_pass http://blockpy;
+            include uwsgi_params;
+            uwsgi_read_timeout 600;
+            uwsgi_pass unix:/var/run/uwsgi/blockpy.sock;
         }
 
+        # Users endpoint
         location ~ /users/(.*) {
-	    # Change this to your internal network mask
-	    #allow 128.175.0.0/16;
-	    #allow 128.4.0.0/16;
-	    #deny all;
-
-            # include            uwsgi_params;
-            # uwsgi_pass         web:8888; # unix:/run/uwsgi/blockpy.sock;
-            proxy_set_header Host $http_host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
-            proxy_pass http://blockpy;
+            include uwsgi_params;
+            uwsgi_pass unix:/var/run/uwsgi/blockpy.sock;
         }
 
+        # Static videos (served by nginx directly)
         location ~ /videos/(.*) {
             root /var/www/;
             index index.html;
@@ -141,15 +104,13 @@ http {
         }
 
         ##
-        # SSL Security Settings
+        # SSL Security Settings (unchanged)
         ##
         ssl_session_cache shared:SSL:20m;
         ssl_session_timeout 180m;
-        # ssl_protocols TLSv1.2 TLSv1.3;  # Consider dropping older protocols if not needed
         ssl_protocols TLSv1 TLSv1.1 TLSv1.2 TLSv1.3;
         ssl_prefer_server_ciphers on;
         ssl_ecdh_curve secp384r1;
-        # ssl_ciphers 'EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH';
         ssl_ciphers ECDH+AESGCM:ECDH+AES256:ECDH+AES128:DHE+AES128:!ADH:!AECDH:!MD5;
         ssl_session_tickets off;
         ssl_stapling on;
@@ -158,23 +119,24 @@ http {
         resolver_timeout 5s;
         add_header Strict-Transport-Security "max-age=63072000; includeSubdomains";
         add_header X-Content-Type-Options nosniff;
-
     }
 
     ##
-    # Redirect HTTP to HTTPS
+    # HTTP → HTTPS + ACME
     ##
     server {
         listen 80;
         server_name test.mairasamary.com;
 
-	# Serve ACME challenge files
-	location /.well-known/acme-challenge/ {
-	    root /var/www/certbot;
-	}
+        # ACME challenge for Let's Encrypt
+        location /.well-known/acme-challenge/ {
+            root /var/www/certbot;
+        }
 
+        # Redirect everything else to HTTPS
         location / {
             return 301 https://$host$request_uri;
         }
     }
 }
+
